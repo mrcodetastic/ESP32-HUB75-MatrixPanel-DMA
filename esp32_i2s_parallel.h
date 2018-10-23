@@ -13,7 +13,7 @@ extern "C" {
 #include "rom/lldesc.h"
 
 typedef enum {
-    I2S_PARALLEL_BITS_8=8,
+    I2S_PARALLEL_BITS_8=8, // BUG: Doesn't work.
     I2S_PARALLEL_BITS_16=16,
     I2S_PARALLEL_BITS_32=32,
 } i2s_parallel_cfg_bits_t;
