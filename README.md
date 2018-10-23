@@ -1,6 +1,6 @@
-# Adafruit_GFX RGB64x32MatrixPanel library for ESP32 based on experimental ESP32 I2S DMA!
+# Adafruit_GFX RGB64x32MatrixPanel library for ESP32 using I2S DMA
 
-ESP32 Arduino library for P3 64x32 RGB LED Matrix Panel, which leverages the DMA functionality of the ESP32's I2S 'LCD Mode' which bascially means that pixel data can be sent straight from memory, via the DMA controller, to the relevant GPIO pins (RGB Matrix) with no overhead to either CPU! Most other library require the CPU to constantly bit-bang the GPIO (either with SPI as well), which results in flickery outcomes when using either CPU and decreased performance of your sketch.
+ESP32 Arduino library for P3 64x32 RGB LED Matrix Panel, which leverages the DMA functionality of the ESP32's I2S 'LCD Mode' which bascially means that pixel data can be sent straight from memory, via the DMA controller, to the relevant GPIO pins (RGB Matrix) with no overhead to either CP.! Most other library require the CPU to constantly bit-bang the GPIO (either with SPI as well), which results in flickery outcomes when using either CPU and decreased performance of your sketch.
 
 As a result, this library can provide 24 bit colour, at various brightness levels without resulting in flicker.
 
