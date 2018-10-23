@@ -53,7 +53,4 @@ Currently WIP. Seems to work extremly well and drive a RGB panel with 24bit colo
 
 Based off the 'SmartMatrix' project code: https://github.com/pixelmatix/SmartMatrix/tree/teensylc
 
-Which is based off Sprite_TM's demo implementation here:
-
-https://www.esp32.com/viewtopic.php?f=17&t=3188
-https://www.esp32.com/viewtopic.php?f=13&t=3256
+Which is based off Sprite_TM's demo implementation here: https://www.esp32.com/viewtopic.php?f=17&t=3188
