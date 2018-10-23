@@ -1,8 +1,8 @@
-# Adafruit_GFX RGB64x32MatrixPanel library for ESP32 using I2S DMA
+# Adafruit_GFX RGB64x32MatrixPanel library for the ESP32, utilising I2S DMA.
 
-ESP32 Arduino library for P3 64x32 RGB LED Matrix Panel, which leverages the DMA functionality of the ESP32's I2S 'LCD Mode' which bascially means that pixel data can be sent straight from memory, via the DMA controller, to the relevant GPIO pins (RGB Matrix) with no overhead to either CP.! Most other library require the CPU to constantly bit-bang the GPIO (either with SPI as well), which results in flickery outcomes when using either CPU and decreased performance of your sketch.
+This ESP32 Arduino library for an RGB LED (HUB 75 type) Matrix Panel, utilises the DMA functionality provided by the ESP32's I2S 'LCD Mode' which basically means that pixel data can be sent straight from memory, via the DMA controller, to the relevant LED Matrix GPIO pins with little CPU overhead.
 
-As a result, this library can provide 24 bit colour, at various brightness levels without resulting in flicker.
+As a result, this library can theoretically provide ~20 bit colour, at various brightness levels without resulting in noticeable flicker.
 
 ![It's better in real life](image.jpg)
 
@@ -38,19 +38,24 @@ If you wish to change this, you will need to adjust in the header file.
 +-----------+
 ```
 
-The panel must be powered by 5V AC adapter with enough current capacity.
-(Current varies due to how many LED are turned on at the same time. To drive all the LEDs, you need 5V4A adapter.)
+The panel must be powered by 5V AC adapter with enough current capacity. (Current varies due to how many LED are turned on at the same time. To drive all the LEDs, you need 5V4A adapter.)
+
+
+A [typical RGB panel available for purchase](https://www.aliexpress.com/item/256-128mm-64-32-pixels-1-16-Scan-Indoor-3in1-SMD2121-RGB-full-color-P4-led/32810362851.html). This is of the larger P4 (4mm spacing between pixels) type. 
 
 # Usage
 
-Work in progress at the moment. Run the .ino file once hooked up.
+Refer to the excellent PxMatrix based library for how to wire one of these panels up (in fact, it's probably best to first get your panel working with this library first to be sure): https://github.com/2dom/PxMatrix
+
+You'll need to adjust the pin configuration in this library of course.
 
 # Notes
 
-Currently WIP. Seems to work extremly well and drive a RGB panel with 24bit color at very high refresh rates.
+Seems to work well and drive a RGB panel with decent colours and little flicker. Even better that it uses Direct Memory Access :-)
 
 # Credits
 
-Based off the 'SmartMatrix' project code: https://github.com/pixelmatix/SmartMatrix/tree/teensylc
+* 'SmartMatrix' project code: https://github.com/pixelmatix/SmartMatrix/tree/teensylc
 
-Which is based off Sprite_TM's demo implementation here: https://www.esp32.com/viewtopic.php?f=17&t=3188
+* Sprite_TM's demo implementation here: https://www.esp32.com/viewtopic.php?f=17&t=3188
+
