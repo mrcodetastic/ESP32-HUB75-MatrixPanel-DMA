@@ -4,6 +4,8 @@ ESP32 Arduino library for P3 64x32 RGB LED Matrix Panel, which leverages the DMA
 
 As a result, this library can provide 24 bit colour, at various brightness levels without resulting in flicker.
 
+![It's better in real life](image.jpg)
+
 # Installation
 
 You need to install [Adafruit_GFX_Library](https://github.com/adafruit/Adafruit-GFX-Library) from the "Library > Manage Libraries" menu.
