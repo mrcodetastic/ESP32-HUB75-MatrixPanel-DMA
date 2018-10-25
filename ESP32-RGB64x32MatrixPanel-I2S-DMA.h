@@ -90,9 +90,9 @@
 /***************************************************************************************/
 /* HUB75 RGB Panel definitions and DMA Config. It's best you don't change any of this. */
 
-#define MATRIX_HEIGHT			        32
-#define MATRIX_WIDTH			        64
-#define MATRIX_ROWS_IN_PARALLEL   2
+#define MATRIX_HEIGHT			    32
+#define MATRIX_WIDTH			    64
+#define MATRIX_ROWS_IN_PARALLEL   	2
 
 // Panel Upper half RGB (numbering according to order in DMA gpio_bus configuration)
 #define BIT_R1  (1<<0)   
@@ -116,8 +116,8 @@
 #define BIT_E (1<<12)   
 
 // RGB Panel Constants / Calculated Values
-#define PIXELS_PER_LATCH    ((MATRIX_WIDTH * MATRIX_HEIGHT) / MATRIX_HEIGHT) // = 64
 #define COLOR_CHANNELS_PER_PIXEL 3 
+#define PIXELS_PER_LATCH    ((MATRIX_WIDTH * MATRIX_HEIGHT) / MATRIX_HEIGHT) // = 64
 #define COLOR_DEPTH_BITS    (COLOR_DEPTH/COLOR_CHANNELS_PER_PIXEL)  //  = 8
 #define ROWS_PER_FRAME      (MATRIX_HEIGHT/MATRIX_ROWS_IN_PARALLEL) //  = 2
 
@@ -150,6 +150,17 @@ struct frameStruct {
     rowColorDepthStruct rowdata[ROWS_PER_FRAME];
 };
 
+typedef struct rgb_24 {
+    rgb_24() : rgb_24(0,0,0) {}
+    rgb_24(uint8_t r, uint8_t g, uint8_t b) {
+        red = r; green = g; blue = b;
+    }
+    rgb_24& operator=(const rgb_24& col);
+
+    uint8_t red;
+    uint8_t green;
+    uint8_t blue;
+} rgb_24;
 
 /***************************************************************************************/   
 class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
@@ -158,18 +169,20 @@ class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
     RGB64x32MatrixPanel_I2S_DMA(bool _doubleBuffer = false) // doublebuffer always enabled, option makes no difference
       : Adafruit_GFX(MATRIX_WIDTH, MATRIX_HEIGHT), doubleBuffer(_doubleBuffer) {
       allocateDMAbuffers();
-	    backbuf_id = 0;
-      brightness = 64;
+	  
+		backbuf_id = 0;
+		brightness = 16;
+		
     }
 	
     void begin(void)
     {
       configureDMA(); //DMA and I2S configuration and setup
 
-      // Need to wipe the contents of the matrix buffers or weird things happen.
-      for (int y=0;y<MATRIX_HEIGHT; y++)
-        for (int x=0;x<MATRIX_WIDTH; x++)
-          updateMatrixDMABuffer( x, y, 0, 0, 0);
+      flushDMAbuffer();
+	  swapBuffer();
+	  flushDMAbuffer();
+	  swapBuffer();
     }
  
 	
@@ -177,6 +190,12 @@ class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
     virtual void drawPixel(int16_t x, int16_t y, uint16_t color); // adafruit implementation
     inline void drawPixelRGB565(int16_t x, int16_t y, uint16_t color);
     inline void drawPixelRGB888(int16_t x, int16_t y, uint8_t r, uint8_t g, uint8_t b);
+	inline void drawPixelRGB24(int16_t x, int16_t y, rgb_24 color);
+	
+	// TODO: Draw a frame! Oooh.
+	void writeRGB24Frame2DMABuffer(rgb_24 *framedata, int16_t frame_width, int16_t frame_height);
+
+	
     
     // Color 444 is a 4 bit scale, so 0 to 15, color 565 takes a 0-255 bit value, so scale up by 255/15 (i.e. 17)!
     uint16_t color444(uint8_t r, uint8_t g, uint8_t b) { return color565(r*17,g*17,b*17); }
@@ -203,6 +222,15 @@ class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
   		Serial.printf("Allocating Refresh Buffer:\r\nDMA Memory Available: %d bytes total, %d bytes largest free block: \r\n", heap_caps_get_free_size(MALLOC_CAP_DMA), heap_caps_get_largest_free_block(MALLOC_CAP_DMA));
       
   	} // end initMatrixDMABuffer()
+	
+	void flushDMAbuffer()
+	{
+		 Serial.printf("Flushing buffer %d", backbuf_id);
+		  // Need to wipe the contents of the matrix buffers or weird things happen.
+		  for (int y=0;y<MATRIX_HEIGHT; y++)
+			for (int x=0;x<MATRIX_WIDTH; x++)
+			  updateMatrixDMABuffer( x, y, 0, 0, 0);
+	}
 
     void configureDMA(); // Get everything setup. Refer to the .c file
 
@@ -218,8 +246,8 @@ class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
   	// Pixel data is organized from LSB to MSB sequentially by row, from row 0 to row matrixHeight/matrixRowsInParallel (two rows of pixels are refreshed in parallel)
   	frameStruct *matrixUpdateFrames;
   
-  	int 	lsbMsbTransitionBit;
-  	int 	refreshRate; 
+  	int  lsbMsbTransitionBit;
+  	int  refreshRate; 
   	
   	int  backbuf_id; // which buffer is the DMA backbuffer, as in, which one is not active so we can write to it
     int  brightness;
@@ -248,13 +276,21 @@ inline void RGB64x32MatrixPanel_I2S_DMA::drawPixelRGB888(int16_t x, int16_t y, u
   updateMatrixDMABuffer( x, y, r, g, b);
 }
 
+inline void RGB64x32MatrixPanel_I2S_DMA::drawPixelRGB24(int16_t x, int16_t y, rgb_24 color) 
+{
+  updateMatrixDMABuffer( x, y, color.red, color.green, color.blue);
+}
+
+
 // Pass 8-bit (each) R,G,B, get back 16-bit packed color
 //https://github.com/squix78/ILI9341Buffer/blob/master/ILI9341_SPI.cpp
 inline uint16_t RGB64x32MatrixPanel_I2S_DMA::color565(uint8_t r, uint8_t g, uint8_t b) {
 
+/*
   Serial.printf("Got r value of %d\n", r);
   Serial.printf("Got g value of %d\n", g);
   Serial.printf("Got b value of %d\n", b);
+  */
   
   return ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3);
 }
