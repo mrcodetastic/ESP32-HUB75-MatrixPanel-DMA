@@ -8,7 +8,9 @@ As a result, this library can theoretically provide ~20 bit colour, at various b
 
 # Installation
 
-You need to install [Adafruit_GFX_Library](https://github.com/adafruit/Adafruit-GFX-Library) from the "Library > Manage Libraries" menu.
+* Dependency: You will need to install [Adafruit_GFX_Library](https://github.com/adafruit/Adafruit-GFX-Library) from the "Library > Manage Libraries" menu.
+* Download and unzip this repository into your Arduino/libraries folder (or better still, use the Arudino 'add library from .zip' option.
+
 
 ## Patching GPIO to avoid eratta of ESP32
 
@@ -23,7 +25,7 @@ Please refer section 3.3. in https://www.espressif.com/sites/default/files/docum
 
 # Wiring ESP32 with the LED Matrix Panel
 
-If you wish to change this, you will need to adjust in the header file.
+If you wish to change this, you will need to adjust in the header file (ESP32-RGB64x32MatrixPanel-I2S-DMA.h).
 
 ```
 +-----------+   Panel - ESP32 pins
