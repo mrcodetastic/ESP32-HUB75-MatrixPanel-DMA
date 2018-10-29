@@ -32,11 +32,18 @@ RGB64x32MatrixPanel_I2S_DMA matrix;
 #include "GifDecoder.h"
 #include "FilenameFunctions.h"
 
+/* GIF files for this particular example need to be put into the 'data' directoy of the
+ * sketch and saved to the ESP32 using the "ESP32 Sketch Data Upload" tool in Arduino.
+ * 
+ * URL: https://github.com/me-no-dev/arduino-esp32fs-plugin
+ * 
+ */
 #define GIF_DIRECTORY "/"
 #define DISPLAY_TIME_SECONDS 5
 
-const uint8_t kMatrixWidth = 64;        // known working: 32, 64, 96, 128
-const uint8_t kMatrixHeight = 32;       // known working: 16, 32, 48, 64
+// Gif sizes should match exactly that of the RGB Matrix display.
+const uint8_t GIFWidth = 64;     
+const uint8_t GIFHeight = 32;   
 
 /* template parameters are maxGifWidth, maxGifHeight, lzwMaxBits
  * 
@@ -44,7 +51,7 @@ const uint8_t kMatrixHeight = 32;       // known working: 16, 32, 48, 64
  * lzwMaxBits can be set to 10 or 11 for small displays, 12 for large displays
  * All 32x32-pixel GIFs tested work with 11, most work with 10
  */
-GifDecoder<kMatrixWidth, kMatrixHeight, 12> decoder;
+GifDecoder<GIFWidth, GIFHeight, 12> decoder;
 
 int num_files;
 
@@ -57,7 +64,7 @@ void updateScreenCallback(void) {
 }
 
 void drawPixelCallback(int16_t x, int16_t y, uint8_t red, uint8_t green, uint8_t blue) {
-    matrix.drawPixel(x, y, matrix.color565(red, green, blue));
+    matrix.drawPixelRGB888(x, y, red, green, blue);
 }
 
 // Setup method runs once, when the sketch starts

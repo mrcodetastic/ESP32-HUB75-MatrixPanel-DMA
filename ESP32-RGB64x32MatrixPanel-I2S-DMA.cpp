@@ -175,8 +175,8 @@ void RGB64x32MatrixPanel_I2S_DMA::updateMatrixDMABuffer(int16_t x_coord, int16_t
     if ( !dma_configuration_success)
       assert("DMA configuration in begin() not performed or completed successfully.");
     
-    // Need to check that the co-ordinate is within range, or it'll break everything big time.
-    if ( x_coord < 0 || y_coord < 0 || x_coord > MATRIX_WIDTH || y_coord > MATRIX_HEIGHT)
+    // Need to check that the co-ordinates are within range, or it'll break everything big time.
+	if ( x_coord < 0 || y_coord < 0 || x_coord >= MATRIX_WIDTH || y_coord >= MATRIX_HEIGHT)
     {
       return;
     }
@@ -220,13 +220,13 @@ void RGB64x32MatrixPanel_I2S_DMA::updateMatrixDMABuffer(int16_t x_coord, int16_t
         // turn off OE after brightness value is reached when displaying MSBs
         // MSBs always output normal brightness
         // LSB (!color_depth_idx) outputs normal brightness as MSB from previous row is being displayed
-        //if((color_depth_idx > lsbMsbTransitionBit || !color_depth_idx) && ((x_coord) >= brightness)) v|=BIT_OE;
+        //if((color_depth_idx > lsbMsbTransitionBit || !color_depth_idx) && ((x_coord) >= brightness)) v|=BIT_OE; // ???
         
         // special case for the bits *after* LSB through (lsbMsbTransitionBit) - OE is output after data is shifted, so need to set OE to fractional brightness
         if(color_depth_idx && color_depth_idx <= lsbMsbTransitionBit) {
           // divide brightness in half for each bit below lsbMsbTransitionBit
           int lsbBrightness = brightness >> (lsbMsbTransitionBit - color_depth_idx + 1);
-        //  if((x_coord) >= lsbBrightness) v|=BIT_OE;
+        //  if((x_coord) >= lsbBrightness) v|=BIT_OE; // ???
         }
         
         // need to turn off OE one clock before latch, otherwise can get ghosting
@@ -315,7 +315,8 @@ void RGB64x32MatrixPanel_I2S_DMA::updateMatrixDMABuffer(int16_t x_coord, int16_t
     
 } // updateDMABuffer
 
-
+/*
+// WORK IN PROGRESS
 void RGB64x32MatrixPanel_I2S_DMA::writeRGB24Frame2DMABuffer(rgb_24 *framedata, int16_t frame_width = MATRIX_WIDTH, int16_t frame_height = MATRIX_HEIGHT)
 {
   if ( !dma_configuration_success)
@@ -436,7 +437,7 @@ void RGB64x32MatrixPanel_I2S_DMA::writeRGB24Frame2DMABuffer(rgb_24 *framedata, i
   
     
 } // updateDMABuffer
-
+*/
 
 
 

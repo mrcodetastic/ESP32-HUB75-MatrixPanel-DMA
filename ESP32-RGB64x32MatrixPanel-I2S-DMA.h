@@ -171,7 +171,7 @@ class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
       allocateDMAbuffers();
 	  
 		backbuf_id = 0;
-		brightness = 16;
+		brightness = 32;
 		
     }
 	
@@ -193,7 +193,7 @@ class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
 	inline void drawPixelRGB24(int16_t x, int16_t y, rgb_24 color);
 	
 	// TODO: Draw a frame! Oooh.
-	void writeRGB24Frame2DMABuffer(rgb_24 *framedata, int16_t frame_width, int16_t frame_height);
+	//void writeRGB24Frame2DMABuffer(rgb_24 *framedata, int16_t frame_width, int16_t frame_height);
 
 	
     
@@ -209,6 +209,8 @@ class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
 
     void setBrightness(int _brightness)
     {
+	  // Change to set the brightness of the display, range of 1 to matrixWidth (i.e. 1 - 64)
+      // Warning: When set to 64, make sure to wear sunglasses when looking directly at panel :-)
       brightness = _brightness;
     }
 
