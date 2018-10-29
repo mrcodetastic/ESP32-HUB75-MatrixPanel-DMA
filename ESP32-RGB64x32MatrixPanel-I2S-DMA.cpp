@@ -220,13 +220,13 @@ void RGB64x32MatrixPanel_I2S_DMA::updateMatrixDMABuffer(int16_t x_coord, int16_t
         // turn off OE after brightness value is reached when displaying MSBs
         // MSBs always output normal brightness
         // LSB (!color_depth_idx) outputs normal brightness as MSB from previous row is being displayed
-        //if((color_depth_idx > lsbMsbTransitionBit || !color_depth_idx) && ((x_coord) >= brightness)) v|=BIT_OE; // ???
+        if((color_depth_idx > lsbMsbTransitionBit || !color_depth_idx) && ((x_coord) >= brightness)) v|=BIT_OE; // For Brightness
         
         // special case for the bits *after* LSB through (lsbMsbTransitionBit) - OE is output after data is shifted, so need to set OE to fractional brightness
         if(color_depth_idx && color_depth_idx <= lsbMsbTransitionBit) {
           // divide brightness in half for each bit below lsbMsbTransitionBit
           int lsbBrightness = brightness >> (lsbMsbTransitionBit - color_depth_idx + 1);
-        //  if((x_coord) >= lsbBrightness) v|=BIT_OE; // ???
+          if((x_coord) >= lsbBrightness) v|=BIT_OE; // For Brightness
         }
         
         // need to turn off OE one clock before latch, otherwise can get ghosting

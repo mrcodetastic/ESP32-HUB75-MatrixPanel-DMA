@@ -171,7 +171,7 @@ class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
       allocateDMAbuffers();
 	  
 		backbuf_id = 0;
-		brightness = 32;
+		brightness = 64; // default to max brightness, wear sunglasses when looking directly at panel.
 		
     }
 	
@@ -210,7 +210,6 @@ class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
     void setBrightness(int _brightness)
     {
 	  // Change to set the brightness of the display, range of 1 to matrixWidth (i.e. 1 - 64)
-      // Warning: When set to 64, make sure to wear sunglasses when looking directly at panel :-)
       brightness = _brightness;
     }
 
