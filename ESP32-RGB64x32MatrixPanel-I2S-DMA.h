@@ -171,7 +171,7 @@ class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
       allocateDMAbuffers();
 	  
 		backbuf_id = 0;
-		brightness = 64; // default to max brightness, wear sunglasses when looking directly at panel.
+		brightness = 32; // default to max brightness, wear sunglasses when looking directly at panel.
 		
     }
 	
@@ -184,10 +184,14 @@ class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
 	  flushDMAbuffer();
 	  swapBuffer();
     }
+	
+	// TODO: Disable/Enable auto buffer flipping (useful for lots of drawPixel usage)...
  
 	
     // Draw pixels
-    virtual void drawPixel(int16_t x, int16_t y, uint16_t color); // adafruit implementation
+    virtual void drawPixel(int16_t x, int16_t y, uint16_t color); 	// overwrite adafruit implementation
+	virtual void fillScreen(uint16_t color); 						// overwrite adafruit implementation
+	       void clearScreen() { fillScreen(0); } 
     inline void drawPixelRGB565(int16_t x, int16_t y, uint16_t color);
     inline void drawPixelRGB888(int16_t x, int16_t y, uint8_t r, uint8_t g, uint8_t b);
 	inline void drawPixelRGB24(int16_t x, int16_t y, rgb_24 color);
@@ -236,9 +240,11 @@ class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
     void configureDMA(); // Get everything setup. Refer to the .c file
 
     
-    // Paint a pixel to the DMA buffer directly
+    // Update a specific pixel in the DMA buffer a colour 
     void updateMatrixDMABuffer(int16_t x, int16_t y, uint8_t red, uint8_t green, uint8_t blue);
-  
+   
+    // Update the entire DMA buffer a certain colour (wipe the screen basically)
+    void updateMatrixDMABuffer(uint8_t red, uint8_t green, uint8_t blue);
   	
   	// Internal variables
   	bool dma_configuration_success;
@@ -257,9 +263,18 @@ class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
 
 /***************************************************************************************/   
 
-inline void RGB64x32MatrixPanel_I2S_DMA::drawPixel(int16_t x, int16_t y, uint16_t color) 
+inline void RGB64x32MatrixPanel_I2S_DMA::drawPixel(int16_t x, int16_t y, uint16_t color) // adafruit virtual void override
 {
   drawPixelRGB565( x, y, color);
+} 
+
+inline void RGB64x32MatrixPanel_I2S_DMA::fillScreen(uint16_t color)  // adafruit virtual void override
+{
+  uint8_t r = ((((color >> 11) & 0x1F) * 527) + 23) >> 6;
+  uint8_t g = ((((color >> 5) & 0x3F) * 259) + 33) >> 6;
+  uint8_t b = (((color & 0x1F) * 527) + 23) >> 6;
+  
+  updateMatrixDMABuffer(r, g, b); // the RGB only (no pixel coordinate) version of 'updateMatrixDMABuffer'
 } 
 
 // For adafruit
