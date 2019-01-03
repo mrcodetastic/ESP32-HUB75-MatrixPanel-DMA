@@ -25,20 +25,51 @@ Please refer section 3.3. in https://www.espressif.com/sites/default/files/docum
 
 # Wiring ESP32 with the LED Matrix Panel
 
-If you wish to change this, you will need to adjust in the header file (ESP32-RGB64x32MatrixPanel-I2S-DMA.h).
+By default the pin mapping is as follows (defaults defined in ESP32-RGB64x32MatrixPanel-I2S-DMA.h).
 
 ```
-+-----------+   Panel - ESP32 pins
-|  R1   G1  |    R1   - IO25      G1   - IO26
-|  B1   GND |    B1   - IO27
-|  R2   G2  |    R2   - IO14      G2   - IO12
-|  B2   GND |    B2   - IO13
-|   A   B   |    A    - IO23      B    - IO22
-|   C   D   |    C    - IO 5      D    - IO17
-| CLK   LAT |    CLK  - IO16      LAT  - IO 4
-|  OE   GND |    OE   - IO15
+ HUB 75 PANEL              ESP 32 PIN
++-----------+   
+|  R1   G1  |    R1  -> IO25      G1  -> IO26
+|  B1   GND |    B1  -> IO27
+|  R2   G2  |    R2  -> IO14      G2  -> IO12
+|  B2   GND |    B2  -> IO13
+|   A   B   |    A   -> IO23      B   -> IO22
+|   C   D   |    C   -> IO 5      D   -> IO17
+| CLK   LAT |    CLK -> IO16      LAT -> IO 4
+|  OE   GND |    OE  -> IO15      GND -> ESP32 GND
 +-----------+
 ```
+![The default pin mapping is best for a LOLIN D32](WiringExample.jpg)
+
+However, if you want to change this, simply provide the wanted pin mapping as part of the display.begin() call. For example, in your sketch have something like the following:
+
+```
+// Change these to whatever suits
+#define R1_PIN  25
+#define G1_PIN  26
+#define B1_PIN  27
+#define R2_PIN  14
+#define G2_PIN  12
+#define B2_PIN  13
+
+#define A_PIN   23
+#define B_PIN   22 
+#define C_PIN   5
+#define D_PIN   17
+#define E_PIN   -1
+          
+#define LAT_PIN 4
+#define OE_PIN  15
+
+#define CLK_PIN 16
+
+
+display.begin(R1_PIN, G1_PIN, B1_PIN, R2_PIN, G2_PIN, B2_PIN, A_PIN, B_PIN, C_PIN, D_PIN, E_PIN, LAT_PIN, OE_PIN, CLK_PIN );  // setup the LED matrix
+```
+
+
+
 
 The panel must be powered by 5V AC adapter with enough current capacity. (Current varies due to how many LED are turned on at the same time. To drive all the LEDs, you need 5V4A adapter.)
 
