@@ -119,7 +119,7 @@
 #define COLOR_CHANNELS_PER_PIXEL 3 
 #define PIXELS_PER_LATCH    ((MATRIX_WIDTH * MATRIX_HEIGHT) / MATRIX_HEIGHT) // = 64
 #define COLOR_DEPTH_BITS    (COLOR_DEPTH/COLOR_CHANNELS_PER_PIXEL)  //  = 8
-#define ROWS_PER_FRAME      (MATRIX_HEIGHT/MATRIX_ROWS_IN_PARALLEL) //  = 2
+#define ROWS_PER_FRAME      (MATRIX_HEIGHT/MATRIX_ROWS_IN_PARALLEL) //  = 16
 
 /***************************************************************************************/
 /* You really don't want to change this stuff                                          */
@@ -137,7 +137,7 @@
 
 // note: sizeof(data) must be multiple of 32 bits, as ESP32 DMA linked list buffer address pointer must be word-aligned.
 struct rowBitStruct {
-    MATRIX_DATA_STORAGE_TYPE data[((MATRIX_WIDTH * MATRIX_HEIGHT) / 32) + CLKS_DURING_LATCH]; 
+    MATRIX_DATA_STORAGE_TYPE data[((MATRIX_WIDTH * MATRIX_HEIGHT) / MATRIX_HEIGHT) + CLKS_DURING_LATCH]; 
     // this evaluates to just MATRIX_DATA_STORAGE_TYPE data[64] really; 
     // and array of 64 uint16_t's
 };
@@ -168,8 +168,7 @@ class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
   public:
     RGB64x32MatrixPanel_I2S_DMA(bool _doubleBuffer = false) // doublebuffer always enabled, option makes no difference
       : Adafruit_GFX(MATRIX_WIDTH, MATRIX_HEIGHT), doubleBuffer(_doubleBuffer) {
-      allocateDMAbuffers();
-	  
+ 	  
 		backbuf_id = 0;
 		brightness = 32; // default to max brightness, wear sunglasses when looking directly at panel.
 		
@@ -178,6 +177,11 @@ class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
 	// Painfully propagate the DMA pin configuration, or use compiler defaults
 	void begin(int dma_r1_pin = R1_PIN_DEFAULT , int dma_g1_pin = G1_PIN_DEFAULT, int dma_b1_pin = B1_PIN_DEFAULT , int dma_r2_pin = R2_PIN_DEFAULT , int dma_g2_pin = G2_PIN_DEFAULT , int dma_b2_pin = B2_PIN_DEFAULT , int dma_a_pin  = A_PIN_DEFAULT  , int dma_b_pin = B_PIN_DEFAULT  , int dma_c_pin = C_PIN_DEFAULT , int dma_d_pin = D_PIN_DEFAULT  , int dma_e_pin = E_PIN_DEFAULT , int dma_lat_pin = LAT_PIN_DEFAULT, int dma_oe_pin = OE_PIN_DEFAULT , int dma_clk_pin = CLK_PIN_DEFAULT)
     {
+		
+	 /* As DMA buffers are dynamically allocated, we must allocated in begin()
+	  * Ref: https://github.com/espressif/arduino-esp32/issues/831
+	  */
+	 allocateDMAbuffers(); 
 		
 // Change 'if' to '1' to enable, 0 to not include this Serial output in compiled program		
 #if 1 		
@@ -245,7 +249,7 @@ class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
     void allocateDMAbuffers() 
   	{
   		matrixUpdateFrames = (frameStruct *)heap_caps_malloc(sizeof(frameStruct) * ESP32_NUM_FRAME_BUFFERS, MALLOC_CAP_DMA);
-  		Serial.printf("Allocating Refresh Buffer:\r\nDMA Memory Available: %d bytes total, %d bytes largest free block: \r\n", heap_caps_get_free_size(MALLOC_CAP_DMA), heap_caps_get_largest_free_block(MALLOC_CAP_DMA));
+  		Serial.printf("Allocating DMA Refresh Buffer...\r\nTotal DMA Memory available: %d bytes total. Largest free block: %d bytes\r\n", heap_caps_get_free_size(MALLOC_CAP_DMA), heap_caps_get_largest_free_block(MALLOC_CAP_DMA));
       
   	} // end initMatrixDMABuffer()
 	
@@ -255,7 +259,10 @@ class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
 		  // Need to wipe the contents of the matrix buffers or weird things happen.
 		  for (int y=0;y<MATRIX_HEIGHT; y++)
 			for (int x=0;x<MATRIX_WIDTH; x++)
+			{
+			  //Serial.printf("\r\nFlushing x, y coord %d, %d", x, y);
 			  updateMatrixDMABuffer( x, y, 0, 0, 0);
+			}
 	}
 
     void configureDMA(int r1_pin, int  g1_pin, int  b1_pin, int  r2_pin, int  g2_pin, int  b2_pin, int  a_pin, int   b_pin, int  c_pin, int  d_pin, int  e_pin, int  lat_pin, int   oe_pin, int clk_pin); // Get everything setup. Refer to the .c file

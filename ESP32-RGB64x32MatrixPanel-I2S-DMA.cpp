@@ -15,7 +15,7 @@ void RGB64x32MatrixPanel_I2S_DMA::configureDMA(int r1_pin, int  g1_pin, int  b1_
         }
 
         int ramrequired = numDescriptorsPerRow * ROWS_PER_FRAME * ESP32_NUM_FRAME_BUFFERS * sizeof(lldesc_t);
-        ramrequired += 100000; // HACK Hard Coded: Keep at least 100k free!
+        ramrequired += 64000; // HACK Hard Coded: Keep at least 64k free!
         int largestblockfree = heap_caps_get_largest_free_block(MALLOC_CAP_DMA);
 
         Serial.printf("lsbMsbTransitionBit of %d requires %d RAM, %d available, leaving %d free: \r\n", lsbMsbTransitionBit, ramrequired, largestblockfree, largestblockfree - ramrequired);
@@ -61,7 +61,7 @@ void RGB64x32MatrixPanel_I2S_DMA::configureDMA(int r1_pin, int  g1_pin, int  b1_
 
         Serial.printf("lsbMsbTransitionBit of %d gives %d Hz refresh: \r\n", lsbMsbTransitionBit, actualRefreshRate);        
 
-        if (actualRefreshRate > 250) // HACK Hard Coded: Minimum frame rate of 160
+        if (actualRefreshRate > 150) // HACK Hard Coded: Minimum frame rate of 150
           break;
                   
 
@@ -252,13 +252,13 @@ void RGB64x32MatrixPanel_I2S_DMA::updateMatrixDMABuffer(int16_t x_coord, int16_t
 
 
 
-        /* When using the Adafruit drawPixel, we only have one pixel co-ordinate and color to draw (duh)
+        /* When using the Adafruit drawPixel, we only have one pixel co-ordinate and colour to draw (duh)
          * so we can't paint a top and bottom half (or whatever row split the panel is) at the same time.
          * Need to be smart and check the DMA buffer to see what the other half thinks (pun intended) 
-         * and persis this when we refresh.
+         * and persist this when we refresh.
          * 
          * The DMA buffer order has also been reversed (fer to the last code in this function)
-         * so we have to check for this and check ther correct possition of the MATRIX_DATA_STORAGE_TYPE
+         * so we have to check for this and check the correct position of the MATRIX_DATA_STORAGE_TYPE
          * data.
          */
         int16_t tmp_x_coord = x_coord;
