@@ -69,23 +69,23 @@
 /***************************************************************************************/
 /* ESP32 Pin Definition. You can change this, but best if you keep it as is...         */
 
-#define R1_PIN  25
-#define G1_PIN  26
-#define B1_PIN  27
-#define R2_PIN  14
-#define G2_PIN  12
-#define B2_PIN  13
+#define R1_PIN_DEFAULT  25
+#define G1_PIN_DEFAULT  26
+#define B1_PIN_DEFAULT  27
+#define R2_PIN_DEFAULT  14
+#define G2_PIN_DEFAULT  12
+#define B2_PIN_DEFAULT  13
 
-#define A_PIN   23
-#define B_PIN   22
-#define C_PIN   5
-#define D_PIN   17
-#define E_PIN   -1
+#define A_PIN_DEFAULT   23
+#define B_PIN_DEFAULT   22
+#define C_PIN_DEFAULT   5
+#define D_PIN_DEFAULT   17
+#define E_PIN_DEFAULT   -1
+          
+#define LAT_PIN_DEFAULT 4
+#define OE_PIN_DEFAULT  15
 
-#define LAT_PIN 4
-#define OE_PIN  15
-
-#define CLK_PIN 16
+#define CLK_PIN_DEFAULT 16
 
 /***************************************************************************************/
 /* HUB75 RGB Panel definitions and DMA Config. It's best you don't change any of this. */
@@ -175,9 +175,30 @@ class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
 		
     }
 	
-    void begin(void)
+	// Painfully propagate the DMA pin configuration, or use compiler defaults
+	void begin(int dma_r1_pin = R1_PIN_DEFAULT , int dma_g1_pin = G1_PIN_DEFAULT, int dma_b1_pin = B1_PIN_DEFAULT , int dma_r2_pin = R2_PIN_DEFAULT , int dma_g2_pin = G2_PIN_DEFAULT , int dma_b2_pin = B2_PIN_DEFAULT , int dma_a_pin  = A_PIN_DEFAULT  , int dma_b_pin = B_PIN_DEFAULT  , int dma_c_pin = C_PIN_DEFAULT , int dma_d_pin = D_PIN_DEFAULT  , int dma_e_pin = E_PIN_DEFAULT , int dma_lat_pin = LAT_PIN_DEFAULT, int dma_oe_pin = OE_PIN_DEFAULT , int dma_clk_pin = CLK_PIN_DEFAULT)
     {
-      configureDMA(); //DMA and I2S configuration and setup
+		
+// Change 'if' to '1' to enable, 0 to not include this Serial output in compiled program		
+#if 1 		
+	  Serial.printf("Using pin %d for the R1_PIN\n", dma_r1_pin);
+	  Serial.printf("Using pin %d for the G1_PIN\n", dma_g1_pin);
+	  Serial.printf("Using pin %d for the B1_PIN\n", dma_b1_pin);
+	  Serial.printf("Using pin %d for the R2_PIN\n", dma_r2_pin);
+	  Serial.printf("Using pin %d for the G2_PIN\n", dma_g2_pin);
+	  Serial.printf("Using pin %d for the B2_PIN\n", dma_b2_pin);
+	  Serial.printf("Using pin %d for the A_PIN\n", dma_a_pin);	  
+	  Serial.printf("Using pin %d for the B_PIN\n", dma_b_pin);	  
+	  Serial.printf("Using pin %d for the C_PIN\n", dma_c_pin);	  
+	  Serial.printf("Using pin %d for the D_PIN\n", dma_d_pin);	  
+	  Serial.printf("Using pin %d for the E_PIN\n", dma_e_pin);	
+  	                 
+	  Serial.printf("Using pin %d for the LAT_PIN\n", dma_lat_pin);	  
+	  Serial.printf("Using pin %d for the OE_PIN\n",  dma_oe_pin);	  
+	  Serial.printf("Using pin %d for the CLK_PIN\n", dma_clk_pin);	
+#endif	  
+		  
+      configureDMA(dma_r1_pin, dma_g1_pin, dma_b1_pin, dma_r2_pin, dma_g2_pin, dma_b2_pin, dma_a_pin,  dma_b_pin, dma_c_pin, dma_d_pin, dma_e_pin, dma_lat_pin,  dma_oe_pin,   dma_clk_pin ); //DMA and I2S configuration and setup
 
       flushDMAbuffer();
 	  swapBuffer();
@@ -237,7 +258,7 @@ class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
 			  updateMatrixDMABuffer( x, y, 0, 0, 0);
 	}
 
-    void configureDMA(); // Get everything setup. Refer to the .c file
+    void configureDMA(int r1_pin, int  g1_pin, int  b1_pin, int  r2_pin, int  g2_pin, int  b2_pin, int  a_pin, int   b_pin, int  c_pin, int  d_pin, int  e_pin, int  lat_pin, int   oe_pin, int clk_pin); // Get everything setup. Refer to the .c file
 
     
     // Update a specific pixel in the DMA buffer a colour 

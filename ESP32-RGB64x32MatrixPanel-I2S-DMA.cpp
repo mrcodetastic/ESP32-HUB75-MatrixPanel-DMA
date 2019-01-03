@@ -3,7 +3,7 @@
 // Credits: Louis Beaudoin <https://github.com/pixelmatix/SmartMatrix/tree/teensylc>
 // and Sprite_TM: 			https://www.esp32.com/viewtopic.php?f=17&t=3188 and https://www.esp32.com/viewtopic.php?f=13&t=3256
 
-void RGB64x32MatrixPanel_I2S_DMA::configureDMA()
+void RGB64x32MatrixPanel_I2S_DMA::configureDMA(int r1_pin, int  g1_pin, int  b1_pin, int  r2_pin, int  g2_pin, int  b2_pin, int  a_pin, int   b_pin, int  c_pin, int  d_pin, int  e_pin, int  lat_pin, int   oe_pin, int clk_pin)
 {
     // calculate the lowest LSBMSB_TRANSITION_BIT value that will fit in memory
     int numDescriptorsPerRow;
@@ -146,9 +146,26 @@ void RGB64x32MatrixPanel_I2S_DMA::configureDMA()
 
     Serial.printf("Performing I2S setup.\n");
 
+	/*
     i2s_parallel_config_t cfg={
-        .gpio_bus={R1_PIN, G1_PIN, B1_PIN, R2_PIN, G2_PIN, B2_PIN, LAT_PIN, OE_PIN, A_PIN, B_PIN, C_PIN, D_PIN, E_PIN, -1, -1, -1},
-        .gpio_clk=CLK_PIN,
+        .gpio_bus={R1_PIN_DEFAULT, G1_PIN_DEFAULT, B1_PIN_DEFAULT, R2_PIN_DEFAULT, G2_PIN_DEFAULT, B2_PIN_DEFAULT, LAT_PIN_DEFAULT, OE_PIN_DEFAULT, A_PIN_DEFAULT, B_PIN_DEFAULT, C_PIN_DEFAULT, D_PIN_DEFAULT, E_PIN_DEFAULT, -1, -1, -1},
+        .gpio_clk=CLK_PIN_DEFAULT,
+        .clkspeed_hz=ESP32_I2S_CLOCK_SPEED, //ESP32_I2S_CLOCK_SPEED,  // formula used is 80000000L/(cfg->clkspeed_hz + 1), must result in >=2.  Acceptable values 26.67MHz, 20MHz, 16MHz, 13.34MHz...
+        .bits=MATRIX_I2S_MODE, //MATRIX_I2S_MODE,
+        .bufa=0,
+        .bufb=0,
+        desccount,
+        desccount,
+        dmadesc_a,
+        dmadesc_b
+    };
+	*/
+	
+	
+	
+    i2s_parallel_config_t cfg={
+        .gpio_bus={r1_pin, g1_pin, b1_pin, r2_pin, g2_pin, b2_pin, lat_pin, oe_pin, a_pin, b_pin, c_pin, d_pin, e_pin, -1, -1, -1},
+        .gpio_clk=clk_pin,
         .clkspeed_hz=ESP32_I2S_CLOCK_SPEED, //ESP32_I2S_CLOCK_SPEED,  // formula used is 80000000L/(cfg->clkspeed_hz + 1), must result in >=2.  Acceptable values 26.67MHz, 20MHz, 16MHz, 13.34MHz...
         .bits=MATRIX_I2S_MODE, //MATRIX_I2S_MODE,
         .bufa=0,
