@@ -327,8 +327,16 @@ void RGB64x32MatrixPanel_I2S_DMA::updateMatrixDMABuffer(int16_t x_coord, int16_t
  
   
   //Show our work!
-  i2s_parallel_flip_to_buffer(&I2S1, backbuf_id);
-  //swapBuffer();
+  if (immediateUpdate)
+	 refreshDMAOutput();
+	 //i2s_parallel_flip_to_buffer(&I2S1, backbuf_id);
+
+  /*
+  
+  // There's no reason you'd want to do this in the draw pixel routine.
+  if (autoBackBufferFlip)
+	swapBuffer();
+   */
   
 } // updateDMABuffer
 
@@ -416,9 +424,23 @@ void RGB64x32MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint8_t red, uint8_t gre
     } // colour depth loop (8)
   } // end row iteration
   
+  
+  if (immediateUpdate)
+	 refreshDMAOutput();
+	 //i2s_parallel_flip_to_buffer(&I2S1, backbuf_id);
+
+  /*
+  
+  // There's no reason you'd want to do this here either to be honest
+  if (autoBackBufferFlip)
+	swapBuffer();
+   */
+   
   //Show our work!
-  i2s_parallel_flip_to_buffer(&I2S1, backbuf_id);
-  swapBuffer();
+  //i2s_parallel_flip_to_buffer(&I2S1, backbuf_id);
+  
+  
+  //swapBuffer();
   
 } // updateDMABuffer
 
