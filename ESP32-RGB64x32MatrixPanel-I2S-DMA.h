@@ -11,6 +11,8 @@
 
 #include "Adafruit_GFX.h"
 
+#define SERIAL_DEBUG_OUTPUT 1
+
 /*
 
     This is example code to driver a p3(2121)64*32 -style RGB LED display. These types of displays do not have memory and need to be refreshed
@@ -88,10 +90,10 @@
 #define B2_PIN_DEFAULT  13
 
 #define A_PIN_DEFAULT   23
-#define B_PIN_DEFAULT   22
+#define B_PIN_DEFAULT   19
 #define C_PIN_DEFAULT   5
 #define D_PIN_DEFAULT   17
-#define E_PIN_DEFAULT   -1
+#define E_PIN_DEFAULT   -1 // Change to a valid pin if using a 64 pixel row panel.
           
 #define LAT_PIN_DEFAULT 4
 #define OE_PIN_DEFAULT  15
@@ -175,11 +177,11 @@ typedef struct rgb_24 {
 class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
   // ------- PUBLIC -------
   public:
-    RGB64x32MatrixPanel_I2S_DMA(bool _immediateUpdate = true, bool _autoBackBufferFlip = false) // Refer to commentary in the private: section
-      : Adafruit_GFX(MATRIX_WIDTH, MATRIX_HEIGHT), immediateUpdate(_immediateUpdate), autoBackBufferFlip(_autoBackBufferFlip)  {
+    RGB64x32MatrixPanel_I2S_DMA(bool _doubleBuffer = false) // Double buffer is disabled by default. Any change will display next active DMA buffer output (very quickly). NOTE: Not Implemented
+      : Adafruit_GFX(MATRIX_WIDTH, MATRIX_HEIGHT), doubleBuffer(_doubleBuffer)  {
       
         backbuf_id = 0;
-        brightness = 32; // default to max brightness, wear sunglasses when looking directly at panel.
+        brightness = 64; // default to max brightness, wear sunglasses when looking directly at panel.
         
     }
     
@@ -190,10 +192,10 @@ class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
      /* As DMA buffers are dynamically allocated, we must allocated in begin()
       * Ref: https://github.com/espressif/arduino-esp32/issues/831
       */
-     allocateDMAbuffers(); 
+      allocateDMAbuffers(); 
         
 // Change 'if' to '1' to enable, 0 to not include this Serial output in compiled program        
-#if 1       
+#if SERIAL_DEBUG_OUTPUT       
       Serial.printf("Using pin %d for the R1_PIN\n", dma_r1_pin);
       Serial.printf("Using pin %d for the G1_PIN\n", dma_g1_pin);
       Serial.printf("Using pin %d for the B1_PIN\n", dma_b1_pin);
@@ -210,13 +212,19 @@ class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
       Serial.printf("Using pin %d for the OE_PIN\n",  dma_oe_pin);    
       Serial.printf("Using pin %d for the CLK_PIN\n", dma_clk_pin); 
 #endif    
-          
+
+
+	  // Flush the DMA buffers prior to configuring DMA - Avoid visual artefacts on boot.
+      flushDMAbuffer();  
+      flipDMABuffer(); // flip to backbuffer 1
+      flushDMAbuffer();
+      flipDMABuffer(); // backbuffer 0
+	  
+      // Setup the ESP32 DMA Engine. Sprite_TM built this stuff.
       configureDMA(dma_r1_pin, dma_g1_pin, dma_b1_pin, dma_r2_pin, dma_g2_pin, dma_b2_pin, dma_a_pin,  dma_b_pin, dma_c_pin, dma_d_pin, dma_e_pin, dma_lat_pin,  dma_oe_pin,   dma_clk_pin ); //DMA and I2S configuration and setup
 
-      flushDMAbuffer();
-      swapBuffer();
-      flushDMAbuffer();
-      swapBuffer();
+	  showDMABuffer(); // show 0
+	  
     }
     
     // TODO: Disable/Enable auto buffer flipping (useful for lots of drawPixel usage)...
@@ -241,15 +249,27 @@ class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
     // Converts RGB888 to RGB565
     uint16_t color565(uint8_t r, uint8_t g, uint8_t b); // This is what is used by Adafruit GFX!
 
-    void swapBuffer() {
-      backbuf_id ^=1;
+    void flipDMABuffer() 
+	{
+		// Step 1. Bring backbuffer to the foreground (i.e. show it)
+		//showDMABuffer();
+		
+		// Step 2. Copy foreground to backbuffer
+		//matrixUpdateFrames[backbuf_id ^ 1] = matrixUpdateFrames[backbuf_id];	  // copy currently being displayed buffer to backbuffer		
+		
+		// Step 3. Change to this new buffer as the backbuffer
+		backbuf_id ^=1; // set this now to the  back_buffer to update (not displayed yet though)
+		
+#if SERIAL_DEBUG_OUTPUT     
+		Serial.printf("Set back buffer to: %d\n", backbuf_id);
+#endif		
     }
 	
-	void refreshDMAOutput()
+	void showDMABuffer()
 	{
 		i2s_parallel_flip_to_buffer(&I2S1, backbuf_id);
 	}
-
+	
     void setBrightness(int _brightness)
     {
       // Change to set the brightness of the display, range of 1 to matrixWidth (i.e. 1 - 64)
@@ -269,7 +289,7 @@ class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
     
     void flushDMAbuffer()
     {
-         Serial.printf("Flushing buffer %d", backbuf_id);
+         Serial.printf("Flushing buffer %d\n", backbuf_id);
           // Need to wipe the contents of the matrix buffers or weird things happen.
           for (int y=0;y<MATRIX_HEIGHT; y++)
             for (int x=0;x<MATRIX_WIDTH; x++)
@@ -287,21 +307,19 @@ class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
    
     // Update the entire DMA buffer (aka. The RGB Panel) a certain colour (wipe the screen basically)
     void updateMatrixDMABuffer(uint8_t red, uint8_t green, uint8_t blue);
-    
-    // Internal variables
-    bool immediateUpdate; 	 // Purpose: as per the  variable name says, the minute we change a pixel, tell the ESP32 to use this for the I2S DMA Output
-	bool autoBackBufferFlip; // (Note: currently not used) Purpose: do we use the other buffer automatically after an update, or change to the 2nd buffer manually? Only use this if you know what you're doing. Otherwise for example, calling drawPixel three times (i.e. you're updating 3 pixels), will update pixel 1 on buffer 0, pixel on buffer 1, and pixel 3 on buffer 0 again - so you'll get weird output. 
+    	
+    // Pixel data is organized from LSB to MSB sequentially by row, from row 0 to row matrixHeight/matrixRowsInParallel (two rows of pixels are refreshed in parallel)
+    frameStruct *matrixUpdateFrames;
 	
 	// Setup
 	bool dma_configuration_success;
-    
-    // Pixel data is organized from LSB to MSB sequentially by row, from row 0 to row matrixHeight/matrixRowsInParallel (two rows of pixels are refreshed in parallel)
-    frameStruct *matrixUpdateFrames;
-  
+    	
+	// Internal variables
+    bool doubleBuffer; 	// Do we use double buffer mode? Your project code will have to manually flip between both.
+    int  backbuf_id; 	// If using double buffer, which one is NOT active (ie. being displayed) to write too?
+	
     int  lsbMsbTransitionBit;
-    int  refreshRate; 
-    
-    int  backbuf_id; // which buffer is the DMA backbuffer, as in, which one is not active so we can write to it
+    int  refreshRate;     
     int  brightness;
 
 }; // end Class header

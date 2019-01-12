@@ -199,7 +199,7 @@ void RGB64x32MatrixPanel_I2S_DMA::updateMatrixDMABuffer(int16_t x_coord, int16_t
       return;
     }
 
-    // What half of the HUB75 panel are we painting too?
+    // What half of the HUB75 panel are we painting to?
     bool paint_top_half = true;
     if ( y_coord > ROWS_PER_FRAME-1) // co-ords start at zero, y_coord = 15 = 16 (rows per frame)
     {
@@ -257,7 +257,7 @@ void RGB64x32MatrixPanel_I2S_DMA::updateMatrixDMABuffer(int16_t x_coord, int16_t
          * Need to be smart and check the DMA buffer to see what the other half thinks (pun intended) 
          * and persist this when we refresh.
          * 
-         * The DMA buffer order has also been reversed (fer to the last code in this function)
+         * The DMA buffer order has also been reversed (refer to the last code in this function)
          * so we have to check for this and check the correct position of the MATRIX_DATA_STORAGE_TYPE
          * data.
          */
@@ -323,20 +323,13 @@ void RGB64x32MatrixPanel_I2S_DMA::updateMatrixDMABuffer(int16_t x_coord, int16_t
         } // end reordering
           
     } // color depth loop (8)
-    
- 
-  
-  //Show our work!
-  if (immediateUpdate)
-	 refreshDMAOutput();
-	 //i2s_parallel_flip_to_buffer(&I2S1, backbuf_id);
 
-  /*
+  //Show our work!
+  //i2s_parallel_flip_to_buffer(&I2S1, backbuf_id);
   
-  // There's no reason you'd want to do this in the draw pixel routine.
-  if (autoBackBufferFlip)
-	swapBuffer();
-   */
+  // If we've linked the DMA output to the same backbuf_id that this function is
+  // currently writing too, then the output will be immediate. Else: flipDMABuffer(), then showDMABuffer()
+  
   
 } // updateDMABuffer
 
@@ -424,23 +417,13 @@ void RGB64x32MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint8_t red, uint8_t gre
     } // colour depth loop (8)
   } // end row iteration
   
-  
-  if (immediateUpdate)
-	 refreshDMAOutput();
-	 //i2s_parallel_flip_to_buffer(&I2S1, backbuf_id);
-
-  /*
-  
-  // There's no reason you'd want to do this here either to be honest
-  if (autoBackBufferFlip)
-	swapBuffer();
-   */
+ 
    
   //Show our work!
   //i2s_parallel_flip_to_buffer(&I2S1, backbuf_id);
   
-  
-  //swapBuffer();
+  // If we've linked the DMA output to the same backbuf_id that this function is
+  // currently writing too, then the output will be immediate. Else: flipDMABuffer(), then showDMABuffer()
   
 } // updateDMABuffer
 
