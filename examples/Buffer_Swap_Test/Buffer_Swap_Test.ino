@@ -39,15 +39,6 @@ void setup()
   Serial.println("Wrote to to Buffer 1");
   display.showDMABuffer();  
   delay(1500);
-  /*
-  delay(500);  
-  display.fillScreen(display.color565(0, 0, 128));  
-  delay(1000);
-  display.flipDMABuffer();   
-  delay(1000);   
-
-  display.flipDMABuffer();
-  */
 
 }
 
@@ -79,32 +70,6 @@ void loop() {
 
   // Show this buffer
   display.showDMABuffer();   
-  delay(1000);
-/*
-  //Parola.flushBufferAll
-
-  // UpdateBackground
-  for (int y=20;y<MATRIX_HEIGHT; y++)
-  for (int x=0;x<MATRIX_WIDTH; x++)
-  {
-    //Serial.printf("\r\nFlushing x, y coord %d, %d", x, y);
-    display.drawPixelRGB888( x, y, 0, 128, 0);
-  }
-
-    
-  for (int y=20;y<MATRIX_HEIGHT; y++)
-  for (int x=0;x<MATRIX_WIDTH; x++)
-  {
-    //Serial.printf("\r\nFlushing x, y coord %d, %d", x, y);
-    display.drawPixelRGB888( x, y, 64, 0, 0);
-  }
- // display.refreshDMAOutput();
-
-   //display.flipDMABuffer();
-     delay(20);
-     display.showDMABuffer();  
-
-*/
-  
+  delay(1000); 
 
 }
