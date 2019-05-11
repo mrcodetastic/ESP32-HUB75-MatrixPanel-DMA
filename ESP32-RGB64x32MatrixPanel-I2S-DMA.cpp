@@ -196,7 +196,9 @@ void RGB64x32MatrixPanel_I2S_DMA::updateMatrixDMABuffer(int16_t x_coord, int16_t
     // Need to check that the co-ordinates are within range, or it'll break everything big time.
 	if ( x_coord < 0 || y_coord < 0 || x_coord >= MATRIX_WIDTH || y_coord >= MATRIX_HEIGHT)
     {
-      return;
+		// Serial.printf("Invalid: x %d, y %d - r %d, g %d, b %d\n", (int)x_coord, (int)y_coord, (int)red, (int)green, (int)blue );
+		// x_coord = y_coord = 1;				
+		return;
     }
 
     // What half of the HUB75 panel are we painting to?
