@@ -34,7 +34,7 @@ By default the pin mapping is as follows (defaults defined in ESP32-RGB64x32Matr
 |  B1   GND |    B1  -> IO27
 |  R2   G2  |    R2  -> IO14      G2  -> IO12
 |  B2   GND |    B2  -> IO13
-|   A   B   |    A   -> IO23      B   -> IO22
+|   A   B   |    A   -> IO23      B   -> IO19
 |   C   D   |    C   -> IO 5      D   -> IO17
 | CLK   LAT |    CLK -> IO16      LAT -> IO 4
 |  OE   GND |    OE  -> IO15      GND -> ESP32 GND
