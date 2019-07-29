@@ -180,9 +180,9 @@ class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
       
         backbuf_id = 0;
         brightness = 60; // If you get ghosting... reduce brightness level. 60 seems to be the limit before ghosting on a 64 pixel wide physical panel for some panels
-        
+		
     }
-    
+
     // Painfully propagate the DMA pin configuration, or use compiler defaults
     void begin(int dma_r1_pin = R1_PIN_DEFAULT , int dma_g1_pin = G1_PIN_DEFAULT, int dma_b1_pin = B1_PIN_DEFAULT , int dma_r2_pin = R2_PIN_DEFAULT , int dma_g2_pin = G2_PIN_DEFAULT , int dma_b2_pin = B2_PIN_DEFAULT , int dma_a_pin  = A_PIN_DEFAULT  , int dma_b_pin = B_PIN_DEFAULT  , int dma_c_pin = C_PIN_DEFAULT , int dma_d_pin = D_PIN_DEFAULT  , int dma_e_pin = E_PIN_DEFAULT , int dma_lat_pin = LAT_PIN_DEFAULT, int dma_oe_pin = OE_PIN_DEFAULT , int dma_clk_pin = CLK_PIN_DEFAULT)
     {
@@ -226,8 +226,7 @@ class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
     }
     
     // TODO: Disable/Enable auto buffer flipping (useful for lots of drawPixel usage)...
- 
-    
+
     // Draw pixels
     virtual void drawPixel(int16_t x, int16_t y, uint16_t color);   // overwrite adafruit implementation
     virtual void fillScreen(uint16_t color);                        // overwrite adafruit implementation
@@ -235,14 +234,14 @@ class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
     void drawPixelRGB565(int16_t x, int16_t y, uint16_t color);
     void drawPixelRGB888(int16_t x, int16_t y, uint8_t r, uint8_t g, uint8_t b);
     void drawPixelRGB24(int16_t x, int16_t y, rgb_24 color);
-    
+	
     // Color 444 is a 4 bit scale, so 0 to 15, color 565 takes a 0-255 bit value, so scale up by 255/15 (i.e. 17)!
     uint16_t color444(uint8_t r, uint8_t g, uint8_t b) { return color565(r*17,g*17,b*17); }
 
     // Converts RGB888 to RGB565
     uint16_t color565(uint8_t r, uint8_t g, uint8_t b); // This is what is used by Adafruit GFX!
 
-    void flipDMABuffer() 
+    inline void flipDMABuffer() 
 	{
 		// Step 1. Bring backbuffer to the foreground (i.e. show it)
 		//showDMABuffer();
@@ -258,18 +257,19 @@ class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
 #endif		
     }
 	
-	void showDMABuffer()
+	inline void showDMABuffer()
 	{
 		i2s_parallel_flip_to_buffer(&I2S1, backbuf_id);
 	}
 	
-    void setBrightness(int _brightness)
-    {
-      // Change to set the brightness of the display, range of 1 to matrixWidth (i.e. 1 - 64)
-      brightness = _brightness;
-    }
-
-
+	
+	inline void setPanelBrightness(int b)
+	{
+	  // Change to set the brightness of the display, range of 1 to matrixWidth (i.e. 1 - 64)
+		brightness = b;
+	}
+			
+	
    // ------- PRIVATE -------
   private:
   
@@ -300,8 +300,9 @@ class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
     int  backbuf_id; 	// If using double buffer, which one is NOT active (ie. being displayed) to write too?
 	
     int  lsbMsbTransitionBit;
-    int  refreshRate;     
-    int  brightness;
+    int  refreshRate;   
+	int  brightness;
+	
 
 }; // end Class header
 
@@ -356,8 +357,6 @@ inline uint16_t RGB64x32MatrixPanel_I2S_DMA::color565(uint8_t r, uint8_t g, uint
   return ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3);
 }
 
-
-  
 
 
 #endif
