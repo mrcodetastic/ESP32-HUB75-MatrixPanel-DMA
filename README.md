@@ -74,7 +74,18 @@ You'll need to adjust the pin configuration in this library of course.
 
 # Notes
 
-Seems to work well and drive a RGB panel with decent colours and little flicker. If you experience ghosting, you will need to reduce the brightness level, not all RGB Matrix Panels are the same - some seem to display ghosting artefacts at lower brightness levels.
+Seems to work well and drive a RGB panel with decent colours and little flicker. If you experience ghosting, you will need to reduce the brightness level, not all RGB Matrix Panels are the same - some seem to display ghosting artefacts at lower brightness levels. In the setup() function do something like
+
+```
+void setup() {
+    Serial.begin(115200);
+    matrix.setPanelBrightness(16); // SETS THE BRIGHTNESS HERE. 60 OR LOWER IDEAL.
+    matrix.begin(R1_PIN, G1_PIN, B1_PIN, R2_PIN, G2_PIN, B2_PIN, A_PIN, B_PIN, C_PIN, D_PIN, E_PIN, LAT_PIN, OE_PIN, CLK_PIN );  // setup the LED matrix
+
+}
+
+
+```
 
 # Credits
 
