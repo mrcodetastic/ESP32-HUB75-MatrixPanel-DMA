@@ -74,7 +74,7 @@ You'll need to adjust the pin configuration in this library of course.
 
 # Notes
 
-Seems to work well and drive a RGB panel with decent colours and little flicker. Even better that it uses Direct Memory Access :-)
+Seems to work well and drive a RGB panel with decent colours and little flicker. If you experience ghosting, you will need to reduce the brightness level, not all RGB Matrix Panels are the same - some seem to display ghosting artefacts at lower brightness levels.
 
 # Credits
 
