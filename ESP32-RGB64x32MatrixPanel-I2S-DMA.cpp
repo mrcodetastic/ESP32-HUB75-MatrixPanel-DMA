@@ -61,7 +61,7 @@ void RGB64x32MatrixPanel_I2S_DMA::configureDMA(int r1_pin, int  g1_pin, int  b1_
 
         Serial.printf("lsbMsbTransitionBit of %d gives %d Hz refresh: \r\n", lsbMsbTransitionBit, actualRefreshRate);        
 
-        if (actualRefreshRate > 100) // HACK Hard Coded: Minimum frame rate of 150
+        if (actualRefreshRate > min_refresh_rate) // HACK Hard Coded: 100
           break;
                   
 

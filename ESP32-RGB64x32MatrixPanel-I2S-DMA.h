@@ -180,7 +180,8 @@ class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
       
         backbuf_id = 0;
         brightness = 60; // If you get ghosting... reduce brightness level. 60 seems to be the limit before ghosting on a 64 pixel wide physical panel for some panels
-		
+        min_refresh_rate = 100; // Probably best to leave as is unless you want to experiment. Framerate has an impact on brightness.
+        
     }
 
     // Painfully propagate the DMA pin configuration, or use compiler defaults
@@ -212,17 +213,17 @@ class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
 #endif    
 
 
-	  // Flush the DMA buffers prior to configuring DMA - Avoid visual artefacts on boot.
+      // Flush the DMA buffers prior to configuring DMA - Avoid visual artefacts on boot.
       clearScreen(); // Must fill the DMA buffer with the initial output bit sequence or the panel will display garbage
       flipDMABuffer(); // flip to backbuffer 1
       clearScreen(); // Must fill the DMA buffer with the initial output bit sequence or the panel will display garbage
       flipDMABuffer(); // backbuffer 0
-	  
+      
       // Setup the ESP32 DMA Engine. Sprite_TM built this stuff.
       configureDMA(dma_r1_pin, dma_g1_pin, dma_b1_pin, dma_r2_pin, dma_g2_pin, dma_b2_pin, dma_a_pin,  dma_b_pin, dma_c_pin, dma_d_pin, dma_e_pin, dma_lat_pin,  dma_oe_pin,   dma_clk_pin ); //DMA and I2S configuration and setup
 
-	  showDMABuffer(); // show 0
-	  
+      showDMABuffer(); // show 0
+      
     }
     
     // TODO: Disable/Enable auto buffer flipping (useful for lots of drawPixel usage)...
@@ -234,7 +235,7 @@ class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
     void drawPixelRGB565(int16_t x, int16_t y, uint16_t color);
     void drawPixelRGB888(int16_t x, int16_t y, uint8_t r, uint8_t g, uint8_t b);
     void drawPixelRGB24(int16_t x, int16_t y, rgb_24 color);
-	
+    
     // Color 444 is a 4 bit scale, so 0 to 15, color 565 takes a 0-255 bit value, so scale up by 255/15 (i.e. 17)!
     uint16_t color444(uint8_t r, uint8_t g, uint8_t b) { return color565(r*17,g*17,b*17); }
 
@@ -242,34 +243,39 @@ class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
     uint16_t color565(uint8_t r, uint8_t g, uint8_t b); // This is what is used by Adafruit GFX!
 
     inline void flipDMABuffer() 
-	{
-		// Step 1. Bring backbuffer to the foreground (i.e. show it)
-		//showDMABuffer();
-		
-		// Step 2. Copy foreground to backbuffer
-		//matrixUpdateFrames[backbuf_id ^ 1] = matrixUpdateFrames[backbuf_id];	  // copy currently being displayed buffer to backbuffer		
-		
-		// Step 3. Change to this new buffer as the backbuffer
-		backbuf_id ^=1; // set this now to the  back_buffer to update (not displayed yet though)
-		
+    {
+        // Step 1. Bring backbuffer to the foreground (i.e. show it)
+        //showDMABuffer();
+        
+        // Step 2. Copy foreground to backbuffer
+        //matrixUpdateFrames[backbuf_id ^ 1] = matrixUpdateFrames[backbuf_id];    // copy currently being displayed buffer to backbuffer        
+        
+        // Step 3. Change to this new buffer as the backbuffer
+        backbuf_id ^=1; // set this now to the  back_buffer to update (not displayed yet though)
+        
 #if SERIAL_DEBUG_OUTPUT     
-		Serial.printf("Set back buffer to: %d\n", backbuf_id);
-#endif		
+        Serial.printf("Set back buffer to: %d\n", backbuf_id);
+#endif      
     }
-	
-	inline void showDMABuffer()
-	{
-		i2s_parallel_flip_to_buffer(&I2S1, backbuf_id);
-	}
-	
-	
-	inline void setPanelBrightness(int b)
-	{
-	  // Change to set the brightness of the display, range of 1 to matrixWidth (i.e. 1 - 64)
-		brightness = b;
-	}
-			
-	
+    
+    inline void showDMABuffer()
+    {
+        i2s_parallel_flip_to_buffer(&I2S1, backbuf_id);
+    }
+    
+    
+    inline void setPanelBrightness(int b)
+    {
+      // Change to set the brightness of the display, range of 1 to matrixWidth (i.e. 1 - 64)
+        brightness = b;
+    }
+    
+    inline void setMinRefreshRate(int rr)
+    {
+        min_refresh_rate = rr;
+    }   
+            
+    
    // ------- PRIVATE -------
   private:
   
@@ -288,21 +294,22 @@ class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
    
     // Update the entire DMA buffer (aka. The RGB Panel) a certain colour (wipe the screen basically)
     void updateMatrixDMABuffer(uint8_t red, uint8_t green, uint8_t blue);
-    	
+        
     // Pixel data is organized from LSB to MSB sequentially by row, from row 0 to row matrixHeight/matrixRowsInParallel (two rows of pixels are refreshed in parallel)
     frameStruct *matrixUpdateFrames;
-	
-	// Setup
-	bool dma_configuration_success;
-    	
-	// Internal variables
-    bool doubleBuffer; 	// Do we use double buffer mode? Your project code will have to manually flip between both.
-    int  backbuf_id; 	// If using double buffer, which one is NOT active (ie. being displayed) to write too?
-	
+    
+    // Setup
+    bool dma_configuration_success;
+        
+    // Internal variables
+    bool doubleBuffer;  // Do we use double buffer mode? Your project code will have to manually flip between both.
+    int  backbuf_id;    // If using double buffer, which one is NOT active (ie. being displayed) to write too?
+    
     int  lsbMsbTransitionBit;
     int  refreshRate;   
-	int  brightness;
-	
+    int  brightness;
+    int  min_refresh_rate;
+    
 
 }; // end Class header
 
