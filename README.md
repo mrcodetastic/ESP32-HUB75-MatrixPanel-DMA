@@ -74,7 +74,7 @@ You'll need to adjust the pin configuration in this library of course.
 
 # Notes
 
-Seems to work well and drive a RGB panel with decent colours and little flicker. If you experience ghosting, you will need to reduce the brightness level, not all RGB Matrix Panels are the same - some seem to display ghosting artefacts at lower brightness levels. In the setup() function do something like
+Seems to work well and drive a RGB panel with decent colours and little flicker. If you experience ghosting, you will need to reduce the brightness level, not all RGB Matrix Panels are the same - some seem to display ghosting artefacts at lower brightness levels. In the setup() function do something like:
 
 ```
 void setup() {
@@ -86,6 +86,8 @@ void setup() {
 
 
 ```
+
+The value to pass 'setPanelBrightness' is the Physical Matrix pixel width or less. i.e. 64 or lower. However values greater than 60 can cause ghosting it seems on some panels.
 
 # Credits
 
