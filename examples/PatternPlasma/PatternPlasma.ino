@@ -23,12 +23,32 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
  
+//#define USE_CUSTOM_PINS // uncomment to use custom pins, then provide below
+
+#define A_PIN  26
+#define B_PIN  4
+#define C_PIN  27
+#define D_PIN  2
+#define E_PIN  21 
+
+#define R1_PIN   5
+#define R2_PIN  19
+#define G1_PIN  17
+#define G2_PIN  16
+#define B1_PIN  18
+#define B2_PIN  25
+
+#define CLK_PIN  14
+#define LAT_PIN  15
+#define OE_PIN  13
+ 
+ 
 #include <ESP32-RGB64x32MatrixPanel-I2S-DMA.h>
 RGB64x32MatrixPanel_I2S_DMA dma_display;
 
 #include <FastLED.h>
 
-int time = 0;
+int time_counter = 0;
 int cycles = 0;
 
 
@@ -48,7 +68,11 @@ void setup() {
   Serial.println(" HELLO !");
   Serial.println("*****************************************************");
 
+#ifdef USE_CUSTOM_PINS
+  dma_display.begin(R1_PIN, G1_PIN, B1_PIN, R2_PIN, G2_PIN, B2_PIN, A_PIN, B_PIN, C_PIN, D_PIN, E_PIN, LAT_PIN, OE_PIN, CLK_PIN );  // setup the LED matrix
+#else
   dma_display.begin();
+#endif
  
   // fill the screen with 'black'
   dma_display.fillScreen(dma_display.color444(0, 0, 0));
@@ -63,10 +87,10 @@ void loop() {
    for (int x = 0; x <  dma_display.width(); x++) {
             for (int y = 0; y <  dma_display.height(); y++) {
                 int16_t v = 0;
-                uint8_t wibble = sin8(time);
-                v += sin16(x * wibble * 3 + time);
-                v += cos16(y * (128 - wibble)  + time);
-                v += sin16(y * x * cos8(-time) / 8);
+                uint8_t wibble = sin8(time_counter);
+                v += sin16(x * wibble * 3 + time_counter);
+                v += cos16(y * (128 - wibble)  + time_counter);
+                v += sin16(y * x * cos8(-time_counter) / 8);
 
 				currentColor = ColorFromPalette(currentPalette, (v >> 8) + 127); //, brightness, currentBlendType);
 				dma_display.drawPixelRGB888(x, y, currentColor.r, currentColor.g, currentColor.b);
@@ -74,11 +98,11 @@ void loop() {
             }
         }
 
-        time += 1;
+        time_counter += 1;
         cycles++;
 
         if (cycles >= 2048) {
-            time = 0;
+            time_counter = 0;
             cycles = 0;
         }
         
