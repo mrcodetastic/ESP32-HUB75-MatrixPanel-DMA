@@ -87,7 +87,7 @@ void setup() {
 
 ```
 
-The value to pass 'setPanelBrightness' is the Physical Matrix pixel width or less. i.e. 64 or lower. However values greater than 60 can cause ghosting it seems on some panels.
+The value to pass 'setPanelBrightness' is the RGB Matrix's pixel width or less. i.e. 64 or lower. However values greater than 60 can cause ghosting it seems on some panels. YMMV.
 
 # Credits
 
