@@ -131,14 +131,12 @@
 #define ROWS_PER_FRAME      (MATRIX_HEIGHT/MATRIX_ROWS_IN_PARALLEL) //  = 16
 
 /***************************************************************************************/
-/* You really don't want to change this stuff                                          */
-
-#define CLKS_DURING_LATCH   0  // ADDX is output directly using GPIO
+/* Keep this as is. Do not change.                                                     */
+#define CLKS_DURING_LATCH 0
 #define MATRIX_I2S_MODE I2S_PARALLEL_BITS_16
 #define MATRIX_DATA_STORAGE_TYPE uint16_t
 
 #define ESP32_NUM_FRAME_BUFFERS           2 
-#define ESP32_OE_OFF_CLKS_AFTER_LATCH     1
 #define ESP32_I2S_CLOCK_SPEED (20000000UL)
 #define COLOR_DEPTH 24     
 
@@ -181,7 +179,7 @@ class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
       : Adafruit_GFX(MATRIX_WIDTH, MATRIX_HEIGHT), doubleBuffer(_doubleBuffer)  {
       
         backbuf_id = 0;
-        brightness = 64; // default to max brightness, wear sunglasses when looking directly at panel.
+        brightness = 60; // If you get ghosting... reduce brightness level. 60 seems to be the limit before ghosting on a 64 pixel wide physical panel for some panels
         
     }
     
@@ -215,9 +213,9 @@ class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
 
 
 	  // Flush the DMA buffers prior to configuring DMA - Avoid visual artefacts on boot.
-      flushDMAbuffer();  
+      clearScreen(); // Must fill the DMA buffer with the initial output bit sequence or the panel will display garbage
       flipDMABuffer(); // flip to backbuffer 1
-      flushDMAbuffer();
+      clearScreen(); // Must fill the DMA buffer with the initial output bit sequence or the panel will display garbage
       flipDMABuffer(); // backbuffer 0
 	  
       // Setup the ESP32 DMA Engine. Sprite_TM built this stuff.
@@ -237,11 +235,6 @@ class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
     void drawPixelRGB565(int16_t x, int16_t y, uint16_t color);
     void drawPixelRGB888(int16_t x, int16_t y, uint8_t r, uint8_t g, uint8_t b);
     void drawPixelRGB24(int16_t x, int16_t y, rgb_24 color);
-    
-    // TODO: Draw a frame! Oooh.
-    //void writeRGB24Frame2DMABuffer(rgb_24 *framedata, int16_t frame_width, int16_t frame_height);
-
-    
     
     // Color 444 is a 4 bit scale, so 0 to 15, color 565 takes a 0-255 bit value, so scale up by 255/15 (i.e. 17)!
     uint16_t color444(uint8_t r, uint8_t g, uint8_t b) { return color565(r*17,g*17,b*17); }
@@ -287,18 +280,6 @@ class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
       
     } // end initMatrixDMABuffer()
     
-    void flushDMAbuffer()
-    {
-         Serial.printf("Flushing buffer %d\n", backbuf_id);
-          // Need to wipe the contents of the matrix buffers or weird things happen.
-          for (int y=0;y<MATRIX_HEIGHT; y++)
-            for (int x=0;x<MATRIX_WIDTH; x++)
-            {
-              //Serial.printf("\r\nFlushing x, y coord %d, %d", x, y);
-              updateMatrixDMABuffer( x, y, 0, 0, 0);
-            }
-    }
-
     void configureDMA(int r1_pin, int  g1_pin, int  b1_pin, int  r2_pin, int  g2_pin, int  b2_pin, int  a_pin, int   b_pin, int  c_pin, int  d_pin, int  e_pin, int  lat_pin, int   oe_pin, int clk_pin); // Get everything setup. Refer to the .c file
 
     

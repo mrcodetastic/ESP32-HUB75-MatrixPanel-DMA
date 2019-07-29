@@ -146,22 +146,6 @@ void RGB64x32MatrixPanel_I2S_DMA::configureDMA(int r1_pin, int  g1_pin, int  b1_
 
     Serial.printf("Performing I2S setup.\n");
 
-	/*
-    i2s_parallel_config_t cfg={
-        .gpio_bus={R1_PIN_DEFAULT, G1_PIN_DEFAULT, B1_PIN_DEFAULT, R2_PIN_DEFAULT, G2_PIN_DEFAULT, B2_PIN_DEFAULT, LAT_PIN_DEFAULT, OE_PIN_DEFAULT, A_PIN_DEFAULT, B_PIN_DEFAULT, C_PIN_DEFAULT, D_PIN_DEFAULT, E_PIN_DEFAULT, -1, -1, -1},
-        .gpio_clk=CLK_PIN_DEFAULT,
-        .clkspeed_hz=ESP32_I2S_CLOCK_SPEED, //ESP32_I2S_CLOCK_SPEED,  // formula used is 80000000L/(cfg->clkspeed_hz + 1), must result in >=2.  Acceptable values 26.67MHz, 20MHz, 16MHz, 13.34MHz...
-        .bits=MATRIX_I2S_MODE, //MATRIX_I2S_MODE,
-        .bufa=0,
-        .bufb=0,
-        desccount,
-        desccount,
-        dmadesc_a,
-        dmadesc_b
-    };
-	*/
-	
-	
 	
     i2s_parallel_config_t cfg={
         .gpio_bus={r1_pin, g1_pin, b1_pin, r2_pin, g2_pin, b2_pin, lat_pin, oe_pin, a_pin, b_pin, c_pin, d_pin, e_pin, -1, -1, -1},
@@ -230,12 +214,30 @@ void RGB64x32MatrixPanel_I2S_DMA::updateMatrixDMABuffer(int16_t x_coord, int16_t
         if (gpioRowAddress & 0x04) v|=BIT_C; // 4
         if (gpioRowAddress & 0x08) v|=BIT_D; // 8
         if (gpioRowAddress & 0x10) v|=BIT_E; // 16
-        
+  
+		/* ORIG
+
         // need to disable OE after latch to hide row transition
         if((x_coord) == 0) v|=BIT_OE;
         
         // drive latch while shifting out last bit of RGB data
         if((x_coord) == PIXELS_PER_LATCH-1) v|=BIT_LAT;
+       
+        // need to turn off OE one clock before latch, otherwise can get ghosting
+        if((x_coord)==PIXELS_PER_LATCH-1) v|=BIT_OE;
+
+		*/
+		
+        // need to disable OE after latch to hide row transition
+        if((x_coord) == 0 ) v|=BIT_OE;
+        
+        // drive latch while shifting out last bit of RGB data
+        if((x_coord) == PIXELS_PER_LATCH-1) v|=BIT_LAT;
+		
+        // need to turn off OE one clock before latch, otherwise can get ghosting
+        if((x_coord)==PIXELS_PER_LATCH-2) v|=BIT_OE;		
+		
+		
         
         // turn off OE after brightness value is reached when displaying MSBs
         // MSBs always output normal brightness
@@ -249,8 +251,6 @@ void RGB64x32MatrixPanel_I2S_DMA::updateMatrixDMABuffer(int16_t x_coord, int16_t
           if((x_coord) >= lsbBrightness) v|=BIT_OE; // For Brightness
         }
         
-        // need to turn off OE one clock before latch, otherwise can get ghosting
-        if((x_coord)==PIXELS_PER_LATCH-1) v|=BIT_OE;
 
 
 
@@ -314,8 +314,11 @@ void RGB64x32MatrixPanel_I2S_DMA::updateMatrixDMABuffer(int16_t x_coord, int16_t
               v|=BIT_B1; 
                
         } // paint
-        
-        
+		
+		//Serial.printf("x: %d, y: %d ", x_coord, y_coord );
+		//Serial.println(v, BIN);
+
+
         // 16 bit parallel mode
         //Save the calculated value to the bitplane memory in reverse order to account for I2S Tx FIFO mode1 ordering
         if(x_coord%2){
@@ -367,11 +370,29 @@ void RGB64x32MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint8_t red, uint8_t gre
 			if (gpioRowAddress & 0x08) v|=BIT_D; // 8
 			if (gpioRowAddress & 0x10) v|=BIT_E; // 16
 			
+				
+			/* ORIG
+
 			// need to disable OE after latch to hide row transition
 			if((x_coord) == 0) v|=BIT_OE;
 			
 			// drive latch while shifting out last bit of RGB data
 			if((x_coord) == PIXELS_PER_LATCH-1) v|=BIT_LAT;
+		   
+			// need to turn off OE one clock before latch, otherwise can get ghosting
+			if((x_coord)==PIXELS_PER_LATCH-1) v|=BIT_OE;
+
+			*/
+			
+			// need to disable OE after latch to hide row transition
+			if((x_coord) == 0 ) v|=BIT_OE;
+			
+			// drive latch while shifting out last bit of RGB data
+			if((x_coord) == PIXELS_PER_LATCH-1) v|=BIT_LAT;
+			
+			// need to turn off OE one clock before latch, otherwise can get ghosting
+			if((x_coord)==PIXELS_PER_LATCH-2) v|=BIT_OE;	
+			
 			
 			// turn off OE after brightness value is reached when displaying MSBs
 			// MSBs always output normal brightness
@@ -385,9 +406,6 @@ void RGB64x32MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint8_t red, uint8_t gre
 			  if((x_coord) >= lsbBrightness) v|=BIT_OE; // For Brightness
 			}
 			
-			// need to turn off OE one clock before latch, otherwise can get ghosting
-			if((x_coord)==PIXELS_PER_LATCH-1) v|=BIT_OE;
-
 			
 			// Top half colours
 			if (green & mask)
@@ -428,276 +446,3 @@ void RGB64x32MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint8_t red, uint8_t gre
   // currently writing too, then the output will be immediate. Else: flipDMABuffer(), then showDMABuffer()
   
 } // updateDMABuffer
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*
-// WORK IN PROGRESS
-void RGB64x32MatrixPanel_I2S_DMA::writeRGB24Frame2DMABuffer(rgb_24 *framedata, int16_t frame_width = MATRIX_WIDTH, int16_t frame_height = MATRIX_HEIGHT)
-{
-  if ( !dma_configuration_success)
-    assert("DMA configuration in begin() not performed or completed successfully.");
-  
-  
-  for (unsigned int y = 0; y < ROWS_PER_FRAME; y++) // half height - 16 iterations
-  {
-    unsigned char  currentRow = y;
-          
-    for(int j = 0; j < COLOR_DEPTH_BITS; j++)  // color depth - 8 iterations
-    {
-      uint16_t mask = (1 << (j)); // 24 bit color
-
-      //MATRIX_DATA_STORAGE_TYPE *p=matrixUpdateFrames[backbuf_id].rowdata[y].rowbits[pl].data; //matrixUpdateFrames
-      rowBitStruct *p=&matrixUpdateFrames[backbuf_id].rowdata[currentRow].rowbits[j]; //matrixUpdateFrames location to write to
-      
-      int i=0;
-      while(i < PIXELS_PER_LATCH) // row pixels (64) iterations
-      {
-        for(int k=0; k < MATRIX_WIDTH; k++) // row pixel width 64 iterations
-        { 
-          int v=0; // the output bitstream
-  
- //#if (CLKS_DURING_LATCH == 0)
-          // if there is no latch to hold address, output ADDX lines directly to GPIO and latch data at end of cycle
-          int gpioRowAddress = currentRow;
-          
-          // normally output current rows ADDX, special case for LSB, output previous row's ADDX (as previous row is being displayed for one latch cycle)
-          if(j == 0)
-            gpioRowAddress = currentRow-1;
-  
-          if (gpioRowAddress & 0x01) v|=BIT_A; // 1
-          if (gpioRowAddress & 0x02) v|=BIT_B; // 2
-          if (gpioRowAddress & 0x04) v|=BIT_C; // 4
-          if (gpioRowAddress & 0x08) v|=BIT_D; // 8
-          if (gpioRowAddress & 0x10) v|=BIT_E; // 16
-  
-          // need to disable OE after latch to hide row transition
-          if((i+k) == 0) v|=BIT_OE;
-  
-          // drive latch while shifting out last bit of RGB data
-          if((i+k) == PIXELS_PER_LATCH-1) v|=BIT_LAT;
-//#endif
-    
-          // turn off OE after brightness value is reached when displaying MSBs
-          // MSBs always output normal brightness
-          // LSB (!j) outputs normal brightness as MSB from previous row is being displayed
-          if((j > lsbMsbTransitionBit || !j) && ((i+k) >= brightness)) v|=BIT_OE;
-  
-          // special case for the bits *after* LSB through (lsbMsbTransitionBit) - OE is output after data is shifted, so need to set OE to fractional brightness
-          if(j && j <= lsbMsbTransitionBit) {
-            // divide brightness in half for each bit below lsbMsbTransitionBit
-            int lsbBrightness = brightness >> (lsbMsbTransitionBit - j + 1);
-            if((i+k) >= lsbBrightness) v|=BIT_OE;
-          }
-  
-          // need to turn off OE one clock before latch, otherwise can get ghosting
-          if((i+k)==PIXELS_PER_LATCH-1) v|=BIT_OE;
-
-
-//#if 0
-//
-//        int c1=getpixel(pix, k, y);
-//        int c2=getpixel(pix, k, y+(MATRIX_HEIGHT/2));
-//                  
-//        if (c1 & (mask<<16)) v|=BIT_R1;
-//        if (c1 & (mask<<8)) v|=BIT_G1;
-//        if (c1 & (mask<<0)) v|=BIT_B1;
-//        if (c2 & (mask<<16)) v|=BIT_R2;
-//        if ( c2 & (mask<<8)) v|=BIT_G2;
-//        if (c2 & (mask<<0)) v|=BIT_B2;
-//                   
-//#else                           
-
-        struct rgb_24 c1( 255,0,0);
-        struct rgb_24 c2 = { 255,255,255 };
-//                    struct rgb24 c2 = { 0,0,255 };
-        
- 
-          if (c1.red & mask)
-            v|=BIT_R1;
-          if (c1.green & mask)
-            v|=BIT_G1;
-          if (c1.blue & mask)
-            v|=BIT_B1;
-          if (c2.red & mask)
-            v|=BIT_R2;
-          if (c2.green & mask) 
-            v|=BIT_G2;
-          if (c2.blue & mask)
-            v|=BIT_B2;
-
-//#endif               
-
-  
-        // 16 bit parallel mode
-        //Save the calculated value to the bitplane memory in reverse order to account for I2S Tx FIFO mode1 ordering
-        if(k%2){
-          p->data[(i+k)-1] = v;
-        } else {
-          p->data[(i+k)+1] = v;
-        } // end reordering
-
-        } // end for MATRIX_WIDTH
-  
-        i += MATRIX_WIDTH;
-        
-      } // end pixels per latch loop (64)
-    } // color depth loop (8)
-
-  } // end half matrix length
- 
-  
-  //Show our work!
-  i2s_parallel_flip_to_buffer(&I2S1, backbuf_id);
-  swapBuffer();
-  
-    
-} // updateDMABuffer
-*/
-
-
-
-
-
-/*
-void RGB64x32MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint16_t x, uint16_t y, uint8_t red, uint8_t green, uint8_t blue)
-{
-  if ( !dma_configuration_success)
-    assert("DMA configuration in begin() not performed or completed successfully.");
-  
-  // Pixel index sanity checking.
-  int16_t idx = x + y * MATRIX_WIDTH;
-    if (idx < 0 || idx >= MATRIX_HEIGHT * MATRIX_WIDTH)
-  {
-    //Serial.printf("Provided coordinates out of range");
-    return;
-  }
-  
-  
-  for (unsigned int y=0; y<MATRIX_HEIGHT/MATRIX_ROWS_IN_PARALLEL; y++) // half height - 16 iterations
-  {
-    unsigned char  currentRow = y;
-          
-    for(int j=0; j<COLOR_DEPTH_BITS; j++)  // color depth - 8 iterations
-    {
-      uint16_t mask = (1 << (j)); // 24 bit color
-
-      //MATRIX_DATA_STORAGE_TYPE *p=matrixUpdateFrames[backbuf_id].rowdata[y].rowbits[pl].data; //matrixUpdateFrames
-      rowBitStruct *p=&matrixUpdateFrames[backbuf_id].rowdata[currentRow].rowbits[j]; //matrixUpdateFrames location to write to
-      
-      int i=0;
-      while(i < PIXELS_PER_LATCH) // row pixels (64) iterations
-      {
-        for(int k=0; k < MATRIX_WIDTH; k++) // row pixel width 64 iterations
-        { 
-          int v=0; // the output bitstream
-  
- //#if (CLKS_DURING_LATCH == 0)
-          // if there is no latch to hold address, output ADDX lines directly to GPIO and latch data at end of cycle
-          int gpioRowAddress = currentRow;
-          
-          // normally output current rows ADDX, special case for LSB, output previous row's ADDX (as previous row is being displayed for one latch cycle)
-          if(j == 0)
-            gpioRowAddress = currentRow-1;
-  
-          if (gpioRowAddress & 0x01) v|=BIT_A; // 1
-          if (gpioRowAddress & 0x02) v|=BIT_B; // 2
-          if (gpioRowAddress & 0x04) v|=BIT_C; // 4
-          if (gpioRowAddress & 0x08) v|=BIT_D; // 8
-          if (gpioRowAddress & 0x10) v|=BIT_E; // 16
-  
-          // need to disable OE after latch to hide row transition
-          if((i+k) == 0) v|=BIT_OE;
-  
-          // drive latch while shifting out last bit of RGB data
-          if((i+k) == PIXELS_PER_LATCH-1) v|=BIT_LAT;
-//#endif
-    
-          // turn off OE after brightness value is reached when displaying MSBs
-          // MSBs always output normal brightness
-          // LSB (!j) outputs normal brightness as MSB from previous row is being displayed
-          if((j > lsbMsbTransitionBit || !j) && ((i+k) >= brightness)) v|=BIT_OE;
-  
-          // special case for the bits *after* LSB through (lsbMsbTransitionBit) - OE is output after data is shifted, so need to set OE to fractional brightness
-          if(j && j <= lsbMsbTransitionBit) {
-            // divide brightness in half for each bit below lsbMsbTransitionBit
-            int lsbBrightness = brightness >> (lsbMsbTransitionBit - j + 1);
-            if((i+k) >= lsbBrightness) v|=BIT_OE;
-          }
-  
-          // need to turn off OE one clock before latch, otherwise can get ghosting
-          if((i+k)==PIXELS_PER_LATCH-1) v|=BIT_OE;
-
-
-//#if 0
-//
-//        int c1=getpixel(pix, k, y);
-//        int c2=getpixel(pix, k, y+(MATRIX_HEIGHT/2));
-//                  
-//        if (c1 & (mask<<16)) v|=BIT_R1;
-//        if (c1 & (mask<<8)) v|=BIT_G1;
-//        if (c1 & (mask<<0)) v|=BIT_B1;
-//        if (c2 & (mask<<16)) v|=BIT_R2;
-//        if ( c2 & (mask<<8)) v|=BIT_G2;
-//        if (c2 & (mask<<0)) v|=BIT_B2;
-//                   
-//#else                           
-
-        struct rgb24 c1( 255,0,0);
-        struct rgb24 c2 = { 255,255,255 };
-//                    struct rgb24 c2 = { 0,0,255 };
-        
- 
-          if (c1.red & mask)
-            v|=BIT_R1;
-          if (c1.green & mask)
-            v|=BIT_G1;
-          if (c1.blue & mask)
-            v|=BIT_B1;
-          if (c2.red & mask)
-            v|=BIT_R2;
-          if (c2.green & mask) 
-            v|=BIT_G2;
-          if (c2.blue & mask)
-            v|=BIT_B2;
-
-//#endif               
-
-  
-        // 16 bit parallel mode
-        //Save the calculated value to the bitplane memory in reverse order to account for I2S Tx FIFO mode1 ordering
-        if(k%2){
-          p->data[(i+k)-1] = v;
-        } else {
-          p->data[(i+k)+1] = v;
-        } // end reordering
-
-        } // end for MATRIX_WIDTH
-  
-        i += MATRIX_WIDTH;
-        
-      } // end pixels per latch loop (64)
-    } // color depth loop (8)
-
-  } // end half matrix length
- 
-  
-  //Show our work!
-  i2s_parallel_flip_to_buffer(&I2S1, backbuf_id);
-  swapBuffer();
-  
-    
-} // updateDMABuffer
-*/
