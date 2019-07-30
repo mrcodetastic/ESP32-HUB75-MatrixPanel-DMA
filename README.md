@@ -72,9 +72,14 @@ Refer to the excellent PxMatrix based library for how to wire one of these panel
 
 You'll need to adjust the pin configuration in this library of course.
 
-# Notes
+## Can I chain displays?
+This library has only been tested with a 64 pixel (wide) and 32 (high) RGB panel.  Theoretically, if you want to chain two of these horizontally to make a 128x32 panel you can do so with the cable and then set the MATRIX_WIDTH to '128'.
 
-Seems to work well and drive a RGB panel with decent colours and little flicker. If you experience ghosting, you will need to reduce the brightness level, not all RGB Matrix Panels are the same - some seem to display ghosting artefacts at lower brightness levels. In the setup() function do something like:
+All of this is memory permitting of course (dependant on your sketch etc.) ... An ESP32 only has about 100kB of usable DMA memory, so you will have trouble dispalying any more than 32 (height) x 128 (width) pixels.
+
+# Ghosting
+
+If you experience ghosting, you will need to reduce the brightness level, not all RGB Matrix Panels are the same - some seem to display ghosting artefacts at lower brightness levels. In the setup() function do something like:
 
 ```
 void setup() {
@@ -89,7 +94,7 @@ void setup() {
 
 The value to pass 'setPanelBrightness' is the RGB Matrix's pixel width or less. i.e. 64 or lower. However values greater than 60 can cause ghosting it seems on some panels. YMMV.
 
-# Credits
+## Credits
 
 * 'SmartMatrix' project code: https://github.com/pixelmatix/SmartMatrix/tree/teensylc
 
