@@ -179,8 +179,8 @@ class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
       : Adafruit_GFX(MATRIX_WIDTH, MATRIX_HEIGHT), doubleBuffer(_doubleBuffer)  {
       
         backbuf_id = 0;
-        brightness = 60; // If you get ghosting... reduce brightness level. 60 seems to be the limit before ghosting on a 64 pixel wide physical panel for some panels
-        min_refresh_rate = 100; // Probably best to leave as is unless you want to experiment. Framerate has an impact on brightness.
+        brightness = 16; // If you get ghosting... reduce brightness level. 60 seems to be the limit before ghosting on a 64 pixel wide physical panel for some panels
+        min_refresh_rate = 250; // Probably best to leave as is unless you want to experiment. Framerate has an impact on brightness and also power draw - voltage ripple.
         
     }
 
@@ -244,14 +244,8 @@ class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
 
     inline void flipDMABuffer() 
     {
-        // Step 1. Bring backbuffer to the foreground (i.e. show it)
-        //showDMABuffer();
-        
-        // Step 2. Copy foreground to backbuffer
-        //matrixUpdateFrames[backbuf_id ^ 1] = matrixUpdateFrames[backbuf_id];    // copy currently being displayed buffer to backbuffer        
-        
-        // Step 3. Change to this new buffer as the backbuffer
-        backbuf_id ^=1; // set this now to the  back_buffer to update (not displayed yet though)
+        // Flip to other buffer as the backbuffer. i.e. Graphic changes happen to this buffer (but aren't displayed until showDMABuffer())
+        backbuf_id ^=1; 
         
 #if SERIAL_DEBUG_OUTPUT     
         Serial.printf("Set back buffer to: %d\n", backbuf_id);
