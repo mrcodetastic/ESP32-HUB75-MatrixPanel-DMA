@@ -241,6 +241,9 @@ class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
 
     // Converts RGB888 to RGB565
     uint16_t color565(uint8_t r, uint8_t g, uint8_t b); // This is what is used by Adafruit GFX!
+	
+    // Converts RGB333 to RGB565
+    uint16_t Color333(uint8_t r, uint8_t g, uint8_t b); // This is what is used by Adafruit GFX! Not sure why they have a capital 'C' for this particular function.
 
     inline void flipDMABuffer() 
     {
@@ -359,5 +362,11 @@ inline uint16_t RGB64x32MatrixPanel_I2S_DMA::color565(uint8_t r, uint8_t g, uint
 }
 
 
+// Promote 3/3/3 RGB to Adafruit_GFX 5/6/5 RRRrrGGGgggBBBbb
+inline uint16_t RGB64x32MatrixPanel_I2S_DMA::Color333(uint8_t r, uint8_t g, uint8_t b) { 
+
+	return ((r & 0x7) << 13) | ((r & 0x6) << 10) | ((g & 0x7) << 8) | ((g & 0x7) << 5) | ((b & 0x7) << 2) | ((b & 0x6) >> 1);
+	
+}
 
 #endif
