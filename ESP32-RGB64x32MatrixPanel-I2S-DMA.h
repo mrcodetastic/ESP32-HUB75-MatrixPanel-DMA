@@ -11,8 +11,6 @@
 
 #include "Adafruit_GFX.h"
 
-#define SERIAL_DEBUG_OUTPUT 0
-
 /*
 
     This is example code to driver a p3(2121)64*32 -style RGB LED display. These types of displays do not have memory and need to be refreshed
@@ -63,19 +61,24 @@
 */
 
 /***************************************************************************************/
+/* Serial Debugging Output on or off                                                   */
+
+#define SERIAL_DEBUG_OUTPUT 1
+
+/***************************************************************************************/
 /* HUB75 RGB pixel WIDTH and HEIGHT. 
  *
  * This library has only been tested with a 64 pixel (wide) and 32 (high) RGB panel. 
  * Theoretically, if you want to chain two of these horizontally to make a 128x32 panel
  * you can do so with the cable and then set the MATRIX_WIDTH to '128'.
  *
- * Also, if you use a 64x64 panel, then set the MATRIX_HEIGHT to '64', and it might work.
+ * Also, if you use a 64x64 panel, then set the MATRIX_HEIGHT to '64'; it will work!
  *
  * All of this is memory permitting of course (dependant on your sketch etc.) ...
  *
  */
 
-#define MATRIX_HEIGHT               64
+#define MATRIX_HEIGHT               32 //64
 #define MATRIX_WIDTH                64
 #define MATRIX_ROWS_IN_PARALLEL     2
 
@@ -319,8 +322,25 @@ inline void RGB64x32MatrixPanel_I2S_DMA::drawPixel(int16_t x, int16_t y, uint16_
   drawPixelRGB565( x, y, color);
 } 
 
-//Loz Added
+
+
 inline void RGB64x32MatrixPanel_I2S_DMA::drawIcon (int *ico, int16_t x, int16_t y, int16_t cols, int16_t rows) {
+/*  drawIcon draws a C style bitmap.  
+//  Example 10x5px bitmap of a yellow sun 
+//
+  int half_sun [50] = {
+      0x0000, 0x0000, 0x0000, 0xffe0, 0x0000, 0x0000, 0xffe0, 0x0000, 0x0000, 0x0000,
+      0x0000, 0xffe0, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xffe0, 0x0000,
+      0x0000, 0x0000, 0x0000, 0xffe0, 0xffe0, 0xffe0, 0xffe0, 0x0000, 0x0000, 0x0000,
+      0xffe0, 0x0000, 0xffe0, 0xffe0, 0xffe0, 0xffe0, 0xffe0, 0xffe0, 0x0000, 0xffe0,
+      0x0000, 0x0000, 0xffe0, 0xffe0, 0xffe0, 0xffe0, 0xffe0, 0xffe0, 0x0000, 0x0000,
+  };
+  
+  RGB64x32MatrixPanel_I2S_DMA matrix;
+
+  matrix.drawIcon (half_sun, 0,0,10,5);
+*/
+
   int i, j;
   for (i = 0; i < rows; i++) {
     for (j = 0; j < cols; j++) {
@@ -328,6 +348,8 @@ inline void RGB64x32MatrixPanel_I2S_DMA::drawIcon (int *ico, int16_t x, int16_t 
     }
   }  
 }
+
+
 
 
 inline void RGB64x32MatrixPanel_I2S_DMA::fillScreen(uint16_t color)  // adafruit virtual void override
