@@ -11,7 +11,7 @@
 
 #include "Adafruit_GFX.h"
 
-#define SERIAL_DEBUG_OUTPUT 1
+#define SERIAL_DEBUG_OUTPUT 0
 
 /*
 
@@ -75,7 +75,7 @@
  *
  */
 
-#define MATRIX_HEIGHT               32
+#define MATRIX_HEIGHT               64
 #define MATRIX_WIDTH                64
 #define MATRIX_ROWS_IN_PARALLEL     2
 
@@ -235,6 +235,7 @@ class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
     void drawPixelRGB565(int16_t x, int16_t y, uint16_t color);
     void drawPixelRGB888(int16_t x, int16_t y, uint8_t r, uint8_t g, uint8_t b);
     void drawPixelRGB24(int16_t x, int16_t y, rgb_24 color);
+    void drawIcon (int *ico, int16_t x, int16_t y, int16_t h, int16_t w);
     
     // Color 444 is a 4 bit scale, so 0 to 15, color 565 takes a 0-255 bit value, so scale up by 255/15 (i.e. 17)!
     uint16_t color444(uint8_t r, uint8_t g, uint8_t b) { return color565(r*17,g*17,b*17); }
@@ -317,6 +318,17 @@ inline void RGB64x32MatrixPanel_I2S_DMA::drawPixel(int16_t x, int16_t y, uint16_
 {
   drawPixelRGB565( x, y, color);
 } 
+
+//Loz Added
+inline void RGB64x32MatrixPanel_I2S_DMA::drawIcon (int *ico, int16_t x, int16_t y, int16_t cols, int16_t rows) {
+  int i, j;
+  for (i = 0; i < rows; i++) {
+    for (j = 0; j < cols; j++) {
+      drawPixelRGB565 (x + j, y + i, ico[i * cols + j]);
+    }
+  }  
+}
+
 
 inline void RGB64x32MatrixPanel_I2S_DMA::fillScreen(uint16_t color)  // adafruit virtual void override
 {
