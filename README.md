@@ -10,6 +10,7 @@ As a result, this library can theoretically provide ~20 bit colour, at various b
 
 * Dependency: You will need to install [Adafruit_GFX_Library](https://github.com/adafruit/Adafruit-GFX-Library) from the "Library > Manage Libraries" menu.
 * Download and unzip this repository into your Arduino/libraries folder (or better still, use the Arudino 'add library from .zip' option.
+* Library also test to work fine with PlatformIO, install into your PlatformIO projects' libs/ folder as appropriate.
 
 # Wiring ESP32 with the LED Matrix Panel
 
