@@ -1,5 +1,5 @@
 {
-  "name": "ESP32 LED MATRIX (HUB75) DMA Display",
+  "name": "ESP32 LED MATRIX HUB75 DMA Display",
   "keywords": "hub75, esp32, display, dma, rgb matrix",
   "description": "An experimental Adafruit GFX compatible library for 64x32 RGB matrix modules (other modules not tested - YMMV), using the ESP's DMA Engine for ultra-fast refresh rates, no-interrupts and therefore very low CPU usage (5%) so you can do other things with your ESP32.",
   "repository": {
