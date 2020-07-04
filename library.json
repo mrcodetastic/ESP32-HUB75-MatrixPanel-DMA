@@ -1,0 +1,39 @@
+{
+  "name": "ESP32 LED MATRIX (HUB75) DMA Display",
+  "keywords": "hub75, esp32, display, dma, rgb matrix",
+  "description": "An experimental Adafruit GFX compatible library for 64x32 RGB matrix modules (other modules not tested - YMMV), using the ESP's DMA Engine for ultra-fast refresh rates, no-interrupts and therefore very low CPU usage (5%) so you can do other things with your ESP32.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mrfaptastic/ESP32-RGB64x32MatrixPanel-I2S-DMA.git"
+  },
+  "authors": {
+    "name": "Faptastic",
+    "url": "https://github.com/mrfaptastic/"
+  },
+  "version": "1.0.0",
+  "frameworks": "arduino",
+  "platforms": "esp32",
+  "examples": [
+    "examples/AnimatedGIF/*.ino",
+    "examples/AnimatedGIF/*.cpp",
+    "examples/AnimatedGIF/*.h",	
+    "examples/AuroraDemo/*.ino",
+    "examples/AuroraDemo/*.cpp",
+    "examples/AuroraDemo/*.h",	
+    "examples/BitmapIcons/*.ino"
+    "examples/BitmapIcons/*.cpp"
+    "examples/BitmapIcons/*.h"	
+	"examples/Buffer_Swap_Test/*.ino",
+	"examples/Buffer_Swap_Test/*.cpp",
+	"examples/Buffer_Swap_Test/*.h",		
+	"examples/PanelGFXDemo/*.ino",
+	"examples/PanelGFXDemo/*.cpp",
+	"examples/PanelGFXDemo/*.h",		
+	"examples/PatternPlasma/*.ino",
+	"examples/PatternPlasma/*.cpp",
+	"examples/PatternPlasma/*.h",		
+	"examples/testshapes_32x64/*.ino",
+	"examples/testshapes_32x64/*.cpp",
+	"examples/testshapes_32x64/*.h"	
+  ]
+}
