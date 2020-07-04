@@ -77,10 +77,17 @@
  * All of this is memory permitting of course (dependant on your sketch etc.) ...
  *
  */
-
+#ifndef MATRIX_HEIGHT
 #define MATRIX_HEIGHT               32 //64
+#endif
+
+#ifndef MATRIX_WIDTH
 #define MATRIX_WIDTH                64
+#endif
+
+#ifndef MATRIX_ROWS_IN_PARALLEL
 #define MATRIX_ROWS_IN_PARALLEL     2
+#endif
 
 /***************************************************************************************/
 /* ESP32 Pin Definition. You can change this, but best if you keep it as is...         */
