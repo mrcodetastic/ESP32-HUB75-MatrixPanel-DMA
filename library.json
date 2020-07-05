@@ -20,9 +20,9 @@
     "examples/AuroraDemo/*.ino",
     "examples/AuroraDemo/*.cpp",
     "examples/AuroraDemo/*.h",	
-    "examples/BitmapIcons/*.ino"
-    "examples/BitmapIcons/*.cpp"
-    "examples/BitmapIcons/*.h"	
+    "examples/BitmapIcons/*.ino",
+    "examples/BitmapIcons/*.cpp",
+    "examples/BitmapIcons/*.h"	,
 	"examples/Buffer_Swap_Test/*.ino",
 	"examples/Buffer_Swap_Test/*.cpp",
 	"examples/Buffer_Swap_Test/*.h",		
