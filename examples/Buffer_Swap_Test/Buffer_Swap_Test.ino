@@ -1,6 +1,6 @@
 #include <ESP32-RGB64x32MatrixPanel-I2S-DMA.h>
 
-RGB64x32MatrixPanel_I2S_DMA     display;      // RGB Panel
+RGB64x32MatrixPanel_I2S_DMA     display(true);      // Note the TRUE -> Turns of secondary buffer
 
 const byte row0 = 2+0*10;
 const byte row1 = 2+1*10;

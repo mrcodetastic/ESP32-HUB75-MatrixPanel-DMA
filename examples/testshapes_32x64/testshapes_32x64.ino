@@ -17,25 +17,6 @@ void setup() {
 
   dma_display.begin();
 
-  for (int y = 0; y < dma_display.height(); y++)
-  {
-      dma_display.drawFastHLine(0, y-1, dma_display.width(), dma_display.color565(255-(15*y), 0, 0));
-      delay(100);
-  }
-
-  delay(1000);
-
-
-  for (int y = 0; y < dma_display.height(); y++)
-  {
-      dma_display.drawFastHLine(0, y-1, dma_display.width(), dma_display.color565(128, 255-(15*y), 0));
-      delay(100);
-  }
-
-  delay(2000);
-
-
-
   // draw a pixel in solid white
   dma_display.drawPixel(0, 0, dma_display.color444(15, 15, 15));
   delay(500);
