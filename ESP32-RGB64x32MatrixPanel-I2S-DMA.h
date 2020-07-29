@@ -46,7 +46,7 @@
 #define MATRIX_ROWS_IN_PARALLEL     2
 #endif
 
-#define MATRIX_COLOR_DEPTH 			    (8*3)     
+#define PIXEL_COLOR_DEPTH_BITS 			8   // 8bit per RGB color = 24 bit/per pixel, reduce to save RAM
 
 /***************************************************************************************/
 /* ESP32 Pin Definition. You can change this, but best if you keep it as is...         */
@@ -97,7 +97,7 @@
 // RGB Panel Constants / Calculated Values
 #define COLOR_CHANNELS_PER_PIXEL 3 
 #define PIXELS_PER_ROW ((MATRIX_WIDTH * MATRIX_HEIGHT) / MATRIX_HEIGHT) // = 64
-#define PIXEL_COLOR_DEPTH_BITS (MATRIX_COLOR_DEPTH/COLOR_CHANNELS_PER_PIXEL)  //  = 8
+//#define PIXEL_COLOR_DEPTH_BITS (MATRIX_COLOR_DEPTH/COLOR_CHANNELS_PER_PIXEL)  //  = 8
 #define ROWS_PER_FRAME (MATRIX_HEIGHT/MATRIX_ROWS_IN_PARALLEL) //  = 16
 
 /***************************************************************************************/
