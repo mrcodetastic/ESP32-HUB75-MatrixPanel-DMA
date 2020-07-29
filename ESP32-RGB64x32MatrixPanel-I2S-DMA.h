@@ -15,7 +15,7 @@
 /* Library compile-time options                                                        */
 
 // Enable serial debugging of the library, to see how memory is allocated etc.
-#define SERIAL_DEBUG 1
+//#define SERIAL_DEBUG 1
 
 // Experimental: Split the framebuffer into two smaller memory allocations.
 //               Can allow a bigger resolution due to the fragmented memory
@@ -46,7 +46,7 @@
 #define MATRIX_ROWS_IN_PARALLEL     2
 #endif
 
-#define PIXEL_COLOR_DEPTH_BITS 			8   // 8bit per RGB color = 24 bit/per pixel, reduce to save RAM
+#define PIXEL_COLOR_DEPTH_BITS      8   // 8bit per RGB color = 24 bit/per pixel, reduce to save RAM
 
 /***************************************************************************************/
 /* ESP32 Pin Definition. You can change this, but best if you keep it as is...         */
@@ -102,11 +102,11 @@
 
 /***************************************************************************************/
 /* Keep this as is. Do not change.                                                     */
-#define ESP32_I2S_DMA_MODE 			    I2S_PARALLEL_BITS_16	// Pump 16 bits out in parallel
-#define ESP32_I2S_DMA_STORAGE_TYPE 	uint16_t				// one uint16_t at a time.
-//#define ESP32_I2S_CLOCK_SPEED 		(20000000UL)			// @ 20Mhz
-#define ESP32_I2S_CLOCK_SPEED 		  (10000000UL)  // @ 10Mhz
-#define CLKS_DURING_LATCH 			    0   // Not used. 
+#define ESP32_I2S_DMA_MODE          I2S_PARALLEL_BITS_16    // Pump 16 bits out in parallel
+#define ESP32_I2S_DMA_STORAGE_TYPE  uint16_t                // one uint16_t at a time.
+//#define ESP32_I2S_CLOCK_SPEED     (20000000UL)            // @ 20Mhz
+#define ESP32_I2S_CLOCK_SPEED       (10000000UL)  // @ 10Mhz
+#define CLKS_DURING_LATCH            0   // Not used. 
 /***************************************************************************************/            
 
 
@@ -235,14 +235,14 @@ class RGB64x32MatrixPanel_I2S_DMA : public GFX {
 
     // Converts RGB888 to RGB565
     uint16_t color565(uint8_t r, uint8_t g, uint8_t b); // This is what is used by Adafruit GFX!
-	
+    
     // Converts RGB333 to RGB565
     uint16_t Color333(uint8_t r, uint8_t g, uint8_t b); // This is what is used by Adafruit GFX! Not sure why they have a capital 'C' for this particular function.
 
     inline void flipDMABuffer() 
-    {		  
+    {         
       if ( !double_buffering_enabled) return;
-		
+        
         // Flip to other buffer as the backbuffer. i.e. Graphic changes happen to this buffer (but aren't displayed until showDMABuffer())
         back_buffer_id ^= 1; 
         
@@ -261,7 +261,7 @@ class RGB64x32MatrixPanel_I2S_DMA : public GFX {
 
         #if SERIAL_DEBUG     
                 Serial.printf("Showtime for buffer: %d\n", back_buffer_id);
-        #endif 		
+        #endif      
       
         i2s_parallel_flip_to_buffer(&I2S1, back_buffer_id);
 
@@ -376,8 +376,8 @@ inline uint16_t RGB64x32MatrixPanel_I2S_DMA::color565(uint8_t r, uint8_t g, uint
 // Promote 3/3/3 RGB to Adafruit_GFX 5/6/5 RRRrrGGGgggBBBbb
 inline uint16_t RGB64x32MatrixPanel_I2S_DMA::Color333(uint8_t r, uint8_t g, uint8_t b) { 
 
-	return ((r & 0x7) << 13) | ((r & 0x6) << 10) | ((g & 0x7) << 8) | ((g & 0x7) << 5) | ((b & 0x7) << 2) | ((b & 0x6) >> 1);
-	
+    return ((r & 0x7) << 13) | ((r & 0x6) << 10) | ((g & 0x7) << 8) | ((g & 0x7) << 5) | ((b & 0x7) << 2) | ((b & 0x6) >> 1);
+    
 }
 
 

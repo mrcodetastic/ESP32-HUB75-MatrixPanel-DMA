@@ -21,7 +21,7 @@
     be set to the value to reflect the position the *previous* line is supposed to be on.
 
     Finally, the screen has an OE input, which is used to disable the LEDs when latching new data and changing the state of the line select inputs:
-    doing so hides any artifacts that appear at this time. The OE line is also used to dim the display by only turning it on for a limited time every
+    doing so hides any artefacts that appear at this time. The OE line is also used to dim the display by only turning it on for a limited time every
     line.
 
     All in all, an image can be displayed by 'scanning' the display, say, 100 times per second. The slowness of the human eye hides the fact that
@@ -47,7 +47,7 @@
     Then we ask the I2S-parallel driver to set up a DMA chain so the subframes are sent out in a sequence that satisfies the requirement that
     subframe x has to be sent out for (2^x) ticks. Finally, we fill the subframes with image data.
 
-    We use a frontbuffer/backbuffer technique here to make sure the display is refreshed in one go and drawing artifacts do not reach the display.
+    We use a front buffer/back buffer technique here to make sure the display is refreshed in one go and drawing artifacts do not reach the display.
     In practice, for small displays this is not really necessarily.
     
 */
@@ -90,7 +90,7 @@ bool RGB64x32MatrixPanel_I2S_DMA::allocateDMAmemory()
     if ( heap_caps_get_largest_free_block(MALLOC_CAP_DMA) < _frame_buffer_memory_required  ) {
       
       #if SERIAL_DEBUG      
-        Serial.printf("######### Insufficent memory for requested resolution. Reduce MATRIX_COLOR_DEPTH and try again.\r\n\tAdditional %d bytes of memory required.\r\n\r\n", (_frame_buffer_memory_required-heap_caps_get_largest_free_block(MALLOC_CAP_DMA)) );
+        Serial.printf("######### Insufficient memory for requested resolution. Reduce MATRIX_COLOR_DEPTH and try again.\r\n\tAdditional %d bytes of memory required.\r\n\r\n", (_frame_buffer_memory_required-heap_caps_get_largest_free_block(MALLOC_CAP_DMA)) );
       #endif
 
       return false;
@@ -125,7 +125,7 @@ bool RGB64x32MatrixPanel_I2S_DMA::allocateDMAmemory()
         if ( heap_caps_get_largest_free_block(MALLOC_CAP_DMA) < _frame_buffer_memory_required  ) { 
           
           #if SERIAL_DEBUG      
-            Serial.printf("######### Insufficent memory for second framebuffer for requested resolution. Reduce MATRIX_COLOR_DEPTH and try again.\r\n\tAdditional %d bytes of memory required.\r\n\r\n", (_frame_buffer_memory_required-heap_caps_get_largest_free_block(MALLOC_CAP_DMA)) );
+            Serial.printf("######### Insufficient memory for second framebuffer for requested resolution. Reduce MATRIX_COLOR_DEPTH and try again.\r\n\tAdditional %d bytes of memory required.\r\n\r\n", (_frame_buffer_memory_required-heap_caps_get_largest_free_block(MALLOC_CAP_DMA)) );
           #endif
 
           return false;
