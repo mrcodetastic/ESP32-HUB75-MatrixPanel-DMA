@@ -9,61 +9,18 @@
 #include "esp_heap_caps.h"
 #include "esp32_i2s_parallel.h"
 
-#include "Adafruit_GFX.h"
-
-/*
-
-    This is example code to driver a p3(2121)64*32 -style RGB LED display. These types of displays do not have memory and need to be refreshed
-    continuously. The display has 2 RGB inputs, 4 inputs to select the active line, a pixel clock input, a latch enable input and an output-enable
-    input. The display can be seen as 2 64x16 displays consisting of the upper half and the lower half of the display. Each half has a separate 
-    RGB pixel input, the rest of the inputs are shared.
-
-    Each display half can only show one line of RGB pixels at a time: to do this, the RGB data for the line is input by setting the RGB input pins
-    to the desired value for the first pixel, giving the display a clock pulse, setting the RGB input pins to the desired value for the second pixel,
-    giving a clock pulse, etc. Do this 64 times to clock in an entire row. The pixels will not be displayed yet: until the latch input is made high, 
-    the display will still send out the previously clocked in line. Pulsing the latch input high will replace the displayed data with the data just 
-    clocked in.
-
-    The 4 line select inputs select where the currently active line is displayed: when provided with a binary number (0-15), the latched pixel data
-    will immediately appear on this line. Note: While clocking in data for a line, the *previous* line is still displayed, and these lines should
-    be set to the value to reflect the position the *previous* line is supposed to be on.
-
-    Finally, the screen has an OE input, which is used to disable the LEDs when latching new data and changing the state of the line select inputs:
-    doing so hides any artifacts that appear at this time. The OE line is also used to dim the display by only turning it on for a limited time every
-    line.
-
-    All in all, an image can be displayed by 'scanning' the display, say, 100 times per second. The slowness of the human eye hides the fact that
-    only one line is showed at a time, and the display looks like every pixel is driven at the same time.
-
-    Now, the RGB inputs for these types of displays are digital, meaning each red, green and blue subpixel can only be on or off. This leads to a
-    color palette of 8 pixels, not enough to display nice pictures. To get around this, we use binary code modulation.
-
-    Binary code modulation is somewhat like PWM, but easier to implement in our case. First, we define the time we would refresh the display without
-    binary code modulation as the 'frame time'. For, say, a four-bit binary code modulation, the frame time is divided into 15 ticks of equal length.
-
-    We also define 4 subframes (0 to 3), defining which LEDs are on and which LEDs are off during that subframe. (Subframes are the same as a 
-    normal frame in non-binary-coded-modulation mode, but are showed faster.)  From our (non-monochrome) input image, we take the (8-bit: bit 7 
-    to bit 0) RGB pixel values. If the pixel values have bit 7 set, we turn the corresponding LED on in subframe 3. If they have bit 6 set,
-    we turn on the corresponding LED in subframe 2, if bit 5 is set subframe 1, if bit 4 is set in subframe 0.
-
-    Now, in order to (on average within a frame) turn a LED on for the time specified in the pixel value in the input data, we need to weigh the
-    subframes. We have 15 pixels: if we show subframe 3 for 8 of them, subframe 2 for 4 of them, subframe 1 for 2 of them and subframe 1 for 1 of
-    them, this 'automatically' happens. (We also distribute the subframes evenly over the ticks, which reduces flicker.)
-
-    In this code, we use the I2S peripheral in parallel mode to achieve this. Essentially, first we allocate memory for all subframes. This memory
-    contains a sequence of all the signals (2xRGB, line select, latch enable, output enable) that need to be sent to the display for that subframe.
-    Then we ask the I2S-parallel driver to set up a DMA chain so the subframes are sent out in a sequence that satisfies the requirement that
-    subframe x has to be sent out for (2^x) ticks. Finally, we fill the subframes with image data.
-
-    We use a frontbuffer/backbuffer technique here to make sure the display is refreshed in one go and drawing artifacts do not reach the display.
-    In practice, for small displays this is not really necessarily.
-    
-*/
+#include "GFX.h" // Adafruit GFX core class -> https://github.com/mrfaptastic/GFX_Root
 
 /***************************************************************************************/
-/* Serial Debugging Output on or off                                                   */
+/* Library compile-time options                                                        */
 
-#define SERIAL_DEBUG_OUTPUT 1
+// Enable serial debugging of the library, to see how memory is allocated etc.
+#define SERIAL_DEBUG 1
+
+// Experimental: Split the framebuffer into two smaller memory allocations.
+//               Can allow a bigger resolution due to the fragmented memory
+//               map of the typical arduino sketch even before setup().
+//#define SPLIT_MEMORY_MODE 1
 
 /***************************************************************************************/
 /* HUB75 RGB pixel WIDTH and HEIGHT. 
@@ -89,6 +46,8 @@
 #define MATRIX_ROWS_IN_PARALLEL     2
 #endif
 
+#define MATRIX_COLOR_DEPTH 			    (8*3)     
+
 /***************************************************************************************/
 /* ESP32 Pin Definition. You can change this, but best if you keep it as is...         */
 
@@ -103,15 +62,16 @@
 #define B_PIN_DEFAULT   19
 #define C_PIN_DEFAULT   5
 #define D_PIN_DEFAULT   17
-#define E_PIN_DEFAULT   -1 // Change to a valid pin if using a 64 pixel row panel.
+#define E_PIN_DEFAULT   -1 // IMPORTANT: Change to a valid pin if using a 64x64px panel.
           
 #define LAT_PIN_DEFAULT 4
 #define OE_PIN_DEFAULT  15
-
 #define CLK_PIN_DEFAULT 16
 
+// Interesting Fact: We end up using a uint16_t to send data in parallel to the HUB75... but 
+//                   given we only map to 14 physical output wires/bits, we waste 2 bits.
 /***************************************************************************************/
-/* Don't change this stuff unless you know what you are doing */
+/* Keep this as is. Do not change.                                                     */
 
 // Panel Upper half RGB (numbering according to order in DMA gpio_bus configuration)
 #define BIT_R1  (1<<0)   
@@ -136,37 +96,51 @@
 
 // RGB Panel Constants / Calculated Values
 #define COLOR_CHANNELS_PER_PIXEL 3 
-#define PIXELS_PER_LATCH    ((MATRIX_WIDTH * MATRIX_HEIGHT) / MATRIX_HEIGHT) // = 64
-#define COLOR_DEPTH_BITS    (COLOR_DEPTH/COLOR_CHANNELS_PER_PIXEL)  //  = 8
-#define ROWS_PER_FRAME      (MATRIX_HEIGHT/MATRIX_ROWS_IN_PARALLEL) //  = 16
+#define PIXELS_PER_ROW ((MATRIX_WIDTH * MATRIX_HEIGHT) / MATRIX_HEIGHT) // = 64
+#define PIXEL_COLOR_DEPTH_BITS (MATRIX_COLOR_DEPTH/COLOR_CHANNELS_PER_PIXEL)  //  = 8
+#define ROWS_PER_FRAME (MATRIX_HEIGHT/MATRIX_ROWS_IN_PARALLEL) //  = 16
 
 /***************************************************************************************/
 /* Keep this as is. Do not change.                                                     */
-#define CLKS_DURING_LATCH 0
-#define MATRIX_I2S_MODE I2S_PARALLEL_BITS_16
-#define MATRIX_DATA_STORAGE_TYPE uint16_t
-
-#define ESP32_NUM_FRAME_BUFFERS           2 
-#define ESP32_I2S_CLOCK_SPEED (20000000UL)
-#define COLOR_DEPTH 24     
-
+#define ESP32_I2S_DMA_MODE 			    I2S_PARALLEL_BITS_16	// Pump 16 bits out in parallel
+#define ESP32_I2S_DMA_STORAGE_TYPE 	uint16_t				// one uint16_t at a time.
+//#define ESP32_I2S_CLOCK_SPEED 		(20000000UL)			// @ 20Mhz
+#define ESP32_I2S_CLOCK_SPEED 		  (10000000UL)  // @ 10Mhz
+#define CLKS_DURING_LATCH 			    0   // Not used. 
 /***************************************************************************************/            
 
 
-// note: sizeof(data) must be multiple of 32 bits, as ESP32 DMA linked list buffer address pointer must be word-aligned.
+/* rowBitStruct
+ * Note: sizeof(data) must be multiple of 32 bits, as ESP32 DMA linked list buffer address pointer 
+ *       must be word-aligned.
+ */
 struct rowBitStruct {
-    MATRIX_DATA_STORAGE_TYPE data[((MATRIX_WIDTH * MATRIX_HEIGHT) / MATRIX_HEIGHT) + CLKS_DURING_LATCH]; 
-    // this evaluates to just MATRIX_DATA_STORAGE_TYPE data[64] really; 
-    // and array of 64 uint16_t's
+    ESP32_I2S_DMA_STORAGE_TYPE data[PIXELS_PER_ROW + CLKS_DURING_LATCH]; 
+    // This evaluates to just data[64] really.. an array of 64 uint16_t's
 };
 
+/* rowColorDepthStruct
+ * Duplicates of row bit structure, but for each color 'depth'ness. 
+ */
 struct rowColorDepthStruct {
-    rowBitStruct rowbits[COLOR_DEPTH_BITS];
+    rowBitStruct rowbits[PIXEL_COLOR_DEPTH_BITS];
 };
 
+/* frameStruct
+ * Note: This 'frameStruct' will contain ALL the data for a full-frame as BOTH 2x16-row frames are
+ *       are contained in parallel within the one uint16_t that is sent in parallel to the HUB75. 
+ */
+#ifdef SPLIT_MEMORY_MODE
+//#pragma message("Split DMA Memory Allocation Mode Enabled")
+#define SPLIT_MEMORY_ROWS_PER_FRAME (ROWS_PER_FRAME/2)
+struct frameStruct {
+    rowColorDepthStruct rowdata[SPLIT_MEMORY_ROWS_PER_FRAME];
+};
+#else
 struct frameStruct {
     rowColorDepthStruct rowdata[ROWS_PER_FRAME];
 };
+#endif
 
 typedef struct rgb_24 {
     rgb_24() : rgb_24(0,0,0) {}
@@ -182,46 +156,48 @@ typedef struct rgb_24 {
 
 
 /***************************************************************************************/   
-class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
+class RGB64x32MatrixPanel_I2S_DMA : public GFX {
   // ------- PUBLIC -------
   public:
-    RGB64x32MatrixPanel_I2S_DMA(bool _doubleBuffer = false) // Double buffer is disabled by default. Any change will display next active DMA buffer output (very quickly). NOTE: Not Implemented
-      : Adafruit_GFX(MATRIX_WIDTH, MATRIX_HEIGHT), doubleBuffer(_doubleBuffer)  {
-      
-        backbuf_id = 0;
-        brightness = 16; // If you get ghosting... reduce brightness level. 60 seems to be the limit before ghosting on a 64 pixel wide physical panel for some panels
-        min_refresh_rate = 250; // Probably best to leave as is unless you want to experiment. Framerate has an impact on brightness and also power draw - voltage ripple.
-        
+    
+    /**
+     * RGB64x32MatrixPanel_I2S_DMA 
+     * 
+     * @param  {bool} _double_buffer : Double buffer is disabled by default. Enable only if you know what you're doing. Manual switching required with flipDMABuffer() and showDMABuffer()
+     *        
+     */
+    RGB64x32MatrixPanel_I2S_DMA(bool _double_buffer = false)
+      : GFX(MATRIX_WIDTH, MATRIX_HEIGHT), double_buffering_enabled(_double_buffer)  {
+
     }
 
-    // Painfully propagate the DMA pin configuration, or use compiler defaults
-    void begin(int dma_r1_pin = R1_PIN_DEFAULT , int dma_g1_pin = G1_PIN_DEFAULT, int dma_b1_pin = B1_PIN_DEFAULT , int dma_r2_pin = R2_PIN_DEFAULT , int dma_g2_pin = G2_PIN_DEFAULT , int dma_b2_pin = B2_PIN_DEFAULT , int dma_a_pin  = A_PIN_DEFAULT  , int dma_b_pin = B_PIN_DEFAULT  , int dma_c_pin = C_PIN_DEFAULT , int dma_d_pin = D_PIN_DEFAULT  , int dma_e_pin = E_PIN_DEFAULT , int dma_lat_pin = LAT_PIN_DEFAULT, int dma_oe_pin = OE_PIN_DEFAULT , int dma_clk_pin = CLK_PIN_DEFAULT)
+    /* Propagate the DMA pin configuration, or use compiler defaults */
+    bool begin(int dma_r1_pin = R1_PIN_DEFAULT , int dma_g1_pin = G1_PIN_DEFAULT, int dma_b1_pin = B1_PIN_DEFAULT , int dma_r2_pin = R2_PIN_DEFAULT , int dma_g2_pin = G2_PIN_DEFAULT , int dma_b2_pin = B2_PIN_DEFAULT , int dma_a_pin  = A_PIN_DEFAULT  , int dma_b_pin = B_PIN_DEFAULT  , int dma_c_pin = C_PIN_DEFAULT , int dma_d_pin = D_PIN_DEFAULT  , int dma_e_pin = E_PIN_DEFAULT , int dma_lat_pin = LAT_PIN_DEFAULT, int dma_oe_pin = OE_PIN_DEFAULT , int dma_clk_pin = CLK_PIN_DEFAULT)
     {
-        
+
+      // Change 'if' to '1' to enable, 0 to not include this Serial output in compiled program        
+      #if SERIAL_DEBUG       
+            Serial.printf("Using pin %d for the R1_PIN\n", dma_r1_pin);
+            Serial.printf("Using pin %d for the G1_PIN\n", dma_g1_pin);
+            Serial.printf("Using pin %d for the B1_PIN\n", dma_b1_pin);
+            Serial.printf("Using pin %d for the R2_PIN\n", dma_r2_pin);
+            Serial.printf("Using pin %d for the G2_PIN\n", dma_g2_pin);
+            Serial.printf("Using pin %d for the B2_PIN\n", dma_b2_pin);
+            Serial.printf("Using pin %d for the A_PIN\n", dma_a_pin);   
+            Serial.printf("Using pin %d for the B_PIN\n", dma_b_pin);   
+            Serial.printf("Using pin %d for the C_PIN\n", dma_c_pin);   
+            Serial.printf("Using pin %d for the D_PIN\n", dma_d_pin);   
+            Serial.printf("Using pin %d for the E_PIN\n", dma_e_pin);                      
+            Serial.printf("Using pin %d for the LAT_PIN\n", dma_lat_pin);   
+            Serial.printf("Using pin %d for the OE_PIN\n",  dma_oe_pin);    
+            Serial.printf("Using pin %d for the CLK_PIN\n", dma_clk_pin); 
+      #endif   
+
      /* As DMA buffers are dynamically allocated, we must allocated in begin()
       * Ref: https://github.com/espressif/arduino-esp32/issues/831
       */
-      allocateDMAbuffers(); 
+      if ( !allocateDMAmemory() ) {  return false; } // couldn't even get the basic ram required.
         
-// Change 'if' to '1' to enable, 0 to not include this Serial output in compiled program        
-#if SERIAL_DEBUG_OUTPUT       
-      Serial.printf("Using pin %d for the R1_PIN\n", dma_r1_pin);
-      Serial.printf("Using pin %d for the G1_PIN\n", dma_g1_pin);
-      Serial.printf("Using pin %d for the B1_PIN\n", dma_b1_pin);
-      Serial.printf("Using pin %d for the R2_PIN\n", dma_r2_pin);
-      Serial.printf("Using pin %d for the G2_PIN\n", dma_g2_pin);
-      Serial.printf("Using pin %d for the B2_PIN\n", dma_b2_pin);
-      Serial.printf("Using pin %d for the A_PIN\n", dma_a_pin);   
-      Serial.printf("Using pin %d for the B_PIN\n", dma_b_pin);   
-      Serial.printf("Using pin %d for the C_PIN\n", dma_c_pin);   
-      Serial.printf("Using pin %d for the D_PIN\n", dma_d_pin);   
-      Serial.printf("Using pin %d for the E_PIN\n", dma_e_pin); 
-                     
-      Serial.printf("Using pin %d for the LAT_PIN\n", dma_lat_pin);   
-      Serial.printf("Using pin %d for the OE_PIN\n",  dma_oe_pin);    
-      Serial.printf("Using pin %d for the CLK_PIN\n", dma_clk_pin); 
-#endif    
-
 
       // Flush the DMA buffers prior to configuring DMA - Avoid visual artefacts on boot.
       clearScreen(); // Must fill the DMA buffer with the initial output bit sequence or the panel will display garbage
@@ -232,8 +208,10 @@ class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
       // Setup the ESP32 DMA Engine. Sprite_TM built this stuff.
       configureDMA(dma_r1_pin, dma_g1_pin, dma_b1_pin, dma_r2_pin, dma_g2_pin, dma_b2_pin, dma_a_pin,  dma_b_pin, dma_c_pin, dma_d_pin, dma_e_pin, dma_lat_pin,  dma_oe_pin,   dma_clk_pin ); //DMA and I2S configuration and setup
 
-      showDMABuffer(); // show 0
-      
+      showDMABuffer(); // show backbuf_id of 0
+
+      return everything_OK;
+
     }
     
     // TODO: Disable/Enable auto buffer flipping (useful for lots of drawPixel usage)...
@@ -257,18 +235,27 @@ class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
     uint16_t Color333(uint8_t r, uint8_t g, uint8_t b); // This is what is used by Adafruit GFX! Not sure why they have a capital 'C' for this particular function.
 
     inline void flipDMABuffer() 
-    {
+    {		  
+      if ( !double_buffering_enabled) return;
+		
         // Flip to other buffer as the backbuffer. i.e. Graphic changes happen to this buffer (but aren't displayed until showDMABuffer())
-        backbuf_id ^=1; 
+        back_buffer_id ^= 1; 
         
-#if SERIAL_DEBUG_OUTPUT     
-        Serial.printf("Set back buffer to: %d\n", backbuf_id);
-#endif      
+        #if SERIAL_DEBUG     
+                Serial.printf("Set back buffer to: %d\n", back_buffer_id);
+        #endif      
     }
     
     inline void showDMABuffer()
     {
-        i2s_parallel_flip_to_buffer(&I2S1, backbuf_id);
+      
+        if (!double_buffering_enabled) return;
+
+        #if SERIAL_DEBUG     
+                Serial.printf("Showtime for buffer: %d\n", back_buffer_id);
+        #endif 		
+      
+        i2s_parallel_flip_to_buffer(&I2S1, back_buffer_id);
     }
     
     
@@ -281,43 +268,47 @@ class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
     inline void setMinRefreshRate(int rr)
     {
         min_refresh_rate = rr;
-    }   
+    } 
+
+  int  calculated_refresh_rate  = 0;         
             
     
    // ------- PRIVATE -------
   private:
-  
-    void allocateDMAbuffers() 
-    {
-        matrixUpdateFrames = (frameStruct *)heap_caps_malloc(sizeof(frameStruct) * ESP32_NUM_FRAME_BUFFERS, MALLOC_CAP_DMA);
-        Serial.printf("Allocating DMA Refresh Buffer...\r\nTotal DMA Memory available: %d bytes total. Largest free block: %d bytes\r\n", heap_caps_get_free_size(MALLOC_CAP_DMA), heap_caps_get_largest_free_block(MALLOC_CAP_DMA));
-      
-    } // end initMatrixDMABuffer()
-    
-    void configureDMA(int r1_pin, int  g1_pin, int  b1_pin, int  r2_pin, int  g2_pin, int  b2_pin, int  a_pin, int   b_pin, int  c_pin, int  d_pin, int  e_pin, int  lat_pin, int   oe_pin, int clk_pin); // Get everything setup. Refer to the .c file
 
+    /* Pixel data is organized from LSB to MSB sequentially by row, from row 0 to row matrixHeight/matrixRowsInParallel 
+     * (two rows of pixels are refreshed in parallel) */
+    frameStruct *matrix_framebuffer_malloc_1; 
+
+#ifdef SPLIT_MEMORY_MODE
+    /* In the case there's a 2nd non-contiguous block of DMA capable SRAM we can use, let us try and use that as well. */
+    frameStruct *matrix_framebuffer_malloc_2; 
+#endif
+
+    // ESP 32 DMA Linked List descriptor
+    int desccount = 0;
+    lldesc_t * dmadesc_a = {0}; 
+    lldesc_t * dmadesc_b = {0};
+
+    // ESP32-RGB64x32MatrixPanel-I2S-DMA functioning
+    bool everything_OK              = false;
+    bool double_buffering_enabled   = false;// Do we use double buffer mode? Your project code will have to manually flip between both.
+    int  back_buffer_id             = 0;    // If using double buffer, which one is NOT active (ie. being displayed) to write too?
+    int  brightness           = 32;             // If you get ghosting... reduce brightness level. 60 seems to be the limit before ghosting on a 64 pixel wide physical panel for some panels.
+    int  min_refresh_rate     = 120;            // Probably best to leave as is unless you want to experiment. Framerate has an impact on brightness and also power draw - voltage ripple.
+    int  lsbMsbTransitionBit  = 0;     // For possible color depth calculations
     
-    // Update a specific pixel in the DMA buffer to a colour 
+    /* Calculate the memory available for DMA use, do some other stuff, and allocate accordingly */
+    bool allocateDMAmemory();
+
+    /* Setup the DMA Link List chain and initiate the ESP32 DMA engine */
+    void configureDMA(int r1_pin, int  g1_pin, int  b1_pin, int  r2_pin, int  g2_pin, int  b2_pin, int  a_pin, int   b_pin, int  c_pin, int  d_pin, int  e_pin, int  lat_pin, int   oe_pin, int clk_pin); // Get everything setup. Refer to the .c file
+   
+    /* Update a specific pixel in the DMA buffer to a colour */
     void updateMatrixDMABuffer(int16_t x, int16_t y, uint8_t red, uint8_t green, uint8_t blue);
    
-    // Update the entire DMA buffer (aka. The RGB Panel) a certain colour (wipe the screen basically)
-    void updateMatrixDMABuffer(uint8_t red, uint8_t green, uint8_t blue);
-        
-    // Pixel data is organized from LSB to MSB sequentially by row, from row 0 to row matrixHeight/matrixRowsInParallel (two rows of pixels are refreshed in parallel)
-    frameStruct *matrixUpdateFrames;
-    
-    // Setup
-    bool dma_configuration_success;
-        
-    // Internal variables
-    bool doubleBuffer;  // Do we use double buffer mode? Your project code will have to manually flip between both.
-    int  backbuf_id;    // If using double buffer, which one is NOT active (ie. being displayed) to write too?
-    
-    int  lsbMsbTransitionBit;
-    int  refreshRate;   
-    int  brightness;
-    int  min_refresh_rate;
-    
+    /* Update the entire DMA buffer (aka. The RGB Panel) a certain colour (wipe the screen basically) */
+    void updateMatrixDMABuffer(uint8_t red, uint8_t green, uint8_t blue);       
 
 }; // end Class header
 
@@ -328,36 +319,6 @@ inline void RGB64x32MatrixPanel_I2S_DMA::drawPixel(int16_t x, int16_t y, uint16_
 {
   drawPixelRGB565( x, y, color);
 } 
-
-
-
-inline void RGB64x32MatrixPanel_I2S_DMA::drawIcon (int *ico, int16_t x, int16_t y, int16_t cols, int16_t rows) {
-/*  drawIcon draws a C style bitmap.  
-//  Example 10x5px bitmap of a yellow sun 
-//
-  int half_sun [50] = {
-      0x0000, 0x0000, 0x0000, 0xffe0, 0x0000, 0x0000, 0xffe0, 0x0000, 0x0000, 0x0000,
-      0x0000, 0xffe0, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xffe0, 0x0000,
-      0x0000, 0x0000, 0x0000, 0xffe0, 0xffe0, 0xffe0, 0xffe0, 0x0000, 0x0000, 0x0000,
-      0xffe0, 0x0000, 0xffe0, 0xffe0, 0xffe0, 0xffe0, 0xffe0, 0xffe0, 0x0000, 0xffe0,
-      0x0000, 0x0000, 0xffe0, 0xffe0, 0xffe0, 0xffe0, 0xffe0, 0xffe0, 0x0000, 0x0000,
-  };
-  
-  RGB64x32MatrixPanel_I2S_DMA matrix;
-
-  matrix.drawIcon (half_sun, 0,0,10,5);
-*/
-
-  int i, j;
-  for (i = 0; i < rows; i++) {
-    for (j = 0; j < cols; j++) {
-      drawPixelRGB565 (x + j, y + i, ico[i * cols + j]);
-    }
-  }  
-}
-
-
-
 
 inline void RGB64x32MatrixPanel_I2S_DMA::fillScreen(uint16_t color)  // adafruit virtual void override
 {
@@ -388,7 +349,6 @@ inline void RGB64x32MatrixPanel_I2S_DMA::drawPixelRGB24(int16_t x, int16_t y, rg
   updateMatrixDMABuffer( x, y, color.red, color.green, color.blue);
 }
 
-
 // Pass 8-bit (each) R,G,B, get back 16-bit packed color
 //https://github.com/squix78/ILI9341Buffer/blob/master/ILI9341_SPI.cpp
 inline uint16_t RGB64x32MatrixPanel_I2S_DMA::color565(uint8_t r, uint8_t g, uint8_t b) {
@@ -402,12 +362,37 @@ inline uint16_t RGB64x32MatrixPanel_I2S_DMA::color565(uint8_t r, uint8_t g, uint
   return ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3);
 }
 
-
 // Promote 3/3/3 RGB to Adafruit_GFX 5/6/5 RRRrrGGGgggBBBbb
 inline uint16_t RGB64x32MatrixPanel_I2S_DMA::Color333(uint8_t r, uint8_t g, uint8_t b) { 
 
 	return ((r & 0x7) << 13) | ((r & 0x6) << 10) | ((g & 0x7) << 8) | ((g & 0x7) << 5) | ((b & 0x7) << 2) | ((b & 0x6) >> 1);
 	
+}
+
+
+inline void RGB64x32MatrixPanel_I2S_DMA::drawIcon (int *ico, int16_t x, int16_t y, int16_t cols, int16_t rows) {
+/*  drawIcon draws a C style bitmap.  
+//  Example 10x5px bitmap of a yellow sun 
+//
+  int half_sun [50] = {
+      0x0000, 0x0000, 0x0000, 0xffe0, 0x0000, 0x0000, 0xffe0, 0x0000, 0x0000, 0x0000,
+      0x0000, 0xffe0, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xffe0, 0x0000,
+      0x0000, 0x0000, 0x0000, 0xffe0, 0xffe0, 0xffe0, 0xffe0, 0x0000, 0x0000, 0x0000,
+      0xffe0, 0x0000, 0xffe0, 0xffe0, 0xffe0, 0xffe0, 0xffe0, 0xffe0, 0x0000, 0xffe0,
+      0x0000, 0x0000, 0xffe0, 0xffe0, 0xffe0, 0xffe0, 0xffe0, 0xffe0, 0x0000, 0x0000,
+  };
+  
+  RGB64x32MatrixPanel_I2S_DMA matrix;
+
+  matrix.drawIcon (half_sun, 0,0,10,5);
+*/
+
+  int i, j;
+  for (i = 0; i < rows; i++) {
+    for (j = 0; j < cols; j++) {
+      drawPixelRGB565 (x + j, y + i, ico[i * cols + j]);
+    }
+  }  
 }
 
 #endif
