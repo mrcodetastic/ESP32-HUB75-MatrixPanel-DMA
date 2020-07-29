@@ -269,6 +269,8 @@ bool RGB64x32MatrixPanel_I2S_DMA::allocateDMAmemory()
         delay(1000);
     #endif
 
+    // Just os we know
+  	everything_OK = true;
 
     return true;
 
@@ -389,12 +391,8 @@ void RGB64x32MatrixPanel_I2S_DMA::configureDMA(int r1_pin, int  g1_pin, int  b1_
 
         delay(1000);
     #endif       
-	
-	// Just os we know
-	everything_OK = true;
-	
+		
 } // end initMatrixDMABuff
-
 
 
 

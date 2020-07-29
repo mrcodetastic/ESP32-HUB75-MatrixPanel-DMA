@@ -249,6 +249,9 @@ class RGB64x32MatrixPanel_I2S_DMA : public GFX {
         #if SERIAL_DEBUG     
                 Serial.printf("Set back buffer to: %d\n", back_buffer_id);
         #endif      
+
+        // Wait before we allow any writing to the buffer. Stop flicker.
+        while(!i2s_parallel_is_previous_buffer_free()) {}       
     }
     
     inline void showDMABuffer()
@@ -261,6 +264,9 @@ class RGB64x32MatrixPanel_I2S_DMA : public GFX {
         #endif 		
       
         i2s_parallel_flip_to_buffer(&I2S1, back_buffer_id);
+
+        // Wait before we allow any writing to the buffer. Stop flicker.
+        while(!i2s_parallel_is_previous_buffer_free()) {}               
     }
     
     
