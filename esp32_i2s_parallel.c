@@ -29,8 +29,10 @@
 #include "driver/periph_ctrl.h"
 #include "soc/io_mux_reg.h"
 #include "rom/lldesc.h"
-#include "esp_heap_caps.h"
+//#include "esp_heap_caps.h"
 #include "esp32_i2s_parallel.h"
+
+#define DMA_MAX (4096-4)
 
 typedef struct {
     volatile lldesc_t *dmadesc_a, *dmadesc_b;
@@ -61,9 +63,7 @@ static void IRAM_ATTR i2s_isr(void* arg) {
     if(shiftCompleteCallback)
         shiftCompleteCallback();
 }
-
-#define DMA_MAX (4096-4)
-
+/*
 //Calculate the amount of dma descs needed for a buffer desc
 static int calc_needed_dma_descs_for(i2s_parallel_buffer_desc_t *desc) {
     int ret=0;
@@ -102,8 +102,10 @@ static void fill_dma_desc(volatile lldesc_t *dmadesc, i2s_parallel_buffer_desc_t
 
     printf("fill_dma_desc: filled %d descriptors\n", n);
 }
+*/
 
 // size must be less than DMA_MAX - need to handle breaking long transfer into two descriptors before call
+// DMA_MAX by the way is the maximum data packet size you can hold in one chunk
 void link_dma_desc(volatile lldesc_t *dmadesc, volatile lldesc_t *prevdmadesc, void *memory, size_t size) {
     if(size > DMA_MAX) size = DMA_MAX;
 
@@ -128,7 +130,6 @@ static void gpio_setup_out(int gpio, int sig) {
     gpio_matrix_out(gpio, sig, false, false);
 }
 
-
 static void dma_reset(i2s_dev_t *dev) {
     dev->lc_conf.in_rst=1; dev->lc_conf.in_rst=0;
     dev->lc_conf.out_rst=1; dev->lc_conf.out_rst=0;
@@ -147,14 +148,14 @@ void i2s_parallel_setup_without_malloc(i2s_dev_t *dev, const i2s_parallel_config
         sig_data_base=I2S0O_DATA_OUT0_IDX;
         sig_clk=I2S0O_WS_OUT_IDX;
     } else {
+        printf("Setting up i2s parallel mode in %d bit mode!\n", cfg->bits);
         if (cfg->bits==I2S_PARALLEL_BITS_32) {
             sig_data_base=I2S1O_DATA_OUT0_IDX;
         } else if (cfg->bits==I2S_PARALLEL_BITS_16) {
             //Because of... reasons... the 16-bit values for i2s1 appear on d8...d23
-             printf("Setting up i2s parallel mode in 16 bit mode!");
             sig_data_base=I2S1O_DATA_OUT8_IDX;
         } else { // I2S_PARALLEL_BITS_8
-            printf("Setting up i2s parallel mode in 8 bit mode -> https://www.esp32.com/viewtopic.php?f=17&t=3188 | https://www.esp32.com/viewtopic.php?f=13&t=3256");
+            //printf("Setting up i2s parallel mode in %d bit mode -> https://www.esp32.com/viewtopic.php?f=17&t=3188 | https://www.esp32.com/viewtopic.php?f=13&t=3256", 8);
             sig_data_base=I2S1O_DATA_OUT0_IDX;
         }
         sig_clk=I2S1O_WS_OUT_IDX;
@@ -251,7 +252,7 @@ void i2s_parallel_setup_without_malloc(i2s_dev_t *dev, const i2s_parallel_config
     // allocate a level 1 intterupt: lowest priority, as ISR isn't urgent and may take a long time to complete
     esp_intr_alloc(ETS_I2S1_INTR_SOURCE, (int)(ESP_INTR_FLAG_IRAM | ESP_INTR_FLAG_LEVEL1), i2s_isr, NULL, NULL);
 
-    //Start dma on front buffer
+    //Start dma on front buffer (buffer a)
     dev->lc_conf.val=I2S_OUT_DATA_BURST_EN | I2S_OUTDSCR_BURST_EN | I2S_OUT_DATA_BURST_EN;
     dev->out_link.addr=((uint32_t)(&st->dmadesc_a[0]));
     dev->out_link.start=1;
@@ -280,5 +281,6 @@ void i2s_parallel_flip_to_buffer(i2s_dev_t *dev, int bufid) {
 bool i2s_parallel_is_previous_buffer_free() {
     return previousBufferFree;
 }
+
 
 #endif
