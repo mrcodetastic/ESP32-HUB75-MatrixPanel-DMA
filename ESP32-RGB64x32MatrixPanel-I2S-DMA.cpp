@@ -76,10 +76,10 @@ bool RGB64x32MatrixPanel_I2S_DMA::allocateDMAmemory()
         if (double_buffering_enabled) {
           Serial.println("DOUBLE FRAME BUFFERS / DOUBLE BUFFERING IS ENABLED. DOUBLE THE RAM REQUIRED!");        
         }
-        /*
+        
         Serial.println("DMA memory blocks available before any malloc's: ");
         heap_caps_print_heap_info(MALLOC_CAP_DMA);
-        */
+        
 
         Serial.printf("FYI: Size of an ESP32 DMA linked list descriptor (lldesc_t) is %d bytes\r\n", sizeof(lldesc_t));
         Serial.printf("We're going to need %d bytes of SRAM just for the frame buffer(s).\r\n", _frame_buffer_memory_required);  
@@ -87,37 +87,53 @@ bool RGB64x32MatrixPanel_I2S_DMA::allocateDMAmemory()
     #endif
 
     // Can we fit the framebuffer into the single DMA capable memory block available?
-    if ( heap_caps_get_largest_free_block(MALLOC_CAP_DMA) >= _frame_buffer_memory_required  ) { // YES - SIMPLE
-
-        // Allocate the framebuffer memory, fail if we can even do this
-        matrix_framebuffer_malloc_1 = (frameStruct *)heap_caps_malloc(_frame_buffer_memory_required, MALLOC_CAP_DMA);
-        if ( !matrix_framebuffer_malloc_1 ) {
-            #if SERIAL_DEBUG             
-            Serial.println("ERROR: Couldn't malloc matrix_framebuffer_malloc_1! Critical fail.\r\n");            
-            #endif
-
-            return false;
-        }    
+    if ( heap_caps_get_largest_free_block(MALLOC_CAP_DMA) < _frame_buffer_memory_required  ) {
       
-        _total_dma_capable_memory_reserved += _frame_buffer_memory_required;    
-    } 
+      #if SERIAL_DEBUG      
+        Serial.printf("######### Insufficent memory for requested resolution. Reduce MATRIX_COLOR_DEPTH and try again.\r\n\tAdditional %d bytes of memory required.\r\n\r\n", (_frame_buffer_memory_required-heap_caps_get_largest_free_block(MALLOC_CAP_DMA)) );
+      #endif
+
+      return false;
+    }
     
+
+    // Allocate the framebuffer 1 memory, fail if we can even do this
+    matrix_framebuffer_malloc_1 = (frameStruct *)heap_caps_malloc(_frame_buffer_memory_required, MALLOC_CAP_DMA);
+    if ( matrix_framebuffer_malloc_1 == NULL ) {
+        #if SERIAL_DEBUG             
+        Serial.println("ERROR: Couldn't malloc matrix_framebuffer_malloc_1! Critical fail.\r\n");            
+        #endif
+
+        return false;
+    }    
+  
+    _total_dma_capable_memory_reserved += _frame_buffer_memory_required;    
+
+    // SPLIT MEMORY MODE
     #ifdef SPLIT_MEMORY_MODE
 
-      Serial.println("SPLIT MEMORY MODE ENABLED!");
+        Serial.println("SPLIT MEMORY MODE ENABLED!");
 
-      #if SERIAL_DEBUG             
-      Serial.print("Rows per frame (overall): ");  Serial.println(ROWS_PER_FRAME, DEC);            
-      Serial.print("Rows per split framebuffer malloc: ");  Serial.println(SPLIT_MEMORY_ROWS_PER_FRAME, DEC);      
-      #endif
+        #if SERIAL_DEBUG             
+        Serial.print("Rows per frame (overall): ");  Serial.println(ROWS_PER_FRAME, DEC);            
+        Serial.print("Rows per split framebuffer malloc: ");  Serial.println(SPLIT_MEMORY_ROWS_PER_FRAME, DEC);      
+        #endif
   
 
-    // Can we fit the framebuffer into the single DMA capable memory block available?
-    if ( heap_caps_get_largest_free_block(MALLOC_CAP_DMA) >= _frame_buffer_memory_required  ) { // YES - SIMPLE
+        // Can we fit the framebuffer into the single DMA capable memory block available?
+        // Can we fit the framebuffer into the single DMA capable memory block available?
+        if ( heap_caps_get_largest_free_block(MALLOC_CAP_DMA) < _frame_buffer_memory_required  ) { 
+          
+          #if SERIAL_DEBUG      
+            Serial.printf("######### Insufficent memory for second framebuffer for requested resolution. Reduce MATRIX_COLOR_DEPTH and try again.\r\n\tAdditional %d bytes of memory required.\r\n\r\n", (_frame_buffer_memory_required-heap_caps_get_largest_free_block(MALLOC_CAP_DMA)) );
+          #endif
 
-        // Allocate the framebuffer memory, fail if we can even do this
+          return false;
+        }
+
+        // Allocate the framebuffer 2 memory, fail if we can even do this
         matrix_framebuffer_malloc_2 = (frameStruct *)heap_caps_malloc(_frame_buffer_memory_required, MALLOC_CAP_DMA);
-        if ( !matrix_framebuffer_malloc_2 ) {
+        if ( matrix_framebuffer_malloc_2 == NULL ) {
             #if SERIAL_DEBUG             
             Serial.println("ERROR: Couldn't malloc matrix_framebuffer_malloc_2! Critical fail.\r\n");            
             #endif
@@ -126,7 +142,7 @@ bool RGB64x32MatrixPanel_I2S_DMA::allocateDMAmemory()
         }    
 
         _total_dma_capable_memory_reserved += _frame_buffer_memory_required; 
-    } 
+   
 
     #endif
 
@@ -245,6 +261,15 @@ bool RGB64x32MatrixPanel_I2S_DMA::allocateDMAmemory()
     Serial.printf("DMA Memory Available:  %d bytes total. Largest free block: %d bytes.\r\n", heap_caps_get_free_size(MALLOC_CAP_DMA), heap_caps_get_largest_free_block(MALLOC_CAP_DMA));
     Serial.printf("General RAM Available: %d bytes total. Largest free block: %d bytes.\r\n", heap_caps_get_free_size(MALLOC_CAP_DEFAULT), heap_caps_get_largest_free_block(MALLOC_CAP_DEFAULT));
 
+
+    #if SERIAL_DEBUG    
+        Serial.println("DMA memory blocks available after malloc's: ");
+        heap_caps_print_heap_info(MALLOC_CAP_DMA);
+
+        delay(1000);
+    #endif
+
+
     return true;
 
 } // end initMatrixDMABuffer()
@@ -358,10 +383,12 @@ void RGB64x32MatrixPanel_I2S_DMA::configureDMA(int r1_pin, int  g1_pin, int  b1_
       Serial.println("configureDMA(): DMA configuration completed on I2S1.\r\n");
     #endif      
 
-#if SERIAL_DEBUG  
-    Serial.println("DMA  Memory Map after allocations: ");
-        heap_caps_print_heap_info(MALLOC_CAP_DMA);        
-#endif       
+    #if SERIAL_DEBUG  
+        Serial.println("DMA Memory Map after DMA LL allocations: ");
+            heap_caps_print_heap_info(MALLOC_CAP_DMA);        
+
+        delay(1000);
+    #endif       
 	
 	// Just os we know
 	everything_OK = true;
@@ -375,11 +402,20 @@ void RGB64x32MatrixPanel_I2S_DMA::configureDMA(int r1_pin, int  g1_pin, int  b1_
 /* Update a specific co-ordinate in the DMA buffer */
 void RGB64x32MatrixPanel_I2S_DMA::updateMatrixDMABuffer(int16_t x_coord, int16_t y_coord, uint8_t red, uint8_t green, uint8_t blue)
 {
+    if ( !everything_OK ) { 
 
-    if ( !everything_OK )
-      assert("DMA configuration in begin() not performed or completed successfully.");
+      #if SERIAL_DEBUG 
+              Serial.println("Cannot updateMatrixDMABuffer as setup failed!");
+      #endif         
+      
+      return;
+    }
 
+  #ifdef SPLIT_MEMORY_MODE
+  #ifdef SERIAL_DEBUG 
     int tmp_y_coord = y_coord;
+  #endif
+  #endif
     
    /* 1) Check that the co-ordinates are within range, or it'll break everything big time.
     * Valid co-ordinates are from 0 to (MATRIX_XXXX-1)
@@ -410,11 +446,11 @@ void RGB64x32MatrixPanel_I2S_DMA::updateMatrixDMABuffer(int16_t x_coord, int16_t
         #ifdef SPLIT_MEMORY_MODE
         if (y_coord >= SPLIT_MEMORY_ROWS_PER_FRAME ) {
           p = &matrix_framebuffer_malloc_2[back_buffer_id].rowdata[(y_coord-SPLIT_MEMORY_ROWS_PER_FRAME)].rowbits[color_depth_idx]; //matrixUpdateFrames location to write to uint16_t's
-        }
-          #ifdef SERIAL_DEBUG
-        //    Serial.printf("Using framebuffer_malloc_2. y-coord: %d, matrix row offset: %d \r\n", tmp_y_coord, (y_coord-SPLIT_MEMORY_ROWS_PER_FRAME) );
-          #endif    
 
+          #ifdef SERIAL_DEBUG
+           //   Serial.printf("fb_malloc_2. y-coord: %d, calc. offset: %d \r\n", tmp_y_coord, (y_coord-SPLIT_MEMORY_ROWS_PER_FRAME) );
+          #endif    
+        }
         #endif        
 
 
@@ -467,19 +503,18 @@ void RGB64x32MatrixPanel_I2S_DMA::updateMatrixDMABuffer(int16_t x_coord, int16_t
           if((x_coord) >= lsbBrightness) v|=BIT_OE; // For Brightness
         }
         
-
-
-
-        /* When using the Adafruit drawPixel, we only have one pixel co-ordinate and colour to draw (duh)
-         * so we can't paint a top and bottom half (or whatever row split the panel is) at the same time.
-         * Need to be smart and check the DMA buffer to see what the other half thinks (pun intended) 
-         * and persist this when we refresh.
+        /* When using the drawPixel, we are obviously only changing the value of one x,y position, 
+         * however, the HUB75 is wired up such that it is always painting TWO lines at the same time
+         * and this reflects the parallel in-DMA-memory data structure of uint16_t's that are getting
+         * pumped out at high speed.
+         * 
+         * So we need to ensure we persist the bits (8 of them) of the uint16_t for the row we aren't changing.
          * 
          * The DMA buffer order has also been reversed (refer to the last code in this function)
          * so we have to check for this and check the correct position of the MATRIX_DATA_STORAGE_TYPE
          * data.
          */
-        int16_t tmp_x_coord = x_coord;
+        int tmp_x_coord = x_coord;
         if(x_coord%2)
         {
           tmp_x_coord -= 1;
@@ -491,12 +526,9 @@ void RGB64x32MatrixPanel_I2S_DMA::updateMatrixDMABuffer(int16_t x_coord, int16_t
         { // Need to copy what the RGB status is for the bottom pixels
 
            // Set the color of the pixel of interest
-           if (green & mask)
-                v|=BIT_G1;
-           if (blue & mask)
-                v|=BIT_B1;           
-           if (red & mask)
-                v|=BIT_R1;
+           if (green & mask) {  v|=BIT_G1; }
+           if (blue & mask)  {  v|=BIT_B1; }
+           if (red & mask)   {  v|=BIT_R1; }
 
            // Persist what was painted to the other half of the frame equiv. pixel
            if (p->data[tmp_x_coord] & BIT_R2)
@@ -512,12 +544,9 @@ void RGB64x32MatrixPanel_I2S_DMA::updateMatrixDMABuffer(int16_t x_coord, int16_t
         { // Do it the other way around 
 
           // Color to set
-          if (red & mask)
-            v|=BIT_R2;
-          if (green & mask) 
-            v|=BIT_G2;
-          if (blue & mask)
-            v|=BIT_B2;
+          if (red & mask)   { v|=BIT_R2; }
+          if (green & mask) { v|=BIT_G2; }
+          if (blue & mask)  { v|=BIT_B2; }
           
           // Copy
           if (p->data[tmp_x_coord] & BIT_R1)
@@ -531,10 +560,6 @@ void RGB64x32MatrixPanel_I2S_DMA::updateMatrixDMABuffer(int16_t x_coord, int16_t
                
         } // paint
 		
-		//Serial.printf("x: %d, y: %d ", x_coord, y_coord );
-		//Serial.println(v, BIN);
-
-
         // 16 bit parallel mode
         //Save the calculated value to the bitplane memory in reverse order to account for I2S Tx FIFO mode1 ordering
         if(x_coord%2){
@@ -545,19 +570,14 @@ void RGB64x32MatrixPanel_I2S_DMA::updateMatrixDMABuffer(int16_t x_coord, int16_t
           
     } // color depth loop (8)
 
-  //Show our work!
-  //i2s_parallel_flip_to_buffer(&I2S1, backbuf_id);
-  
-  // If we've linked the DMA output to the same backbuf_id that this function is
-  // currently writing too, then the output will be immediate. Else: flipDMABuffer(), then showDMABuffer()
-  
-  
-} // updateDMABuffer
+} // updateMatrixDMABuffer (specific co-ords change)
 
 
 /* Update the entire buffer with a single specific colour - quicker */
 void RGB64x32MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint8_t red, uint8_t green, uint8_t blue)
 {
+  if ( !everything_OK ) return;
+
   for (unsigned int matrix_frame_parallel_row = 0; matrix_frame_parallel_row < ROWS_PER_FRAME; matrix_frame_parallel_row++) // half height - 16 iterations
   {	
     for(int color_depth_idx=0; color_depth_idx<PIXEL_COLOR_DEPTH_BITS; color_depth_idx++)  // color depth - 8 iterations
@@ -572,101 +592,86 @@ void RGB64x32MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint8_t red, uint8_t gre
           p = &matrix_framebuffer_malloc_2[back_buffer_id].rowdata[(matrix_frame_parallel_row-SPLIT_MEMORY_ROWS_PER_FRAME)].rowbits[color_depth_idx]; //matrixUpdateFrames location to write to uint16_t's
 
           #ifdef SERIAL_DEBUG
-       //     Serial.printf("Using framebuffer_malloc_2. Row %d = Offset %d\r\n", matrix_frame_parallel_row, (matrix_frame_parallel_row-SPLIT_MEMORY_ROWS_PER_FRAME) );
+            //Serial.printf("Using framebuffer_malloc_2. Row %d = Offset %d\r\n", matrix_frame_parallel_row, (matrix_frame_parallel_row-SPLIT_MEMORY_ROWS_PER_FRAME) );
           #endif
         }
-
+        else
+        {
+          #ifdef SERIAL_DEBUG
+           // Serial.printf("Using framebuffer_malloc_1. Row %d\r\n", matrix_frame_parallel_row );
+          #endif
+        }
         #endif
+
+        
 
         for(int x_coord=0; x_coord < MATRIX_WIDTH; x_coord++) // row pixel width 64 iterations
         { 		
-			
-			int v=0; // the output bitstream
-			
-			// if there is no latch to hold address, output ADDX lines directly to GPIO and latch data at end of cycle
-			int gpioRowAddress = matrix_frame_parallel_row;
-			
-			// normally output current rows ADDX, special case for LSB, output previous row's ADDX (as previous row is being displayed for one latch cycle)
-			if(color_depth_idx == 0)
-			  gpioRowAddress = matrix_frame_parallel_row-1;
-			
-			if (gpioRowAddress & 0x01) v|=BIT_A; // 1
-			if (gpioRowAddress & 0x02) v|=BIT_B; // 2
-			if (gpioRowAddress & 0x04) v|=BIT_C; // 4
-			if (gpioRowAddress & 0x08) v|=BIT_D; // 8
-			if (gpioRowAddress & 0x10) v|=BIT_E; // 16
-			
-				
-			/* ORIG
-			// need to disable OE after latch to hide row transition
-			if((x_coord) == 0) v|=BIT_OE;
-			
-			// drive latch while shifting out last bit of RGB data
-			if((x_coord) == PIXELS_PER_LATCH-1) v|=BIT_LAT;
-		   
-			// need to turn off OE one clock before latch, otherwise can get ghosting
-			if((x_coord)==PIXELS_PER_LATCH-1) v|=BIT_OE;
-			*/
-			
-			// need to disable OE after latch to hide row transition
-			if((x_coord) == 0 ) v|=BIT_OE;
-			
-			// drive latch while shifting out last bit of RGB data
-			if((x_coord) == PIXELS_PER_ROW-1) v|=BIT_LAT;
-			
-			// need to turn off OE one clock before latch, otherwise can get ghosting
-			if((x_coord)==PIXELS_PER_ROW-2) v|=BIT_OE;	
-			
-			
-			// turn off OE after brightness value is reached when displaying MSBs
-			// MSBs always output normal brightness
-			// LSB (!color_depth_idx) outputs normal brightness as MSB from previous row is being displayed
-			if((color_depth_idx > lsbMsbTransitionBit || !color_depth_idx) && ((x_coord) >= brightness)) v|=BIT_OE; // For Brightness
-			
-			// special case for the bits *after* LSB through (lsbMsbTransitionBit) - OE is output after data is shifted, so need to set OE to fractional brightness
-			if(color_depth_idx && color_depth_idx <= lsbMsbTransitionBit) {
-			  // divide brightness in half for each bit below lsbMsbTransitionBit
-			  int lsbBrightness = brightness >> (lsbMsbTransitionBit - color_depth_idx + 1);
-			  if((x_coord) >= lsbBrightness) v|=BIT_OE; // For Brightness
-			}
-			
-			
-			// Top half colours
-			if (green & mask)
-				v|=BIT_G1;
-			if (blue & mask)
-				v|=BIT_B1;           
-			if (red & mask)
-				v|=BIT_R1;
-
-			// Bottom half colours
-			if (red & mask)
-			v|=BIT_R2;
-			if (green & mask) 
-			v|=BIT_G2;
-			if (blue & mask)
-			v|=BIT_B2;
-
-			
-			// 16 bit parallel mode
-			//Save the calculated value to the bitplane memory in reverse order to account for I2S Tx FIFO mode1 ordering
-			if(x_coord%2)
-			{
-			  p->data[(x_coord)-1] = v;
-			} else {
-			  p->data[(x_coord)+1] = v;
-			} // end reordering
-			
-		} // end x_coord iteration
+          
+          int v=0; // the output bitstream
+          
+          // if there is no latch to hold address, output ADDX lines directly to GPIO and latch data at end of cycle
+          int gpioRowAddress = matrix_frame_parallel_row;
+          
+          // normally output current rows ADDX, special case for LSB, output previous row's ADDX (as previous row is being displayed for one latch cycle)
+          if(color_depth_idx == 0)
+            gpioRowAddress = matrix_frame_parallel_row-1;
+          
+          if (gpioRowAddress & 0x01) v|=BIT_A; // 1
+          if (gpioRowAddress & 0x02) v|=BIT_B; // 2
+          if (gpioRowAddress & 0x04) v|=BIT_C; // 4
+          if (gpioRowAddress & 0x08) v|=BIT_D; // 8
+          if (gpioRowAddress & 0x10) v|=BIT_E; // 16
+          
+            
+          /* ORIG
+          // need to disable OE after latch to hide row transition
+          if((x_coord) == 0) v|=BIT_OE;
+          
+          // drive latch while shifting out last bit of RGB data
+          if((x_coord) == PIXELS_PER_LATCH-1) v|=BIT_LAT;
+          
+          // need to turn off OE one clock before latch, otherwise can get ghosting
+          if((x_coord)==PIXELS_PER_LATCH-1) v|=BIT_OE;
+          */
+          
+          // need to disable OE after latch to hide row transition
+          if((x_coord) == 0 ) v|=BIT_OE;
+          
+          // drive latch while shifting out last bit of RGB data
+          if((x_coord) == PIXELS_PER_ROW-1) v|=BIT_LAT;
+          
+          // need to turn off OE one clock before latch, otherwise can get ghosting
+          if((x_coord)==PIXELS_PER_ROW-2) v|=BIT_OE;	
+          
+          
+          // turn off OE after brightness value is reached when displaying MSBs
+          // MSBs always output normal brightness
+          // LSB (!color_depth_idx) outputs normal brightness as MSB from previous row is being displayed
+          if((color_depth_idx > lsbMsbTransitionBit || !color_depth_idx) && ((x_coord) >= brightness)) v|=BIT_OE; // For Brightness
+          
+          // special case for the bits *after* LSB through (lsbMsbTransitionBit) - OE is output after data is shifted, so need to set OE to fractional brightness
+          if(color_depth_idx && color_depth_idx <= lsbMsbTransitionBit) {
+            // divide brightness in half for each bit below lsbMsbTransitionBit
+            int lsbBrightness = brightness >> (lsbMsbTransitionBit - color_depth_idx + 1);
+            if((x_coord) >= lsbBrightness) v|=BIT_OE; // For Brightness
+          }
+          
+          // Top and bottom matrix MATRIX_ROWS_IN_PARALLEL half colours
+          if (green & mask) { v|=BIT_G1; v|=BIT_R2; }
+          if (blue & mask)  { v|=BIT_B1; v|=BIT_G2; }
+          if (red & mask)   { v|=BIT_R1; v|=BIT_B2; }
+          
+          // 16 bit parallel mode
+          //Save the calculated value to the bitplane memory in reverse order to account for I2S Tx FIFO mode1 ordering
+          if(x_coord%2) {
+            p->data[(x_coord)-1] = v;
+          } else {
+            p->data[(x_coord)+1] = v;
+          } // end reordering
+          
+        } // end x_coord iteration
     } // colour depth loop (8)
   } // end row iteration
-  
- 
-   
-  //Show our work!
-  //i2s_parallel_flip_to_buffer(&I2S1, backbuf_id);
-  
-  // If we've linked the DMA output to the same backbuf_id that this function is
-  // currently writing too, then the output will be immediate. Else: flipDMABuffer(), then showDMABuffer()
-  
-} // updateDMABuffer
+
+} // updateMatrixDMABuffer (full frame paint)

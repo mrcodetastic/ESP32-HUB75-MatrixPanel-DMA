@@ -35,7 +35,7 @@
  *
  */
 #ifndef MATRIX_HEIGHT
-#define MATRIX_HEIGHT               32 //64
+#define MATRIX_HEIGHT               32 
 #endif
 
 #ifndef MATRIX_WIDTH
@@ -209,6 +209,11 @@ class RGB64x32MatrixPanel_I2S_DMA : public GFX {
       configureDMA(dma_r1_pin, dma_g1_pin, dma_b1_pin, dma_r2_pin, dma_g2_pin, dma_b2_pin, dma_a_pin,  dma_b_pin, dma_c_pin, dma_d_pin, dma_e_pin, dma_lat_pin,  dma_oe_pin,   dma_clk_pin ); //DMA and I2S configuration and setup
 
       showDMABuffer(); // show backbuf_id of 0
+
+      #if SERIAL_DEBUG 
+        if (!everything_OK)    
+              Serial.println("RGB64x32MatrixPanel_I2S_DMA::begin() failed.");
+      #endif      
 
       return everything_OK;
 
