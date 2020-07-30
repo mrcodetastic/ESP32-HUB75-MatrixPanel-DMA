@@ -70,17 +70,9 @@ This library has only been tested with a 64 pixel (wide) and 32 (high) RGB panel
 
 ### New Feature
 
-With version 1.1.0 of the library onwards, there is now a 'feature' to split the framebuffer  over two memory 'blocks' (mallocs) to work around the fact that typically the ESP32 upon 'boot up' has 2 x ~100kb chunks of memory available to use (ideally we'd want one massive chunk, but for whatever reasons this isn't the case). This allows non-contiguous memory allocations to be joined-up potentially allowing for 512x64 resolution or greater. No guarantees however.
+With version 1.1.0 of the library onwards, there is now a 'feature' to split the framebuffer  over two memory 'blocks' (mallocs) to work around the fact that typically the ESP32 upon 'boot up' has 2 x ~100kb chunks of memory available to use (ideally we'd want one massive chunk, but for whatever reasons this isn't the case). This allows non-contiguous memory allocations to be joined-up potentially allowing for 512x64 resolution or greater (no guarantees however). This is enabled by default.
 
-```
-// At the top of 'ESP32-RGB64x32MatrixPanel-I2S-DMA.h':
-//
-// Experimental: Split the framebuffer into two smaller memory allocations.
-//               Can allow a bigger resolution due to the fragmented memory
-//               map of the typical Arduino sketch even before setup().
-#define SPLIT_MEMORY_MODE 1
-```
-Refer to [to this](SPLIT_MEMORY_MODE.md) for more details.
+[Refer to this](SPLIT_MEMORY_MODE.md) for more details.
 
 ## Ghosting
 

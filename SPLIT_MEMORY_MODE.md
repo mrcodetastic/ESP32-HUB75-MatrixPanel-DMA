@@ -1,13 +1,13 @@
 # SPLIT_MEMORY_MODE
-To enable split framebuffer memory mode, uncomment line:
+Aka. the enabling of the 'feature' (enabled by default) with:
 ```
-//#define SPLIT_MEMORY_MODE 1
+#define SPLIT_MEMORY_MODE 1
 ```
-in 'ESP32-RGB64x32MatrixPanel-I2S-DMA.h'
+...in 'ESP32-RGB64x32MatrixPanel-I2S-DMA.h'
 
 ## What is it trying to resolve?
 
-For whatever reason, and this may not be consistent across all ESP32 environments, when `heap_caps_print_heap_info(MALLOC_CAP_DMA)` is executed to print information about the available memory blocks that are DMA capable (which we need for a DMA-enabled pixel framebuffer), you may see something like this:
+For whatever reason (and this may not be consistent across all ESP32 environments) when `heap_caps_print_heap_info(MALLOC_CAP_DMA)` is executed to print information about the available memory blocks that are DMA capable (which we need for a DMA-enabled pixel framebuffer), you may see something like this:
 
 ```
 Heap summary for capabilities 0x00000008:
