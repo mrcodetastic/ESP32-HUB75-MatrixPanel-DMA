@@ -1,56 +1,56 @@
 #ifndef _ESP32_RGB_64_32_MATRIX_PANEL_I2S_DMA
 #define _ESP32_RGB_64_32_MATRIX_PANEL_I2S_DMA
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/semphr.h"
-#include "freertos/queue.h"
-
-#include "esp_heap_caps.h"
-#include "esp32_i2s_parallel.h"
-
-#include "GFX.h" // Adafruit GFX core class -> https://github.com/mrfaptastic/GFX_Root
-
 /***************************************************************************************/
-/* Library compile-time options                                                        */
+/* COMPILE-TIME OPTIONS - CONFIGURE AS DESIRED                                         */
+/***************************************************************************************/
 
-// Enable serial debugging of the library, to see how memory is allocated etc.
+/* Enable serial debugging of the library, to see how memory is allocated etc. */
 //#define SERIAL_DEBUG 1
 
-// Experimental: Split the framebuffer into two smaller memory allocations.
-//               Can allow a bigger resolution due to the fragmented memory
-//               map of the typical arduino sketch even before setup().
-//#define SPLIT_MEMORY_MODE 1
+/* Split the framebuffer into two smaller memory allocations. Can allow for 
+ * bigger resolution due to the fragmented memory map of the typical Arduino sketch 
+ * even before setup(). Enabled by default.
+ */
+#define SPLIT_MEMORY_MODE 1
 
-/***************************************************************************************/
-/* HUB75 RGB pixel WIDTH and HEIGHT. 
+/* Use GFX_Root (https://github.com/mrfaptastic/GFX_Root) instead of 
+ * Adafruit_GFX library. No real benefit unless you don't want Bus_IO library. 
+ */
+//#define USE_GFX_ROOT 1
+
+
+/* Physical / Chained HUB75(s) RGB pixel WIDTH and HEIGHT. 
  *
  * This library has only been tested with a 64 pixel (wide) and 32 (high) RGB panel. 
  * Theoretically, if you want to chain two of these horizontally to make a 128x32 panel
  * you can do so with the cable and then set the MATRIX_WIDTH to '128'.
  *
- * Also, if you use a 64x64 panel, then set the MATRIX_HEIGHT to '64'; it will work!
+ * Also, if you use a 64x64 panel, then set the MATRIX_HEIGHT to '64' and an E_PIN; it will work!
  *
  * All of this is memory permitting of course (dependant on your sketch etc.) ...
  *
  */
 #ifndef MATRIX_HEIGHT
-#define MATRIX_HEIGHT               32 
+	#define MATRIX_HEIGHT               32 
 #endif
 
 #ifndef MATRIX_WIDTH
-#define MATRIX_WIDTH                64
+	#define MATRIX_WIDTH                64
+#endif
+
+#ifndef PIXEL_COLOR_DEPTH_BITS
+	#define PIXEL_COLOR_DEPTH_BITS      8   // 8bit per RGB color = 24 bit/per pixel, reduce to save RAM
 #endif
 
 #ifndef MATRIX_ROWS_IN_PARALLEL
-#define MATRIX_ROWS_IN_PARALLEL     2
+	#define MATRIX_ROWS_IN_PARALLEL     2   // Don't change this unless you know what you're doing
 #endif
 
-#define PIXEL_COLOR_DEPTH_BITS      8   // 8bit per RGB color = 24 bit/per pixel, reduce to save RAM
 
-/***************************************************************************************/
-/* ESP32 Pin Definition. You can change this, but best if you keep it as is...         */
-
+/* ESP32 Default Pin definition. You can change this, but best if you keep it as is and provide custom pin mappings 
+ * as part of the begin(...) function.
+ */
 #define R1_PIN_DEFAULT  25
 #define G1_PIN_DEFAULT  26
 #define B1_PIN_DEFAULT  27
@@ -70,8 +70,26 @@
 
 // Interesting Fact: We end up using a uint16_t to send data in parallel to the HUB75... but 
 //                   given we only map to 14 physical output wires/bits, we waste 2 bits.
+
 /***************************************************************************************/
-/* Keep this as is. Do not change.                                                     */
+/* Do not change.                                                                      */
+
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/semphr.h"
+#include "freertos/queue.h"
+
+#include "esp_heap_caps.h"
+#include "esp32_i2s_parallel.h"
+
+#ifdef USE_GFX_ROOT
+	#include "GFX.h" // Adafruit GFX core class -> https://github.com/mrfaptastic/GFX_Root
+#else	
+	#include "Adafruit_GFX.h" // Adafruit class with all the other stuff
+#endif	
+
+/***************************************************************************************/
+/* Do not change.                                                                      */
 
 // Panel Upper half RGB (numbering according to order in DMA gpio_bus configuration)
 #define BIT_R1  (1<<0)   
@@ -156,7 +174,12 @@ typedef struct rgb_24 {
 
 
 /***************************************************************************************/   
+#ifdef USE_GFX_ROOT
 class RGB64x32MatrixPanel_I2S_DMA : public GFX {
+#else
+class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {	
+#endif
+
   // ------- PUBLIC -------
   public:
     
@@ -167,7 +190,11 @@ class RGB64x32MatrixPanel_I2S_DMA : public GFX {
      *        
      */
     RGB64x32MatrixPanel_I2S_DMA(bool _double_buffer = false)
+#ifdef USE_GFX_ROOT	
       : GFX(MATRIX_WIDTH, MATRIX_HEIGHT), double_buffering_enabled(_double_buffer)  {
+#else
+      : Adafruit_GFX(MATRIX_WIDTH, MATRIX_HEIGHT), double_buffering_enabled(_double_buffer)  {
+#endif		  
 
     }
 

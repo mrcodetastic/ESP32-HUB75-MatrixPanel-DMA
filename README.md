@@ -1,7 +1,5 @@
 # HUB75 LED matrix library for the ESP32, utilising DMA
 
-#### Note: Change with new version! Dependancy on [GFX_Root](https://github.com/ZinggJM/GFX_Root) from the "Library > Manage Libraries" menu. ####
-
 This ESP32 Arduino library for an RGB LED (HUB 75 type) Matrix Panel, utilises the DMA functionality provided by the ESP32's I2S 'LCD Mode' which basically means that pixel data is sent straight from memory, via the DMA controller, to the relevant LED Matrix GPIO pins with little CPU overhead.
 
 As a result, this library can theoretically provide ~16-24 bit colour, at various brightness levels without noticeable flicker.
@@ -10,7 +8,7 @@ As a result, this library can theoretically provide ~16-24 bit colour, at variou
 
 # Installation
 
-* Dependency: You will need to install [GFX_Root](https://github.com/ZinggJM/GFX_Root) from the "Library > Manage Libraries" menu.
+* Dependency: You will need to install Adafruit_GFX from the "Library > Manage Libraries" menu.
 * Download and unzip this repository into your Arduino/libraries folder (or better still, use the Arduino 'add library from .zip' option.
 * Library also tested to work fine with PlatformIO, install into your PlatformIO projects' lib/ folder as appropriate.
 
