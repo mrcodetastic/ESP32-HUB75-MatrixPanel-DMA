@@ -52,9 +52,6 @@
     
 */
 
-#define ESP32_NUM_FRAME_BUFFERS 1
-
-
 bool RGB64x32MatrixPanel_I2S_DMA::allocateDMAmemory()
 {
 
