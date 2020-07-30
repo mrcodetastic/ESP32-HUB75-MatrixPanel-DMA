@@ -77,8 +77,6 @@ bool RGB64x32MatrixPanel_I2S_DMA::allocateDMAmemory()
         Serial.println("DMA memory blocks available before any malloc's: ");
         heap_caps_print_heap_info(MALLOC_CAP_DMA);
         
-
-        Serial.printf("FYI: Size of an ESP32 DMA linked list descriptor (lldesc_t) is %d bytes\r\n", sizeof(lldesc_t));
         Serial.printf("We're going to need %d bytes of SRAM just for the frame buffer(s).\r\n", _frame_buffer_memory_required);  
         Serial.printf("Largest DMA capable SRAM memory block is %d bytes.\r\n", heap_caps_get_largest_free_block(MALLOC_CAP_DMA));          
     #endif
@@ -96,10 +94,8 @@ bool RGB64x32MatrixPanel_I2S_DMA::allocateDMAmemory()
 
     // Allocate the framebuffer 1 memory, fail if we can even do this
     matrix_framebuffer_malloc_1 = (frameStruct *)heap_caps_malloc(_frame_buffer_memory_required, MALLOC_CAP_DMA);
-    if ( matrix_framebuffer_malloc_1 == NULL ) {
-        #if SERIAL_DEBUG             
+    if ( matrix_framebuffer_malloc_1 == NULL ) {       
         Serial.println("ERROR: Couldn't malloc matrix_framebuffer_malloc_1! Critical fail.\r\n");            
-        #endif
 
         return false;
     }    
@@ -109,9 +105,8 @@ bool RGB64x32MatrixPanel_I2S_DMA::allocateDMAmemory()
     // SPLIT MEMORY MODE
     #ifdef SPLIT_MEMORY_MODE
 
-        Serial.println("SPLIT MEMORY MODE ENABLED!");
-
         #if SERIAL_DEBUG             
+        Serial.println("SPLIT MEMORY MODE ENABLED!");		
         Serial.print("Rows per frame (overall): ");  Serial.println(ROWS_PER_FRAME, DEC);            
         Serial.print("Rows per split framebuffer malloc: ");  Serial.println(SPLIT_MEMORY_ROWS_PER_FRAME, DEC);      
         #endif
@@ -130,10 +125,8 @@ bool RGB64x32MatrixPanel_I2S_DMA::allocateDMAmemory()
 
         // Allocate the framebuffer 2 memory, fail if we can even do this
         matrix_framebuffer_malloc_2 = (frameStruct *)heap_caps_malloc(_frame_buffer_memory_required, MALLOC_CAP_DMA);
-        if ( matrix_framebuffer_malloc_2 == NULL ) {
-            #if SERIAL_DEBUG             
+        if ( matrix_framebuffer_malloc_2 == NULL ) {       
             Serial.println("ERROR: Couldn't malloc matrix_framebuffer_malloc_2! Critical fail.\r\n");            
-            #endif
 
             return false;
         }    
@@ -193,7 +186,9 @@ bool RGB64x32MatrixPanel_I2S_DMA::allocateDMAmemory()
         int actualRefreshRate = 1000000000UL/(nsPerFrame);
         calculated_refresh_rate = actualRefreshRate;
 
+        #if SERIAL_DEBUG  
         Serial.printf("lsbMsbTransitionBit of %d gives %d Hz refresh: \r\n", lsbMsbTransitionBit, actualRefreshRate);        
+		#endif
 
         if (actualRefreshRate > min_refresh_rate) // HACK Hard Coded: 100
           break;
@@ -217,16 +212,16 @@ bool RGB64x32MatrixPanel_I2S_DMA::allocateDMAmemory()
    */        
 
     _dma_linked_list_memory_required = numDMAdescriptorsPerRow * ROWS_PER_FRAME * _num_frame_buffers * sizeof(lldesc_t);
-    Serial.printf("Descriptors for lsbMsbTransitionBit %d/%d with %d rows require %d bytes of DMA RAM\r\n", lsbMsbTransitionBit, PIXEL_COLOR_DEPTH_BITS - 1, ROWS_PER_FRAME, _dma_linked_list_memory_required);    
+    #if SERIAL_DEBUG 	
+		Serial.printf("Descriptors for lsbMsbTransitionBit %d/%d with %d rows require %d bytes of DMA RAM\r\n", lsbMsbTransitionBit, PIXEL_COLOR_DEPTH_BITS - 1, ROWS_PER_FRAME, _dma_linked_list_memory_required);    
+	#endif   
 
     _total_dma_capable_memory_reserved += _dma_linked_list_memory_required;
 
     // Do a final check to see if we have enough space for the additional DMA linked list descriptors that will be required to link it all up!
     if(_dma_linked_list_memory_required > heap_caps_get_largest_free_block(MALLOC_CAP_DMA)) {
-        #if SERIAL_DEBUG  
-          Serial.printf("ERROR: Not enough SRAM left over for DMA linked-list descriptor memory reservation! Oh so close!\r\n");
-        #endif   
-
+       Serial.printf("ERROR: Not enough SRAM left over for DMA linked-list descriptor memory reservation! Oh so close!\r\n");
+  
         return false;
     } // linked list descriptors memory check
 
@@ -237,7 +232,7 @@ bool RGB64x32MatrixPanel_I2S_DMA::allocateDMAmemory()
     dmadesc_a = (lldesc_t *)heap_caps_malloc(desccount * sizeof(lldesc_t), MALLOC_CAP_DMA);
     assert("Can't allocate descriptor framebuffer a");
     if(!dmadesc_a) {
-        Serial.printf("Error: Could not malloc descriptor framebuffer a.");
+        Serial.printf("ERROR: Could not malloc descriptor framebuffer a.");
         return false;
     }
 	
@@ -247,22 +242,20 @@ bool RGB64x32MatrixPanel_I2S_DMA::allocateDMAmemory()
         dmadesc_b = (lldesc_t *)heap_caps_malloc(desccount * sizeof(lldesc_t), MALLOC_CAP_DMA);
         assert("Could not malloc descriptor framebuffer b.");
         if(!dmadesc_b) {
-            Serial.printf("Error: Could not malloc descriptor framebuffer b.");
+            Serial.printf("ERROR: Could not malloc descriptor framebuffer b.");
             return false;
         }
     }
 
-    Serial.printf("*** Memory Allocations Complete *** \r\n");
+    Serial.printf("*** ESP32-RGB64x32MatrixPanel-I2S-DMA: Memory Allocations Complete *** \r\n");
     Serial.printf("Total memory that was reserved: %d kB.\r\n", _total_dma_capable_memory_reserved/1024);
     Serial.printf("Heap Memory Available: %d bytes total. Largest free block: %d bytes.\r\n", heap_caps_get_free_size(0), heap_caps_get_largest_free_block(0));
-    Serial.printf("DMA Memory Available:  %d bytes total. Largest free block: %d bytes.\r\n", heap_caps_get_free_size(MALLOC_CAP_DMA), heap_caps_get_largest_free_block(MALLOC_CAP_DMA));
     Serial.printf("General RAM Available: %d bytes total. Largest free block: %d bytes.\r\n", heap_caps_get_free_size(MALLOC_CAP_DEFAULT), heap_caps_get_largest_free_block(MALLOC_CAP_DEFAULT));
 
 
     #if SERIAL_DEBUG    
         Serial.println("DMA memory blocks available after malloc's: ");
         heap_caps_print_heap_info(MALLOC_CAP_DMA);
-
         delay(1000);
     #endif
 

@@ -142,13 +142,13 @@ static void fifo_reset(i2s_dev_t *dev) {
 
 void i2s_parallel_setup_without_malloc(i2s_dev_t *dev, const i2s_parallel_config_t *cfg) {
     //Figure out which signal numbers to use for routing
-    printf("Setting up parallel I2S bus at I2S%d\n", i2snum(dev));
+    //printf("Setting up parallel I2S bus at I2S%d\n", i2snum(dev));
     int sig_data_base, sig_clk;
     if (dev==&I2S0) {
         sig_data_base=I2S0O_DATA_OUT0_IDX;
         sig_clk=I2S0O_WS_OUT_IDX;
     } else {
-        printf("Setting up i2s parallel mode in %d bit mode!\n", cfg->bits);
+        //printf("Setting up i2s parallel mode in %d bit mode!\n", cfg->bits);
         if (cfg->bits==I2S_PARALLEL_BITS_32) {
             sig_data_base=I2S1O_DATA_OUT0_IDX;
         } else if (cfg->bits==I2S_PARALLEL_BITS_16) {
