@@ -40,5 +40,7 @@ of your virtual screen. Either make new defines and use that, or you can use vir
 #### Contributor ####
 Written by Brian Lough
 YouTube: https://www.youtube.com/brianlough
+
 Tindie: https://www.tindie.com/stores/brianlough/
+
 Twitter: https://twitter.com/witnessmenow
