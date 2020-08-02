@@ -210,20 +210,14 @@ bool RGB64x32MatrixPanel_I2S_DMA::allocateDMAmemory()
         numDMAdescriptorsPerRow += 1<<(i - lsbMsbTransitionBit - 1);
     }
 
-    //Serial.printf("Size of (sizeof(rowBitStruct) * PIXEL_COLOR_DEPTH_BITS): %d.\r\n", (sizeof(rowBitStruct) * PIXEL_COLOR_DEPTH_BITS));
-    //Serial.printf("Size of sizeof(rowColorDepthStruct): %d.\r\n", sizeof(rowColorDepthStruct));
-
-
-    // Going to need a little more DMA LL memory structure RAM.
     // Refer to 'DMA_LL_PAYLOAD_SPLIT' code in configureDMA() below to understand why this exists.
     // numDMAdescriptorsPerRow is also used to calcaulte descount which is super important in i2s_parallel_config_t SoC DMA setup. 
     if ( sizeof(rowColorDepthStruct) > DMA_MAX ) {
 
         #if SERIAL_DEBUG  
-          Serial.println("Split DMA payload enabled. Increasing DMA descriptor count per frame row by one.");        
+          Serial.println("Split DMA payload required.");        
 		    #endif      
 
-        //numDMAdescriptorsPerRow += 1;
         numDMAdescriptorsPerRow += PIXEL_COLOR_DEPTH_BITS-1; 
         // Not if numDMAdescriptorsPerRow is even just one descriptor too large, DMA linked list will not correctly loop.
     }
@@ -302,15 +296,12 @@ void RGB64x32MatrixPanel_I2S_DMA::configureDMA(int r1_pin, int  g1_pin, int  b1_
     int current_dmadescriptor_offset = 0;
 
     // HACK: If we need to split the payload in 1/2 so that it doesn't breach DMA_MAX, lets do it by the color_depth.
-    //       We also declare a ridiculously long variable as well... row_bit_struct_color_depth_dma_payload_break_point
     int num_dma_payload_color_depths = PIXEL_COLOR_DEPTH_BITS;
     if ( sizeof(rowColorDepthStruct) > DMA_MAX ) {
         num_dma_payload_color_depths = 1;
     }
 
-    /* Fill DMA linked lists for both frames (as in, halves of the HUB75 panel)
-     * .. and if double buffering is enabled, link it up for both buffers.
-     */
+    // Fill DMA linked lists for both frames (as in, halves of the HUB75 panel) and if double buffering is enabled, link it up for both buffers.
     for(int j = 0; j < ROWS_PER_FRAME; j++) {
 
         // Split framebuffer malloc hack 'improvement'
@@ -343,15 +334,16 @@ void RGB64x32MatrixPanel_I2S_DMA::configureDMA(int r1_pin, int  g1_pin, int  b1_
 
         current_dmadescriptor_offset++;
 
-        // If the number of pixels per row is to great for the size of a single payload, so we need to split what we were going to send above.
-        if ( sizeof(rowColorDepthStruct) > DMA_MAX ) {
+        // If the number of pixels per row is to great for the size of a DMA payload, so we need to split what we were going to send above.
+        if ( sizeof(rowColorDepthStruct) > DMA_MAX ) 
+        {
+                   
+          #if SERIAL_DEBUG     
+              Serial.printf("Spliting DMA payload for %d color depths into %d byte payloads.\r\n", PIXEL_COLOR_DEPTH_BITS-1, sizeof(rowBitStruct) );
+          #endif
           
-            #if SERIAL_DEBUG     
-                Serial.printf("Spliting DMA payload for %d color depths into %d byte payloads.\r\n", PIXEL_COLOR_DEPTH_BITS-1, sizeof(rowBitStruct) );
-            #endif              
-
-          for (int cd = 1; cd < PIXEL_COLOR_DEPTH_BITS; cd++) {
-
+          for (int cd = 1; cd < PIXEL_COLOR_DEPTH_BITS; cd++) 
+          {
             // first set of data is LSB through MSB, single pass - all color bits are displayed once, which takes care of everything below and inlcluding LSBMSB_TRANSITION_BIT
             // TODO: size must be less than DMA_MAX - worst case for library: 16-bpp with 256 pixels per row would exceed this, need to break into two
             link_dma_desc(&dmadesc_a[current_dmadescriptor_offset], previous_dmadesc_a, &(fb_malloc_ptr[0].rowdata[fb_malloc_j].rowbits[cd].data), sizeof(rowBitStruct) );
@@ -362,20 +354,20 @@ void RGB64x32MatrixPanel_I2S_DMA::configureDMA(int r1_pin, int  g1_pin, int  b1_
             previous_dmadesc_b = &dmadesc_b[current_dmadescriptor_offset]; }
 
             current_dmadescriptor_offset++;     
-          } // additional linked list items           
 
+          } // additional linked list items           
         }  // row depth struct
 
 
-        for(int i=lsbMsbTransitionBit + 1; i<PIXEL_COLOR_DEPTH_BITS; i++) {
-
+        for(int i=lsbMsbTransitionBit + 1; i<PIXEL_COLOR_DEPTH_BITS; i++) 
+        {
             // binary time division setup: we need 2 of bit (LSBMSB_TRANSITION_BIT + 1) four of (LSBMSB_TRANSITION_BIT + 2), etc
             // because we sweep through to MSB each time, it divides the number of times we have to sweep in half (saving linked list RAM)
             // we need 2^(i - LSBMSB_TRANSITION_BIT - 1) == 1 << (i - LSBMSB_TRANSITION_BIT - 1) passes from i to MSB
             //Serial.printf("buffer %d: repeat %d times, size: %d, from %d - %d\r\n", current_dmadescriptor_offset, 1<<(i - lsbMsbTransitionBit - 1), (PIXEL_COLOR_DEPTH_BITS - i), i, PIXEL_COLOR_DEPTH_BITS-1);
 
-            for(int k=0; k < 1<<(i - lsbMsbTransitionBit - 1); k++) {
-
+            for(int k=0; k < 1<<(i - lsbMsbTransitionBit - 1); k++) 
+            {
                 link_dma_desc(&dmadesc_a[current_dmadescriptor_offset], previous_dmadesc_a, &(fb_malloc_ptr[0].rowdata[fb_malloc_j].rowbits[i].data), sizeof(rowBitStruct) * (PIXEL_COLOR_DEPTH_BITS - i));
                 previous_dmadesc_a = &dmadesc_a[current_dmadescriptor_offset];
 
