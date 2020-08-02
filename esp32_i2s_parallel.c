@@ -32,8 +32,6 @@
 //#include "esp_heap_caps.h"
 #include "esp32_i2s_parallel.h"
 
-#define DMA_MAX (4096-4)
-
 typedef struct {
     volatile lldesc_t *dmadesc_a, *dmadesc_b;
     int desccount_a, desccount_b;
@@ -106,7 +104,8 @@ static void fill_dma_desc(volatile lldesc_t *dmadesc, i2s_parallel_buffer_desc_t
 
 // size must be less than DMA_MAX - need to handle breaking long transfer into two descriptors before call
 // DMA_MAX by the way is the maximum data packet size you can hold in one chunk
-void link_dma_desc(volatile lldesc_t *dmadesc, volatile lldesc_t *prevdmadesc, void *memory, size_t size) {
+void link_dma_desc(volatile lldesc_t *dmadesc, volatile lldesc_t *prevdmadesc, void *memory, size_t size) 
+{
     if(size > DMA_MAX) size = DMA_MAX;
 
     dmadesc->size = size;

@@ -12,6 +12,9 @@ extern "C" {
 #include "soc/i2s_struct.h"
 #include "rom/lldesc.h"
 
+#define DMA_MAX (4096-4)
+//#define DMA_MAX (512)
+
 typedef enum {
     I2S_PARALLEL_BITS_8=8, 
     I2S_PARALLEL_BITS_16=16,

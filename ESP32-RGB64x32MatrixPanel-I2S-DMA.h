@@ -15,7 +15,7 @@
 #define SPLIT_MEMORY_MODE 1
 
 /* Use GFX_Root (https://github.com/mrfaptastic/GFX_Root) instead of 
- * Adafruit_GFX library. No real benefit unless you don't want Bus_IO library. 
+ * Adafruit_GFX library. No real benefit unless you don't want Bus_IO & Wire.h library dependencies. 
  */
 //#define USE_GFX_ROOT 1
 
