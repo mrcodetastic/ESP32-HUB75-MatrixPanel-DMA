@@ -42,13 +42,3 @@ Written by Brian Lough
 YouTube: https://www.youtube.com/brianlough
 Tindie: https://www.tindie.com/stores/brianlough/
 Twitter: https://twitter.com/witnessmenow
-
-Parts:
-ESP32 D1 Mini * - https://s.click.aliexpress.com/e/_dSi824B
-ESP32 I2S Matrix Shield (From my Tindie) = https://www.tindie.com/products/brianlough/esp32-i2s-matrix-shield/
-
-*  * = Affilate
-
-If you find what I do useful and would like to support me,
-please consider becoming a sponsor on Github
-https://github.com/sponsors/witnessmenow/
