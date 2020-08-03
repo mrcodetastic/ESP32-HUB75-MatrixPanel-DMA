@@ -72,6 +72,8 @@ Similarly, if you wanted to chain 4 panels to make a 256x32 px horizontal panel,
 
 Finally, if you wanted to chain 4 x (64x32px) panels to make 128x64px display (essentially a 2x2 grid of physical led panel modules), a little more magic will be required. Refer to the [Chained Panels](examples/ChainedPanels/) example.
 
+Resolutions beyond 256x64 are likely to result in crashes due to memory constraints etc. YMMV.
+
 ## Ghosting
 
 If you experience ghosting, you will need to reduce the brightness level, not all RGB Matrix Panels are the same - some seem to display ghosting artefacts at lower brightness levels. In the setup() function do something like:
