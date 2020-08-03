@@ -22,7 +22,7 @@ columns this example might be able to help.
 It creates a virtual screen that you draw to in the same way you would
 the matrix, but it will look after mapping it back to the displays.
 
-![Nothing better than a PowerPoint slide to explain](VirtualDisplay.png)
+![Nothing better than a PowerPoint slide to explain](VirtualDisplayGraphic.png)
 
 ### Steps to Use ###
 
