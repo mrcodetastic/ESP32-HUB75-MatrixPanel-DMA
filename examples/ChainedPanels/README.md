@@ -8,14 +8,16 @@ displays arranged in a non standard order
 When you connect multiple panels together, the library treats the
 multiple panels as one big panel arranged horizontally. Arranging
 the displays like this would be a standard order.
-
+```
 [ 4 ][ 3 ][ 2 ][ 1 ]  (ESP32 is connected to 1)
+```
 
 If you wanted to arrange the displays vertically, or in rows and 
 columns this example might be able to help.
-
+```
 [ 4 ][ 3 ]
 [ 2 ][ 1 ]
+```
 
 It creates a virtual screen that you draw to in the same way you would
 the matrix, but it will look after mapping it back to the displays.
