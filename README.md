@@ -68,13 +68,6 @@ Yes you can. If you want to use with a 64x64 pixel panel (typically a HUB75*E* p
 
 This library has only been tested with a 64 pixel (wide) and 32 (high) RGB panel.  Theoretically, if you want to chain two of these horizontally to make a 128x32 panel you can do so with the cable and then set the MATRIX_WIDTH to '128'. Refer to the [Chained Panels](examples/ChainedPanels/) example.
 
-
-### New Feature
-
-With version 1.1.0 of the library onwards, there is now a 'feature' to split the framebuffer  over two memory 'blocks' (mallocs) to work around the fact that typically the ESP32 upon 'boot up' has 2 x ~100kb chunks of memory available to use (ideally we'd want one massive chunk, but for whatever reasons this isn't the case). This allows non-contiguous memory allocations to be joined-up potentially allowing for 512x64 resolution or greater (no guarantees however). This is enabled by default.
-
-[Refer to this](SPLIT_MEMORY_MODE.md) for more details.
-
 ## Ghosting
 
 If you experience ghosting, you will need to reduce the brightness level, not all RGB Matrix Panels are the same - some seem to display ghosting artefacts at lower brightness levels. In the setup() function do something like:
