@@ -20,6 +20,8 @@ columns this example might be able to help.
 It creates a virtual screen that you draw to in the same way you would
 the matrix, but it will look after mapping it back to the displays.
 
+![Nothing better than a PowerPoint slide to explain](VirtualDisplay.png)
+
 ### Steps to Use ###
 
 1) In ESP32-RGB64x32MatrixPanel-I2S-DMA.h:
