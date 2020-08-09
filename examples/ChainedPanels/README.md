@@ -9,8 +9,8 @@ When you connect multiple panels together, the library treats the
 multiple panels as one big panel arranged horizontally. Arranging
 the displays like this would be a standard order.
 
-It creates a virtual screen that you draw to in the same way you would
-the matrix, but it will look after mapping it back to the displays.
+Non-standard order is essentially the creation of a non-horizontal only 'virtual' display that you can draw to in the same way you would
+the matrix, but with VirtualDisplay library looking after the pixel mapping to the physical chained panels.
 
 ![Nothing better than a PowerPoint slide to explain](VirtualDisplayGraphic.png)
 
