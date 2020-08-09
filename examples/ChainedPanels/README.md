@@ -31,10 +31,13 @@ for everything (drawing pixels, writing text etc). You can do a find and replace
 - If the sketch makes use of MATRIX_HEIGHT or MATRIX_WIDTH, these will need to be replaced with the width and height
 of your virtual screen. Either make new defines and use that, or you can use virtualDisp.width() or .height()
 
-#### Contributor ####
-Written by Brian Lough
+#### Thanks to ####
+* Brian Lough for the Virtual to Real pixel co-ordinate code.
+
 YouTube: https://www.youtube.com/brianlough
 
 Tindie: https://www.tindie.com/stores/brianlough/
 
 Twitter: https://twitter.com/witnessmenow
+
+* Galaxy-Man for the donation of hardware for testing.
