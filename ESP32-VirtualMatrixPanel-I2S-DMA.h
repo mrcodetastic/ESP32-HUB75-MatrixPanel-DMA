@@ -173,10 +173,7 @@ inline void VirtualMatrixPanel::drawDisplayTest()
    this->display->setTextSize(1); 
 
   for ( int panel = 0; panel < module_cols*module_rows; panel++ ) {
-    Serial.print("LOOP for module: "); Serial.println(panel, DEC);
     int top_left_x = (panel == 0) ? 0:(panel*panelResX);
-    Serial.print("Stop start x: "); Serial.println(top_left_x, DEC);  
-
     this->display->drawRect( top_left_x, 0, panelResX, panelResY, this->display->color565( 0, 255, 0));
     this->display->setCursor(panel*panelResX, panelResY-3); 
     this->display->print((module_cols*module_rows)-panel);    
