@@ -56,7 +56,7 @@ GifDecoder<GIFWidth, GIFHeight, 12> decoder;
 int num_files;
 
 void screenClearCallback(void) {
-  matrix.fillScreen(matrix.color565(0,0,0));
+  //matrix.fillScreen(matrix.color565(0,0,0));
 }
 
 void updateScreenCallback(void) {
@@ -87,6 +87,8 @@ void setup() {
     decoder.setFilePositionCallback(filePositionCallback);
     decoder.setFileReadCallback(fileReadCallback);
     decoder.setFileReadBlockCallback(fileReadBlockCallback);
+
+    
 
     matrix.begin();
 
