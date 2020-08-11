@@ -1,8 +1,13 @@
 # HUB75 LED matrix library for the ESP32, utilising DMA
 
-This ESP32 Arduino library for an RGB LED (HUB 75 type) Matrix Panel, utilises the DMA functionality provided by the ESP32's I2S 'LCD Mode' which basically means that pixel data is sent straight from memory, via the DMA controller, to the relevant LED Matrix GPIO pins with little CPU overhead.
+This ESP32 Arduino library for an 64x32 RGB LED (HUB 75 type) Matrix Panel, utilises the DMA functionality provided by the ESP32's I2S 'LCD Mode' which basically means that pixel data is sent straight from memory, via the DMA controller, to the relevant LED Matrix GPIO pins with little CPU overhead.
 
 As a result, this library can theoretically provide ~16-24 bit colour, at various brightness levels without noticeable flicker.
+
+# Panels Supported
+62x32 pixel 1/16 Scan LED Matrix 'Indoor' Panel, such as this [typical RGB panel available for purchase](https://www.aliexpress.com/item/256-128mm-64-32-pixels-1-16-Scan-Indoor-3in1-SMD2121-RGB-full-color-P4-led/32810362851.html). 
+
+Be aware that there's all sorts of Chinese junk panels based on FMXXXX chipsets. This library does not support these panels. FM6126 panels based on [this untested example](/examples/FM6126Panel) could work however.
 
 ![It's better in real life](image.jpg)
 
@@ -29,7 +34,6 @@ By default the pin mapping is as follows (defaults defined in ESP32-RGB64x32Matr
 |  OE   GND |    OE  -> IO15      GND -> ESP32 GND
 +-----------+
 ```
-![The default pin mapping is best for a LOLIN D32](WiringExample.jpg)
 
 However, if you want to change this, simply provide the wanted pin mapping as part of the display.begin() call. For example, in your sketch have something like the following:
 
@@ -59,8 +63,6 @@ display.begin(R1_PIN, G1_PIN, B1_PIN, R2_PIN, G2_PIN, B2_PIN, A_PIN, B_PIN, C_PI
 
 The panel must be powered by 5V AC adapter with enough current capacity. (Current varies due to how many LED are turned on at the same time. To drive all the LEDs, you need 5V4A adapter.)
 
-
-A [typical RGB panel available for purchase](https://www.aliexpress.com/item/256-128mm-64-32-pixels-1-16-Scan-Indoor-3in1-SMD2121-RGB-full-color-P4-led/32810362851.html). This is of the larger P4 (4mm spacing between pixels) type. 
 
 ## Can I chain panels or use with larger panels?
 
