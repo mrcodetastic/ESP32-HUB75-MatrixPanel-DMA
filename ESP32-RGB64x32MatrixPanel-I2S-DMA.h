@@ -341,7 +341,7 @@ class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
     bool double_buffering_enabled   = false;// Do we use double buffer mode? Your project code will have to manually flip between both.
     int  back_buffer_id             = 0;    // If using double buffer, which one is NOT active (ie. being displayed) to write too?
     int  brightness           = 32;             // If you get ghosting... reduce brightness level. 60 seems to be the limit before ghosting on a 64 pixel wide physical panel for some panels.
-    int  min_refresh_rate     = 120;            // Probably best to leave as is unless you want to experiment. Framerate has an impact on brightness and also power draw - voltage ripple.
+    int  min_refresh_rate     = 99;            // Probably best to leave as is unless you want to experiment. Framerate has an impact on brightness and also power draw - voltage ripple.
     int  lsbMsbTransitionBit  = 0;     // For possible color depth calculations
     
     /* Calculate the memory available for DMA use, do some other stuff, and allocate accordingly */
