@@ -52,6 +52,18 @@
     
 */
 
+
+// For development testing only
+//#define IGNORE_REFRESH_RATE 1
+
+
+
+uint8_t val2PWM(int val) {
+    if (val<0) val=0;
+    if (val>255) val=255;
+    return lumConvTab[val];
+}
+
 bool RGB64x32MatrixPanel_I2S_DMA::allocateDMAmemory()
 {
 
@@ -142,15 +154,18 @@ bool RGB64x32MatrixPanel_I2S_DMA::allocateDMAmemory()
    * Step 2: Calculate the amount of memory required for the DMA engine's linked list descriptors.
    *         Credit to SmartMatrix for this stuff.
    */    
+   
 
     // Calculate what color depth is actually possible based on memory avaialble vs. required dma linked-list descriptors.
     // aka. Calculate the lowest LSBMSB_TRANSITION_BIT value that will fit in memory
     int numDMAdescriptorsPerRow = 0;
     lsbMsbTransitionBit = 0;
+	
+   #ifndef IGNORE_REFRESH_RATE	
     while(1) {
         numDMAdescriptorsPerRow = 1;
         for(int i=lsbMsbTransitionBit + 1; i<PIXEL_COLOR_DEPTH_BITS; i++) {
-            numDMAdescriptorsPerRow += 1<<(i - lsbMsbTransitionBit - 1);
+            numDMAdescriptorsPerRow += (1<<(i - lsbMsbTransitionBit - 1));
         }
 
         int ramrequired = numDMAdescriptorsPerRow * ROWS_PER_FRAME * _num_frame_buffers * sizeof(lldesc_t);
@@ -169,9 +184,10 @@ bool RGB64x32MatrixPanel_I2S_DMA::allocateDMAmemory()
     }
 
     Serial.printf("Raised lsbMsbTransitionBit to %d/%d to fit in remaining RAM\r\n", lsbMsbTransitionBit, PIXEL_COLOR_DEPTH_BITS - 1);
+	#endif
 
     // calculate the lowest LSBMSB_TRANSITION_BIT value that will fit in memory that will meet or exceed the configured refresh rate
-    while(1) {
+    while(1) {           
         int psPerClock = 1000000000000UL/ESP32_I2S_CLOCK_SPEED;
         int nsPerLatch = ((PIXELS_PER_ROW + CLKS_DURING_LATCH) * psPerClock) / 1000;
 
@@ -200,6 +216,7 @@ bool RGB64x32MatrixPanel_I2S_DMA::allocateDMAmemory()
     }
 
     Serial.printf("Raised lsbMsbTransitionBit to %d/%d to meet minimum refresh rate\r\n", lsbMsbTransitionBit, PIXEL_COLOR_DEPTH_BITS - 1);
+	
 
   /***
    * Step 2a: lsbMsbTransition bit is now finalised - recalculate the DMA descriptor count required, which is used for
@@ -207,7 +224,7 @@ bool RGB64x32MatrixPanel_I2S_DMA::allocateDMAmemory()
    */          
     numDMAdescriptorsPerRow = 1;
     for(int i=lsbMsbTransitionBit + 1; i<PIXEL_COLOR_DEPTH_BITS; i++) {
-        numDMAdescriptorsPerRow += 1<<(i - lsbMsbTransitionBit - 1);
+        numDMAdescriptorsPerRow += (1<<(i - lsbMsbTransitionBit - 1));
     }
 
     // Refer to 'DMA_LL_PAYLOAD_SPLIT' code in configureDMA() below to understand why this exists.
@@ -366,7 +383,11 @@ void RGB64x32MatrixPanel_I2S_DMA::configureDMA(int r1_pin, int  g1_pin, int  b1_
             // we need 2^(i - LSBMSB_TRANSITION_BIT - 1) == 1 << (i - LSBMSB_TRANSITION_BIT - 1) passes from i to MSB
             //Serial.printf("buffer %d: repeat %d times, size: %d, from %d - %d\r\n", current_dmadescriptor_offset, 1<<(i - lsbMsbTransitionBit - 1), (PIXEL_COLOR_DEPTH_BITS - i), i, PIXEL_COLOR_DEPTH_BITS-1);
 
-            for(int k=0; k < 1<<(i - lsbMsbTransitionBit - 1); k++) 
+          #if SERIAL_DEBUG  
+            Serial.printf("configureDMA(): DMA Loops for PIXEL_COLOR_DEPTH_BITS %d is: %d.\r\n", i, (1<<(i - lsbMsbTransitionBit - 1)));
+          #endif  
+
+            for(int k=0; k < (1<<(i - lsbMsbTransitionBit - 1)); k++) 
             {
                 link_dma_desc(&dmadesc_a[current_dmadescriptor_offset], previous_dmadesc_a, &(fb_malloc_ptr[0].rowdata[fb_malloc_j].rowbits[i].data), sizeof(rowBitStruct) * (PIXEL_COLOR_DEPTH_BITS - i));
                 previous_dmadesc_a = &dmadesc_a[current_dmadescriptor_offset];
@@ -450,12 +471,26 @@ void RGB64x32MatrixPanel_I2S_DMA::updateMatrixDMABuffer(int16_t x_coord, int16_t
       
       return;
     }
-
-  #ifdef SPLIT_MEMORY_MODE
-  #ifdef SERIAL_DEBUG 
-    int tmp_y_coord = y_coord;
-  #endif
-  #endif
+	
+	/* LED Brightness Compensation. Because if we do a basic "red & mask" for example, 
+	 * we'll NEVER send the dimmest possible colour, due to binary skew.
+	   
+	   i.e. It's almost impossible for color_depth_idx of 0 to be sent out to the MATRIX unless the 'value' of a color is exactly '1'
+	   
+	 */	 
+	red 	= lumConvTab[red];
+	green 	= lumConvTab[green];
+	blue 	= lumConvTab[blue]; 	
+/*	 
+	red 	= val2PWM(red);
+	green 	= val2PWM(green);
+	blue 	= val2PWM(blue);
+*/
+	#ifdef SPLIT_MEMORY_MODE
+	#ifdef SERIAL_DEBUG 
+	int tmp_y_coord = y_coord;
+	#endif
+	#endif
     
    /* 1) Check that the co-ordinates are within range, or it'll break everything big time.
     * Valid co-ordinates are from 0 to (MATRIX_XXXX-1)
@@ -475,6 +510,7 @@ void RGB64x32MatrixPanel_I2S_DMA::updateMatrixDMABuffer(int16_t x_coord, int16_t
         paint_top_half = false;
     }
        
+	
     for(int color_depth_idx=0; color_depth_idx<PIXEL_COLOR_DEPTH_BITS; color_depth_idx++)  // color depth - 8 iterations
     {
         uint16_t mask = (1 << color_depth_idx); // 24 bit color
@@ -561,6 +597,15 @@ void RGB64x32MatrixPanel_I2S_DMA::updateMatrixDMABuffer(int16_t x_coord, int16_t
         } else {
           tmp_x_coord += 1;
         } // end reordering
+		
+		/*
+		// Development / testing code only.
+		Serial.printf("r value of %d, color depth: %d, mask: %d\r\n", red,	color_depth_idx, mask);
+		if (red & mask) { Serial.println("Success - Binary"); v|=BIT_R1; }
+		Serial.printf("val2pwm r value:  %d\r\n", val2PWM(red));
+		if (val2PWM(red) & mask) { Serial.println("Success - PWM"); v|=BIT_R2; }
+		*/
+		
                  
         if (paint_top_half)
         { // Need to copy what the RGB status is for the bottom pixels
@@ -617,6 +662,16 @@ void RGB64x32MatrixPanel_I2S_DMA::updateMatrixDMABuffer(int16_t x_coord, int16_t
 void RGB64x32MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint8_t red, uint8_t green, uint8_t blue)
 {
   if ( !everything_OK ) return;
+  
+	/* https://ledshield.wordpress.com/2012/11/13/led-brightness-to-your-eye-gamma-correction-no/ */	 
+	/*
+	red 	= val2PWM(red);
+	green 	= val2PWM(green);
+	blue 	= val2PWM(blue);  
+	*/
+	red 	= lumConvTab[red];
+	green 	= lumConvTab[green];
+	blue 	= lumConvTab[blue]; 	
 
   for (unsigned int matrix_frame_parallel_row = 0; matrix_frame_parallel_row < ROWS_PER_FRAME; matrix_frame_parallel_row++) // half height - 16 iterations
   {	
@@ -698,9 +753,9 @@ void RGB64x32MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint8_t red, uint8_t gre
           }
           
           // Top and bottom matrix MATRIX_ROWS_IN_PARALLEL half colours
-          if (green & mask) { v|=BIT_G1; v|=BIT_R2; }
-          if (blue & mask)  { v|=BIT_B1; v|=BIT_G2; }
-          if (red & mask)   { v|=BIT_R1; v|=BIT_B2; }
+          if (green & mask) { v|=BIT_G1; v|=BIT_G2; }
+          if (blue & mask)  { v|=BIT_B1; v|=BIT_B2; }
+          if (red & mask)   { v|=BIT_R1; v|=BIT_R2; }
           
           // 16 bit parallel mode
           //Save the calculated value to the bitplane memory in reverse order to account for I2S Tx FIFO mode1 ordering

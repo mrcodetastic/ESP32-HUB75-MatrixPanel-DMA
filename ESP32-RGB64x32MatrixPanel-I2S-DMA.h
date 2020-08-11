@@ -123,7 +123,7 @@
 #define ESP32_I2S_DMA_MODE          I2S_PARALLEL_BITS_16    // Pump 16 bits out in parallel
 #define ESP32_I2S_DMA_STORAGE_TYPE  uint16_t                // one uint16_t at a time.
 //#define ESP32_I2S_CLOCK_SPEED     (20000000UL)            // @ 20Mhz
-#define ESP32_I2S_CLOCK_SPEED       (10000000UL)  // @ 10Mhz
+#define ESP32_I2S_CLOCK_SPEED       (10000000UL)            // @ 10Mhz
 #define CLKS_DURING_LATCH            0   // Not used. 
 /***************************************************************************************/            
 
@@ -172,6 +172,13 @@ typedef struct rgb_24 {
     uint8_t blue;
 } rgb_24;
 
+
+/***************************************************************************************/   
+// Used by val2PWM
+//C/p'ed from https://ledshield.wordpress.com/2012/11/13/led-brightness-to-your-eye-gamma-correction-no/
+// Example calculator: https://gist.github.com/mathiasvr/19ce1d7b6caeab230934080ae1f1380e
+const uint16_t lumConvTab[]={ 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8, 8, 9, 9, 9, 10, 10, 10, 11, 11, 11, 12, 12, 12, 13, 13, 13, 14, 14, 14, 15, 15, 16, 16, 17, 17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 23, 24, 24, 25, 25, 26, 27, 27, 28, 28, 29, 30, 30, 31, 31, 32, 33, 33, 34, 35, 35, 36, 37, 38, 38, 39, 40, 41, 41, 42, 43, 44, 45, 45, 46, 47, 48, 49, 50, 51, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 73, 74, 75, 76, 77, 78, 80, 81, 82, 83, 84, 86, 87, 88, 90, 91, 92, 93, 95, 96, 98, 99, 100, 102, 103, 105, 106, 107, 109, 110, 112, 113, 115, 116, 118, 120, 121, 123, 124, 126, 128, 129, 131, 133, 134, 136, 138, 139, 141, 143, 145, 146, 148, 150, 152, 154, 156, 157, 159, 161, 163, 165, 167, 169, 171, 173, 175, 177, 179, 181, 183, 185, 187, 189, 192, 194, 196, 198, 200, 203, 205, 207, 209, 212, 214, 216, 218, 221, 223, 226, 228, 230, 233, 235, 238, 240, 243, 245, 248, 250, 253, 255, 255};
 
 /***************************************************************************************/   
 #ifdef USE_GFX_ROOT
@@ -252,6 +259,7 @@ class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
     virtual void drawPixel(int16_t x, int16_t y, uint16_t color);   // overwrite adafruit implementation
     virtual void fillScreen(uint16_t color);                        // overwrite adafruit implementation
             void clearScreen() { fillScreen(0); } 
+	void fillScreenRGB888(uint8_t r, uint8_t g, uint8_t b);
     void drawPixelRGB565(int16_t x, int16_t y, uint16_t color);
     void drawPixelRGB888(int16_t x, int16_t y, uint8_t r, uint8_t g, uint8_t b);
     void drawPixelRGB24(int16_t x, int16_t y, rgb_24 color);
@@ -365,6 +373,11 @@ inline void RGB64x32MatrixPanel_I2S_DMA::fillScreen(uint16_t color)  // adafruit
   uint8_t b = (((color & 0x1F) * 527) + 23) >> 6;
   
   updateMatrixDMABuffer(r, g, b); // the RGB only (no pixel coordinate) version of 'updateMatrixDMABuffer'
+} 
+
+inline void RGB64x32MatrixPanel_I2S_DMA::fillScreenRGB888(uint8_t r, uint8_t g,uint8_t b)  // adafruit virtual void override
+{
+  updateMatrixDMABuffer(r, g, b);
 } 
 
 // For adafruit
