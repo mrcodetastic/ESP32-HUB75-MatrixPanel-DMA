@@ -76,6 +76,9 @@ Finally, if you wanted to chain 4 x (64x32px) panels to make 128x64px display (e
 
 Resolutions beyond 256x64 are likely to result in crashes due to memory constraints etc. YMMV.
 
+![ezgif com-video-to-gif](https://user-images.githubusercontent.com/12006953/89837358-b64c0480-db60-11ea-870d-4b6482068a3b.gif)
+
+
 ## Ghosting
 
 If you experience ghosting, you will need to reduce the brightness level, not all RGB Matrix Panels are the same - some seem to display ghosting artefacts at lower brightness levels. In the setup() function do something like:
