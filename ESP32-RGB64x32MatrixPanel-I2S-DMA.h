@@ -4,15 +4,8 @@
 /***************************************************************************************/
 /* COMPILE-TIME OPTIONS - CONFIGURE AS DESIRED                                         */
 /***************************************************************************************/
-
 /* Enable serial debugging of the library, to see how memory is allocated etc. */
 //#define SERIAL_DEBUG 1
-
-/* Split the framebuffer into two smaller memory allocations. Can allow for 
- * bigger resolution due to the fragmented memory map of the typical Arduino sketch 
- * even before setup(). Enabled by default.
- */
-#define SPLIT_MEMORY_MODE 1
 
 /* Use GFX_Root (https://github.com/mrfaptastic/GFX_Root) instead of 
  * Adafruit_GFX library. No real benefit unless you don't want Bus_IO & Wire.h library dependencies. 
@@ -145,20 +138,15 @@ struct rowColorDepthStruct {
 };
 
 /* frameStruct
- * Note: This 'frameStruct' will contain ALL the data for a full-frame as BOTH 2x16-row frames are
- *       are contained in parallel within the one uint16_t that is sent in parallel to the HUB75. 
+ * Note: A 'frameStruct' contains ALL the data for a full-frame (i.e. BOTH 2x16-row frames are
+ *       are contained in parallel within the one uint16_t that is sent in parallel to the HUB75). 
+ * 
+ *       This structure isn't actually allocated in one memory block anymore, as the library now allocates
+ *       memory per row (per rowColorDepthStruct) instead.
  */
-#ifdef SPLIT_MEMORY_MODE
-//#pragma message("Split DMA Memory Allocation Mode Enabled")
-#define SPLIT_MEMORY_ROWS_PER_FRAME (ROWS_PER_FRAME/2)
-struct frameStruct {
-    rowColorDepthStruct rowdata[SPLIT_MEMORY_ROWS_PER_FRAME];
-};
-#else
 struct frameStruct {
     rowColorDepthStruct rowdata[ROWS_PER_FRAME];
 };
-#endif
 
 typedef struct rgb_24 {
     rgb_24() : rgb_24(0,0,0) {}
@@ -323,13 +311,10 @@ class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
   private:
 
     /* Pixel data is organized from LSB to MSB sequentially by row, from row 0 to row matrixHeight/matrixRowsInParallel 
-     * (two rows of pixels are refreshed in parallel) */
-    frameStruct *matrix_framebuffer_malloc_1; 
-
-#ifdef SPLIT_MEMORY_MODE
-    /* In the case there's a 2nd non-contiguous block of DMA capable SRAM we can use, let us try and use that as well. */
-    frameStruct *matrix_framebuffer_malloc_2; 
-#endif
+     * (two rows of pixels are refreshed in parallel) 
+     * Memory is allocated (malloc'd) by the row, and not in one massive chunk, for flexibility.
+     */
+	  rowColorDepthStruct *matrix_row_framebuffer_malloc[ROWS_PER_FRAME];
 
     // ESP 32 DMA Linked List descriptor
     int desccount = 0;

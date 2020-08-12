@@ -1,20 +1,22 @@
-// Example sketch which shows how to display a 64x32
-// animated GIF image stored in FLASH memory
+// Example sketch which shows how to display a 64x32 animated GIF image stored in FLASH memory
 // on a 64x32 LED matrix
-//
-// To display a GIF from memory, a single callback function
-// must be provided - GIFDRAW
-// This function is called after each scan line is decoded
-// and is passed the 8-bit pixels, RGB565 palette and info
-// about how and where to display the line. The palette entries
-// can be in little-endian or big-endian order; this is specified
-// in the begin() method.
-//
-// The AnimatedGIF class doesn't allocate or free any memory, but the
-// instance data occupies about 22.5K of RAM.
 //
 // Credits: https://github.com/bitbank2/AnimatedGIF/tree/master/examples/ESP32_LEDMatrix_I2S
 // 
+
+/* INSTRUCTIONS
+ *
+ * 1. First Run the 'ESP32 Sketch Data Upload Tool' in Arduino from the 'Tools' Menu.
+ *    - If you don't know what this is or see it as an option, then read this:
+ *      https://github.com/me-no-dev/arduino-esp32fs-plugin 
+ *    - This tool will upload the contents of the data/ directory in the sketch folder onto
+ *      the ESP32 itself.
+ *
+ * 2. You can drop any animated GIF you want in there, but keep it to the resolution of the 
+ *    MATRIX you're displaying to. To resize a gif, use this online website: https://ezgif.com/
+ *
+ * 3. Have fun.
+ */
 
 #define FILESYSTEM SPIFFS
 #include <SPIFFS.h>
