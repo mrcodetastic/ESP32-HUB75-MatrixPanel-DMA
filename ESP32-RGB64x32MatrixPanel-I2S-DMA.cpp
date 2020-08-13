@@ -134,7 +134,7 @@ bool RGB64x32MatrixPanel_I2S_DMA::allocateDMAmemory()
     int numDMAdescriptorsPerRow = 0;
     lsbMsbTransitionBit = 0;
 	
-   #ifndef IGNORE_REFRESH_RATE	
+
     while(1) {
         numDMAdescriptorsPerRow = 1;
         for(int i=lsbMsbTransitionBit + 1; i<PIXEL_COLOR_DEPTH_BITS; i++) {
@@ -157,8 +157,9 @@ bool RGB64x32MatrixPanel_I2S_DMA::allocateDMAmemory()
     }
 
     Serial.printf("Raised lsbMsbTransitionBit to %d/%d to fit in remaining RAM\r\n", lsbMsbTransitionBit, PIXEL_COLOR_DEPTH_BITS - 1);
-	#endif
 
+
+   #ifndef IGNORE_REFRESH_RATE	
     // calculate the lowest LSBMSB_TRANSITION_BIT value that will fit in memory that will meet or exceed the configured refresh rate
     while(1) {           
         int psPerClock = 1000000000000UL/ESP32_I2S_CLOCK_SPEED;
@@ -189,7 +190,7 @@ bool RGB64x32MatrixPanel_I2S_DMA::allocateDMAmemory()
     }
 
     Serial.printf("Raised lsbMsbTransitionBit to %d/%d to meet minimum refresh rate\r\n", lsbMsbTransitionBit, PIXEL_COLOR_DEPTH_BITS - 1);
-	
+	#endif
 
   /***
    * Step 2a: lsbMsbTransition bit is now finalised - recalculate the DMA descriptor count required, which is used for
@@ -422,9 +423,88 @@ void RGB64x32MatrixPanel_I2S_DMA::configureDMA(int r1_pin, int  g1_pin, int  b1_
 } // end initMatrixDMABuff
 
 
+/* There are 'bits' set in the frameStruct that we simply don't need to set every single time we change a pixel / DMA buffer co-ordinate.
+ * 	For example, the bits that determine the address lines, we don't need to set these every time. Once they're in place, and assuming we
+ *  don't accidently clear them, then we don't need to set them again.
+ *  So to save processing, we strip this logic out to the absolute bare minimum, which is toggling only the R,G,B pixels (bits) per co-ord.
+ *
+ *  Critical dependency: That 'updateMatrixDMABuffer(uint8_t red, uint8_t green, uint8_t blue)' has been run at least once over the
+ *                       entire frameBuffer to ensure all the non R,G,B bitmasks are in place (i.e. like OE, Address Lines etc.)
+ */
+#define GO_FOR_SPEED 1
 
+#ifdef GO_FOR_SPEED
+/* Update a specific co-ordinate in the DMA buffer */
+void RGB64x32MatrixPanel_I2S_DMA::updateMatrixDMABuffer(int16_t x_coord, int16_t y_coord, uint8_t red, uint8_t green, uint8_t blue)
+{
+	
+    // Check that the co-ordinates are within range, or it'll break everything big time.
+    // Valid co-ordinates are from 0 to (MATRIX_XXXX-1)
+	if ( x_coord >= MATRIX_WIDTH || y_coord >= MATRIX_HEIGHT) {
+		  return;
+    }
+	
+	// https://ledshield.wordpress.com/2012/11/13/led-brightness-to-your-eye-gamma-correction-no/
+	red 	= lumConvTab[red];
+	green 	= lumConvTab[green];
+	blue 	= lumConvTab[blue]; 	
+
+    bool painting_top_frame = true;
+    if ( y_coord >= ROWS_PER_FRAME) // co-ords start at zero, y_coord = 15 = 16 (rows per frame)
+    {
+        y_coord -= ROWS_PER_FRAME;  // Subtract the ROWS_PER_FRAME from the pixel co-ord to get the panel ROW (not really the 'y_coord' anymore)
+        painting_top_frame = false;
+    }
+	
+	// We need to update the correct uint16_t in the rowBitStruct array, that gets sent out in parallel
+	// 16 bit parallel mode - Save the calculated value to the bitplane memory in reverse order to account for I2S Tx FIFO mode1 ordering
+	int rowBitStruct_x_coord_uint16_t_position = (x_coord % 2) ? (x_coord-1):(x_coord+1);
+
+	// Find the memory address for the malloc for this framebuffer row.
+	rowColorDepthStruct *fb_row_malloc_ptr = (rowColorDepthStruct *) matrix_row_framebuffer_malloc[y_coord]; 	
+	
+    for(int color_depth_idx=0; color_depth_idx<PIXEL_COLOR_DEPTH_BITS; color_depth_idx++)  // color depth - 8 iterations
+    {
+        uint8_t mask = (1 << color_depth_idx); // PWM bit colour mask (max 8bits per pixel colour)
+        
+        // The destination for the pixel bitstream 
+        //rowBitStruct *p = &matrix_framebuffer_malloc_1[back_buffer_id].rowdata[y_coord].rowbits[color_depth_idx]; //matrixUpdateFrames location to write to uint16_t's
+        // Get the contents at this address, cast as a rowColorDepthStruct  
+        //rowBitStruct *p = &fb_row_malloc_ptr[back_buffer_id].rowbits[color_depth_idx]; //matrixUpdateFrames location to write to uint16_t's
+		uint16_t &v = fb_row_malloc_ptr[back_buffer_id].rowbits[color_depth_idx].data[rowBitStruct_x_coord_uint16_t_position]; 
+		
+        //int v=0; // the output bitstream
+      
+        if (painting_top_frame) // Painting to pixel in the top half of the HUB75 panel use the R1, B1 and G1 pins
+        { 
+           // Set the colour of the pixel of interest
+		   // https://stackoverflow.com/questions/47981/how-do-you-set-clear-and-toggle-a-single-bit
+          if (red & mask)   { v|=BIT_R1; }  else {  v &= ~(BIT_R1); }
+          if (green & mask) { v|=BIT_G1; }  else {  v &= ~(BIT_G1); }
+          if (blue & mask)  { v|=BIT_B1; }  else {  v &= ~(BIT_B1); }
+        }
+        else
+        { // Paint to a pixel in the bottom half
+	
+          if (red & mask)   { v|=BIT_R2; } else {  v &= ~(BIT_R2); }
+          if (green & mask) { v|=BIT_G2; } else {  v &= ~(BIT_G2); }
+          if (blue & mask)  { v|=BIT_B2; } else {  v &= ~(BIT_B2); }
+ 
+        } // paint
+
+        // 16 bit parallel mode
+        //Save the calculated value to the bitplane memory in reverse order to account for I2S Tx FIFO mode1 ordering
+        //p->data[rowBitStruct_x_coord_uint16_t_position] = v;	
+		// NOTE: No need to do this as 'v' is now a reference directly to the frameStruct
+		
+    } // color depth loop (8)
+	
+} // updateMatrixDMABuffer (specific co-ords change)
+
+#else
 
 /* Update a specific co-ordinate in the DMA buffer */
+/* Original version were we re-create the bitstream from scratch for each x,y co-ordinate / pixel changed. Slightly slower. */
 void RGB64x32MatrixPanel_I2S_DMA::updateMatrixDMABuffer(int16_t x_coord, int16_t y_coord, uint8_t red, uint8_t green, uint8_t blue)
 {
     if ( !everything_OK ) { 
@@ -590,6 +670,7 @@ void RGB64x32MatrixPanel_I2S_DMA::updateMatrixDMABuffer(int16_t x_coord, int16_t
     } // color depth loop (8)
 
 } // updateMatrixDMABuffer (specific co-ords change)
+#endif	
 
 
 /* Update the entire buffer with a single specific colour - quicker */
