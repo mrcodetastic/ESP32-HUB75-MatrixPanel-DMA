@@ -5,7 +5,7 @@ This ESP32 Arduino library for an 64x32 RGB LED (HUB 75 type) Matrix Panel, util
 As a result, this library can theoretically provide ~16-24 bit colour, at various brightness levels without noticeable flicker.
 
 # Panels Supported
-62x32 pixel 1/16 Scan LED Matrix 'Indoor' Panel, such as this [typical RGB panel available for purchase](https://www.aliexpress.com/item/256-128mm-64-32-pixels-1-16-Scan-Indoor-3in1-SMD2121-RGB-full-color-P4-led/32810362851.html). 1/8 Scan LED Mtrix Panels are not supported, please use an alternative library if you bought one of these.
+62x32 pixel 1/16 Scan LED Matrix 'Indoor' Panel, such as this [typical RGB panel available for purchase](https://www.aliexpress.com/item/256-128mm-64-32-pixels-1-16-Scan-Indoor-3in1-SMD2121-RGB-full-color-P4-led/32810362851.html). 1/8 Scan LED Matrix Panels are not supported, please use an alternative library if you bought one of these.
 
 Be aware that there's all sorts of Chinese junk panels based on FMXXXX chipsets. This library does not support these panels. FM6126 panels based on [this untested example](/examples/FM6126Panel) could work however.
 
