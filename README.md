@@ -106,7 +106,7 @@ Resolutions beyond 256x64 are likely to result in crashes due to memory constrai
 
 ## Ghosting
 
-If you experience ghosting, you will need to reduce the brightness level, not all RGB Matrix Panels are the same - some seem to display ghosting artefacts at lower brightness levels. In the setup() function do something like:
+If you experience ghosting, you may need to reduce the brightness level, not all RGB Matrix Panels are the same - some seem to display ghosting artefacts at lower brightness levels. In the setup() function do something like:
 
 ```
 void setup() {
@@ -120,6 +120,8 @@ void setup() {
 ```
 
 The value to pass 'setPanelBrightness' is the RGB Matrix's pixel width or less. i.e. Approx. 50 or lower. Values greater than 60 can cause ghosting it seems on some panels.
+
+HOWEVER, by default the library uses a brightness level of '16' so there's really no need to call .setPanelBrightness, unless you specifically want a super bright display.
 
 ![It's better in real life](image.jpg)
 
