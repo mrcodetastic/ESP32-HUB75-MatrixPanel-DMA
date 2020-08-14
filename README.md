@@ -63,6 +63,35 @@ display.begin(R1_PIN, G1_PIN, B1_PIN, R2_PIN, G2_PIN, B2_PIN, A_PIN, B_PIN, C_PI
 
 The panel must be powered by 5V AC adapter with enough current capacity. (Current varies due to how many LED are turned on at the same time. To drive all the LEDs, you need 5V4A adapter.)
 
+# How to Use
+
+Below is a bare minimum sketch to draw a single white dot in the top left. You MUST call .begin() before you call ANY other function of the RGB64x32MatrixPanel_I2S_DMA class!
+
+No call to .begin() before use = Crash
+
+```
+
+/* -------------------------- Class Initialisation -------------------------- */
+#include <ESP32-RGB64x32MatrixPanel-I2S-DMA.h>
+RGB64x32MatrixPanel_I2S_DMA matrix;
+
+void setup()
+{ 
+  // MUST DO THIS FIRST!
+  matrix.begin();  // Use default pins supplied within ESP32-RGB64x32MatrixPanel-I2S-DMA.h
+  // matrix.begin(R1_PIN, G1_PIN, B1_PIN, R2_PIN, G2_PIN, B2_PIN, A_PIN, B_PIN, C_PIN, D_PIN, E_PIN, LAT_PIN, OE_PIN, CLK_PIN );  // or custom pins
+
+  // Draw a single white pixel
+  matrix.drawPixel(0,0, matrix.color565(255,255,255)); // can do this now after .begin() only
+  
+}
+
+void loop()
+{
+}
+
+```
+
 
 ## Can I chain panels or use with larger panels?
 
