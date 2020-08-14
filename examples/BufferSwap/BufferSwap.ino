@@ -14,7 +14,8 @@ void setup()
   delay(1000); Serial.begin(115200); delay(200);
 
   Serial.println("...Starting Display");
-  display.begin();  // setup the display with no double buffering
+  
+  display.begin();  // setup display with pins as per defined in the library
   display.setTextColor(display.color565(128, 128, 128));  
 
   

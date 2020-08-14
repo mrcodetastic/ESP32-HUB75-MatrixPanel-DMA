@@ -15,7 +15,7 @@ void setup() {
   Serial.println(" HELLO !");
   Serial.println("*****************************************************");
 
-  dma_display.begin();
+  dma_display.begin(); // use default pins
 
   // draw a pixel in solid white
   dma_display.drawPixel(0, 0, dma_display.color444(15, 15, 15));
