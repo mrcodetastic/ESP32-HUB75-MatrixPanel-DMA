@@ -442,7 +442,7 @@ void RGB64x32MatrixPanel_I2S_DMA::updateMatrixDMABuffer(int16_t x_coord, int16_t
 	
     // Check that the co-ordinates are within range, or it'll break everything big time.
     // Valid co-ordinates are from 0 to (MATRIX_XXXX-1)
-	if ( x_coord >= MATRIX_WIDTH || y_coord >= MATRIX_HEIGHT) {
+	if ( x_coord < 0 || y_coord < 0 || x_coord >= MATRIX_WIDTH || y_coord >= MATRIX_HEIGHT) {
 		  return;
     }
 	
