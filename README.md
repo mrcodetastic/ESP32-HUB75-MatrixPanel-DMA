@@ -111,8 +111,9 @@ If you experience ghosting, you will need to reduce the brightness level, not al
 ```
 void setup() {
     Serial.begin(115200);
-    matrix.setPanelBrightness(16); // SETS THE BRIGHTNESS HERE. 60 OR LOWER IDEAL.
     matrix.begin(R1_PIN, G1_PIN, B1_PIN, R2_PIN, G2_PIN, B2_PIN, A_PIN, B_PIN, C_PIN, D_PIN, E_PIN, LAT_PIN, OE_PIN, CLK_PIN );  // setup the LED matrix
+    matrix.setPanelBrightness(16); // SETS THE BRIGHTNESS HERE. 60 OR LOWER IDEAL.
+    matrix.clearScreen(); // You must clear the screen for the new brightness level to take effect.
 
 }
 
