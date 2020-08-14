@@ -79,13 +79,12 @@ void setup()
   // matrix.begin(R1_PIN, G1_PIN, B1_PIN, R2_PIN, G2_PIN, B2_PIN, A_PIN, B_PIN, C_PIN, D_PIN, E_PIN, LAT_PIN, OE_PIN, CLK_PIN );  // or custom pins
 
   // Draw a single white pixel
-  matrix.drawPixel(0,0, matrix.color565(255,255,255)); // can do this now after .begin() only
+  matrix.drawPixel(0,0, matrix.color565(255,255,255)); // can do this after .begin() only
   
 }
 
 void loop()
-{
-}
+{ }
 
 ```
 
