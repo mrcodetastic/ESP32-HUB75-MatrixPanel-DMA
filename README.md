@@ -91,7 +91,7 @@ void loop()
 
 ## Can I chain panels or use with larger panels?
 
-Yes you can. If you want to use with a 64x64 pixel panel (typically a HUB75*E* panel) you MUST configure a valid *E_PIN* to your ESP32 and connect it to the E pin of the HUB75 panel! Hence the 'E' in 'HUB75E'
+If you want to use with a 64x64 pixel panel (typically a HUB75*E* panel) you MUST configure a valid *E_PIN* to your ESP32 and connect it to the E pin of the HUB75 panel! Hence the 'E' in 'HUB75E'
 
 This library has only been tested with a 64 pixel (wide) and 32 (high) RGB panel.  Theoretically, if you want to chain two of these horizontally to make a 128x32 panel you can easily by setting the MATRIX_WIDTH to '128' and connecting the panels in series using the HUB75 ribbon cable.
 
@@ -99,7 +99,7 @@ Similarly, if you wanted to chain 4 panels to make a 256x32 px horizontal panel,
 
 Finally, if you wanted to chain 4 x (64x32px) panels to make 128x64px display (essentially a 2x2 grid of physical led panel modules), a little more magic will be required. Refer to the [Chained Panels](examples/ChainedPanels/) example.
 
-Resolutions beyond 256x64 are likely to result in crashes due to memory constraints etc. YMMV.
+Resolutions beyond 128x128 are likely to result in crashes due to memory constraints etc. You're on your own at this point.
 
 ![ezgif com-video-to-gif](https://user-images.githubusercontent.com/12006953/89837358-b64c0480-db60-11ea-870d-4b6482068a3b.gif)
 
