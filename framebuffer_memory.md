@@ -1,18 +1,8 @@
-# SPLIT_MEMORY_MODE
+# DMA FRAME BUFFER MEMORY ALLOCATION
 
-### New Feature
+With version 1.2.2 of the library onwards, the framebuffer is split over multiple 'blocks' (mallocs) as a workaround to the fact the typical Arduino sketch can have a fragmented memory map whereby a single contiguous memory allocation may not be available to fit the entire display. 
 
-With version 1.1.0 of the library onwards, there is now a 'feature' to split the framebuffer  over two memory 'blocks' (mallocs) to work around the fact that typically the ESP32 upon 'boot up' has 2 x ~100kb chunks of memory available to use (ideally we'd want one massive chunk, but for whatever reasons this isn't the case). This allows non-contiguous memory allocations to be joined-up potentially allowing for 512x64 resolution or greater (no guarantees however). This is enabled by default with:
-
-```
-#define SPLIT_MEMORY_MODE 1
-```
-...in 'ESP32-RGB64x32MatrixPanel-I2S-DMA.h'
-
-
-## What is it trying to resolve?
-
-For whatever reason (and this may not be consistent across all ESP32 environments) when `heap_caps_print_heap_info(MALLOC_CAP_DMA)` is executed to print information about the available memory blocks that are DMA capable (which we need for a DMA-enabled pixel framebuffer), you may see something like this:
+Foe example when `heap_caps_print_heap_info(MALLOC_CAP_DMA)` is executed to print information about the available memory blocks that are DMA capable (which we need for a DMA-enabled pixel framebuffer), you may see something like this:
 
 ```
 Heap summary for capabilities 0x00000008:
@@ -52,13 +42,10 @@ So what? Well if you look closely, you will probably see two lines (blocks) like
 
 What this means is there are two blocks of DMA capable memory that are about 100kB each.
 
-The previous library was only able to use the largest single block of DMA capable memory. Now we can join the two largest together.
+The previous versions of the library were only able to use the largest single block of DMA capable memory. The library now is able to use non-contiguous blocks of memory.
 
-Given it's possible to display 128x32 with double buffering in approx. 100kB of RAM. If we use two memory blocks, and disable double buffering (which is now the default), theoretically we should be able to display 256x64 or greater resolution.
+Given it's possible to display 128x32 with double buffering in approx. 100kB of RAM. If we use two memory blocks for example, theoretically we should be able to display 256x64 or greater resolution (with double buffering disabled).
 
 # Caveats
-When SPLIT_MEMORY_MODE is enabled, the library will divide the memory framebuffer (pixel buffer) in half and split over two blocks of the same size. Therefore, if one of the free DMA memory blocks is SMALLER than 'half' the framebuffer, failure will occur.
-
-I.e. From the above example, we could not have any half be greater than 113792 bytes. 
 
 Experimentation will be required as available memory is highly dependant on other stuff you have in your sketch. It is best to include and use the 'ESP32-RGB64x32MatrixPanel-I2S-DMA' library as early as possible in your code and analyse the serial output of `heap_caps_print_heap_info(MALLOC_CAP_DMA)` to see what DMA memory blocks are available.
