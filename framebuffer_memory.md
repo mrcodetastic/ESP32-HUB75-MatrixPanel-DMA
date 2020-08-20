@@ -2,7 +2,7 @@
 
 With version 1.2.2 of the library onwards, the framebuffer is split over multiple 'blocks' (mallocs) as a workaround to the fact the typical Arduino sketch can have a fragmented memory map whereby a single contiguous memory allocation may not be available to fit the entire display. 
 
-Foe example when `heap_caps_print_heap_info(MALLOC_CAP_DMA)` is executed to print information about the available memory blocks that are DMA capable (which we need for a DMA-enabled pixel framebuffer), you may see something like this:
+For example when `heap_caps_print_heap_info(MALLOC_CAP_DMA)` is executed to print information about the available memory blocks that are DMA capable (which we need for a DMA-enabled pixel framebuffer), you may see something like this:
 
 ```
 Heap summary for capabilities 0x00000008:
