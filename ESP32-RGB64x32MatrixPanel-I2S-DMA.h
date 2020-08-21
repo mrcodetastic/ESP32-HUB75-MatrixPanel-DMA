@@ -148,17 +148,17 @@ struct frameStruct {
     rowColorDepthStruct rowdata[ROWS_PER_FRAME];
 };
 
-typedef struct rgb_24 {
-    rgb_24() : rgb_24(0,0,0) {}
-    rgb_24(uint8_t r, uint8_t g, uint8_t b) {
+typedef struct RGB24 {
+    RGB24() : RGB24(0,0,0) {}
+    RGB24(uint8_t r, uint8_t g, uint8_t b) {
         red = r; green = g; blue = b;
     }
-    rgb_24& operator=(const rgb_24& col);
+    RGB24& operator=(const RGB24& col);
 
     uint8_t red;
     uint8_t green;
     uint8_t blue;
-} rgb_24;
+} RGB24;
 
 
 /***************************************************************************************/   
@@ -250,7 +250,7 @@ class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
 	void fillScreenRGB888(uint8_t r, uint8_t g, uint8_t b);
     void drawPixelRGB565(int16_t x, int16_t y, uint16_t color);
     void drawPixelRGB888(int16_t x, int16_t y, uint8_t r, uint8_t g, uint8_t b);
-    void drawPixelRGB24(int16_t x, int16_t y, rgb_24 color);
+    void drawPixelRGB24(int16_t x, int16_t y, RGB24 color);
     void drawIcon (int *ico, int16_t x, int16_t y, int16_t cols, int16_t rows);
     
     // Color 444 is a 4 bit scale, so 0 to 15, color 565 takes a 0-255 bit value, so scale up by 255/15 (i.e. 17)!
@@ -260,7 +260,7 @@ class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
     uint16_t color565(uint8_t r, uint8_t g, uint8_t b); // This is what is used by Adafruit GFX!
     
     // Converts RGB333 to RGB565
-    uint16_t Color333(uint8_t r, uint8_t g, uint8_t b); // This is what is used by Adafruit GFX! Not sure why they have a capital 'C' for this particular function.
+    uint16_t color333(uint8_t r, uint8_t g, uint8_t b); // This is what is used by Adafruit GFX! Not sure why they have a capital 'C' for this particular function.
 
     inline void flipDMABuffer() 
     {         
@@ -380,7 +380,7 @@ inline void RGB64x32MatrixPanel_I2S_DMA::drawPixelRGB888(int16_t x, int16_t y, u
   updateMatrixDMABuffer( x, y, r, g, b);
 }
 
-inline void RGB64x32MatrixPanel_I2S_DMA::drawPixelRGB24(int16_t x, int16_t y, rgb_24 color) 
+inline void RGB64x32MatrixPanel_I2S_DMA::drawPixelRGB24(int16_t x, int16_t y, RGB24 color) 
 {
   updateMatrixDMABuffer( x, y, color.red, color.green, color.blue);
 }
@@ -399,7 +399,7 @@ inline uint16_t RGB64x32MatrixPanel_I2S_DMA::color565(uint8_t r, uint8_t g, uint
 }
 
 // Promote 3/3/3 RGB to Adafruit_GFX 5/6/5 RRRrrGGGgggBBBbb
-inline uint16_t RGB64x32MatrixPanel_I2S_DMA::Color333(uint8_t r, uint8_t g, uint8_t b) { 
+inline uint16_t RGB64x32MatrixPanel_I2S_DMA::color333(uint8_t r, uint8_t g, uint8_t b) { 
 
     return ((r & 0x7) << 13) | ((r & 0x6) << 10) | ((g & 0x7) << 8) | ((g & 0x7) << 5) | ((b & 0x7) << 2) | ((b & 0x6) >> 1);
     
