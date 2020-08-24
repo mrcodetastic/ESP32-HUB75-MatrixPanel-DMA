@@ -72,7 +72,7 @@ class VirtualMatrixPanel : public Adafruit_GFX
     }
     void drawPixelRGB565(int16_t x, int16_t y, uint16_t color);
     void drawPixelRGB888(int16_t x, int16_t y, uint8_t r, uint8_t g, uint8_t b);
-    void drawPixelRGB24(int16_t x, int16_t y, rgb_24 color);
+    void drawPixelRGB24(int16_t x, int16_t y, RGB24 color);
     void drawIcon (int *ico, int16_t x, int16_t y, int16_t module_cols, int16_t module_rows);
 
     uint16_t color444(uint8_t r, uint8_t g, uint8_t b) {
@@ -81,8 +81,8 @@ class VirtualMatrixPanel : public Adafruit_GFX
     uint16_t color565(uint8_t r, uint8_t g, uint8_t b) {
       return display->color565(r, g, b);
     }
-    uint16_t Color333(uint8_t r, uint8_t g, uint8_t b) {
-      return display->Color333(r, g, b);
+    uint16_t color333(uint8_t r, uint8_t g, uint8_t b) {
+      return display->color333(r, g, b);
     }
 
     void drawDisplayTest();
@@ -160,7 +160,7 @@ inline void VirtualMatrixPanel::drawPixelRGB888(int16_t x, int16_t y, uint8_t r,
   this->display->drawPixelRGB888( coords.x, coords.y, r, g, b);
 }
 
-inline void VirtualMatrixPanel::drawPixelRGB24(int16_t x, int16_t y, rgb_24 color)
+inline void VirtualMatrixPanel::drawPixelRGB24(int16_t x, int16_t y, RGB24 color)
 {
   VirtualCoords coords = getCoords(x, y);
   this->display->drawPixelRGB24(coords.x, coords.y, color);
