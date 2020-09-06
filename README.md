@@ -89,11 +89,12 @@ void loop()
 ```
 
 
-## Can I chain panels or use with larger panels?
-
+## Can I use with a larger panel (i.e. 64x64px square panel)?
 If you want to use with a 64x64 pixel panel (typically a HUB75*E* panel) you MUST configure a valid *E_PIN* to your ESP32 and connect it to the E pin of the HUB75 panel! Hence the 'E' in 'HUB75E'
 
-This library has only been tested with a 64 pixel (wide) and 32 (high) RGB panel.  Theoretically, if you want to chain two of these horizontally to make a 128x32 panel you can easily by setting the MATRIX_WIDTH to '128' and connecting the panels in series using the HUB75 ribbon cable.
+## Can I chain panels?
+
+Yes. If you want to chain two of these horizontally to make a 128x32 panel you can easily by setting the MATRIX_WIDTH to '128' and connecting the panels in series using the HUB75 ribbon cable.
 
 Similarly, if you wanted to chain 4 panels to make a 256x32 px horizontal panel, you can easily by setting the MATRIX_WIDTH to '256' and connecting the panels in series using the HUB75 ribbon cable.
 
