@@ -98,7 +98,7 @@ Yes. If you want to chain two of these horizontally to make a 128x32 panel you c
 
 Similarly, if you wanted to chain 4 panels to make a 256x32 px horizontal panel, you can easily by setting the MATRIX_WIDTH to '256' and connecting the panels in series using the HUB75 ribbon cable.
 
-Finally, if you wanted to chain 4 x (64x32px) panels to make 128x64px display (essentially a 2x2 grid of physical led panel modules), a little more magic will be required. Refer to the [Chained Panels](examples/ChainedPanels/) example.
+Finally, if you wanted to chain 4 x (64x32px) panels to make 128x64px display (essentially a 2x2 grid of 64x32 LED Matrix modules), a little more magic will be required. Refer to the [Chained Panels](examples/ChainedPanels/) example.
 
 Resolutions beyond 128x128 are likely to result in crashes due to memory constraints etc. You're on your own at this point.
 
