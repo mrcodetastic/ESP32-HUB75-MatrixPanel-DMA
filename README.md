@@ -105,9 +105,9 @@ Resolutions beyond 128x128 are likely to result in crashes due to memory constra
 ![ezgif com-video-to-gif](https://user-images.githubusercontent.com/12006953/89837358-b64c0480-db60-11ea-870d-4b6482068a3b.gif)
 
 
-## Setting 'Brightness' and Panel Ghosting
+## Panel Brightness
 
-By default you don't need to change / set the brightness setting. However, if you do need to this can be changed by calling `setPanelBrightness(XX)` and then `clearScreen()`.
+By default you should not need to change / set the brightness setting as the default value (16) is sufficent for most purposes. Brightness can be changed by calling `setPanelBrightness(XX)` and then `clearScreen()`.
 
 The value to pass 'setPanelBrightness' must be a value less than MATRIX_WIDTH. For example for a single 64x32 LED Matrix Module, a value less than 64. However, if you set the brightness too high, you may experience ghosting. 
 
@@ -123,7 +123,7 @@ void setup() {
 }
 
 ```
-Summary: setPanelBrightness(xx) value can be any number from 0 (display off) to MATRIX_WIDTH-1. So if you are chaining multiple 64x32 panels, then this value may actually be > 64 (or you will have a dim display).
+Summary: setPanelBrightness(xx) value can be any number from 0 (display off) to MATRIX_WIDTH-1. So if you are chaining multiple 64x32 panels, then this value may actually be > 64 (or you will have a dim display). Changing the brightness will have a huge impact on power usage.
 
 ![It's better in real life](image.jpg)
 
