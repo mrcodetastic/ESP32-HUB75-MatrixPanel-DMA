@@ -105,26 +105,25 @@ Resolutions beyond 128x128 are likely to result in crashes due to memory constra
 ![ezgif com-video-to-gif](https://user-images.githubusercontent.com/12006953/89837358-b64c0480-db60-11ea-870d-4b6482068a3b.gif)
 
 
-## Ghosting
+## Setting 'Brightness' and Panel Ghosting
 
-If you experience ghosting, you may need to reduce the brightness level, not all RGB Matrix Panels are the same - some seem to display ghosting artefacts at lower brightness levels. In the setup() function do something like:
+By default you don't need to change / set the brightness setting. However, if you do need to this can be changed by calling `setPanelBrightness(XX)` and then `clearScreen()`.
+
+The value to pass 'setPanelBrightness' must be a value less than MATRIX_WIDTH. For example for a single 64x32 LED Matrix Module, a value less than 64. However, if you set the brightness too high, you may experience ghosting. 
+
+Example:
 
 ```
 void setup() {
     Serial.begin(115200);
     matrix.begin(R1_PIN, G1_PIN, B1_PIN, R2_PIN, G2_PIN, B2_PIN, A_PIN, B_PIN, C_PIN, D_PIN, E_PIN, LAT_PIN, OE_PIN, CLK_PIN );  // setup the LED matrix
-    matrix.setPanelBrightness(16); // Set the brightness. 32 or lower ideal.
+    matrix.setPanelBrightness(16); // Set the brightness. 32 or lower ideal for a single 64x32 LED Matrix Panel.
     matrix.clearScreen(); // You must clear the screen after changing brightness level for it to take effect.
 
 }
 
 ```
-
-The value to pass 'setPanelBrightness' is the RGB Matrix's pixel width or less. i.e. Approx. 50 or lower (for a 64 pixel wide panel). Values greater than 60 can cause ghosting it seems.
-
-HOWEVER, by default the library uses a brightness level of '16' so there's really no need to call .setPanelBrightness, unless you specifically want a super bright display.
-
-Summary: setPanelBrightness(xx) value can be any number from 0 to MATRIX_WIDTH-1. So if you are chaining multiple 64x32 panels, then this value may actually be > 64 (or you will have a dim display).
+Summary: setPanelBrightness(xx) value can be any number from 0 (display off) to MATRIX_WIDTH-1. So if you are chaining multiple 64x32 panels, then this value may actually be > 64 (or you will have a dim display).
 
 ![It's better in real life](image.jpg)
 
