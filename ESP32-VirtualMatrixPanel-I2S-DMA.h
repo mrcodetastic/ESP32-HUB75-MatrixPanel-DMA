@@ -84,6 +84,9 @@ class VirtualMatrixPanel : public Adafruit_GFX
     uint16_t color333(uint8_t r, uint8_t g, uint8_t b) {
       return display->color333(r, g, b);
     }
+	
+	void flipDMABuffer() { display->flipDMABuffer(); }
+	void showDMABuffer() { display->showDMABuffer(); }
 
     void drawDisplayTest();
 
