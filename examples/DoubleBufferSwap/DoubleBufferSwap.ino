@@ -1,6 +1,7 @@
 #include <ESP32-RGB64x32MatrixPanel-I2S-DMA.h>
 
-RGB64x32MatrixPanel_I2S_DMA     display(true);      // Note the TRUE -> Turns of secondary buffer
+RGB64x32MatrixPanel_I2S_DMA     display(true);      // Note the TRUE -> Turns of secondary buffer - "double buffering"!
+                                                    // Double buffering is not enabled by default with the library.
 
 const byte row0 = 2+0*10;
 const byte row1 = 2+1*10;
