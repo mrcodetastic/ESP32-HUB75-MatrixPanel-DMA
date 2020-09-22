@@ -118,7 +118,7 @@ void GIFDraw(GIFDRAW *pDraw)
 } /* GIFDraw() */
 
 
-void * GIFOpenFile(char *fname, int32_t *pSize)
+void * GIFOpenFile(const char *fname, int32_t *pSize)
 {
   f = FILESYSTEM.open(fname);
   if (f)
