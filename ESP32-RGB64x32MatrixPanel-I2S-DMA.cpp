@@ -433,7 +433,7 @@ void RGB64x32MatrixPanel_I2S_DMA::configureDMA(int r1_pin, int  g1_pin, int  b1_
  *
  *  Note: If you change the brightness with setBrightness() you MUST then clearScreen() and repaint / flush the entire framebuffer.
  */
-#define GO_FOR_SPEED 1
+//#define GO_FOR_SPEED 1
 
 #ifdef GO_FOR_SPEED
 /* Update a specific co-ordinate in the DMA buffer */
