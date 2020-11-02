@@ -24,22 +24,13 @@
  * All of this is memory permitting of course (dependant on your sketch etc.) ...
  *
  */
-#ifndef MATRIX_HEIGHT
-	#define MATRIX_HEIGHT               32 
-#endif
+#define MATRIX_WIDTH                64   // CHANGE THIS VALUE IF CHAINING
+#define MATRIX_HEIGHT               32   // CHANGE THIS VALUE ONLY IF USING 64px HIGH panel with E PIN
 
-#ifndef MATRIX_WIDTH
-	#define MATRIX_WIDTH                64
-#endif
 
-#ifndef PIXEL_COLOR_DEPTH_BITS
-	#define PIXEL_COLOR_DEPTH_BITS      8   // 8bit per RGB color = 24 bit/per pixel, reduce to save RAM
-#endif
-
-#ifndef MATRIX_ROWS_IN_PARALLEL
-	#define MATRIX_ROWS_IN_PARALLEL     2   // Don't change this unless you know what you're doing
-#endif
-
+/* Best to keep these values as is. */
+#define PIXEL_COLOR_DEPTH_BITS      8   // 8bit per RGB color = 24 bit/per pixel, reduce to save RAM
+#define MATRIX_ROWS_IN_PARALLEL     2   // Don't change this unless you know what you're doing
 
 /* ESP32 Default Pin definition. You can change this, but best if you keep it as is and provide custom pin mappings 
  * as part of the begin(...) function.

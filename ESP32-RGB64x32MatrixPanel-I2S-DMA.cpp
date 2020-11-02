@@ -370,6 +370,11 @@ void RGB64x32MatrixPanel_I2S_DMA::configureDMA(int r1_pin, int  g1_pin, int  b1_
 
    #if SERIAL_DEBUG  
       Serial.printf("configureDMA(): Configured LL structure. %d DMA Linked List descriptors populated.\r\n", current_dmadescriptor_offset);
+	  
+	  if ( desccount != current_dmadescriptor_offset)
+	  {
+		Serial.printf("configureDMA(): ERROR! Expected descriptor count of %d != actual DMA descriptors of %d!\r\n", desccount, current_dmadescriptor_offset);		  
+	  }
     #endif  
 
       dmadesc_a[desccount-1].eof = 1;
