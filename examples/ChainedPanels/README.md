@@ -12,7 +12,6 @@ the displays like this would be a standard order.
 Non-standard order is essentially the creation of a non-horizontal only 'virtual' display that you can draw to in the same way you would
 the matrix, but with VirtualDisplay library looking after the pixel mapping to the physical chained panels.
 
-![Nothing better than a PowerPoint slide to explain](VirtualDisplayGraphic.png)
 [Refer to this document](VirtualDisplay.pdf) for the guide on how to use.
 
 ### Steps to Use ###
