@@ -67,12 +67,12 @@ The panel must be powered by 5V AC adapter with enough current capacity. (Curren
 
 # How to Use
 
-Below is a bare minimum sketch to draw a single white dot in the top left. You must call .begin() before you call ANY pixel-drawing (fonts, lines, colours etc.) function of the RGB64x32MatrixPanel_I2S_DMA class.
+Below is a bare minimum sketch to draw a single white dot in the top left. You must call .begin() before you call ANY pixel-drawing (fonts, lines, colours etc.) function of the MatrixPanel_I2S_DMA class.
 
 No .begin() before other functions = Crash
 ```
 #include <ESP32-HUB75-MatrixPanel-I2S-DMA.h>
-RGB64x32MatrixPanel_I2S_DMA matrix;
+MatrixPanel_I2S_DMA matrix;
 
 void setup()
 { 

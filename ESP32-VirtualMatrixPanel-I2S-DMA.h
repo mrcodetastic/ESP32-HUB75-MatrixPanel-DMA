@@ -36,13 +36,13 @@ class VirtualMatrixPanel : public Adafruit_GFX
     int16_t panelResX;
     int16_t panelResY;
 
-    RGB64x32MatrixPanel_I2S_DMA *display;
+    MatrixPanel_I2S_DMA *display;
 
 #ifdef USE_GFX_ROOT
-    VirtualMatrixPanel(RGB64x32MatrixPanel_I2S_DMA &disp, int vmodule_rows, int vmodule_cols, int panelX, int panelY, bool serpentine_chain = true, bool top_down_chain = false)
+    VirtualMatrixPanel(MatrixPanel_I2S_DMA &disp, int vmodule_rows, int vmodule_cols, int panelX, int panelY, bool serpentine_chain = true, bool top_down_chain = false)
       : GFX(vmodule_cols*panelX, vmodule_rows*panelY)
 #else
-    VirtualMatrixPanel(RGB64x32MatrixPanel_I2S_DMA &disp, int vmodule_rows, int vmodule_cols, int panelX, int panelY, bool serpentine_chain = true, bool top_down_chain = false )
+    VirtualMatrixPanel(MatrixPanel_I2S_DMA &disp, int vmodule_rows, int vmodule_cols, int panelX, int panelY, bool serpentine_chain = true, bool top_down_chain = false )
       : Adafruit_GFX(vmodule_cols*panelX, vmodule_rows*panelY)
 #endif            
     {

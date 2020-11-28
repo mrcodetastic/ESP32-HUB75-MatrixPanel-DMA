@@ -171,7 +171,7 @@
  * Create physical DMA panel class AND virtual (chained) display class.   
  ******************************************************************************/
 #include <ESP32-VirtualMatrixPanel-I2S-DMA.h>
-RGB64x32MatrixPanel_I2S_DMA dma_display;
+MatrixPanel_I2S_DMA dma_display;
 VirtualMatrixPanel          virtualDisp(dma_display, NUM_ROWS, NUM_COLS, PANEL_RES_X, PANEL_RES_Y, true);
 
 

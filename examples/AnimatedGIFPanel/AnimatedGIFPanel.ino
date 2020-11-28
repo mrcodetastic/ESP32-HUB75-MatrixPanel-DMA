@@ -25,7 +25,7 @@
 
 // ----------------------------
 
-RGB64x32MatrixPanel_I2S_DMA dma_display;
+MatrixPanel_I2S_DMA dma_display;
 AnimatedGIF gif;
 File f;
 int x_offset, y_offset;

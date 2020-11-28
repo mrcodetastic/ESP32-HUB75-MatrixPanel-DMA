@@ -28,7 +28,7 @@
 
 
 // Display
-RGB64x32MatrixPanel_I2S_DMA display; // RGB Panel
+MatrixPanel_I2S_DMA display; // RGB Panel
 
 // Wifi Logo, generated using LCD Image Converter: http://www.riuson.com/lcd-image-converter 
 const char wifi_image1bit[] PROGMEM   =  {

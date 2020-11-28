@@ -170,21 +170,21 @@ const uint16_t lumConvTab[]={
 
 /***************************************************************************************/   
 #ifdef USE_GFX_ROOT
-class RGB64x32MatrixPanel_I2S_DMA : public GFX {
+class MatrixPanel_I2S_DMA : public GFX {
 #else
-class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {	
+class MatrixPanel_I2S_DMA : public Adafruit_GFX {	
 #endif
 
   // ------- PUBLIC -------
   public:
     
     /**
-     * RGB64x32MatrixPanel_I2S_DMA 
+     * MatrixPanel_I2S_DMA 
      * 
      * @param  {bool} _double_buffer : Double buffer is disabled by default. Enable only if you know what you're doing. Manual switching required with flipDMABuffer() and showDMABuffer()
      *        
      */
-    RGB64x32MatrixPanel_I2S_DMA(bool _double_buffer = false)
+    MatrixPanel_I2S_DMA(bool _double_buffer = false)
 #ifdef USE_GFX_ROOT	
       : GFX(MATRIX_WIDTH, MATRIX_HEIGHT), double_buffering_enabled(_double_buffer)  {
 #else
@@ -238,7 +238,7 @@ class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
 
       #if SERIAL_DEBUG 
         if (!everything_OK)    
-              Serial.println("RGB64x32MatrixPanel_I2S_DMA::begin() failed.");
+              Serial.println("MatrixPanel_I2S_DMA::begin() failed.");
       #endif      
 
       return everything_OK;
@@ -355,12 +355,12 @@ class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
 /***************************************************************************************/   
 // https://stackoverflow.com/questions/5057021/why-are-c-inline-functions-in-the-header
 /* 2. functions declared in the header must be marked inline because otherwise, every translation unit which includes the header will contain a definition of the function, and the linker will complain about multiple definitions (a violation of the One Definition Rule). The inline keyword suppresses this, allowing multiple translation units to contain (identical) definitions. */
-inline void RGB64x32MatrixPanel_I2S_DMA::drawPixel(int16_t x, int16_t y, uint16_t color) // adafruit virtual void override
+inline void MatrixPanel_I2S_DMA::drawPixel(int16_t x, int16_t y, uint16_t color) // adafruit virtual void override
 {
   drawPixelRGB565( x, y, color);
 } 
 
-inline void RGB64x32MatrixPanel_I2S_DMA::fillScreen(uint16_t color)  // adafruit virtual void override
+inline void MatrixPanel_I2S_DMA::fillScreen(uint16_t color)  // adafruit virtual void override
 {
   uint8_t r = ((((color >> 11) & 0x1F) * 527) + 23) >> 6;
   uint8_t g = ((((color >> 5) & 0x3F) * 259) + 33) >> 6;
@@ -369,13 +369,13 @@ inline void RGB64x32MatrixPanel_I2S_DMA::fillScreen(uint16_t color)  // adafruit
   updateMatrixDMABuffer(r, g, b); // the RGB only (no pixel coordinate) version of 'updateMatrixDMABuffer'
 } 
 
-inline void RGB64x32MatrixPanel_I2S_DMA::fillScreenRGB888(uint8_t r, uint8_t g,uint8_t b)  // adafruit virtual void override
+inline void MatrixPanel_I2S_DMA::fillScreenRGB888(uint8_t r, uint8_t g,uint8_t b)  // adafruit virtual void override
 {
   updateMatrixDMABuffer(r, g, b);
 } 
 
 // For adafruit
-inline void RGB64x32MatrixPanel_I2S_DMA::drawPixelRGB565(int16_t x, int16_t y, uint16_t color) 
+inline void MatrixPanel_I2S_DMA::drawPixelRGB565(int16_t x, int16_t y, uint16_t color) 
 {
   uint8_t r = ((((color >> 11) & 0x1F) * 527) + 23) >> 6;
   uint8_t g = ((((color >> 5) & 0x3F) * 259) + 33) >> 6;
@@ -384,19 +384,19 @@ inline void RGB64x32MatrixPanel_I2S_DMA::drawPixelRGB565(int16_t x, int16_t y, u
   updateMatrixDMABuffer( x, y, r, g, b);
 }
 
-inline void RGB64x32MatrixPanel_I2S_DMA::drawPixelRGB888(int16_t x, int16_t y, uint8_t r, uint8_t g,uint8_t b) 
+inline void MatrixPanel_I2S_DMA::drawPixelRGB888(int16_t x, int16_t y, uint8_t r, uint8_t g,uint8_t b) 
 {
   updateMatrixDMABuffer( x, y, r, g, b);
 }
 
-inline void RGB64x32MatrixPanel_I2S_DMA::drawPixelRGB24(int16_t x, int16_t y, RGB24 color) 
+inline void MatrixPanel_I2S_DMA::drawPixelRGB24(int16_t x, int16_t y, RGB24 color) 
 {
   updateMatrixDMABuffer( x, y, color.red, color.green, color.blue);
 }
 
 // Pass 8-bit (each) R,G,B, get back 16-bit packed color
 //https://github.com/squix78/ILI9341Buffer/blob/master/ILI9341_SPI.cpp
-inline uint16_t RGB64x32MatrixPanel_I2S_DMA::color565(uint8_t r, uint8_t g, uint8_t b) {
+inline uint16_t MatrixPanel_I2S_DMA::color565(uint8_t r, uint8_t g, uint8_t b) {
 
 /*
   Serial.printf("Got r value of %d\n", r);
@@ -408,14 +408,14 @@ inline uint16_t RGB64x32MatrixPanel_I2S_DMA::color565(uint8_t r, uint8_t g, uint
 }
 
 // Promote 3/3/3 RGB to Adafruit_GFX 5/6/5 RRRrrGGGgggBBBbb
-inline uint16_t RGB64x32MatrixPanel_I2S_DMA::color333(uint8_t r, uint8_t g, uint8_t b) { 
+inline uint16_t MatrixPanel_I2S_DMA::color333(uint8_t r, uint8_t g, uint8_t b) { 
 
     return ((r & 0x7) << 13) | ((r & 0x6) << 10) | ((g & 0x7) << 8) | ((g & 0x7) << 5) | ((b & 0x7) << 2) | ((b & 0x6) >> 1);
     
 }
 
 
-inline void RGB64x32MatrixPanel_I2S_DMA::drawIcon (int *ico, int16_t x, int16_t y, int16_t cols, int16_t rows) {
+inline void MatrixPanel_I2S_DMA::drawIcon (int *ico, int16_t x, int16_t y, int16_t cols, int16_t rows) {
 /*  drawIcon draws a C style bitmap.  
 //  Example 10x5px bitmap of a yellow sun 
 //
@@ -427,7 +427,7 @@ inline void RGB64x32MatrixPanel_I2S_DMA::drawIcon (int *ico, int16_t x, int16_t 
       0x0000, 0x0000, 0xffe0, 0xffe0, 0xffe0, 0xffe0, 0xffe0, 0xffe0, 0x0000, 0x0000,
   };
   
-  RGB64x32MatrixPanel_I2S_DMA matrix;
+  MatrixPanel_I2S_DMA matrix;
 
   matrix.drawIcon (half_sun, 0,0,10,5);
 */
@@ -439,5 +439,8 @@ inline void RGB64x32MatrixPanel_I2S_DMA::drawIcon (int *ico, int16_t x, int16_t 
     }
   }  
 }
+
+/***************************************************************************************/
+typedef MatrixPanel_I2S_DMA RGB64x32MatrixPanel_I2S_DMA; // for backwards compatibility to old class name
 
 #endif

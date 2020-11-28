@@ -64,7 +64,7 @@ uint8_t val2PWM(int val) {
     return lumConvTab[val];
 }
 
-bool RGB64x32MatrixPanel_I2S_DMA::allocateDMAmemory()
+bool MatrixPanel_I2S_DMA::allocateDMAmemory()
 {
 
    /***
@@ -277,7 +277,7 @@ bool RGB64x32MatrixPanel_I2S_DMA::allocateDMAmemory()
 
 
 
-void RGB64x32MatrixPanel_I2S_DMA::configureDMA(int r1_pin, int  g1_pin, int  b1_pin, int  r2_pin, int  g2_pin, int  b2_pin, int  a_pin, int   b_pin, int  c_pin, int  d_pin, int  e_pin, int  lat_pin, int   oe_pin, int clk_pin)
+void MatrixPanel_I2S_DMA::configureDMA(int r1_pin, int  g1_pin, int  b1_pin, int  r2_pin, int  g2_pin, int  b2_pin, int  a_pin, int   b_pin, int  c_pin, int  d_pin, int  e_pin, int  lat_pin, int   oe_pin, int clk_pin)
 {
     #if SERIAL_DEBUG  
       Serial.println("configureDMA(): Starting configuration of DMA engine.\r\n");
@@ -442,7 +442,7 @@ void RGB64x32MatrixPanel_I2S_DMA::configureDMA(int r1_pin, int  g1_pin, int  b1_
 
 #ifdef GO_FOR_SPEED
 /* Update a specific co-ordinate in the DMA buffer */
-void RGB64x32MatrixPanel_I2S_DMA::updateMatrixDMABuffer(int16_t x_coord, int16_t y_coord, uint8_t red, uint8_t green, uint8_t blue)
+void MatrixPanel_I2S_DMA::updateMatrixDMABuffer(int16_t x_coord, int16_t y_coord, uint8_t red, uint8_t green, uint8_t blue)
 {
 	
     // Check that the co-ordinates are within range, or it'll break everything big time.
@@ -512,7 +512,7 @@ void RGB64x32MatrixPanel_I2S_DMA::updateMatrixDMABuffer(int16_t x_coord, int16_t
 
 /* Update a specific co-ordinate in the DMA buffer */
 /* Original version were we re-create the bitstream from scratch for each x,y co-ordinate / pixel changed. Slightly slower. */
-void RGB64x32MatrixPanel_I2S_DMA::updateMatrixDMABuffer(int16_t x_coord, int16_t y_coord, uint8_t red, uint8_t green, uint8_t blue)
+void MatrixPanel_I2S_DMA::updateMatrixDMABuffer(int16_t x_coord, int16_t y_coord, uint8_t red, uint8_t green, uint8_t blue)
 {
     if ( !everything_OK ) { 
 
@@ -681,7 +681,7 @@ void RGB64x32MatrixPanel_I2S_DMA::updateMatrixDMABuffer(int16_t x_coord, int16_t
 
 
 /* Update the entire buffer with a single specific colour - quicker */
-void RGB64x32MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint8_t red, uint8_t green, uint8_t blue)
+void MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint8_t red, uint8_t green, uint8_t blue)
 {
   if ( !everything_OK ) return;
   
@@ -783,13 +783,13 @@ void RGB64x32MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint8_t red, uint8_t gre
  * pre-init procedures for specific drivers
  * 
  */
-void RGB64x32MatrixPanel_I2S_DMA::shiftDriver(const shift_driver _drv, const int dma_r1_pin, const int dma_g1_pin, const int dma_b1_pin, const int dma_r2_pin, const int dma_g2_pin, const int dma_b2_pin, const int dma_a_pin, const int dma_b_pin, const int dma_c_pin, const int dma_d_pin, const int dma_e_pin, const int dma_lat_pin, const int dma_oe_pin, const int dma_clk_pin){
+void MatrixPanel_I2S_DMA::shiftDriver(const shift_driver _drv, const int dma_r1_pin, const int dma_g1_pin, const int dma_b1_pin, const int dma_r2_pin, const int dma_g2_pin, const int dma_b2_pin, const int dma_a_pin, const int dma_b_pin, const int dma_c_pin, const int dma_d_pin, const int dma_e_pin, const int dma_lat_pin, const int dma_oe_pin, const int dma_clk_pin){
     switch (_drv){
     case FM6124:
     case FM6126A:
     {
       #if SERIAL_DEBUG 
-        Serial.println( F("RGB64x32MatrixPanel_I2S_DMA - initializing FM6124 driver..."));
+        Serial.println( F("MatrixPanel_I2S_DMA - initializing FM6124 driver..."));
       #endif
       int C12[16] = {0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
       int C13[16] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0};

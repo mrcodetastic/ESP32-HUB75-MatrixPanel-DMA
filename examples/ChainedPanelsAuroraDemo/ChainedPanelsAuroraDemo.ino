@@ -47,10 +47,10 @@ int lastPattern = 0;
 
 /* -------------------------- Class Initialisation -------------------------- */
 //#include <ESP32-HUB75-MatrixPanel-I2S-DMA.h>
-//RGB64x32MatrixPanel_I2S_DMA matrix;
+//MatrixPanel_I2S_DMA matrix;
 
 #include <ESP32-VirtualMatrixPanel-I2S-DMA.h>
-RGB64x32MatrixPanel_I2S_DMA matrix;
+MatrixPanel_I2S_DMA matrix;
 // Added support for 'Chained' virtual panel configurations.
 VirtualMatrixPanel    virtualDisp(matrix, NUM_ROWS, NUM_COLS, PANEL_RES_X, PANEL_RES_Y, true);
 
