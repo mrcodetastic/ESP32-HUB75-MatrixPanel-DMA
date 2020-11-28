@@ -46,7 +46,7 @@ int lastPattern = 0;
 
 
 /* -------------------------- Class Initialisation -------------------------- */
-//#include <ESP32-RGB64x32MatrixPanel-I2S-DMA.h>
+//#include <ESP32-HUB75-MatrixPanel-I2S-DMA.h>
 //RGB64x32MatrixPanel_I2S_DMA matrix;
 
 #include <ESP32-VirtualMatrixPanel-I2S-DMA.h>

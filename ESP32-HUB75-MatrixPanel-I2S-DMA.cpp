@@ -1,4 +1,4 @@
-#include "ESP32-RGB64x32MatrixPanel-I2S-DMA.h"
+#include "ESP32-HUB75-MatrixPanel-I2S-DMA.h"
 
 // Credits: Louis Beaudoin <https://github.com/pixelmatix/SmartMatrix/tree/teensylc>
 // and Sprite_TM: 			https://www.esp32.com/viewtopic.php?f=17&t=3188 and https://www.esp32.com/viewtopic.php?f=13&t=3256
@@ -254,7 +254,7 @@ bool RGB64x32MatrixPanel_I2S_DMA::allocateDMAmemory()
         }
     }
 
-    Serial.printf("*** ESP32-RGB64x32MatrixPanel-I2S-DMA: Memory Allocations Complete *** \r\n");
+    Serial.printf("*** ESP32-HUB75-MatrixPanel-I2S-DMA: Memory Allocations Complete *** \r\n");
     Serial.printf("Total memory that was reserved: %d kB.\r\n", _total_dma_capable_memory_reserved/1024);
 	Serial.printf("... of which was used for the DMA Linked List(s): %d kB.\r\n", _dma_linked_list_memory_required/1024);
 	

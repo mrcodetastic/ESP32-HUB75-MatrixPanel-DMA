@@ -3,7 +3,7 @@
     Steps to use
     -----------
 
-    1) In ESP32-RGB64x32MatrixPanel-I2S-DMA.h:
+    1) In ESP32-HUB75-MatrixPanel-I2S-DMA.h:
 
     - Set the MATRIX_HEIGHT to be the y resolution of the physical chained 
       panels in a line (if the panels are 32 x 16, set it to be 16)
@@ -25,7 +25,7 @@
     Thanks to:
 
     * Brian Lough for the original example as raised in this issue:
-      https://github.com/mrfaptastic/ESP32-RGB64x32MatrixPanel-I2S-DMA/issues/26
+      https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/issues/26
 
       YouTube: https://www.youtube.com/brianlough
       Tindie: https://www.tindie.com/stores/brianlough/
@@ -202,7 +202,7 @@ void setup() {
 
   if (dma_display.width() != NUM_ROWS*NUM_COLS*PANEL_RES_X )
   {
-    Serial.println(F("\r\nERROR: MATRIX_WIDTH and/or MATRIX_HEIGHT in 'ESP32-RGB64x32MatrixPanel-I2S-DMA.h'\r\nis not configured correctly for the requested VirtualMatrixPanel dimensions!\r\n"));
+    Serial.println(F("\r\nERROR: MATRIX_WIDTH and/or MATRIX_HEIGHT in 'ESP32-HUB75-MatrixPanel-I2S-DMA.h'\r\nis not configured correctly for the requested VirtualMatrixPanel dimensions!\r\n"));
     Serial.printf("WIDTH according dma_display is %d, but should be %d. Is your NUM_ROWS and NUM_COLS correct?\r\n", dma_display.width(), NUM_ROWS*NUM_COLS*PANEL_RES_X);
     return;
   }

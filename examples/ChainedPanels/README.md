@@ -16,7 +16,7 @@ the matrix, but with VirtualDisplay library looking after the pixel mapping to t
 
 ### Steps to Use ###
 
-1) In ESP32-RGB64x32MatrixPanel-I2S-DMA.h:
+1) In ESP32-HUB75-MatrixPanel-I2S-DMA.h:
 
 - Set the MATRIX_HEIGHT to be the y resolution of the physical chained panels in a line (if the panels are 32 x 16, set it to be 16)
 - Set the MATRIX_WIDTH to be the sum of the x resolution of all the physical chained panels (i.e. If you have 4 x (32px w x 16px h) panels, 32x4 = 128) 

@@ -324,7 +324,7 @@ class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
     lldesc_t * dmadesc_a = {0}; 
     lldesc_t * dmadesc_b = {0};
 
-    // ESP32-RGB64x32MatrixPanel-I2S-DMA functioning
+    // ESP32-HUB75-MatrixPanel-I2S-DMA functioning
     bool everything_OK              = false;
     bool double_buffering_enabled   = false;// Do we use double buffer mode? Your project code will have to manually flip between both.
     int  back_buffer_id             = 0;    // If using double buffer, which one is NOT active (ie. being displayed) to write too?

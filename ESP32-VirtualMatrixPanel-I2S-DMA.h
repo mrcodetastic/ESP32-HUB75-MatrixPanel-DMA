@@ -9,7 +9,7 @@
     Twitter: https://twitter.com/witnessmenow
  *******************************************************************/
 
-#include "ESP32-RGB64x32MatrixPanel-I2S-DMA.h"
+#include "ESP32-HUB75-MatrixPanel-I2S-DMA.h"
 #include <Fonts/FreeSansBold12pt7b.h>
 
 

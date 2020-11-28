@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include <ESP32-RGB64x32MatrixPanel-I2S-DMA.h>
+#include <ESP32-HUB75-MatrixPanel-I2S-DMA.h>
 #include "Dhole_weather_icons32px.h"
 
 /*--------------------- DEBUG  -------------------------*/

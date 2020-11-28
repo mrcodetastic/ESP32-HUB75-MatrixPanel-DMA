@@ -48,4 +48,4 @@ Given it's possible to display 128x32 with double buffering in approx. 100kB of 
 
 # Caveats
 
-Experimentation will be required as available memory is highly dependant on other stuff you have in your sketch. It is best to include and use the 'ESP32-RGB64x32MatrixPanel-I2S-DMA' library as early as possible in your code and analyse the serial output of `heap_caps_print_heap_info(MALLOC_CAP_DMA)` to see what DMA memory blocks are available.
+Experimentation will be required as available memory is highly dependant on other stuff you have in your sketch. It is best to include and use the 'ESP32-HUB75-MatrixPanel-I2S-DMA' library as early as possible in your code and analyse the serial output of `heap_caps_print_heap_info(MALLOC_CAP_DMA)` to see what DMA memory blocks are available.

@@ -1,4 +1,4 @@
-#include <ESP32-RGB64x32MatrixPanel-I2S-DMA.h>
+#include <ESP32-HUB75-MatrixPanel-I2S-DMA.h>
 RGB64x32MatrixPanel_I2S_DMA dma_display;
 
 // Or use an Alternative non-DMA library, i.e:

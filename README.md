@@ -21,7 +21,7 @@ As a result, this library can theoretically provide ~16-24 bit colour, at variou
 
 # Wiring ESP32 with the LED Matrix Panel
 
-By default the pin mapping is as follows (defaults defined in ESP32-RGB64x32MatrixPanel-I2S-DMA.h).
+By default the pin mapping is as follows (defaults defined in ESP32-HUB75-MatrixPanel-I2S-DMA.h).
 
 ```
  HUB 75 PANEL              ESP 32 PIN
@@ -71,13 +71,13 @@ Below is a bare minimum sketch to draw a single white dot in the top left. You m
 
 No .begin() before other functions = Crash
 ```
-#include <ESP32-RGB64x32MatrixPanel-I2S-DMA.h>
+#include <ESP32-HUB75-MatrixPanel-I2S-DMA.h>
 RGB64x32MatrixPanel_I2S_DMA matrix;
 
 void setup()
 { 
   // MUST DO THIS FIRST!
-  matrix.begin();  // Use default pins supplied within ESP32-RGB64x32MatrixPanel-I2S-DMA.h
+  matrix.begin();  // Use default pins supplied within ESP32-HUB75-MatrixPanel-I2S-DMA.h
   // matrix.begin(R1_PIN, G1_PIN, B1_PIN, R2_PIN, G2_PIN, B2_PIN, A_PIN, B_PIN, C_PIN, D_PIN, E_PIN, LAT_PIN, OE_PIN, CLK_PIN );  // or custom pins
 
   // Draw a single white pixel
@@ -131,12 +131,12 @@ Summary: setPanelBrightness(xx) value can be any number from 0 (display off) to 
 
 ## Power, Power and Power!
 
-Having a good power supply is CRITICAL, and it is highly recommended, for chains of LED Panels to have a 2000uf capacitor soldered to the back of each LED Panel across the [GND and VCC pins](https://github.com/mrfaptastic/ESP32-RGB64x32MatrixPanel-I2S-DMA/issues/39#issuecomment-720780463), otherwise you WILL run into issues with 'flashy' graphics whereby a large amount of LEDs are turned on and off in succession (due to current/power draw peaks and troughs).
+Having a good power supply is CRITICAL, and it is highly recommended, for chains of LED Panels to have a 2000uf capacitor soldered to the back of each LED Panel across the [GND and VCC pins](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/issues/39#issuecomment-720780463), otherwise you WILL run into issues with 'flashy' graphics whereby a large amount of LEDs are turned on and off in succession (due to current/power draw peaks and troughs).
 
 Refer to this guide written for the [rpi-rgb-led-matrix library](https://github.com/hzeller/rpi-rgb-led-matrix/blob/master/wiring.md#a-word-about-power) for an explanation. 
 
-- Refer to this [example](https://github.com/mrfaptastic/ESP32-RGB64x32MatrixPanel-I2S-DMA/issues/39#issuecomment-722691127) issue of what can go wrong with a poor powersupply.
-- Refer to [this comment](https://github.com/mrfaptastic/ESP32-RGB64x32MatrixPanel-I2S-DMA/issues/35#issuecomment-726419862) in regards to certain panels not playing nice with voltages, and a 3.3volt signal that the ESP32 GPIO can only provide.
+- Refer to this [example](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/issues/39#issuecomment-722691127) issue of what can go wrong with a poor powersupply.
+- Refer to [this comment](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/issues/35#issuecomment-726419862) in regards to certain panels not playing nice with voltages, and a 3.3volt signal that the ESP32 GPIO can only provide.
 
 
 ## Inspiration
