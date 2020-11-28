@@ -778,3 +778,106 @@ void RGB64x32MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint8_t red, uint8_t gre
   } // end row iteration
 
 } // updateMatrixDMABuffer (full frame paint)
+
+/**
+ * pre-init procedures for specific drivers
+ * 
+ */
+void RGB64x32MatrixPanel_I2S_DMA::shiftDriver(const shift_driver _drv, const int dma_r1_pin, const int dma_g1_pin, const int dma_b1_pin, const int dma_r2_pin, const int dma_g2_pin, const int dma_b2_pin, const int dma_a_pin, const int dma_b_pin, const int dma_c_pin, const int dma_d_pin, const int dma_e_pin, const int dma_lat_pin, const int dma_oe_pin, const int dma_clk_pin){
+    switch (_drv){
+    case FM6124:
+    case FM6126A:
+    {
+      #if SERIAL_DEBUG 
+        Serial.println( F("RGB64x32MatrixPanel_I2S_DMA - initializing FM6124 driver..."));
+      #endif
+      int C12[16] = {0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+      int C13[16] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0};
+
+      pinMode(dma_r1_pin, OUTPUT);
+      pinMode(dma_g1_pin, OUTPUT);
+      pinMode(dma_b1_pin, OUTPUT);
+      pinMode(dma_r2_pin, OUTPUT);
+      pinMode(dma_g2_pin, OUTPUT);
+      pinMode(dma_b2_pin, OUTPUT);
+      pinMode(dma_a_pin, OUTPUT);
+      pinMode(dma_b_pin, OUTPUT);
+      pinMode(dma_c_pin, OUTPUT);
+      pinMode(dma_d_pin, OUTPUT);
+      pinMode(dma_e_pin, OUTPUT);
+      pinMode(dma_clk_pin, OUTPUT);
+      pinMode(dma_lat_pin, OUTPUT);
+      pinMode(dma_oe_pin, OUTPUT);
+
+      // Send Data to control register 11
+      digitalWrite(dma_oe_pin, HIGH); // Display reset
+      digitalWrite(dma_lat_pin, LOW);
+      digitalWrite(dma_clk_pin, LOW);
+      for (int l = 0; l < MATRIX_WIDTH; l++){
+          int y = l % 16;
+          digitalWrite(dma_r1_pin, LOW);
+          digitalWrite(dma_g1_pin, LOW);
+          digitalWrite(dma_b1_pin, LOW);
+          digitalWrite(dma_r2_pin, LOW);
+          digitalWrite(dma_g2_pin, LOW);
+          digitalWrite(dma_b2_pin, LOW);
+
+          if (C12[y] == 1){
+              digitalWrite(dma_r1_pin, HIGH);
+              digitalWrite(dma_g1_pin, HIGH);
+              digitalWrite(dma_b1_pin, HIGH);
+              digitalWrite(dma_r2_pin, HIGH);
+              digitalWrite(dma_g2_pin, HIGH);
+              digitalWrite(dma_b2_pin, HIGH);
+          }
+
+          if (l > MATRIX_WIDTH - 12){
+              digitalWrite(dma_lat_pin, HIGH);
+          } else {
+              digitalWrite(dma_lat_pin, LOW);
+          }
+
+          digitalWrite(dma_clk_pin, HIGH);
+          digitalWrite(dma_clk_pin, LOW);
+      }
+
+      digitalWrite(dma_lat_pin, LOW);
+      digitalWrite(dma_clk_pin, LOW);
+
+      // Send Data to control register 12
+      for (int l = 0; l < MATRIX_WIDTH; l++){
+          int y = l % 16;
+          digitalWrite(dma_r1_pin, LOW);
+          digitalWrite(dma_g1_pin, LOW);
+          digitalWrite(dma_b1_pin, LOW);
+          digitalWrite(dma_r2_pin, LOW);
+          digitalWrite(dma_g2_pin, LOW);
+          digitalWrite(dma_b2_pin, LOW);
+
+          if (C13[y] == 1){
+              digitalWrite(dma_r1_pin, HIGH);
+              digitalWrite(dma_g1_pin, HIGH);
+              digitalWrite(dma_b1_pin, HIGH);
+              digitalWrite(dma_r2_pin, HIGH);
+              digitalWrite(dma_g2_pin, HIGH);
+              digitalWrite(dma_b2_pin, HIGH);
+          }
+
+          if (l > MATRIX_WIDTH - 13){
+              digitalWrite(dma_lat_pin, HIGH);
+          } else {
+              digitalWrite(dma_lat_pin, LOW);
+          }
+          digitalWrite(dma_clk_pin, HIGH);
+          digitalWrite(dma_clk_pin, LOW);
+      }
+
+      digitalWrite(dma_lat_pin, LOW);
+      digitalWrite(dma_clk_pin, LOW);
+      break;
+    }
+    case SHIFT:
+    default:
+      break;
+    }
+}

@@ -24,13 +24,21 @@
  * All of this is memory permitting of course (dependant on your sketch etc.) ...
  *
  */
-#define MATRIX_WIDTH                64   // CHANGE THIS VALUE IF CHAINING
-#define MATRIX_HEIGHT               32   // CHANGE THIS VALUE ONLY IF USING 64px HIGH panel with E PIN
+#ifndef MATRIX_WIDTH
+ #define MATRIX_WIDTH                64   // CHANGE THIS VALUE IF CHAINING
+#endif
 
+#ifndef MATRIX_HEIGHT
+ #define MATRIX_HEIGHT               32   // CHANGE THIS VALUE ONLY IF USING 64px HIGH panel with E PIN
+#endif
 
 /* Best to keep these values as is. */
-#define PIXEL_COLOR_DEPTH_BITS      8   // 8bit per RGB color = 24 bit/per pixel, reduce to save RAM
-#define MATRIX_ROWS_IN_PARALLEL     2   // Don't change this unless you know what you're doing
+#ifndef PIXEL_COLOR_DEPTH_BITS
+ #define PIXEL_COLOR_DEPTH_BITS      8   // 8bit per RGB color = 24 bit/per pixel, reduce to save RAM
+#endif
+#ifndef MATRIX_ROWS_IN_PARALLEL
+ #define MATRIX_ROWS_IN_PARALLEL     2   // Don't change this unless you know what you're doing
+#endif
 
 /* ESP32 Default Pin definition. You can change this, but best if you keep it as is and provide custom pin mappings 
  * as part of the begin(...) function.
@@ -151,6 +159,7 @@ typedef struct RGB24 {
     uint8_t blue;
 } RGB24;
 
+enum shift_driver {SHIFT=0, FM6124, FM6126A};
 
 /***************************************************************************************/   
 // Used by val2PWM
@@ -185,7 +194,7 @@ class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
     }
 
     /* Propagate the DMA pin configuration, or use compiler defaults */
-    bool begin(int dma_r1_pin = R1_PIN_DEFAULT , int dma_g1_pin = G1_PIN_DEFAULT, int dma_b1_pin = B1_PIN_DEFAULT , int dma_r2_pin = R2_PIN_DEFAULT , int dma_g2_pin = G2_PIN_DEFAULT , int dma_b2_pin = B2_PIN_DEFAULT , int dma_a_pin  = A_PIN_DEFAULT  , int dma_b_pin = B_PIN_DEFAULT  , int dma_c_pin = C_PIN_DEFAULT , int dma_d_pin = D_PIN_DEFAULT  , int dma_e_pin = E_PIN_DEFAULT , int dma_lat_pin = LAT_PIN_DEFAULT, int dma_oe_pin = OE_PIN_DEFAULT , int dma_clk_pin = CLK_PIN_DEFAULT)
+    bool begin(int dma_r1_pin = R1_PIN_DEFAULT , int dma_g1_pin = G1_PIN_DEFAULT, int dma_b1_pin = B1_PIN_DEFAULT , int dma_r2_pin = R2_PIN_DEFAULT , int dma_g2_pin = G2_PIN_DEFAULT , int dma_b2_pin = B2_PIN_DEFAULT , int dma_a_pin  = A_PIN_DEFAULT  , int dma_b_pin = B_PIN_DEFAULT  , int dma_c_pin = C_PIN_DEFAULT , int dma_d_pin = D_PIN_DEFAULT  , int dma_e_pin = E_PIN_DEFAULT , int dma_lat_pin = LAT_PIN_DEFAULT, int dma_oe_pin = OE_PIN_DEFAULT , int dma_clk_pin = CLK_PIN_DEFAULT, const shift_driver _drv=SHIFT)
     {
 
       // Change 'if' to '1' to enable, 0 to not include this Serial output in compiled program        
@@ -205,6 +214,10 @@ class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
             Serial.printf("Using pin %d for the OE_PIN\n",  dma_oe_pin);    
             Serial.printf("Using pin %d for the CLK_PIN\n", dma_clk_pin); 
       #endif   
+
+      // initialize some sppecific panel drivers
+      if (_drv)
+        shiftDriver(_drv, dma_r1_pin, dma_g1_pin, dma_b1_pin, dma_r2_pin, dma_g2_pin, dma_b2_pin, dma_a_pin, dma_b_pin, dma_c_pin, dma_d_pin, dma_e_pin, dma_lat_pin, dma_oe_pin, dma_clk_pin);
 
      /* As DMA buffers are dynamically allocated, we must allocated in begin()
       * Ref: https://github.com/espressif/arduino-esp32/issues/831
@@ -296,8 +309,7 @@ class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
     } 
 
   int  calculated_refresh_rate  = 0;         
-            
-    
+
    // ------- PRIVATE -------
   private:
 
@@ -331,6 +343,12 @@ class RGB64x32MatrixPanel_I2S_DMA : public Adafruit_GFX {
    
     /* Update the entire DMA buffer (aka. The RGB Panel) a certain colour (wipe the screen basically) */
     void updateMatrixDMABuffer(uint8_t red, uint8_t green, uint8_t blue);       
+
+    /**
+     * pre-init procedures for specific drivers
+     * 
+     */
+    void shiftDriver(const shift_driver _drv, const int dma_r1_pin, const int dma_g1_pin, const int dma_b1_pin, const int dma_r2_pin, const int dma_g2_pin, const int dma_b2_pin, const int dma_a_pin, const int dma_b_pin, const int dma_c_pin, const int dma_d_pin, const int dma_e_pin, const int dma_lat_pin, const int dma_oe_pin, const int dma_clk_pin);
 
 }; // end Class header
 
