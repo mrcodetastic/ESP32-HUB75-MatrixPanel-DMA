@@ -13,6 +13,7 @@ Non-standard order is essentially the creation of a non-horizontal only 'virtual
 the matrix, but with VirtualDisplay library looking after the pixel mapping to the physical chained panels.
 
 ![Nothing better than a PowerPoint slide to explain](VirtualDisplayGraphic.png)
+[Refer to this document](VirtualDisplay.pdf) for the guide on how to use.
 
 ### Steps to Use ###
 
