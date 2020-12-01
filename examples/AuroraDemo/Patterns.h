@@ -81,7 +81,7 @@ class Patterns : public Playlist {
     PatternSwirl swirl;
     PatternPendulumWave pendulumWave;
     PatternFlowField flowField;
-    PatternIncrementalDrift incrementalDrift;
+ //   PatternIncrementalDrift incrementalDrift;
  //   PatternIncrementalDrift2 incrementalDrift2;
     PatternMunch munch;
     PatternElectricMandala electricMandala;
@@ -114,7 +114,7 @@ class Patterns : public Playlist {
 
     //const static int PATTERN_COUNT = 37;   
 
-    const static int PATTERN_COUNT = 17; 
+    const static int PATTERN_COUNT = 16; 
 
     Drawable* shuffledItems[PATTERN_COUNT];
 
@@ -132,7 +132,8 @@ class Patterns : public Playlist {
       &life, // ok
       &flowField,
       &pendulumWave, //11 ok
-      &incrementalDrift, //12 ok
+
+   //   &incrementalDrift, //12 ok
    //   &incrementalDrift2, // 13 fail
       &munch, // 14 ok
       &electricMandala, // 15 ok

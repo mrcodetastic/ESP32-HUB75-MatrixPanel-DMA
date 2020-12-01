@@ -49,7 +49,7 @@ class PatternPendulumWave : public Drawable {
         effects.drawBackgroundFastLEDPixelCRGB(x, y, effects.ColorFromCurrentPalette(x * 7));
       }
 
-      return 15;
+      return 10;
     }
 };
 

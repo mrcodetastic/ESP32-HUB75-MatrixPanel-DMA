@@ -36,10 +36,10 @@ Effects effects;
 Patterns patterns;
 
 /* -------------------------- Some variables -------------------------- */
-unsigned long ms_current  = 0;
-unsigned long ms_previous = 0;
-unsigned long ms_animation_max_duration = 10000; // 10 seconds
-unsigned long next_frame = 0;
+unsigned long fps = 0, fps_timer; // fps (this is NOT a matix refresh rate!)
+unsigned int default_fps = 30, pattern_fps = 30;  // default fps limit (this is not a matix refresh conuter!)
+unsigned long ms_animation_max_duration = 20000;  // 20 seconds
+unsigned long last_frame=0, ms_previous=0;
 
 void setup()
 {
@@ -58,40 +58,51 @@ void setup()
   listPatterns();
 
 
-  patterns.setPattern(0); //   // simple noise
-  patterns.start();     
+  //patterns.setPattern(0); //   // simple noise
+  patterns.moveRandom(1); // start from a random pattern
 
   Serial.print("Starting with pattern: ");
   Serial.println(patterns.getCurrentPatternName());
-
+  patterns.start();
+  ms_previous = millis();
+  fps_timer = millis();
 }
 
 void loop()
 {
     // menu.run(mainMenuItems, mainMenuItemCount);  
-    ms_current = millis();
 
-  
-    if ( (ms_current - ms_previous) > ms_animation_max_duration ) 
-    {
-     //  patterns.moveRandom(1);
-
+  if ( (millis() - ms_previous) > ms_animation_max_duration ) 
+  {
        patterns.stop();      
-       patterns.move(1);
+       patterns.moveRandom(1);
+       //patterns.move(1);
        patterns.start();  
  
        
        Serial.print("Changing pattern to:  ");
        Serial.println(patterns.getCurrentPatternName());
         
-       ms_previous = ms_current;
+       ms_previous = millis();
 
        // Select a random palette as well
        //effects.RandomPalette();
     }
  
-    if ( next_frame < ms_current)
-      next_frame = patterns.drawFrame() + ms_current; 
+    if ( 1000 / pattern_fps + last_frame < millis()){
+      last_frame = millis();
+      pattern_fps = patterns.drawFrame();
+      if (!pattern_fps)
+        pattern_fps = default_fps;
+
+      ++fps;
+    }
+
+    if (fps_timer + 1000 < millis()){
+       Serial.printf_P(PSTR("Effect fps: %d\n"), fps);
+       fps_timer = millis();
+       fps = 0;
+    }
        
 }
 

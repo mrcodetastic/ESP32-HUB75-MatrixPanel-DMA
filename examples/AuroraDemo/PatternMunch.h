@@ -40,9 +40,9 @@ public:
 
     unsigned int drawFrame() {
        
-        for (byte x = 0; x < MATRIX_WIDTH; x++) {
-            for (byte y = 0; y < MATRIX_HEIGHT; y++) {
-                effects.leds[XY(x, y)] = (x ^ y ^ flip) < count ? effects.ColorFromCurrentPalette(((x ^ y) << 2) + generation) : CRGB::Black;
+        for (uint16_t x = 0; x < MATRIX_WIDTH; x++) {
+            for (uint16_t y = 0; y < MATRIX_HEIGHT; y++) {
+                effects.leds[XY16(x, y)] = (x ^ y ^ flip) < count ? effects.ColorFromCurrentPalette(((x ^ y) << 2) + generation) : CRGB::Black;
 
                 // The below is more pleasant
                // effects.leds[XY(x, y)] = effects.ColorFromCurrentPalette(((x ^ y) << 2) + generation) ;
@@ -66,7 +66,6 @@ public:
 
         // show it ffs!
         effects.ShowFrame();
-        
         return 60;
     }
 };

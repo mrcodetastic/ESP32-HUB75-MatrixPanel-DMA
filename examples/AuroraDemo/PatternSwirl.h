@@ -36,6 +36,7 @@ class PatternSwirl : public Drawable {
     }
 
     void start() {
+        effects.ClearFrame();
     }
 
     unsigned int drawFrame() {
@@ -52,8 +53,8 @@ class PatternSwirl : public Drawable {
 #endif
 
       // Use two out-of-sync sine waves
-      uint8_t  i = beatsin8(27, borderWidth, MATRIX_HEIGHT - borderWidth);
-      uint8_t  j = beatsin8(41, borderWidth, MATRIX_WIDTH - borderWidth);
+      uint8_t  i = beatsin8(13, borderWidth, MATRIX_HEIGHT - borderWidth);
+      uint8_t  j = beatsin8(27, borderWidth, MATRIX_WIDTH - borderWidth);
       // Also calculate some reflections
       uint8_t ni = (MATRIX_WIDTH - 1) - i;
       uint8_t nj = (MATRIX_WIDTH - 1) - j;
