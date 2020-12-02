@@ -51,7 +51,7 @@ class PatternSpiro : public Drawable {
     };
 
     unsigned int drawFrame() {
-      effects.DimAll(1);
+      blur2d(effects.leds, MATRIX_WIDTH > 255 ? 255 : MATRIX_WIDTH, MATRIX_HEIGHT > 255 ? 255 : MATRIX_HEIGHT, 192);
 
       boolean change = false;
       

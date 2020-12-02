@@ -56,7 +56,7 @@
 #include "PatternInfinity.h"
 #include "PatternPlasma.h"
 #include "PatternSnake.h"
-//#include "PatternInvaders.h" // Doesn't seem to work, omitting.
+#include "PatternInvaders.h"
 //#include "PatternCube.h" // Doesn't seem to work, omitting.
 //#include "PatternFire.h" // Doesn't seem to work, omitting.
 #include "PatternLife.h"
@@ -81,7 +81,7 @@ class Patterns : public Playlist {
     PatternSwirl swirl;
     PatternPendulumWave pendulumWave;
     PatternFlowField flowField;
- //   PatternIncrementalDrift incrementalDrift;
+    PatternIncrementalDrift incrementalDrift;
  //   PatternIncrementalDrift2 incrementalDrift2;
     PatternMunch munch;
     PatternElectricMandala electricMandala;
@@ -93,7 +93,7 @@ class Patterns : public Playlist {
     PatternFlock flock;
     PatternInfinity infinity;
     PatternPlasma plasma;
- //   PatternInvadersSmall invadersSmall;
+    PatternInvadersSmall invadersSmall;
  //   PatternInvadersMedium invadersMedium;
  //   PatternInvadersLarge invadersLarge;
     PatternSnake snake;
@@ -114,7 +114,7 @@ class Patterns : public Playlist {
 
     //const static int PATTERN_COUNT = 37;   
 
-    const static int PATTERN_COUNT = 16; 
+    const static int PATTERN_COUNT = 17;
 
     Drawable* shuffledItems[PATTERN_COUNT];
 
@@ -133,13 +133,13 @@ class Patterns : public Playlist {
       &flowField,
       &pendulumWave, //11 ok
 
-   //   &incrementalDrift, //12 ok
+      &incrementalDrift, //12 ok
    //   &incrementalDrift2, // 13 fail
       &munch, // 14 ok
       &electricMandala, // 15 ok
    //   &spin, // 16 ok but repeditivev
       &simplexNoise, // 17 - cool!
-      &wave, // 18 ok
+   //   &wave, // 18 ok (can't work with 256+ matrix due to uint8_t vars)
    //   &rainbowFlag, //20 // fail
       &attract, // 21 ok
       &swirl, // 22
@@ -147,7 +147,7 @@ class Patterns : public Playlist {
       &flock, // works
       &infinity, // works
       &plasma, // works
-   //   &invadersSmall, // works ish
+      &invadersSmall, // works ish
    //   &invadersMedium, // fail
    //   &invadersLarge, // fail
       &snake, // ok

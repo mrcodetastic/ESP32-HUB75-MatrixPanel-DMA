@@ -99,7 +99,7 @@ void loop()
     }
 
     if (fps_timer + 1000 < millis()){
-       Serial.printf_P(PSTR("Effect fps: %d\n"), fps);
+       Serial.printf_P(PSTR("Effect fps: %ld\n"), fps);
        fps_timer = millis();
        fps = 0;
     }

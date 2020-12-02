@@ -42,6 +42,9 @@ const int  MATRIX_CENTER_Y = MATRIX_HEIGHT / 2;
 
 const uint16_t NUM_LEDS = (MATRIX_WIDTH * MATRIX_HEIGHT) + 1; // one led spare to capture out of bounds
 
+// forward declaration
+uint16_t XY16( uint16_t x, uint16_t y);
+
 /* Convert x,y co-ordinate to flat array index. 
  * x and y positions start from 0, so must not be >= 'real' panel width or height 
  * (i.e. 64 pixels or 32 pixels.).  Max value: MATRIX_WIDTH-1 etc.
@@ -49,15 +52,11 @@ const uint16_t NUM_LEDS = (MATRIX_WIDTH * MATRIX_HEIGHT) + 1; // one led spare t
  */
 uint16_t XY( uint8_t x, uint8_t y) 
 {
-    if( x >= MATRIX_WIDTH) return 0;
-    if( y >= MATRIX_HEIGHT) return 0;  
-  
-    return (y * MATRIX_WIDTH) + x + 1; // everything offset by one to capute out of bounds stuff - never displayed by ShowFrame()
-    
+  return XY16(x, y);
 }
 
 /**
- *  This one is for 256+ matrixes
+ *  The one for 256+ matrixes
  *  otherwise this:
  *    for (uint8_t i = 0; i < MATRIX_WIDTH; i++) {}
  *  turns into an infinite loop
@@ -65,8 +64,8 @@ uint16_t XY( uint8_t x, uint8_t y)
 uint16_t XY16( uint16_t x, uint16_t y) 
 {
     if( x >= MATRIX_WIDTH) return 0;
-    if( y >= MATRIX_HEIGHT) return 0;  
-  
+    if( y >= MATRIX_HEIGHT) return 0;
+
     return (y * MATRIX_WIDTH) + x + 1; // everything offset by one to capute out of bounds stuff - never displayed by ShowFrame()
 }
 
@@ -106,7 +105,8 @@ uint32_t noise_z;
 uint32_t noise_scale_x;
 uint32_t noise_scale_y;
 
-uint8_t noise[MATRIX_WIDTH][MATRIX_HEIGHT];
+//uint8_t noise[MATRIX_WIDTH][MATRIX_HEIGHT];
+uint8_t **noise = nullptr;  // we will allocate mem later
 uint8_t noisesmoothing;
 
 class Effects {
@@ -114,14 +114,27 @@ public:
   CRGB *leds;
   //CRGB leds[NUM_LEDS];
   //CRGB leds2[NUM_LEDS]; // Faptastic: getting rid of this and any dependant effects or algos. to save memory 24*64*32 bytes of ram (50k).
-  
+
   Effects(){
-    // we do dynamic allocation for leds buffer, otherwise esp32 toolchain can't link static arrays of this size for 256+ matrixes
+    // we do dynamic allocation for leds buffer, otherwise esp32 toolchain can't link static arrays of such a big size for 256+ matrixes
     leds = (CRGB *)malloc(NUM_LEDS * sizeof(CRGB));
+
+    // allocate mem for noise effect
+    // (there should be some guards for malloc errors eventually)
+    noise = (uint8_t **)malloc(MATRIX_WIDTH * sizeof(uint8_t *));
+    for (int i = 0; i < MATRIX_WIDTH; ++i) {
+      noise[i] = (uint8_t *)malloc(MATRIX_HEIGHT * sizeof(uint8_t));
+    }
+
     ClearFrame();
+    matrix.clearScreen();
   }
   ~Effects(){
     free(leds);
+    for (int i = 0; i < MATRIX_WIDTH; ++i) {
+      free(noise[i]);
+    }
+    free(noise);
   }
 
   /* The only 'framebuffer' we have is what is contained in the leds and leds2 variables.
@@ -136,7 +149,7 @@ public:
 	  leds[XY(x, y)] = color;
 	  //matrix.drawPixelRGB888(x, y, color.r, color.g, color.b); 
   }
-  
+
   // write one pixel with the specified color from the current palette to coordinates
   void Pixel(int x, int y, uint8_t colorIndex) {
     leds[XY(x, y)] = ColorFromCurrentPalette(colorIndex);
@@ -157,15 +170,14 @@ public:
   //  backgroundLayer.swapBuffers();
    // leds = (CRGB*) backgroundLayer.backBuffer();
    // LEDS.countFPS();
-   
 
-	  for (int y=0;y<MATRIX_HEIGHT; y++)
-  		for (int x=0;x<MATRIX_WIDTH; x++)
-	  	{
-		    //Serial.printf("\r\nFlushing x, y coord %d, %d", x, y);
-		    //display.drawPixelRGB888( x, 31-y, tmp_led.r, tmp_led.g, tmp_led.b);
-		    matrix.drawPixelRGB888( x, y, leds[XY16(x,y)].r, leds[XY16(x,y)].g, leds[XY16(x,y)].b);
-		  } // end loop to copy fast led to the dma matrix
+	for (int y=0; y<MATRIX_HEIGHT; ++y){
+  	    for (int x=0; x<MATRIX_WIDTH; ++x){
+		//Serial.printf("Flushing x, y coord %d, %d\n", x, y);
+    		uint16_t _pixel = XY16(x,y);
+    		matrix.drawPixelRGB888( x, y, leds[_pixel].r, leds[_pixel].g, leds[_pixel].b);
+	    } // end loop to copy fast led to the dma matrix
+	}
   }
 
   // scale the brightness of the screenbuffer down
@@ -180,7 +192,6 @@ public:
   void ClearFrame()
   {
       memset(leds, 0x00, NUM_LEDS * sizeof(CRGB)); // flush
-      matrix.clearScreen();
   }
   
 	 
@@ -419,8 +430,8 @@ public:
 
   // copy one diagonal triangle into the other one within a 16x16
   void Caleidoscope3() {
-    for (int x = 0; x <= MATRIX_CENTRE_X; x++) {
-      for (int y = 0; y <= x; y++) {
+    for (int x = 0; x <= MATRIX_CENTRE_X && x < MATRIX_HEIGHT; x++) {
+      for (int y = 0; y <= x && y<MATRIX_HEIGHT; y++) {
         leds[XY16(x, y)] = leds[XY16(y, x)];
       }
     }
@@ -438,7 +449,7 @@ public:
   // copy one diagonal triangle into the other one within a 8x8
   void Caleidoscope5() {
     for (int x = 0; x < MATRIX_WIDTH / 4; x++) {
-      for (int y = 0; y <= x; y++) {
+      for (int y = 0; y <= x && y<=MATRIX_HEIGHT; y++) {
         leds[XY16(x, y)] = leds[XY16(y, x)];
       }
     }
