@@ -37,7 +37,7 @@ class PatternSpiro : public Drawable {
 
     uint8_t spirocount = 1;
     uint8_t spirooffset = 256 / spirocount;
-    boolean spiroincrement = false;
+    boolean spiroincrement = true;
 
     boolean handledChange = false;
 
@@ -46,8 +46,12 @@ class PatternSpiro : public Drawable {
       name = (char *)"Spiro";
     }
 
+    void start(){
+      effects.ClearFrame();
+    };
+
     unsigned int drawFrame() {
-      effects.DimAll(254); effects.ShowFrame();
+      blur2d(effects.leds, MATRIX_WIDTH > 255 ? 255 : MATRIX_WIDTH, MATRIX_HEIGHT > 255 ? 255 : MATRIX_HEIGHT, 192);
 
       boolean change = false;
       
@@ -100,6 +104,7 @@ class PatternSpiro : public Drawable {
         hueoffset += 1;
       }
 
+      effects.ShowFrame();
       return 0;
     }
 };

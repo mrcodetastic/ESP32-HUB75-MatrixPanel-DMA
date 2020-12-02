@@ -246,7 +246,7 @@ public:
             if (algorithm >= algorithmCount)
                 algorithm = 0;
 
-            return 1000;
+            return 0;
         }
 
         effects.ShowFrame();
@@ -255,7 +255,7 @@ public:
     }
 
     void start() {
-        matrix.fillScreen(0);
+        effects.ClearFrame();
         cellCount = 0;
         hue = 0;
     }

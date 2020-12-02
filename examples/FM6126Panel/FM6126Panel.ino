@@ -36,7 +36,7 @@ MatrixPanel_I2S_DMA dma_display;
 #define CH_B 19
 #define CH_C 5
 #define CH_D 17
-#define CH_E 32 // assign to any available pin if using two panels or 64x64 panels with 1/32 scan
+#define CH_E -1 // assign to any available pin if using two panels or 64x64 panels with 1/32 scan (i.e. 32 works fine)
 #define CLK 16
 #define LAT 4
 #define OE 15
@@ -91,6 +91,6 @@ void loop(){
     if (cycles >= 1024) {
         time_counter = 0;
         cycles = 0;
-        currentPalette = palettes[random(0,sizeof(palettes))];
+        currentPalette = palettes[random(0,sizeof(palettes)/sizeof(palettes[0]))];
     }
 }
