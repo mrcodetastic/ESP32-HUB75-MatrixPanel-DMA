@@ -791,91 +791,50 @@ void MatrixPanel_I2S_DMA::shiftDriver(const shift_driver _drv, const int dma_r1_
       #if SERIAL_DEBUG 
         Serial.println( F("MatrixPanel_I2S_DMA - initializing FM6124 driver..."));
       #endif
-      int C12[16] = {0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
-      int C13[16] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0};
+      bool REG1[16] = {0,0,0,0,0, 1,1,1,1,1,1, 0,0,0,0,0};    // this sets global matrix brighness power
+      bool REG2[16] = {0,0,0,0,0, 0,0,0,0,1,0, 0,0,0,0,0};    // a single bit enables the matrix output
 
-      pinMode(dma_r1_pin, OUTPUT);
-      pinMode(dma_g1_pin, OUTPUT);
-      pinMode(dma_b1_pin, OUTPUT);
-      pinMode(dma_r2_pin, OUTPUT);
-      pinMode(dma_g2_pin, OUTPUT);
-      pinMode(dma_b2_pin, OUTPUT);
-      pinMode(dma_a_pin, OUTPUT);
-      pinMode(dma_b_pin, OUTPUT);
-      pinMode(dma_c_pin, OUTPUT);
-      pinMode(dma_d_pin, OUTPUT);
-      pinMode(dma_e_pin, OUTPUT);
-      pinMode(dma_clk_pin, OUTPUT);
-      pinMode(dma_lat_pin, OUTPUT);
-      pinMode(dma_oe_pin, OUTPUT);
+      for (uint8_t _pin:{dma_r1_pin, dma_r2_pin, dma_g1_pin, dma_g2_pin, dma_b1_pin, dma_b2_pin, dma_clk_pin, dma_lat_pin, dma_oe_pin})
+        pinMode(_pin, OUTPUT);
 
-      // Send Data to control register 11
-      digitalWrite(dma_oe_pin, HIGH); // Display reset
+      digitalWrite(dma_oe_pin, HIGH); // Disable Display
       digitalWrite(dma_lat_pin, LOW);
       digitalWrite(dma_clk_pin, LOW);
+
+      // Send Data to control register REG1
+      // this sets the matrix brightness actually
       for (int l = 0; l < MATRIX_WIDTH; l++){
-          int y = l % 16;
-          digitalWrite(dma_r1_pin, LOW);
-          digitalWrite(dma_g1_pin, LOW);
-          digitalWrite(dma_b1_pin, LOW);
-          digitalWrite(dma_r2_pin, LOW);
-          digitalWrite(dma_g2_pin, LOW);
-          digitalWrite(dma_b2_pin, LOW);
+        for (uint8_t _pin:{dma_r1_pin, dma_r2_pin, dma_g1_pin, dma_g2_pin, dma_b1_pin, dma_b2_pin})
+          digitalWrite(_pin, REG1[l%16]);   // we have 16 bits shifters and write the same value all over the matrix array
 
-          if (C12[y] == 1){
-              digitalWrite(dma_r1_pin, HIGH);
-              digitalWrite(dma_g1_pin, HIGH);
-              digitalWrite(dma_b1_pin, HIGH);
-              digitalWrite(dma_r2_pin, HIGH);
-              digitalWrite(dma_g2_pin, HIGH);
-              digitalWrite(dma_b2_pin, HIGH);
-          }
-
-          if (l > MATRIX_WIDTH - 12){
+          if (l > MATRIX_WIDTH - 12){         // pull the latch 12 clocks before the end of matrix so that REG1 starts counting to save the value
               digitalWrite(dma_lat_pin, HIGH);
-          } else {
-              digitalWrite(dma_lat_pin, LOW);
           }
-
-          digitalWrite(dma_clk_pin, HIGH);
+          digitalWrite(dma_clk_pin, HIGH);    // 1-clock pulse
           digitalWrite(dma_clk_pin, LOW);
       }
 
+      // drop the latch and save data to the REG1 all over the FM6124 chips
       digitalWrite(dma_lat_pin, LOW);
       digitalWrite(dma_clk_pin, LOW);
 
-      // Send Data to control register 12
+      // Send Data to control register REG2 (enable LED output)
       for (int l = 0; l < MATRIX_WIDTH; l++){
-          int y = l % 16;
-          digitalWrite(dma_r1_pin, LOW);
-          digitalWrite(dma_g1_pin, LOW);
-          digitalWrite(dma_b1_pin, LOW);
-          digitalWrite(dma_r2_pin, LOW);
-          digitalWrite(dma_g2_pin, LOW);
-          digitalWrite(dma_b2_pin, LOW);
+        for (uint8_t _pin:{dma_r1_pin, dma_r2_pin, dma_g1_pin, dma_g2_pin, dma_b1_pin, dma_b2_pin})
+          digitalWrite(_pin, REG2[l%16]);   // we have 16 bits shifters and we write the same value all over the matrix array
 
-          if (C13[y] == 1){
-              digitalWrite(dma_r1_pin, HIGH);
-              digitalWrite(dma_g1_pin, HIGH);
-              digitalWrite(dma_b1_pin, HIGH);
-              digitalWrite(dma_r2_pin, HIGH);
-              digitalWrite(dma_g2_pin, HIGH);
-              digitalWrite(dma_b2_pin, HIGH);
-          }
-
-          if (l > MATRIX_WIDTH - 13){
+          if (l > MATRIX_WIDTH - 13){       // pull the latch 13 clocks before the end of matrix so that reg2 stars counting to save the value
               digitalWrite(dma_lat_pin, HIGH);
-          } else {
-              digitalWrite(dma_lat_pin, LOW);
           }
-          digitalWrite(dma_clk_pin, HIGH);
+          digitalWrite(dma_clk_pin, HIGH);  // 1-clock pulse
           digitalWrite(dma_clk_pin, LOW);
       }
 
+      // drop the latch and save data to the REG1 all over the FM6126 chips
       digitalWrite(dma_lat_pin, LOW);
       digitalWrite(dma_clk_pin, LOW);
-      break;
     }
+      break;
     case SHIFT:
     default:
       break;
