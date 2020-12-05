@@ -13,7 +13,7 @@ class PatternTest : public Drawable {
     unsigned int drawFrame() {
 
        matrix.fillScreen(matrix.color565(128, 0, 0));  
-    
+      return 1000;
     }
 };
 

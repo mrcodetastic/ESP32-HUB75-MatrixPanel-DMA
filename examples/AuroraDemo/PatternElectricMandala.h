@@ -92,13 +92,13 @@ class PatternElectricMandala : public Drawable {
 
       effects.ShowFrame();
 
-      return 0;
+      return 30;
     }
 
     // show just one layer
     void ShowNoiseLayer(byte layer, byte colorrepeat, byte colorshift) {
-      for (uint8_t i = 0; i < MATRIX_WIDTH; i++) {
-        for (uint8_t j = 0; j < MATRIX_HEIGHT; j++) {
+      for (uint16_t i = 0; i < MATRIX_WIDTH; i++) {
+        for (uint16_t j = 0; j < MATRIX_HEIGHT; j++) {
 
           uint8_t color = noise[i][j];
 
@@ -107,7 +107,7 @@ class PatternElectricMandala : public Drawable {
           // assign a color depending on the actual palette
           CRGB pixel = ColorFromPalette(effects.currentPalette, colorrepeat * (color + colorshift), bri);
 
-          effects.leds[XY(i, j)] = pixel;
+          effects.leds[XY16(i, j)] = pixel;
         }
       }
     }
