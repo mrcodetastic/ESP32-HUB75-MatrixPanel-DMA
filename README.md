@@ -7,7 +7,7 @@ As a result, this library can theoretically provide ~16-24 bit colour, at variou
 ## Panels Supported
 * 64x32 pixel 1/16 Scan LED Matrix 'Indoor' Panel, such as this [typical RGB panel available for purchase](https://www.aliexpress.com/item/256-128mm-64-32-pixels-1-16-Scan-Indoor-3in1-SMD2121-RGB-full-color-P4-led/32810362851.html). 
 * 64x64 pixel 1/32 Scan LED Matrix 'Indoor' Panel. 
-* FM6126 panels based on [this example](/examples/FM6126Panel) will also work with the correct initialisation.
+* [FM6126](FM6126A.md) panels based on [this example](/examples/FM6126Panel) will also work with the correct initialisation.
 
 ## Panels Not Supported
 * 1/8 Scan LED Matrix Panels are not supported, please use an alternative library if you bought one of these.
