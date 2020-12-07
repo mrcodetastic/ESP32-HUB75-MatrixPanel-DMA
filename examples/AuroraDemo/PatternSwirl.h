@@ -44,7 +44,7 @@ class PatternSwirl : public Drawable {
       // Note that we never actually clear the matrix, we just constantly
       // blur it repeatedly.  Since the blurring is 'lossy', there's
       // an automatic trend toward black -- by design.
-      uint8_t blurAmount = beatsin8(2, 10, 255)
+      uint8_t blurAmount = beatsin8(2, 10, 255);
 
 #if FASTLED_VERSION >= 3001000
       blur2d(effects.leds, MATRIX_WIDTH > 255 ? 255 : MATRIX_WIDTH, MATRIX_HEIGHT > 255 ? 255 : MATRIX_HEIGHT, blurAmount);
