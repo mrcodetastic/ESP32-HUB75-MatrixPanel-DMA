@@ -1,5 +1,6 @@
 RGB64x32MatrixPanel_I2S_DMA	KEYWORD1
 MatrixPanel_I2S_DMA	KEYWORD1
+Layer KEYWORD1
 fillScreen	KEYWORD2
 clearScreen	KEYWORD2
 fillScreenRGB888	KEYWORD2
