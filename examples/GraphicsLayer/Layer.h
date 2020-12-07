@@ -23,12 +23,12 @@
 #endif	
 
 #include <FastLed.h>
-#include <ESP32-RGB64x32MatrixPanel-I2S-DMA.h>
+#include <ESP32-HUB75-MatrixPanel-I2S-DMA.h>
 
 /* 
  * Set the width and height of the layer buffers. This should match exactly that of your output display, or virtual display.
  */
-#define LAYER_WIDTH 	64
+#define LAYER_WIDTH 	  64
 #define LAYER_HEIGHT  	32
 
 
@@ -44,9 +44,9 @@ struct layerPixels {
 };
 
 #ifdef USE_GFX_ROOT
-class Layer : public GFX {
+class Layer : public GFX
 #else
-class Layer : public Adafruit_GFX {	
+class Layer : public Adafruit_GFX
 #endif
 // class Layer : public GFX // use GFX Root for now
 {
@@ -55,7 +55,7 @@ class Layer : public Adafruit_GFX {
 		// Static allocation of memory for layer
 		//CRGB pixels[LAYER_WIDTH][LAYER_HEIGHT] = {{0}};
 
-		Layer(RGB64x32MatrixPanel_I2S_DMA &disp) : GFX (LAYER_WIDTH, LAYER_HEIGHT) {
+		Layer(MatrixPanel_I2S_DMA &disp) : GFX (LAYER_WIDTH, LAYER_HEIGHT) {
 			matrix = &disp;
 		}
 
@@ -107,16 +107,16 @@ class Layer : public Adafruit_GFX {
 		~Layer(void); 
 
 	private:
-		RGB64x32MatrixPanel_I2S_DMA *matrix = NULL;		
+		MatrixPanel_I2S_DMA *matrix = NULL;		
 };
 
 
 /* Merge FastLED layers into a super layer and display. */
 namespace LayerCompositor
 {
-        void Stack(RGB64x32MatrixPanel_I2S_DMA &disp, const Layer &_bgLayer, const Layer &_fgLayer, bool writeToBgLayer = false);
-        void Siloette(RGB64x32MatrixPanel_I2S_DMA &disp, const Layer &_bgLayer, const Layer &_fgLayer);		
-		void Blend(RGB64x32MatrixPanel_I2S_DMA &disp, const Layer &_bgLayer, const Layer &_fgLayer, uint8_t ratio);
+        void Stack(MatrixPanel_I2S_DMA &disp, const Layer &_bgLayer, const Layer &_fgLayer, bool writeToBgLayer = false);
+        void Siloette(MatrixPanel_I2S_DMA &disp, const Layer &_bgLayer, const Layer &_fgLayer);		
+		    void Blend(MatrixPanel_I2S_DMA &disp, const Layer &_bgLayer, const Layer &_fgLayer, uint8_t ratio = 127);
 }
 
 #endif

@@ -1,26 +1,12 @@
 /*
- * Portions of this code are adapted from Aurora: https://github.com/pixelmatix/aurora
- * Copyright (c) 2014 Jason Coon
- *
- * Portions of this code are adapted from LedEffects Plasma by Robert Atkins: https://bitbucket.org/ratkins/ledeffects/src/26ed3c51912af6fac5f1304629c7b4ab7ac8ca4b/Plasma.cpp?at=default
- * Copyright (c) 2013 Robert Atkins
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of
- * this software and associated documentation files (the "Software"), to deal in
- * the Software without restriction, including without limitation the rights to
- * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
- * the Software, and to permit persons to whom the Software is furnished to do so,
- * subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
- * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
- * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
- * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * An example that writes to a CRGB FastLED pixel buffer before being ultimately sent
+ * to the DMA Display.
+ * 
+ * Faptastic 2020
+ * 
+ * Note: 
+ *    * Layers use lots of RAM (3*WIDTH*HEIGHT bytes per layer to be precise), so use at your own risk. 
+ *    * Make sure LAYER_WIDTH and LAYER_HEIGHT are correctly configured in Layer.h !!!
  */
  
 //#define USE_CUSTOM_PINS // uncomment to use custom pins, then provide below
@@ -41,17 +27,20 @@
 #define CLK_PIN  14
 #define LAT_PIN  15
 #define OE_PIN  13
- 
- 
-#include <ESP32-HUB75-MatrixPanel-I2S-DMA.h>
-MatrixPanel_I2S_DMA dma_display;
 
-#include <FastLED.h>
+
+#include <FastLED.h>  // FastLED needs to be installed.
+#include "Layer.h"    // Layer Library
+#include "Fonts/FreeSansBold9pt7b.h" // include adafruit font
+
+// Object creation
+MatrixPanel_I2S_DMA dma_display; // Create HUB75 DMA object
+Layer               bgLayer(dma_display);         // Create background Layer
+Layer               textLayer(dma_display);     // Create foreground Layer
+
 
 int time_counter = 0;
 int cycles = 0;
-
-
 CRGBPalette16 currentPalette;
 CRGB currentColor;
 
@@ -80,6 +69,21 @@ void setup() {
   // Set current FastLED palette
   currentPalette = RainbowColors_p;
 
+  // Allocate Background Layer
+  bgLayer.init();
+  bgLayer.clear();
+  bgLayer.setTransparency(false);
+
+  // Allocate Canvas Layer
+  textLayer.init();
+  textLayer.clear();  
+
+  /* Step 1: Write some pixels to foreground Layer (use custom layer function)
+   * Only need to do this once as we're not changing it ever again in this example.
+   */
+  textLayer.drawCentreText("COOL!", MIDDLE, &FreeSansBold9pt7b, CRGB(255,255,255));
+  textLayer.autoCenterX(); // because I don't trust AdaFruit to perfectly place the contents in the middle
+
 }
 
 void loop() {
@@ -92,8 +96,13 @@ void loop() {
                 v += cos16(y * (128 - wibble)  + time_counter);
                 v += sin16(y * x * cos8(-time_counter) / 8);
 
-				currentColor = ColorFromPalette(currentPalette, (v >> 8) + 127); //, brightness, currentBlendType);
-				dma_display.drawPixelRGB888(x, y, currentColor.r, currentColor.g, currentColor.b);
+        				currentColor = ColorFromPalette(currentPalette, (v >> 8) + 127); //, brightness, currentBlendType);
+        
+                /* 
+                 *  Step 2: Write to Background layer! Don't show it on the screen just yet.
+                 *          Note: Layer class is designed for FastLED 'CRGB' data type.
+                 */                
+        				bgLayer.drawPixel(x, y, currentColor);
 				
             }
         }
@@ -105,5 +114,13 @@ void loop() {
             time_counter = 0;
             cycles = 0;
         }
+
+        /* 
+         *  Step 3: Merge foreground and background layers and send to the matrix panel!
+         *  Use our special sauce LayerCompositor functions
+         */
+         LayerCompositor::Siloette(dma_display, bgLayer, textLayer);
+         //LayerCompositor::Stack(dma_display, bgLayer, textLayer);
+         // LayerCompositor::Blend(dma_display, bgLayer, textLayer, 127);
         
 } // end loop

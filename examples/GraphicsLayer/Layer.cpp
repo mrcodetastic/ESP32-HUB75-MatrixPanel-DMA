@@ -138,8 +138,11 @@ void Layer::drawCentreText(const char *buf, textPosition textPos, const GFXfont 
 			{				
 				int wstart = 0;
 
+/*
 				if (w > 42) wstart = (LAYER_WIDTH - w) / 2;
 				else wstart = (LAYER_WIDTH - w) / 2;
+*/
+        wstart = (LAYER_WIDTH - w) / 2;
 
 				if (textPos == TOP) {
 					setCursor(wstart, h+yadjust); // top 
@@ -259,7 +262,7 @@ namespace LayerCompositor
 		 * writeToBg = write the result back to the _bgLayer, and not directly to the output device!
 		 * 			   -> no need to do a subsequent bgLayer.display() otherwise.
 		 */
-        void Stack(RGB64x32MatrixPanel_I2S_DMA &disp, const Layer &_bgLayer, const Layer &_fgLayer, bool writeBackToBg)
+        void Stack(MatrixPanel_I2S_DMA &disp, const Layer &_bgLayer, const Layer &_fgLayer, bool writeBackToBg)
 		{
 				for (int y = 0; y < LAYER_HEIGHT; y++) {
 					for (int x = 0; x < LAYER_WIDTH; x++)
@@ -290,7 +293,7 @@ namespace LayerCompositor
 		 * Where the foreground pixels are not the background/transparent color, populate with 
 		 * whatever is in the background.
 		 */
-        void Siloette(RGB64x32MatrixPanel_I2S_DMA &disp, const Layer &_bgLayer, const Layer &_fgLayer)
+        void Siloette(MatrixPanel_I2S_DMA &disp, const Layer &_bgLayer, const Layer &_fgLayer)
 		{
 				//const Layer *bg = &_bgLayer;
 				//const Layer *fg = &_fgLayer;
@@ -316,7 +319,7 @@ namespace LayerCompositor
 
 
 
-		void Blend(RGB64x32MatrixPanel_I2S_DMA &disp, const Layer &_bgLayer, const Layer &_fgLayer, uint8_t ratio)
+		void Blend(MatrixPanel_I2S_DMA &disp, const Layer &_bgLayer, const Layer &_fgLayer, uint8_t ratio)
 		{
 			CRGB _pixel = 0 ;
 
@@ -329,7 +332,8 @@ namespace LayerCompositor
 							// (set ratio to 127 for a constant 50% / 50% blend)
 							uint8_t ratio = beatsin8(5);
 						*/
-						
+
+             // (set ratio to 127 for a constant 50% / 50% blend)
 						_pixel = blend(_bgLayer.pixels->data[y][x], _fgLayer.pixels->data[y][x], ratio);
 
 						// https://gist.github.com/StefanPetrick/0c0d54d0f35ea9cca983
