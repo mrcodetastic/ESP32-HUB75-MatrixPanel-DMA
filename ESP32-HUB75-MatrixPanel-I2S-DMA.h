@@ -104,6 +104,11 @@
 #define BIT_D (1<<11)   
 #define BIT_E (1<<12)   
 
+#define BITSMASK_RGB1   (0xfff8)    // inverted bitmask for R1G1B1 bit in pixel vector
+#define BITSMASK_RGB2   (0xffc7)    // inverted bitmask for R2G2B2 bit in pixel vector
+#define BITSMASK_RGB12  (0xffc0)    // inverted bitmask for R1G1B1R2G2B2 bit in pixel vector
+#define BITSMASK_CTRL   (0xe03f)    // inverted bitmask for control bits ABCDE,LAT,OE in pixel vector
+
 // RGB Panel Constants / Calculated Values
 #define COLOR_CHANNELS_PER_PIXEL 3 
 #define PIXELS_PER_ROW ((MATRIX_WIDTH * MATRIX_HEIGHT) / MATRIX_HEIGHT) // = 64
@@ -114,8 +119,10 @@
 /* Keep this as is. Do not change.                                                     */
 #define ESP32_I2S_DMA_MODE          I2S_PARALLEL_BITS_16    // Pump 16 bits out in parallel
 #define ESP32_I2S_DMA_STORAGE_TYPE  uint16_t                // one uint16_t at a time.
-//#define ESP32_I2S_CLOCK_SPEED     (20000000UL)            // @ 20Mhz
-#define ESP32_I2S_CLOCK_SPEED       (10000000UL)            // @ 10Mhz
+#ifndef ESP32_I2S_CLOCK_SPEED
+  #define ESP32_I2S_CLOCK_SPEED       (10000000UL)            // @ 10Mhz
+//#define ESP32_I2S_CLOCK_SPEED       (20000000UL)            // @ 20Mhz
+#endif
 #define CLKS_DURING_LATCH            0   // Not used. 
 /***************************************************************************************/            
 
@@ -250,8 +257,8 @@ class MatrixPanel_I2S_DMA : public Adafruit_GFX {
     // Draw pixels
     virtual void drawPixel(int16_t x, int16_t y, uint16_t color);   // overwrite adafruit implementation
     virtual void fillScreen(uint16_t color);                        // overwrite adafruit implementation
-            void clearScreen() { fillScreen(0); } 
-	void fillScreenRGB888(uint8_t r, uint8_t g, uint8_t b);
+            void clearScreen();
+  	void fillScreenRGB888(uint8_t r, uint8_t g, uint8_t b);
     void drawPixelRGB565(int16_t x, int16_t y, uint16_t color);
     void drawPixelRGB888(int16_t x, int16_t y, uint8_t r, uint8_t g, uint8_t b);
     void drawPixelRGB24(int16_t x, int16_t y, RGB24 color);
@@ -296,17 +303,45 @@ class MatrixPanel_I2S_DMA : public Adafruit_GFX {
         while(!i2s_parallel_is_previous_buffer_free()) {}               
     }
     
-    
-    inline void setPanelBrightness(int b)
+    inline void setPanelBrightness(int &b)
     {
       // Change to set the brightness of the display, range of 1 to matrixWidth (i.e. 1 - 64)
         brightness = b;
+        if (fastmode)     // in 'fast' mode we should always reset DMA buffer to update OE bits that controls brightness
+          clearScreen();  // and YES, it WILL flicker. you've been warned :)
     }
-    
+
+    /**
+     * this is just a wrapper to control brightness
+     * with an 8-bit value (0-255), very popular in FastLED-based sketches :)
+     * @param uint8_t b - 8-bit brightness value
+     */
+    void setBrightness8(const uint8_t b)
+    {
+      setPanelBrightness(b * MATRIX_WIDTH / 256);
+    }
+
     inline void setMinRefreshRate(int rr)
     {
         min_refresh_rate = rr;
     } 
+
+    /**
+     * Controls fast-update mode, when only RGB bits are upated in DMA buffer
+     * @param mode bool - set/clear fastmode. Will take effect on newly updated pixels only
+     * @return fastmode status
+     */
+    bool setFastMode(const bool mode){
+      fastmode = mode;
+      return fastmode;
+    };
+
+    /**
+     * Controls fast-update mode, when only RGB bits are upated in DMA buffer
+     * @param void - returns current fastmode status
+     */
+    bool setFastMode(){return fastmode;};
+
 
   int  calculated_refresh_rate  = 0;         
 
@@ -332,6 +367,18 @@ class MatrixPanel_I2S_DMA : public Adafruit_GFX {
     int  min_refresh_rate     = 99;            // Probably best to leave as is unless you want to experiment. Framerate has an impact on brightness and also power draw - voltage ripple.
     int  lsbMsbTransitionBit  = 0;     // For possible color depth calculations
     
+    /**
+     * this var controls how DMA buffers are updated
+     * if set to false (default) - full recalculation performed, including address line bits, OE, LAT
+     * if set to true, only RGB1, RGB2 bits are updated.
+     * Could be toggled any time, see Notes regarding #define GO_FOR_SPEED 1 above
+     */
+    #ifdef GO_FOR_SPEED
+      bool fastmode = true;
+    #else
+      bool fastmode = false;
+    #endif
+
     /* Calculate the memory available for DMA use, do some other stuff, and allocate accordingly */
     bool allocateDMAmemory();
 
