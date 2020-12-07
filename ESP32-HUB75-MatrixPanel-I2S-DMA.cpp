@@ -112,7 +112,7 @@ bool MatrixPanel_I2S_DMA::allocateDMAmemory()
 		matrix_row_framebuffer_malloc[malloc_num] = (rowColorDepthStruct *)heap_caps_malloc( (sizeof(rowColorDepthStruct) * _num_frame_buffers) , MALLOC_CAP_DMA);
 		// If the ESP crashes here, then we must have a horribly fragmented memory space, or trying to allocate a ludicrous resolution.
  #if SERIAL_DEBUG  
-		Serial.printf("Malloc'ing %d bytes of memory @ address %d for frame row %d.\r\n", (sizeof(rowColorDepthStruct) * _num_frame_buffers), matrix_row_framebuffer_malloc[malloc_num], malloc_num);
+		Serial.printf("Malloc'ing %d bytes of memory @ address %ud for frame row %d.\r\n", (sizeof(rowColorDepthStruct) * _num_frame_buffers), (unsigned int)matrix_row_framebuffer_malloc[malloc_num], malloc_num);
  #endif	
 		if ( matrix_row_framebuffer_malloc[malloc_num] == NULL ) { 
 		        Serial.printf("ERROR: Couldn't malloc matrix_row_framebuffer %d! Critical fail.\r\n", malloc_num);            
@@ -438,108 +438,33 @@ void MatrixPanel_I2S_DMA::configureDMA(int r1_pin, int  g1_pin, int  b1_pin, int
  *
  *  Note: If you change the brightness with setBrightness() you MUST then clearScreen() and repaint / flush the entire framebuffer.
  */
-//#define GO_FOR_SPEED 1
-
-#ifdef GO_FOR_SPEED
-/* Update a specific co-ordinate in the DMA buffer */
-void MatrixPanel_I2S_DMA::updateMatrixDMABuffer(int16_t x_coord, int16_t y_coord, uint8_t red, uint8_t green, uint8_t blue)
-{
-	
-    // Check that the co-ordinates are within range, or it'll break everything big time.
-    // Valid co-ordinates are from 0 to (MATRIX_XXXX-1)
-	if ( x_coord < 0 || y_coord < 0 || x_coord >= MATRIX_WIDTH || y_coord >= MATRIX_HEIGHT) {
-		  return;
-    }
-	
-	// https://ledshield.wordpress.com/2012/11/13/led-brightness-to-your-eye-gamma-correction-no/
-	red 	= lumConvTab[red];
-	green 	= lumConvTab[green];
-	blue 	= lumConvTab[blue]; 	
-
-    bool painting_top_frame = true;
-    if ( y_coord >= ROWS_PER_FRAME) // co-ords start at zero, y_coord = 15 = 16 (rows per frame)
-    {
-        y_coord -= ROWS_PER_FRAME;  // Subtract the ROWS_PER_FRAME from the pixel co-ord to get the panel ROW (not really the 'y_coord' anymore)
-        painting_top_frame = false;
-    }
-	
-	// We need to update the correct uint16_t in the rowBitStruct array, that gets sent out in parallel
-	// 16 bit parallel mode - Save the calculated value to the bitplane memory in reverse order to account for I2S Tx FIFO mode1 ordering
-	int rowBitStruct_x_coord_uint16_t_position = (x_coord % 2) ? (x_coord-1):(x_coord+1);
-
-	// Find the memory address for the malloc for this framebuffer row.
-	rowColorDepthStruct *fb_row_malloc_ptr = (rowColorDepthStruct *) matrix_row_framebuffer_malloc[y_coord]; 	
-	
-    for(int color_depth_idx=0; color_depth_idx<PIXEL_COLOR_DEPTH_BITS; color_depth_idx++)  // color depth - 8 iterations
-    {
-        uint8_t mask = (1 << color_depth_idx); // PWM bit colour mask (max 8bits per pixel colour)
-        
-        // The destination for the pixel bitstream 
-        //rowBitStruct *p = &matrix_framebuffer_malloc_1[back_buffer_id].rowdata[y_coord].rowbits[color_depth_idx]; //matrixUpdateFrames location to write to uint16_t's
-        // Get the contents at this address, cast as a rowColorDepthStruct  
-        //rowBitStruct *p = &fb_row_malloc_ptr[back_buffer_id].rowbits[color_depth_idx]; //matrixUpdateFrames location to write to uint16_t's
-		uint16_t &v = fb_row_malloc_ptr[back_buffer_id].rowbits[color_depth_idx].data[rowBitStruct_x_coord_uint16_t_position]; 
-		
-        //int v=0; // the output bitstream
-      
-        if (painting_top_frame) // Painting to pixel in the top half of the HUB75 panel use the R1, B1 and G1 pins
-        { 
-           // Set the colour of the pixel of interest
-		   // https://stackoverflow.com/questions/47981/how-do-you-set-clear-and-toggle-a-single-bit
-          if (red & mask)   { v|=BIT_R1; }  else {  v &= ~(BIT_R1); }
-          if (green & mask) { v|=BIT_G1; }  else {  v &= ~(BIT_G1); }
-          if (blue & mask)  { v|=BIT_B1; }  else {  v &= ~(BIT_B1); }
-        }
-        else
-        { // Paint to a pixel in the bottom half
-	
-          if (red & mask)   { v|=BIT_R2; } else {  v &= ~(BIT_R2); }
-          if (green & mask) { v|=BIT_G2; } else {  v &= ~(BIT_G2); }
-          if (blue & mask)  { v|=BIT_B2; } else {  v &= ~(BIT_B2); }
- 
-        } // paint
-
-        // 16 bit parallel mode
-        //Save the calculated value to the bitplane memory in reverse order to account for I2S Tx FIFO mode1 ordering
-        //p->data[rowBitStruct_x_coord_uint16_t_position] = v;	
-		// NOTE: No need to do this as 'v' is now a reference directly to the frameStruct
-		
-    } // color depth loop (8)
-	
-} // updateMatrixDMABuffer (specific co-ords change)
-
-#else
 
 /* Update a specific co-ordinate in the DMA buffer */
 /* Original version were we re-create the bitstream from scratch for each x,y co-ordinate / pixel changed. Slightly slower. */
 void MatrixPanel_I2S_DMA::updateMatrixDMABuffer(int16_t x_coord, int16_t y_coord, uint8_t red, uint8_t green, uint8_t blue)
 {
     if ( !everything_OK ) { 
-
       #if SERIAL_DEBUG 
               Serial.println("Cannot updateMatrixDMABuffer as setup failed!");
       #endif         
-      
       return;
     }
-	
-	/* LED Brightness Compensation. Because if we do a basic "red & mask" for example, 
-	 * we'll NEVER send the dimmest possible colour, due to binary skew.
-	   
-	   i.e. It's almost impossible for color_depth_idx of 0 to be sent out to the MATRIX unless the 'value' of a color is exactly '1'
-	   
-	 */	 
-	red 	= lumConvTab[red];
-	green 	= lumConvTab[green];
-	blue 	= lumConvTab[blue]; 	
 
-    
-   /* 1) Check that the co-ordinates are within range, or it'll break everything big time.
-    * Valid co-ordinates are from 0 to (MATRIX_XXXX-1)
-    */
-	  if ( x_coord < 0 || y_coord < 0 || x_coord >= MATRIX_WIDTH || y_coord >= MATRIX_HEIGHT) {
-      return;
-    }
+  /* 1) Check that the co-ordinates are within range, or it'll break everything big time.
+  * Valid co-ordinates are from 0 to (MATRIX_XXXX-1)
+  */
+  if ( x_coord < 0 || y_coord < 0 || x_coord >= MATRIX_WIDTH || y_coord >= MATRIX_HEIGHT) {
+    return;
+  }
+
+  /* LED Brightness Compensation. Because if we do a basic "red & mask" for example, 
+	 * we'll NEVER send the dimmest possible colour, due to binary skew.
+	 * i.e. It's almost impossible for color_depth_idx of 0 to be sent out to the MATRIX unless the 'value' of a color is exactly '1'
+   * https://ledshield.wordpress.com/2012/11/13/led-brightness-to-your-eye-gamma-correction-no/
+	 */
+	red   = lumConvTab[red];
+	green = lumConvTab[green];
+	blue  = lumConvTab[blue]; 	
 
 	/* When using the drawPixel, we are obviously only changing the value of one x,y position, 
 	 * however, the two-scan panels paint TWO lines at the same time
@@ -553,66 +478,69 @@ void MatrixPanel_I2S_DMA::updateMatrixDMABuffer(int16_t x_coord, int16_t y_coord
 	 * data.
 	 */
     bool painting_top_frame = true;
-    if ( y_coord >= ROWS_PER_FRAME) // co-ords start at zero, y_coord = 15 = 16 (rows per frame)
+    if ( y_coord >= ROWS_PER_FRAME) // co-ords start at zero, y_coord = 15 => 16 (rows per frame)
     {
         y_coord -= ROWS_PER_FRAME;  // Subtract the ROWS_PER_FRAME from the pixel co-ord to get the panel ROW (not really the 'y_coord' anymore)
         painting_top_frame = false;
     }
 	
-	// We need to update the correct uint16_t in the rowBitStruct array, that gets sent out in parallel
-	int rowBitStruct_x_coord_uint16_t_position = (x_coord % 2) ? (x_coord-1):(x_coord+1);
-	
-    for(int color_depth_idx=0; color_depth_idx<PIXEL_COLOR_DEPTH_BITS; color_depth_idx++)  // color depth - 8 iterations
-    {
-        int mask = (1 << color_depth_idx); // 24 bit color
-        
-        // The destination for the pixel bitstream 
-        //rowBitStruct *p = &matrix_framebuffer_malloc_1[back_buffer_id].rowdata[y_coord].rowbits[color_depth_idx]; //matrixUpdateFrames location to write to uint16_t's
+    // Find the memory address for the malloc for this framebuffer row.
+    rowColorDepthStruct *fb_row_malloc_ptr = (rowColorDepthStruct *) matrix_row_framebuffer_malloc[y_coord]; 
 
-        // Find the memory address for the malloc for this framebuffer row.
-        rowColorDepthStruct *fb_row_malloc_ptr = (rowColorDepthStruct *) matrix_row_framebuffer_malloc[y_coord]; 
+    // We need to update the correct uint16_t in the rowBitStruct array, that gets sent out in parallel
+    // 16 bit parallel mode - Save the calculated value to the bitplane memory in reverse order to account for I2S Tx FIFO mode1 ordering
+    uint16_t rowBitStruct_x_coord_uint16_t_position = (x_coord % 2) ? (x_coord-1):(x_coord+1);
+
+    for(uint8_t color_depth_idx=0; color_depth_idx<PIXEL_COLOR_DEPTH_BITS; color_depth_idx++)  // color depth - 8 iterations
+    {
+        uint8_t mask = (1 << color_depth_idx); // 24 bit color
+        
         // Get the contents at this address, cast as a rowColorDepthStruct  
         rowBitStruct *p = &fb_row_malloc_ptr[back_buffer_id].rowbits[color_depth_idx]; //matrixUpdateFrames location to write to uint16_t's
 
+        // We need to update the correct uint16_t in the rowBitStruct array, that gets sent out in parallel
+        uint16_t &v = p->data[rowBitStruct_x_coord_uint16_t_position]; // persist what we already have
 
+        if (painting_top_frame)
+        { // Need to copy what the RGB status is for the bottom pixels
+          v &= BITSMASK_RGB1; // reset R1G1B1 bits
+          // Set the color of the pixel of interest
+          if (green & mask) {  v|=BIT_G1; }
+          if (blue & mask)  {  v|=BIT_B1; }
+          if (red & mask)   {  v|=BIT_R1; }
 
-		// int v = p->data[rowBitStruct_x_coord_uint16_t_position]; // persist what we already have
-        int v=0; // the output bitstream
-        
-        // if there is no latch to hold address, output ADDX lines directly to GPIO and latch data at end of cycle
-        int gpioRowAddress = y_coord;
-        
-        // normally output current rows ADDX, special case for LSB, output previous row's ADDX (as previous row is being displayed for one latch cycle)
-        if(color_depth_idx == 0)
-          gpioRowAddress = y_coord-1;
-        
-        if (gpioRowAddress & 0x01) v|=BIT_A; // 1
-        if (gpioRowAddress & 0x02) v|=BIT_B; // 2
-        if (gpioRowAddress & 0x04) v|=BIT_C; // 4
-        if (gpioRowAddress & 0x08) v|=BIT_D; // 8
-        if (gpioRowAddress & 0x10) v|=BIT_E; // 16
-  
-        // need to disable OE after latch to hide row transition
-        if((x_coord) == 0 ) v|=BIT_OE;
-        
+        } else { // Do it the other way around 
+          v &= BITSMASK_RGB2; // reset R2G2B2 bits
+          // Color to set
+          if (red & mask)   { v|=BIT_R2; }
+          if (green & mask) { v|=BIT_G2; }
+          if (blue & mask)  { v|=BIT_B2; }
+        } // paint
+
+        if (fastmode)
+          continue;
+
+        // update address/control bits
+        v &= BITSMASK_CTRL;      // reset ABCDE,EO,LAT address bits
+        uint16_t _y = color_depth_idx ? y_coord : y_coord -1;
+        v|=_y<<8;         // shift row coord to match ABCDE bits from 8 to 12 and set bitvector
+
         // drive latch while shifting out last bit of RGB data
         if((x_coord) == PIXELS_PER_ROW-1) v|=BIT_LAT;
-		
-        // need to turn off OE one clock before latch, otherwise can get ghosting
-        if((x_coord)==PIXELS_PER_ROW-2) v|=BIT_OE;		
-		        
-        // turn off OE after brightness value is reached when displaying MSBs
-        // MSBs always output normal brightness
-        // LSB (!color_depth_idx) outputs normal brightness as MSB from previous row is being displayed
-        if((color_depth_idx > lsbMsbTransitionBit || !color_depth_idx) && ((x_coord) >= brightness)) v|=BIT_OE; // For Brightness
-        
+
+        // need to disable OE after latch to hide row transition
+        // OR one clock before latch, otherwise can get ghosting
+        if((x_coord) == 0 || (x_coord)==PIXELS_PER_ROW-2){ v|=BIT_OE; continue;}
+
+        if((color_depth_idx > lsbMsbTransitionBit || !color_depth_idx) && ((x_coord) >= brightness))
+          {v|=BIT_OE; continue;}// For Brightness
+
         // special case for the bits *after* LSB through (lsbMsbTransitionBit) - OE is output after data is shifted, so need to set OE to fractional brightness
         if(color_depth_idx && color_depth_idx <= lsbMsbTransitionBit) {
           // divide brightness in half for each bit below lsbMsbTransitionBit
           int lsbBrightness = brightness >> (lsbMsbTransitionBit - color_depth_idx + 1);
           if((x_coord) >= lsbBrightness) v|=BIT_OE; // For Brightness
         }
-        
 		/*
 		// Development / testing code only.
 		Serial.printf("r value of %d, color depth: %d, mask: %d\r\n", red,	color_depth_idx, mask);
@@ -620,64 +548,10 @@ void MatrixPanel_I2S_DMA::updateMatrixDMABuffer(int16_t x_coord, int16_t y_coord
 		Serial.printf("val2pwm r value:  %d\r\n", val2PWM(red));
 		if (val2PWM(red) & mask) { Serial.println("Success - PWM"); v|=BIT_R2; }
 		*/
-		
-                 
-        if (painting_top_frame)
-        { // Need to copy what the RGB status is for the bottom pixels
-
-           // Set the color of the pixel of interest
-           if (green & mask) {  v|=BIT_G1; }
-           if (blue & mask)  {  v|=BIT_B1; }
-           if (red & mask)   {  v|=BIT_R1; }
-
-           // Persist what was painted to the other half of the frame equiv. pixel
-           if (p->data[rowBitStruct_x_coord_uint16_t_position] & BIT_R2)
-                v|=BIT_R2;
-                
-           if (p->data[rowBitStruct_x_coord_uint16_t_position] & BIT_G2)
-                v|=BIT_G2;
-
-           if (p->data[rowBitStruct_x_coord_uint16_t_position] & BIT_B2)
-                v|=BIT_B2;
-        }
-        else
-        { // Do it the other way around 
-
-          // Color to set
-          if (red & mask)   { v|=BIT_R2; }
-          if (green & mask) { v|=BIT_G2; }
-          if (blue & mask)  { v|=BIT_B2; }
-          
-          // Copy / persist
-          if (p->data[rowBitStruct_x_coord_uint16_t_position] & BIT_R1)
-              v|=BIT_R1;
-              
-          if (p->data[rowBitStruct_x_coord_uint16_t_position] & BIT_G1)
-              v|=BIT_G1;
-          
-          if (p->data[rowBitStruct_x_coord_uint16_t_position] & BIT_B1)
-              v|=BIT_B1; 
-               
-        } // paint
-		
-        // 16 bit parallel mode
-        //Save the calculated value to the bitplane memory in reverse order to account for I2S Tx FIFO mode1 ordering
-		/*
-        if(x_coord%2){
-          p->data[(x_coord)-1] = v;
-        } else {
-          p->data[(x_coord)+1] = v;
-        } // end reordering
-		*/
-
-		// 16 bit parallel mode
-        p->data[rowBitStruct_x_coord_uint16_t_position] = v;		
-		
-          
     } // color depth loop (8)
+		
 
 } // updateMatrixDMABuffer (specific co-ords change)
-#endif	
 
 
 /* Update the entire buffer with a single specific colour - quicker */
@@ -692,91 +566,73 @@ void MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint8_t red, uint8_t green, uint
 	blue 	= val2PWM(blue);  
 	*/
 	red 	= lumConvTab[red];
-	green 	= lumConvTab[green];
+	green	= lumConvTab[green];
 	blue 	= lumConvTab[blue]; 	
 
-  for (unsigned int matrix_frame_parallel_row = 0; matrix_frame_parallel_row < ROWS_PER_FRAME; matrix_frame_parallel_row++) // half height - 16 iterations
-  {	
-    for(int color_depth_idx=0; color_depth_idx<PIXEL_COLOR_DEPTH_BITS; color_depth_idx++)  // color depth - 8 iterations
-    {
-        uint16_t mask = (1 << color_depth_idx); // 24 bit color
-        
-        // The destination for the pixel bitstream 
-        //rowBitStruct *p = &matrix_framebuffer_malloc_1[back_buffer_id].rowdata[matrix_frame_parallel_row].rowbits[color_depth_idx]; //matrixUpdateFrames location to write to uint16_t's 
-        rowColorDepthStruct *fb_row_malloc_ptr = (rowColorDepthStruct *) matrix_row_framebuffer_malloc[matrix_frame_parallel_row]; 
-        //Serial.printf("Accessing fb address: %d\r\n", fb_row_malloc_ptr);
-        
-        rowBitStruct *p = &fb_row_malloc_ptr[back_buffer_id].rowbits[color_depth_idx]; //matrixUpdateFrames location to write to uint16_t's
+  for(uint8_t color_depth_idx=0; color_depth_idx<PIXEL_COLOR_DEPTH_BITS; color_depth_idx++)  // color depth - 8 iterations
+  {
+    // let's precalculate RGB1 and RGB2 bits than flood it over the entire DMA buffer
+    uint16_t RGBbitfield = 0;
+    uint8_t mask = (1 << color_depth_idx); // 24 bit color
 
-        for(int x_coord=0; x_coord < MATRIX_WIDTH; x_coord++) // row pixel width 64 iterations
-        { 		
-          
-          int v=0; // the output bitstream
-          
-          // if there is no latch to hold address, output ADDX lines directly to GPIO and latch data at end of cycle
-          int gpioRowAddress = matrix_frame_parallel_row;
-          
-          // normally output current rows ADDX, special case for LSB, output previous row's ADDX (as previous row is being displayed for one latch cycle)
-          if(color_depth_idx == 0)
-            gpioRowAddress = matrix_frame_parallel_row-1;
-          
-          if (gpioRowAddress & 0x01) v|=BIT_A; // 1
-          if (gpioRowAddress & 0x02) v|=BIT_B; // 2
-          if (gpioRowAddress & 0x04) v|=BIT_C; // 4
-          if (gpioRowAddress & 0x08) v|=BIT_D; // 8
-          if (gpioRowAddress & 0x10) v|=BIT_E; // 16
-          
-            
-          /* ORIG
-          // need to disable OE after latch to hide row transition
-          if((x_coord) == 0) v|=BIT_OE;
-          
-          // drive latch while shifting out last bit of RGB data
-          if((x_coord) == PIXELS_PER_LATCH-1) v|=BIT_LAT;
-          
-          // need to turn off OE one clock before latch, otherwise can get ghosting
-          if((x_coord)==PIXELS_PER_LATCH-1) v|=BIT_OE;
-          */
-          
-          // need to disable OE after latch to hide row transition
-          if((x_coord) == 0 ) v|=BIT_OE;
-          
+    RGBbitfield |= (bool)(blue & mask);
+    RGBbitfield <<= 1;
+    RGBbitfield |= (bool)(green & mask);
+    RGBbitfield <<= 1;
+    RGBbitfield |= (bool)(red & mask);
+    RGBbitfield |= RGBbitfield << 3;      // now we should have 6 bits of RGB suitable for DMA buffer
+    //Serial.printf("Fill with: 0x%#06x\n", RGBbitfield);
+
+    // iterate rows
+    for (uint16_t matrix_frame_parallel_row = 0; matrix_frame_parallel_row < ROWS_PER_FRAME; matrix_frame_parallel_row++) // half height - 16 iterations
+    {
+      rowColorDepthStruct *fb_row_malloc_ptr = (rowColorDepthStruct *) matrix_row_framebuffer_malloc[matrix_frame_parallel_row]; 
+      //Serial.printf("Accessing fb address: %d\r\n", fb_row_malloc_ptr);
+
+      // The destination for the pixel bitstream
+      rowBitStruct *p = &fb_row_malloc_ptr[back_buffer_id].rowbits[color_depth_idx]; //matrixUpdateFrames location to write to uint16_t's
+
+      // iterate pixels in a row
+      if (fastmode){
+        for(uint16_t x_coord=0; x_coord < MATRIX_WIDTH; x_coord++){
+          uint16_t &v = p->data[(x_coord % 2) ? (x_coord-1):(x_coord+1)]; // take reference to bit vector
+          v &= BITSMASK_RGB12;  // reset color bits
+          v |= RGBbitfield;     // set new color bits
+        }
+      } else {
+        // Set ABCDE address bits vector
+        uint16_t _y = color_depth_idx ? matrix_frame_parallel_row : matrix_frame_parallel_row -1;
+        _y <<=8;    // shift row y-coord to match ABCDE bits in vector from 8 to 12
+
+        for(uint16_t x_coord=0; x_coord < MATRIX_WIDTH; x_coord++){
+          uint16_t &v = p->data[(x_coord % 2) ? (x_coord-1):(x_coord+1)]; // persist what we already have
+          v = RGBbitfield;    // set colot bits and reset all others
+          v|=_y;              // set ABCDE address bits for current row
+
           // drive latch while shifting out last bit of RGB data
           if((x_coord) == PIXELS_PER_ROW-1) v|=BIT_LAT;
-          
-          // need to turn off OE one clock before latch, otherwise can get ghosting
-          if((x_coord)==PIXELS_PER_ROW-2) v|=BIT_OE;	
-          
-          
-          // turn off OE after brightness value is reached when displaying MSBs
-          // MSBs always output normal brightness
-          // LSB (!color_depth_idx) outputs normal brightness as MSB from previous row is being displayed
-          if((color_depth_idx > lsbMsbTransitionBit || !color_depth_idx) && ((x_coord) >= brightness)) v|=BIT_OE; // For Brightness
-          
+
+          // need to disable OE after latch to hide row transition
+          // OR one clock before latch, otherwise can get ghosting
+          if(!x_coord || (x_coord)==PIXELS_PER_ROW-2){
+            v|=BIT_OE; continue;
+          }
+
+          // BRT OE
+          if((color_depth_idx > lsbMsbTransitionBit || !color_depth_idx) && ((x_coord) >= brightness)){
+            v|=BIT_OE; continue;  // For Brightness control
+          }
+
           // special case for the bits *after* LSB through (lsbMsbTransitionBit) - OE is output after data is shifted, so need to set OE to fractional brightness
           if(color_depth_idx && color_depth_idx <= lsbMsbTransitionBit) {
             // divide brightness in half for each bit below lsbMsbTransitionBit
             int lsbBrightness = brightness >> (lsbMsbTransitionBit - color_depth_idx + 1);
             if((x_coord) >= lsbBrightness) v|=BIT_OE; // For Brightness
           }
-          
-          // Top and bottom matrix MATRIX_ROWS_IN_PARALLEL half colours
-          if (green & mask) { v|=BIT_G1; v|=BIT_G2; }
-          if (blue & mask)  { v|=BIT_B1; v|=BIT_B2; }
-          if (red & mask)   { v|=BIT_R1; v|=BIT_R2; }
-          
-          // 16 bit parallel mode
-          //Save the calculated value to the bitplane memory in reverse order to account for I2S Tx FIFO mode1 ordering
-          if(x_coord%2) {
-            p->data[(x_coord)-1] = v;
-          } else {
-            p->data[(x_coord)+1] = v;
-          } // end reordering
-          
-        } // end x_coord iteration
-    } // colour depth loop (8)
-  } // end row iteration
-
+        } // end of x-iterator
+      } // end x_coord iteration
+    } // end row iteration
+  } // colour depth loop (8)
 } // updateMatrixDMABuffer (full frame paint)
 
 /**
@@ -791,93 +647,65 @@ void MatrixPanel_I2S_DMA::shiftDriver(const shift_driver _drv, const int dma_r1_
       #if SERIAL_DEBUG 
         Serial.println( F("MatrixPanel_I2S_DMA - initializing FM6124 driver..."));
       #endif
-      int C12[16] = {0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
-      int C13[16] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0};
+      bool REG1[16] = {0,0,0,0,0, 1,1,1,1,1,1, 0,0,0,0,0};    // this sets global matrix brightness power
+      bool REG2[16] = {0,0,0,0,0, 0,0,0,0,1,0, 0,0,0,0,0};    // a single bit enables the matrix output
 
-      pinMode(dma_r1_pin, OUTPUT);
-      pinMode(dma_g1_pin, OUTPUT);
-      pinMode(dma_b1_pin, OUTPUT);
-      pinMode(dma_r2_pin, OUTPUT);
-      pinMode(dma_g2_pin, OUTPUT);
-      pinMode(dma_b2_pin, OUTPUT);
-      pinMode(dma_a_pin, OUTPUT);
-      pinMode(dma_b_pin, OUTPUT);
-      pinMode(dma_c_pin, OUTPUT);
-      pinMode(dma_d_pin, OUTPUT);
-      pinMode(dma_e_pin, OUTPUT);
-      pinMode(dma_clk_pin, OUTPUT);
-      pinMode(dma_lat_pin, OUTPUT);
-      pinMode(dma_oe_pin, OUTPUT);
+      for (uint8_t _pin:{dma_r1_pin, dma_r2_pin, dma_g1_pin, dma_g2_pin, dma_b1_pin, dma_b2_pin, dma_clk_pin, dma_lat_pin, dma_oe_pin})
+        pinMode(_pin, OUTPUT);
 
-      // Send Data to control register 11
-      digitalWrite(dma_oe_pin, HIGH); // Display reset
+      digitalWrite(dma_oe_pin, HIGH); // Disable Display
       digitalWrite(dma_lat_pin, LOW);
       digitalWrite(dma_clk_pin, LOW);
+
+      // Send Data to control register REG1
+      // this sets the matrix brightness actually
       for (int l = 0; l < MATRIX_WIDTH; l++){
-          int y = l % 16;
-          digitalWrite(dma_r1_pin, LOW);
-          digitalWrite(dma_g1_pin, LOW);
-          digitalWrite(dma_b1_pin, LOW);
-          digitalWrite(dma_r2_pin, LOW);
-          digitalWrite(dma_g2_pin, LOW);
-          digitalWrite(dma_b2_pin, LOW);
+        for (uint8_t _pin:{dma_r1_pin, dma_r2_pin, dma_g1_pin, dma_g2_pin, dma_b1_pin, dma_b2_pin})
+          digitalWrite(_pin, REG1[l%16]);   // we have 16 bits shifters and write the same value all over the matrix array
 
-          if (C12[y] == 1){
-              digitalWrite(dma_r1_pin, HIGH);
-              digitalWrite(dma_g1_pin, HIGH);
-              digitalWrite(dma_b1_pin, HIGH);
-              digitalWrite(dma_r2_pin, HIGH);
-              digitalWrite(dma_g2_pin, HIGH);
-              digitalWrite(dma_b2_pin, HIGH);
-          }
-
-          if (l > MATRIX_WIDTH - 12){
+          if (l > MATRIX_WIDTH - 12){         // pull the latch 11 clocks before the end of matrix so that REG1 starts counting to save the value
               digitalWrite(dma_lat_pin, HIGH);
-          } else {
-              digitalWrite(dma_lat_pin, LOW);
           }
-
-          digitalWrite(dma_clk_pin, HIGH);
+          digitalWrite(dma_clk_pin, HIGH);    // 1-clock pulse
           digitalWrite(dma_clk_pin, LOW);
       }
 
+      // drop the latch and save data to the REG1 all over the FM6124 chips
       digitalWrite(dma_lat_pin, LOW);
       digitalWrite(dma_clk_pin, LOW);
 
-      // Send Data to control register 12
+      // Send Data to control register REG2 (enable LED output)
       for (int l = 0; l < MATRIX_WIDTH; l++){
-          int y = l % 16;
-          digitalWrite(dma_r1_pin, LOW);
-          digitalWrite(dma_g1_pin, LOW);
-          digitalWrite(dma_b1_pin, LOW);
-          digitalWrite(dma_r2_pin, LOW);
-          digitalWrite(dma_g2_pin, LOW);
-          digitalWrite(dma_b2_pin, LOW);
+        for (uint8_t _pin:{dma_r1_pin, dma_r2_pin, dma_g1_pin, dma_g2_pin, dma_b1_pin, dma_b2_pin})
+          digitalWrite(_pin, REG2[l%16]);   // we have 16 bits shifters and we write the same value all over the matrix array
 
-          if (C13[y] == 1){
-              digitalWrite(dma_r1_pin, HIGH);
-              digitalWrite(dma_g1_pin, HIGH);
-              digitalWrite(dma_b1_pin, HIGH);
-              digitalWrite(dma_r2_pin, HIGH);
-              digitalWrite(dma_g2_pin, HIGH);
-              digitalWrite(dma_b2_pin, HIGH);
-          }
-
-          if (l > MATRIX_WIDTH - 13){
+          if (l > MATRIX_WIDTH - 13){       // pull the latch 12 clocks before the end of matrix so that reg2 stars counting to save the value
               digitalWrite(dma_lat_pin, HIGH);
-          } else {
-              digitalWrite(dma_lat_pin, LOW);
           }
-          digitalWrite(dma_clk_pin, HIGH);
+          digitalWrite(dma_clk_pin, HIGH);  // 1-clock pulse
           digitalWrite(dma_clk_pin, LOW);
       }
 
+      // drop the latch and save data to the REG1 all over the FM6126 chips
       digitalWrite(dma_lat_pin, LOW);
       digitalWrite(dma_clk_pin, LOW);
-      break;
     }
+      break;
     case SHIFT:
     default:
       break;
     }
+}
+
+/**
+ * clear screen to black and reset service bits
+ */
+void MatrixPanel_I2S_DMA::clearScreen(){
+  if (fastmode) {
+    fastmode = false;       // we always clear screen in 'slow' mode to update all bits in DMA buffer
+    updateMatrixDMABuffer(0, 0, 0);
+    fastmode = true;        // restore fastmode
+  } else {
+    updateMatrixDMABuffer(0, 0, 0);
+  }
 }

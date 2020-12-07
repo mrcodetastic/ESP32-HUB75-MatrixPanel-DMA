@@ -47,6 +47,19 @@ void setup()
   Serial.begin(115200);
   delay(250);
   matrix.begin(R1_PIN, G1_PIN, B1_PIN, R2_PIN, G2_PIN, B2_PIN, A_PIN, B_PIN, C_PIN, D_PIN, E_PIN, LAT_PIN, OE_PIN, CLK_PIN );  // setup the LED matrix
+  /**
+   * this demos runs pretty fine in fast-mode which gives much better fps on large matrixes (>128x64)
+   * see comments in the lib header on what does that means
+   */
+  //dma_display.setFastMode(true);
+
+  // SETS THE BRIGHTNESS HERE. MAX value is MATRIX_WIDTH, 2/3 OR LOWER IDEAL, default is about 50%
+  // dma_display.setPanelBrightness(30);
+  /* another way to change brightness is to use
+   * dma_display.setPanelBrightness8(uint8_t brt);	// were brt is within range 0-255
+   * it will recalculate to consider matrix width automatically
+   */
+  //dma_display.setPanelBrightness8(180);
 
   Serial.println("**************** Starting Aurora Effects Demo ****************");
 

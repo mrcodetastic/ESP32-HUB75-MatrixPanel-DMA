@@ -44,8 +44,8 @@ MatrixPanel_I2S_DMA dma_display;
 // End of default setup for RGB Matrix 64x32 panel
 ///////////////////////////////////////////////////////////////
 
-int time_counter = 0;
-int cycles = 0;
+uint16_t time_counter = 0, cycles = 0, fps = 0;
+unsigned long fps_timer;
 
 CRGB currentColor;
 CRGBPalette16 palettes[] = {HeatColors_p, LavaColors_p, RainbowColors_p, RainbowStripeColors_p, CloudColors_p};
@@ -62,13 +62,28 @@ void setup(){
     // Panels are the same - some seem to display ghosting artefacts at lower brightness levels.
     // In the setup() function do something like:
 
-    dma_display.setPanelBrightness(30); // SETS THE BRIGHTNESS HERE. 60 OR LOWER IDEAL.
+    // SETS THE BRIGHTNESS HERE. MAX value is MATRIX_WIDTH, 2/3 OR LOWER IDEAL, default is about 50%
+    // dma_display.setPanelBrightness(30);
+
+    /* another way to change brightness is to use
+     * dma_display.setPanelBrightness8(uint8_t brt);	// were brt is within range 0-255
+     * it will recalculate to consider matrix width automatically
+     */
+    //dma_display.setPanelBrightness8(180);
+
+	/**
+     * this demo runs pretty fine in fast-mode which gives much better fps on large matrixes (>128x64)
+	 * see comments in the lib header on what does that means
+     */
+    dma_display.setFastMode(true);
 
     /**
-     * be sure to specify 'FM6126A' as last parametr to the begin(),
+     * Run display on our matrix, be sure to specify 'FM6126A' as last parametr to the begin(),
      * it would reset 6126 registers and enables the matrix
      */
     dma_display.begin(R1, G1, BL1, R2, G2, BL2, CH_A, CH_B, CH_C, CH_D, CH_E, LAT, OE, CLK, FM6126A);
+
+    fps_timer = millis();
 }
 
 void loop(){
@@ -85,12 +100,21 @@ void loop(){
         }
     }
 
-    time_counter += 1;
-    cycles++;
+    ++time_counter;
+    ++cycles;
+    ++fps;
 
     if (cycles >= 1024) {
         time_counter = 0;
         cycles = 0;
         currentPalette = palettes[random(0,sizeof(palettes)/sizeof(palettes[0]))];
+    }
+
+    // print FPS rate every 5 seconds
+    // Note: this is NOT a matrix refresh rate, it's the number of data frames being drawn to the DMA buffer per second
+    if (fps_timer + 5000 < millis()){
+      Serial.printf_P(PSTR("Effect fps: %d\n"), fps/5);
+      fps_timer = millis();
+      fps = 0;
     }
 }
