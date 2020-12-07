@@ -303,7 +303,7 @@ class MatrixPanel_I2S_DMA : public Adafruit_GFX {
         while(!i2s_parallel_is_previous_buffer_free()) {}               
     }
     
-    inline void setPanelBrightness(int &b)
+    inline void setPanelBrightness(int b)
     {
       // Change to set the brightness of the display, range of 1 to matrixWidth (i.e. 1 - 64)
         brightness = b;
