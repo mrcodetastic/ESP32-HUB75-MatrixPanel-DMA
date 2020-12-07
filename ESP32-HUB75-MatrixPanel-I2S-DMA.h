@@ -487,7 +487,5 @@ inline void MatrixPanel_I2S_DMA::drawIcon (int *ico, int16_t x, int16_t y, int16
   }  
 }
 
-/***************************************************************************************/
-typedef MatrixPanel_I2S_DMA RGB64x32MatrixPanel_I2S_DMA; // for backwards compatibility to old class name
 
 #endif
