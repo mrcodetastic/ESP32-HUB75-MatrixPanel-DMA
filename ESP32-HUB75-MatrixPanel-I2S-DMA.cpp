@@ -503,14 +503,14 @@ void MatrixPanel_I2S_DMA::updateMatrixDMABuffer(int16_t x_coord, int16_t y_coord
 
         if (painting_top_frame)
         { // Need to copy what the RGB status is for the bottom pixels
-          v &= BITSMASK_RGB1; // reset R1G1B1 bits
+          v &= BITMASK_RGB1_CLEAR; // reset R1G1B1 bits
           // Set the color of the pixel of interest
           if (green & mask) {  v|=BIT_G1; }
           if (blue & mask)  {  v|=BIT_B1; }
           if (red & mask)   {  v|=BIT_R1; }
 
         } else { // Do it the other way around 
-          v &= BITSMASK_RGB2; // reset R2G2B2 bits
+          v &= BITMASK_RGB2_CLEAR; // reset R2G2B2 bits
           // Color to set
           if (red & mask)   { v|=BIT_R2; }
           if (green & mask) { v|=BIT_G2; }
@@ -521,9 +521,10 @@ void MatrixPanel_I2S_DMA::updateMatrixDMABuffer(int16_t x_coord, int16_t y_coord
           continue;
 
         // update address/control bits
-        v &= BITSMASK_CTRL;      // reset ABCDE,EO,LAT address bits
+        v &= BITMASK_CTRL_CLEAR;      // reset ABCDE,EO,LAT address bits
+		
         uint16_t _y = color_depth_idx ? y_coord : y_coord -1;
-        v|=_y<<8;         // shift row coord to match ABCDE bits from 8 to 12 and set bitvector
+        v|=_y << BITS_ADDR_OFFSET;         // shift row coord to match ABCDE bits from bit positions 8 to 12 and set bitvector
 
         // drive latch while shifting out last bit of RGB data
         if((x_coord) == PIXELS_PER_ROW-1) v|=BIT_LAT;
@@ -572,16 +573,21 @@ void MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint8_t red, uint8_t green, uint
   for(uint8_t color_depth_idx=0; color_depth_idx<PIXEL_COLOR_DEPTH_BITS; color_depth_idx++)  // color depth - 8 iterations
   {
     // let's precalculate RGB1 and RGB2 bits than flood it over the entire DMA buffer
-    uint16_t RGBbitfield = 0;
+    uint16_t RGB_output_bits = 0;
     uint8_t mask = (1 << color_depth_idx); // 24 bit color
 
-    RGBbitfield |= (bool)(blue & mask);
-    RGBbitfield <<= 1;
-    RGBbitfield |= (bool)(green & mask);
-    RGBbitfield <<= 1;
-    RGBbitfield |= (bool)(red & mask);
-    RGBbitfield |= RGBbitfield << 3;      // now we should have 6 bits of RGB suitable for DMA buffer
-    //Serial.printf("Fill with: 0x%#06x\n", RGBbitfield);
+	/* Per the .h file, the order of the output RGB bits is:
+	 * BIT_B2, BIT_G2, BIT_R2,    BIT_B1, BIT_G1, BIT_R1	  */
+    RGB_output_bits |= (bool)(blue & mask);   // --B
+    RGB_output_bits <<= 1;
+    RGB_output_bits |= (bool)(green & mask);  // -BG
+    RGB_output_bits <<= 1;
+    RGB_output_bits |= (bool)(red & mask);    // BGR
+	
+	// Duplicate and shift across so we have have 6 populated bits of RGB1 and RGB2 pin values suitable for DMA buffer
+    RGB_output_bits |= RGB_output_bits << BITS_RGB2_OFFSET;  //BGRBGR
+	
+    //Serial.printf("Fill with: 0x%#06x\n", RGB_output_bits);
 
     // iterate rows
     for (uint16_t matrix_frame_parallel_row = 0; matrix_frame_parallel_row < ROWS_PER_FRAME; matrix_frame_parallel_row++) // half height - 16 iterations
@@ -591,23 +597,31 @@ void MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint8_t red, uint8_t green, uint
 
       // The destination for the pixel bitstream
       rowBitStruct *p = &fb_row_malloc_ptr[back_buffer_id].rowbits[color_depth_idx]; //matrixUpdateFrames location to write to uint16_t's
-
+	  
       // iterate pixels in a row
       if (fastmode){
-        for(uint16_t x_coord=0; x_coord < MATRIX_WIDTH; x_coord++){
+		  
+        for(uint16_t x_coord=0; x_coord < MATRIX_WIDTH; x_coord++) {
           uint16_t &v = p->data[(x_coord % 2) ? (x_coord-1):(x_coord+1)]; // take reference to bit vector
-          v &= BITSMASK_RGB12;  // reset color bits
-          v |= RGBbitfield;     // set new color bits
+          v &= BITMASK_RGB12_CLEAR;  // reset color bits
+          v |= RGB_output_bits;     // set new color bits
         }
+		
       } else {
+
         // Set ABCDE address bits vector
         uint16_t _y = color_depth_idx ? matrix_frame_parallel_row : matrix_frame_parallel_row -1;
-        _y <<=8;    // shift row y-coord to match ABCDE bits in vector from 8 to 12
+        _y <<= BITS_ADDR_OFFSET;    // shift row y-coord to match ABCDE bits in vector from 8 to 12
 
-        for(uint16_t x_coord=0; x_coord < MATRIX_WIDTH; x_coord++){
-          uint16_t &v = p->data[(x_coord % 2) ? (x_coord-1):(x_coord+1)]; // persist what we already have
-          v = RGBbitfield;    // set colot bits and reset all others
-          v|=_y;              // set ABCDE address bits for current row
+        for(uint16_t x_coord=0; x_coord < MATRIX_WIDTH; x_coord++) {
+			
+	      // We need to update the correct uint16_t in the rowBitStruct array, that gets sent out in parallel
+	      // 16 bit parallel mode - Save the calculated value to the bitplane memory in reverse order to account for I2S Tx FIFO mode1 ordering
+	      uint16_t rowBitStruct_x_coord_uint16_t_position = (x_coord % 2) ? (x_coord-1):(x_coord+1);
+			
+          uint16_t &v = p->data[rowBitStruct_x_coord_uint16_t_position]; // persist what we already have
+          v = RGB_output_bits;    // set colot bits and reset all others
+          v|=_y;                  // set ABCDE address bits for current row
 
           // drive latch while shifting out last bit of RGB data
           if((x_coord) == PIXELS_PER_ROW-1) v|=BIT_LAT;

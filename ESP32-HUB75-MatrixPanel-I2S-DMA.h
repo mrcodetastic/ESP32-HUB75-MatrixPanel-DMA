@@ -84,11 +84,13 @@
 /* Do not change.                                                                      */
 
 // Panel Upper half RGB (numbering according to order in DMA gpio_bus configuration)
+#define BITS_RGB1_OFFSET 0 // Start point of RGB_X1 bits
 #define BIT_R1  (1<<0)   
 #define BIT_G1  (1<<1)   
 #define BIT_B1  (1<<2)   
 
 // Panel Lower half RGB
+#define BITS_RGB2_OFFSET 3 // Start point of RGB_X2 bits
 #define BIT_R2  (1<<3)   
 #define BIT_G2  (1<<4)   
 #define BIT_B2  (1<<5)   
@@ -98,16 +100,17 @@
 #define BIT_OE  (1<<7)  
 
 // Panel GPIO Pin Addresses (A, B, C, D etc..)
+#define BITS_ADDR_OFFSET 8  // Start point of address bits
 #define BIT_A (1<<8)    
 #define BIT_B (1<<9)    
 #define BIT_C (1<<10)   
 #define BIT_D (1<<11)   
 #define BIT_E (1<<12)   
 
-#define BITSMASK_RGB1   (0xfff8)    // inverted bitmask for R1G1B1 bit in pixel vector
-#define BITSMASK_RGB2   (0xffc7)    // inverted bitmask for R2G2B2 bit in pixel vector
-#define BITSMASK_RGB12  (0xffc0)    // inverted bitmask for R1G1B1R2G2B2 bit in pixel vector
-#define BITSMASK_CTRL   (0xe03f)    // inverted bitmask for control bits ABCDE,LAT,OE in pixel vector
+#define BITMASK_RGB1_CLEAR   (0xfff8)    // inverted bitmask for R1G1B1 bit in pixel vector
+#define BITMASK_RGB2_CLEAR   (0xffc7)    // inverted bitmask for R2G2B2 bit in pixel vector
+#define BITMASK_RGB12_CLEAR  (0xffc0)    // inverted bitmask for R1G1B1R2G2B2 bit in pixel vector
+#define BITMASK_CTRL_CLEAR   (0xe03f)    // inverted bitmask for control bits ABCDE,LAT,OE in pixel vector
 
 // RGB Panel Constants / Calculated Values
 #define COLOR_CHANNELS_PER_PIXEL 3 
