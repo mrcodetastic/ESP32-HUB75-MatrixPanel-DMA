@@ -86,6 +86,7 @@ void setup() {
 
 }
 
+int LayerCompositor_mode = 0;
 void loop() {
   
    for (int x = 0; x <  dma_display.width(); x++) {
@@ -119,8 +120,28 @@ void loop() {
          *  Step 3: Merge foreground and background layers and send to the matrix panel!
          *  Use our special sauce LayerCompositor functions
          */
-         LayerCompositor::Siloette(dma_display, bgLayer, textLayer);
-         //LayerCompositor::Stack(dma_display, bgLayer, textLayer);
+         switch (LayerCompositor_mode)
+         {
+          case 0:
+            LayerCompositor::Siloette(dma_display, bgLayer, textLayer);
+            break;
+
+          case 1:
+            LayerCompositor::Stack(dma_display, bgLayer, textLayer);
+            break;
+
+          case 2:
+            LayerCompositor::Blend(dma_display, bgLayer, textLayer);
+            break;          
+         }
+
+        EVERY_N_SECONDS(5) { // FastLED Macro
+          LayerCompositor_mode++;
+          dma_display.clearScreen();
+          if (LayerCompositor_mode > 2) LayerCompositor_mode = 0;          
+        }         
+         
+         //
          // LayerCompositor::Blend(dma_display, bgLayer, textLayer, 127);
         
 } // end loop

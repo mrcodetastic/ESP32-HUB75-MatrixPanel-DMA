@@ -295,8 +295,6 @@ namespace LayerCompositor
 		 */
         void Siloette(MatrixPanel_I2S_DMA &disp, const Layer &_bgLayer, const Layer &_fgLayer)
 		{
-				//const Layer *bg = &_bgLayer;
-				//const Layer *fg = &_fgLayer;
 
 				for (int y = 0; y < LAYER_HEIGHT; y++) {
 					for (int x = 0; x < LAYER_WIDTH; x++)
@@ -327,15 +325,19 @@ namespace LayerCompositor
 			{
 				for (int x = 0; x < LAYER_WIDTH; x++)
 				{
-						/*
-						  	// set the blend ratio for the video cross fade
-							// (set ratio to 127 for a constant 50% / 50% blend)
-							uint8_t ratio = beatsin8(5);
-						*/
+						
+						_pixel = _bgLayer.pixels->data[y][x];
+					
+						// (set ratio to 127 for a constant 50% / 50% blend)
+						//_pixel = blend(_bgLayer.pixels->data[y][x], _fgLayer.pixels->data[y][x], ratio);
 
-             // (set ratio to 127 for a constant 50% / 50% blend)
-						_pixel = blend(_bgLayer.pixels->data[y][x], _fgLayer.pixels->data[y][x], ratio);
-
+						// Blend with background if foreground pixel isn't clear/transparent
+						if (_fgLayer.pixels->data[y][x] != _fgLayer.transparency_colour)
+						{
+							_pixel = blend(_bgLayer.pixels->data[y][x], _fgLayer.pixels->data[y][x], ratio);
+						} // if the foreground is transparent, then print whatever is the bg
+						
+						
 						// https://gist.github.com/StefanPetrick/0c0d54d0f35ea9cca983
 						disp.drawPixelRGB888(x,y, _pixel.r, _pixel.g, _pixel.b );
 
