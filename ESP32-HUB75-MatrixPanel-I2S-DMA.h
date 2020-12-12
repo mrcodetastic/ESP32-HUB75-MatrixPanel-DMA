@@ -169,7 +169,7 @@ typedef struct RGB24 {
     uint8_t blue;
 } RGB24;
 
-enum shift_driver {SHIFT=0, FM6124, FM6126A};
+enum shift_driver {SHIFT=0, FM6124, FM6126A, ICN2038S};
 
 /***************************************************************************************/   
 // Used by val2PWM
