@@ -34,6 +34,12 @@
 #ifndef PatternPendulumWave_H
 #define PatternPendulumWave_H
 
+#define WAVE_BPM 25
+#define AMP_BPM 2
+#define SKEW_BPM 4
+#define WAVE_TIMEMINSKEW VPANEL_W/8
+#define WAVE_TIMEMAXSKEW VPANEL_W/2
+
 class PatternPendulumWave : public Drawable {
   public:
     PatternPendulumWave() {
@@ -41,15 +47,19 @@ class PatternPendulumWave : public Drawable {
     }
 
     unsigned int drawFrame() {
-      effects.DimAll(170); effects.ShowFrame();
+      effects.ClearFrame();
 
-      for (int x = 0; x < VPANEL_W; x++)
+      for (int x = 0; x < VPANEL_W; ++x)
       {
-        uint8_t y = beatsin8(x + VPANEL_W, 0, VPANEL_H);
+        uint16_t amp = beatsin16(AMP_BPM, VPANEL_H/8, VPANEL_H-1);
+        uint16_t offset = (VPANEL_H - beatsin16(AMP_BPM, 0, VPANEL_H))/2;
+
+        uint8_t y = beatsin16(WAVE_BPM, 0, amp, x*beatsin16(SKEW_BPM, WAVE_TIMEMINSKEW, WAVE_TIMEMAXSKEW)) + offset;
+
         effects.drawBackgroundFastLEDPixelCRGB(x, y, effects.ColorFromCurrentPalette(x * 7));
       }
-
-      return 15;
+      effects.ShowFrame();
+      return 20;
     }
 };
 

@@ -23,42 +23,38 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef PatternFire_H
-#define PatternFire_H
+#ifndef PatternSpark_H
+#define PatternSpark_H
 
-#ifndef Effects_H
-#include "Effects.h"
-#endif
-
-class PatternFire : public Drawable {
+class PatternSpark : public Drawable {
   private:
 
   public:
-    PatternFire() {
-      name = (char *)"Fire";
+    PatternSpark() {
+      name = (char *)"Spark";
     }
 
     // There are two main parameters you can play with to control the look and
     // feel of your fire: COOLING (used in step 1 above), and SPARKING (used
     // in step 3 above).
     //
-    // cooling: How much does the air cool as it rises?
+    // COOLING: How much does the air cool as it rises?
     // Less cooling = taller flames.  More cooling = shorter flames.
     // Default 55, suggested range 20-100
-    int cooling = 100;
+    uint8_t cooling = 100;
 
-    // sparking: What chance (out of 255) is there that a new spark will be lit?
+    // SPARKING: What chance (out of 255) is there that a new spark will be lit?
     // Higher chance = more roaring fire.  Lower chance = more flickery fire.
     // Default 120, suggested range 50-200.
-    unsigned int sparking = 100;
+    uint8_t sparking = 50;
 
     unsigned int drawFrame() {
       // Add entropy to random number generator; we use a lot of it.
       random16_add_entropy( random16());
 
-      effects.DimAll(235); 
+      effects.DimAll(235); effects.ShowFrame();
 
-      for (int x = 0; x < VPANEL_W; x++) {
+      for (uint8_t x = 0; x < VPANEL_W; x++) {
         // Step 1.  Cool down every cell a little
         for (int y = 0; y < VPANEL_H; y++) {
           int xy = XY(x, y);
@@ -72,9 +68,9 @@ class PatternFire : public Drawable {
 
         // Step 2.  Randomly ignite new 'sparks' of heat
         if (random8() < sparking) {
-          // int x = (p[0] + p[1] + p[2]) / 3;
+          uint8_t xt = random8(MATRIX_CENTRE_X - 2, MATRIX_CENTER_X + 3);
 
-          int xy = XY(x, VPANEL_H - 1);
+          int xy = XY(xt, VPANEL_H - 1);
           heat[xy] = qadd8(heat[xy], random8(160, 255));
         }
 
@@ -87,7 +83,7 @@ class PatternFire : public Drawable {
           // the usual 0-255, as the last 15 colors will be
           // 'wrapping around' from the hot end to the cold end,
           // which looks wrong.
-          colorIndex = scale8(colorIndex, 200);
+          colorIndex = scale8(colorIndex, 240);
 
           // override color 0 to ensure a black background?
           if (colorIndex != 0)
@@ -105,12 +101,11 @@ class PatternFire : public Drawable {
       noise_scale_y = 4000;
       effects.FillNoise();
 
-      effects.MoveX(2);
-      effects.MoveFractionalNoiseX(2);
-
+      effects.MoveX(3);
+      effects.MoveFractionalNoiseX(4);
 
       effects.ShowFrame();
-
+      
       return 15;
     }
 };

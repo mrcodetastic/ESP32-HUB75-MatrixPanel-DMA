@@ -34,52 +34,75 @@
  *  
  *  Commented out patterns are due to the fact they either didn't work properly with a non-square display,
  *  or from my personal opinion, are crap. 
- *  
- *  Kosso: I have removed the crappy ones and added a less crappy (and working!) Fire demo ;) 
- *  
  */
-#include "PaletteFireKoz.h" // Added by Kosso
-#include "PatternFireKoz.h" // Added by Kosso
+
+#include "PatternTest.h"
+//#include "PatternNoiseSmearing.h" // Doesn't seem to work, omitting.
 #include "PatternSpiro.h"
 #include "PatternRadar.h"
 #include "PatternSwirl.h"
 #include "PatternPendulumWave.h"
 #include "PatternFlowField.h"
 #include "PatternIncrementalDrift.h"
+#include "PatternIncrementalDrift2.h" // Doesn't seem to work, omitting.
 #include "PatternMunch.h"
 #include "PatternElectricMandala.h"
+//#include "PatternSpin.h" // Doesn't seem to work, omitting.
 #include "PatternSimplexNoise.h"
 #include "PatternWave.h"
 #include "PatternAttract.h"
+//#include "PatternBounce.h" // Doesn't seem to work, omitting.
 #include "PatternFlock.h"
 #include "PatternInfinity.h"
 #include "PatternPlasma.h"
 #include "PatternSnake.h"
-#include "PatternFire.h" // Not very good.
+#include "PatternInvaders.h"
+//#include "PatternCube.h" // Doesn't seem to work, omitting.
+//#include "PatternFire.h" // Doesn't seem to work, omitting.
 #include "PatternLife.h"
 #include "PatternMaze.h"
+//#include "PatternPulse.h" // Doesn't seem to work, omitting.
+//#include "PatternSpark.h" // Doesn't seem to work, omitting.
 #include "PatternSpiral.h"
-
 
 class Patterns : public Playlist {
   private:
-    PatternFireKoz fireKoz;
+    PatternTest patternTest;
+ //   PatternRainbowFlag rainbowFlag; // doesn't work
+ //   PatternPaletteSmear paletteSmear;
+ //   PatternMultipleStream multipleStream;   // doesn't work
+ //   PatternMultipleStream2 multipleStream2; // doesn't work
+ //   PatternMultipleStream3 multipleStream3; // doesn't work
+ //   PatternMultipleStream4 multipleStream4; // doesn't work
+ //   PatternMultipleStream5 multipleStream5; // doesn't work
+ //   PatternMultipleStream8 multipleStream8; // doesn't work
     PatternSpiro spiro;
+ //   PatternRadar radar;
     PatternSwirl swirl;
     PatternPendulumWave pendulumWave;
     PatternFlowField flowField;
     PatternIncrementalDrift incrementalDrift;
+    PatternIncrementalDrift2 incrementalDrift2;
     PatternMunch munch;
     PatternElectricMandala electricMandala;
+ //   PatternSpin spin;
     PatternSimplexNoise simplexNoise;
     PatternWave wave;
     PatternAttract attract;
+ //   PatternBounce bounce;
     PatternFlock flock;
+    PatternInfinity infinity;
     PatternPlasma plasma;
+    PatternInvadersSmall invadersSmall;
+ //   PatternInvadersMedium invadersMedium;
+ //   PatternInvadersLarge invadersLarge;
     PatternSnake snake;
-    PatternFire fire;
+ //   PatternCube cube;
+ //   PatternFire fire;
     PatternLife life;
     PatternMaze maze;
+ //   PatternPulse pulse;
+ //  PatternSpark spark;
     PatternSpiral spiral;
 
     int currentIndex = 0;
@@ -89,29 +112,49 @@ class Patterns : public Playlist {
       return currentIndex;
     }
 
-    const static int PATTERN_COUNT = 18; 
+    const static int PATTERN_COUNT = 14;
 
     Drawable* shuffledItems[PATTERN_COUNT];
 
     Drawable* items[PATTERN_COUNT] = {
-      &fireKoz, // added by Kosso
-      &spiro,           
-      &life,            
+   //   &patternTest,     // ok 
+      &spiro,           // cool
+   //   &paletteSmear,  // fail
+   //   &multipleStream, // fail
+   //   &multipleStream8,// fail
+   //   &multipleStream5,// fail
+   //   &multipleStream3,// fail
+   //    &radar, // fail
+   //   &multipleStream4, // fail
+   //   &multipleStream2, // fail
+      &life, // ok
       &flowField,
-      &pendulumWave,    
-      &incrementalDrift,
-      &munch,           
-      &electricMandala, 
-      &simplexNoise,    
-      &wave,            
-      &attract,         
-      &swirl,  
-      &flock, 
-      &plasma, 
-      &snake, 
-      &fire, 
-      &maze,
-      &spiral, 
+      &pendulumWave, //11 ok
+
+      &incrementalDrift, //12 ok
+      &incrementalDrift2, // 13 fail
+      &munch, // 14 ok
+   //   &electricMandala, // 15 ok, but ugly (vortigont)
+   //   &spin, // 16 ok but repeditivev
+   //   &simplexNoise, // 17 - cool!
+   //   &wave, // 18 ok (can't work with 256+ matrix due to uint8_t vars)
+   //   &rainbowFlag, //20 // fail
+      &attract, // 21 ok
+   //   &swirl, // 22 ok, but ugly (vortigont)
+   //   &bounce, // boncing line crap
+      &flock, // works
+      &infinity, // works
+      &plasma, // works
+   //   &invadersSmall, // works ish, but ugly (vortigont)
+   //   &invadersMedium, // fail
+   //   &invadersLarge, // fail
+      &snake, // ok
+   //   &cube, // works ish
+   //   &fire, // ok ish
+      &maze, // ok
+    //  &pulse,// fail
+    //  &spark, // same as fire
+      &spiral, // ok
     };
 
   public:
@@ -210,11 +253,6 @@ class Patterns : public Playlist {
 
       Serial.println("  ]");
       Serial.println("}");
-    }
-
-    int getPatternIndex()
-    {
-      return currentIndex;
     }
 
     char * getCurrentPatternName()

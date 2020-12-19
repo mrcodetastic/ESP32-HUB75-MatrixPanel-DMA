@@ -65,10 +65,10 @@ public:
     effects.FillNoise();
 
     effects.MoveX(8);
-    // effects.MoveFractionalNoiseX();
+    effects.MoveFractionalNoiseX();
 
     effects.MoveY(8);
-    // effects.MoveFractionalNoiseY();
+    effects.MoveFractionalNoiseY();
 
     patternNoiseSmearingHue++;
 
@@ -103,10 +103,10 @@ public:
     effects.FillNoise();
 
     effects.MoveX(3);
-    // effects.MoveFractionalNoiseY(4);
+    effects.MoveFractionalNoiseY(4);
 
     effects.MoveY(3);
-    //effects.MoveFractionalNoiseX(4);
+    effects.MoveFractionalNoiseX(4);
 
     patternNoiseSmearingHue++;
 
@@ -137,10 +137,10 @@ public:
     effects.FillNoise();
 
     effects.MoveX(3);
-    // effects.MoveFractionalNoiseY(4);
+    effects.MoveFractionalNoiseY(4);
 
     effects.MoveY(3);
-    // effects.MoveFractionalNoiseX(4);
+    effects.MoveFractionalNoiseX(4);
 
         effects.ShowFrame();
 
@@ -170,10 +170,10 @@ public:
     effects.FillNoise();
 
     effects.MoveX(8);
-    // effects.MoveFractionalNoiseX();
+    effects.MoveFractionalNoiseX();
 
     effects.MoveY(8);
-    // effects.MoveFractionalNoiseY();
+    effects.MoveFractionalNoiseY();
 
     patternNoiseSmearingHue++;
 
@@ -206,10 +206,10 @@ public:
     effects.FillNoise();
 
     effects.MoveX(3);
-    // effects.MoveFractionalNoiseY(4);
+    effects.MoveFractionalNoiseY(4);
 
     effects.MoveY(4);
-    // effects.MoveFractionalNoiseX(4);
+    effects.MoveFractionalNoiseX(4);
 
     return 0;
   }
@@ -241,10 +241,10 @@ public:
     effects.FillNoise();
 
     effects.MoveX(3);
-    // effects.MoveFractionalNoiseX(4);
+    effects.MoveFractionalNoiseX(4);
 
     effects.MoveY(3);
-    //effects.MoveFractionalNoiseY(4);
+    effects.MoveFractionalNoiseY(4);
 
     return 0;
   }
@@ -261,8 +261,8 @@ public:
     effects.DimAll(170); effects.ShowFrame();
    
     // draw a rainbow color palette
-    for (uint8_t y = 0; y < MATRIX_HEIGHT; y++) {
-      for (uint8_t x = 0; x < MATRIX_WIDTH; x++) {
+    for (uint8_t y = 0; y < VPANEL_H; y++) {
+      for (uint8_t x = 0; x < VPANEL_W; x++) {
         effects.leds[XY(x, y)] += effects.ColorFromCurrentPalette(x * 8, y * 8 + 7);
       }
     }
@@ -280,7 +280,7 @@ public:
     //effects.MoveFractionalNoiseY(4);
 
     effects.MoveY(3);
-    // effects.MoveFractionalNoiseX(4);
+    effects.MoveFractionalNoiseX(4);
     effects.ShowFrame();
 
     return 0;
@@ -327,10 +327,10 @@ public:
     effects.FillNoise();
 
     effects.MoveX(3);
-    // effects.MoveFractionalNoiseY(4);
+    effects.MoveFractionalNoiseY(4);
 
     effects.MoveY(3);
-    // effects.MoveFractionalNoiseX(4);
+    effects.MoveFractionalNoiseX(4);
 
     return 0;
   }

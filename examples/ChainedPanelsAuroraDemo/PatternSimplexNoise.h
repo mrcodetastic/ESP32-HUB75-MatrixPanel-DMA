@@ -60,17 +60,17 @@ class PatternSimplexNoise : public Drawable {
 
       effects.ShowFrame();
 
-      return 0;
+      return 30;
     }
 
     // show just one layer
     void ShowNoiseLayer(byte layer, byte colorrepeat, byte colorshift) {
-      for (uint8_t i = 0; i < VPANEL_W; i++) {
-        for (uint8_t j = 0; j < VPANEL_H; j++) {
+      for (uint16_t i = 0; i < VPANEL_W; i++) {
+        for (uint16_t j = 0; j < VPANEL_H; j++) {
           uint8_t pixel = noise[i][j];
 
           // assign a color depending on the actual palette
-          effects.leds[XY(i, j)] = effects.ColorFromCurrentPalette(colorrepeat * (pixel + colorshift), pixel);
+          effects.leds[XY16(i, j)] = effects.ColorFromCurrentPalette(colorrepeat * (pixel + colorshift), pixel);
         }
       }
     }
