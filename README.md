@@ -29,7 +29,7 @@ By default the pin mapping is as follows (defaults defined in ESP32-HUB75-Matrix
 |  R1   G1  |    R1  -> IO25      G1  -> IO26
 |  B1   GND |    B1  -> IO27
 |  R2   G2  |    R2  -> IO14      G2  -> IO12
-|  B2   GND |    B2  -> IO13
+|  B2   E   |    B2  -> IO13      E   -> N/A	(required for 1/32 scan panels, like 64x64. Any available pin would do, i.e. IO32 )
 |   A   B   |    A   -> IO23      B   -> IO19
 |   C   D   |    C   -> IO 5      D   -> IO17
 | CLK   LAT |    CLK -> IO16      LAT -> IO 4
@@ -52,7 +52,7 @@ However, if you want to change this, simply provide the wanted pin mapping as pa
 #define B_PIN   22 
 #define C_PIN   5
 #define D_PIN   17
-#define E_PIN   -1
+#define E_PIN   -1	// required for 1/32 scan panels, like 64x64. Any available pin would do, i.e. IO32
           
 #define LAT_PIN 4
 #define OE_PIN  15
@@ -113,6 +113,8 @@ By default you should not need to change / set the brightness setting as the def
 
 The value to pass 'setPanelBrightness' must be a value less than MATRIX_WIDTH. For example for a single 64x32 LED Matrix Module, a value less than 64. However, if you set the brightness too high, you may experience ghosting. 
 
+Also you may use method `setPanelBrightness8(x)`, where x is a uint8_t value between 0-255. Library will recalculate required brightness level depending on matrix width (mostly useful with FastLED-based sketches).
+
 Example:
 
 ```
@@ -122,6 +124,9 @@ void setup() {
     matrix.setPanelBrightness(16); // Set the brightness. 32 or lower ideal for a single 64x32 LED Matrix Panel.
     matrix.clearScreen(); // You must clear the screen after changing brightness level for it to take effect.
 
+    // or another way
+    matrix.setPanelBrightness(192); // Set the brightness to about 3/4 (192/256) of maximum.
+    matrix.clearScreen(); // You must clear the screen after changing brightness level for it to take effect.
 }
 
 ```

@@ -71,7 +71,6 @@ void setup()
   listPatterns();
 
 
-  //patterns.setPattern(0); //   // simple noise
   patterns.moveRandom(1); // start from a random pattern
 
   Serial.print("Starting with pattern: ");
@@ -91,7 +90,6 @@ void loop()
        patterns.moveRandom(1);
        //patterns.move(1);
        patterns.start();  
- 
        
        Serial.print("Changing pattern to:  ");
        Serial.println(patterns.getCurrentPatternName());
