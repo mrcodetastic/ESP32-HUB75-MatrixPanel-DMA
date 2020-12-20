@@ -114,7 +114,7 @@
 
 // RGB Panel Constants / Calculated Values
 #define COLOR_CHANNELS_PER_PIXEL 3 
-#define PIXELS_PER_ROW ((MATRIX_WIDTH * MATRIX_HEIGHT) / MATRIX_HEIGHT) // = 64
+#define PIXELS_PER_ROW      MATRIX_WIDTH      // number of all pixels in a row of chained modules 
 //#define PIXEL_COLOR_DEPTH_BITS (MATRIX_COLOR_DEPTH/COLOR_CHANNELS_PER_PIXEL)  //  = 8
 #define ROWS_PER_FRAME (MATRIX_HEIGHT/MATRIX_ROWS_IN_PARALLEL) //  = 16
 
@@ -169,13 +169,17 @@ typedef struct RGB24 {
     uint8_t blue;
 } RGB24;
 
-enum shift_driver {SHIFT=0, FM6124, FM6126A};
+/** 
+ * Enumeration of hardware-specific chips
+ * used to drive matrix modules
+ */
+enum shift_driver {SHIFT=0, FM6124, FM6126A, ICN2038S};
 
 /***************************************************************************************/   
 // Used by val2PWM
 //C/p'ed from https://ledshield.wordpress.com/2012/11/13/led-brightness-to-your-eye-gamma-correction-no/
 // Example calculator: https://gist.github.com/mathiasvr/19ce1d7b6caeab230934080ae1f1380e
-const uint16_t lumConvTab[]={ 
+const uint8_t lumConvTab[]={ 
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8, 8, 9, 9, 9, 10, 10, 10, 11, 11, 11, 12, 12, 12, 13, 13, 13, 14, 14, 14, 15, 15, 16, 16, 17, 17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 23, 24, 24, 25, 25, 26, 27, 27, 28, 28, 29, 30, 30, 31, 31, 32, 33, 33, 34, 35, 35, 36, 37, 38, 38, 39, 40, 41, 41, 42, 43, 44, 45, 45, 46, 47, 48, 49, 50, 51, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 73, 74, 75, 76, 77, 78, 80, 81, 82, 83, 84, 86, 87, 88, 90, 91, 92, 93, 95, 96, 98, 99, 100, 102, 103, 105, 106, 107, 109, 110, 112, 113, 115, 116, 118, 120, 121, 123, 124, 126, 128, 129, 131, 133, 134, 136, 138, 139, 141, 143, 145, 146, 148, 150, 152, 154, 156, 157, 159, 161, 163, 165, 167, 169, 171, 173, 175, 177, 179, 181, 183, 185, 187, 189, 192, 194, 196, 198, 200, 203, 205, 207, 209, 212, 214, 216, 218, 221, 223, 226, 228, 230, 233, 235, 238, 240, 243, 245, 248, 250, 253, 255, 255};
 
 /***************************************************************************************/   
@@ -237,9 +241,11 @@ class MatrixPanel_I2S_DMA : public Adafruit_GFX {
 
       // Flush the DMA buffers prior to configuring DMA - Avoid visual artefacts on boot.
       clearScreen(); // Must fill the DMA buffer with the initial output bit sequence or the panel will display garbage
-      flipDMABuffer(); // flip to backbuffer 1
-      clearScreen(); // Must fill the DMA buffer with the initial output bit sequence or the panel will display garbage
-      flipDMABuffer(); // backbuffer 0
+      if (double_buffering_enabled){
+        flipDMABuffer(); // flip to backbuffer 1
+        clearScreen(); // Must fill the DMA buffer with the initial output bit sequence or the panel will display garbage
+        flipDMABuffer(); // backbuffer 0
+      }
       
       // Setup the ESP32 DMA Engine. Sprite_TM built this stuff.
       configureDMA(dma_r1_pin, dma_g1_pin, dma_b1_pin, dma_r2_pin, dma_g2_pin, dma_b2_pin, dma_a_pin,  dma_b_pin, dma_c_pin, dma_d_pin, dma_e_pin, dma_lat_pin,  dma_oe_pin,   dma_clk_pin ); //DMA and I2S configuration and setup
