@@ -101,7 +101,7 @@ private:
         }
     };
 
-    static const int snakeCount = 40;
+    static const int snakeCount = 6;
     Snake snakes[snakeCount];
 
 public:

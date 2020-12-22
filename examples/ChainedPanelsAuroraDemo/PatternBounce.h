@@ -2,8 +2,6 @@
  * Aurora: https://github.com/pixelmatix/aurora
  * Copyright (c) 2014 Jason Coon
  *
- * Munch pattern created by J.B. Langston: https://github.com/jblang/aurora/blob/master/PatternMunch.h
- *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
  * the Software without restriction, including without limitation the rights to
@@ -22,51 +20,53 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef PatternMunch_H
-#define PatternMunch_H
+#ifndef PatternBounce_H
 
-
-class PatternMunch : public Drawable {
+class PatternBounce : public Drawable {
 private:
-    byte count = 0;
-    byte dir = 1;
-    byte flip = 0;
-    byte generation = 0;
+    static const int count = 32;
+    PVector gravity = PVector(0, 0.0125);
 
 public:
-    PatternMunch() {
-        name = (char *)"Munch";
+    PatternBounce() {
+        name = (char *)"Bounce";
+    }
+
+    void start() {
+        unsigned int colorWidth = 256 / count;
+        for (int i = 0; i < count; i++) {
+            Boid boid = Boid(i, 0);
+            boid.velocity.x = 0;
+            boid.velocity.y = i * -0.01;
+            boid.colorIndex = colorWidth * i;
+            boid.maxforce = 10;
+            boid.maxspeed = 10;
+            boids[i] = boid;
+        }
     }
 
     unsigned int drawFrame() {
-       
-        for (uint16_t x = 0; x < VPANEL_W; x++) {
-            for (uint16_t y = 0; y < VPANEL_H; y++) {
-                effects.leds[XY16(x, y)] = (x ^ y ^ flip) < count ? effects.ColorFromCurrentPalette(((x ^ y) << 2) + generation) : CRGB::Black;
+        // dim all pixels on the display
+        effects.DimAll(170); effects.ShowFrame();
 
-                // The below is more pleasant
-               // effects.leds[XY(x, y)] = effects.ColorFromCurrentPalette(((x ^ y) << 2) + generation) ;
+        for (int i = 0; i < count; i++) {
+            Boid boid = boids[i];
+
+            boid.applyForce(gravity);
+
+            boid.update();
+
+            effects.drawBackgroundFastLEDPixelCRGB(boid.location.x, boid.location.y, effects.ColorFromCurrentPalette(boid.colorIndex));
+
+            if (boid.location.y >= VPANEL_H - 1) {
+                boid.location.y = VPANEL_H - 1;
+                boid.velocity.y *= -1.0;
             }
-        }
-        
-        count += dir;
-        
-        if (count <= 0 || count >= VPANEL_W) {
-          dir = -dir;
-        }
-        
-        if (count <= 0) {
-          if (flip == 0)
-            flip = VPANEL_W-1;
-          else
-            flip = 0;
+
+            boids[i] = boid;
         }
 
-        generation++;
-
-        // show it ffs!
-        effects.ShowFrame();
-        return 60;
+        return 15;
     }
 };
 

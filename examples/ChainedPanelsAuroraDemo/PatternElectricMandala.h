@@ -70,7 +70,7 @@ class PatternElectricMandala : public Drawable {
     unsigned int drawFrame() {
 #if FASTLED_VERSION >= 3001000
       // a new parameter set every 15 seconds
-      EVERY_N_SECONDS(25) {
+      EVERY_N_SECONDS(15) {
         //SetupRandomPalette3();
         dy = random16(500) - 250; // random16(2000) - 1000 is pretty fast but works fine, too
         dx = random16(500) - 250;
@@ -92,13 +92,13 @@ class PatternElectricMandala : public Drawable {
 
       effects.ShowFrame();
 
-      return 0;
+      return 30;
     }
 
     // show just one layer
     void ShowNoiseLayer(byte layer, byte colorrepeat, byte colorshift) {
-      for (uint8_t i = 0; i < VPANEL_W; i++) {
-        for (uint8_t j = 0; j < VPANEL_H; j++) {
+      for (uint16_t i = 0; i < VPANEL_W; i++) {
+        for (uint16_t j = 0; j < VPANEL_H; j++) {
 
           uint8_t color = noise[i][j];
 
@@ -107,7 +107,7 @@ class PatternElectricMandala : public Drawable {
           // assign a color depending on the actual palette
           CRGB pixel = ColorFromPalette(effects.currentPalette, colorrepeat * (color + colorshift), bri);
 
-          effects.leds[XY(i, j)] = pixel;
+          effects.leds[XY16(i, j)] = pixel;
         }
       }
     }

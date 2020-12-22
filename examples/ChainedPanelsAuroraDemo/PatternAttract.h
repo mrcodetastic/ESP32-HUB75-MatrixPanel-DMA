@@ -52,7 +52,7 @@ public:
     unsigned int drawFrame() {
         // dim all pixels on the display
         uint8_t dim = beatsin8(2, 170, 250);
-        effects.DimAll(dim); effects.ShowFrame();
+        effects.DimAll(dim);
 
         for (int i = 0; i < count; i++) {
             Boid boid = boids[i];
@@ -66,7 +66,8 @@ public:
             boids[i] = boid;
         }
 
-        return 15;
+        effects.ShowFrame();
+        return 0;
     }
 };
 

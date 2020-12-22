@@ -36,6 +36,7 @@ class PatternSwirl : public Drawable {
     }
 
     void start() {
+        effects.ClearFrame();
     }
 
     unsigned int drawFrame() {
@@ -46,24 +47,25 @@ class PatternSwirl : public Drawable {
       uint8_t blurAmount = beatsin8(2, 10, 255);
 
 #if FASTLED_VERSION >= 3001000
-      blur2d(effects.leds, VPANEL_W, VPANEL_H, blurAmount);
+      blur2d(effects.leds, VPANEL_W > 255 ? 255 : VPANEL_W, VPANEL_H > 255 ? 255 : VPANEL_H, blurAmount);
 #else
       effects.DimAll(blurAmount); 
 #endif
 
       // Use two out-of-sync sine waves
-      uint8_t  i = beatsin8(27, borderWidth, VPANEL_H - borderWidth);
-      uint8_t  j = beatsin8(41, borderWidth, VPANEL_W - borderWidth);
+      uint8_t  i = beatsin8(256/VPANEL_H, borderWidth, VPANEL_W - borderWidth);
+      uint8_t  j = beatsin8(2048/VPANEL_W, borderWidth, VPANEL_H - borderWidth);
+
       // Also calculate some reflections
       uint8_t ni = (VPANEL_W - 1) - i;
-      uint8_t nj = (VPANEL_W - 1) - j;
+      uint8_t nj = (VPANEL_H - 1) - j;
 
       // The color of each point shifts over time, each at a different speed.
       uint16_t ms = millis();
       effects.leds[XY(i, j)] += effects.ColorFromCurrentPalette(ms / 11);
-      effects.leds[XY(j, i)] += effects.ColorFromCurrentPalette(ms / 13);
+      //effects.leds[XY(j, i)] += effects.ColorFromCurrentPalette(ms / 13);   // this doesn't work for non-square matrixes
       effects.leds[XY(ni, nj)] += effects.ColorFromCurrentPalette(ms / 17);
-      effects.leds[XY(nj, ni)] += effects.ColorFromCurrentPalette(ms / 29);
+      //effects.leds[XY(nj, ni)] += effects.ColorFromCurrentPalette(ms / 29); // this doesn't work for non-square matrixes
       effects.leds[XY(i, nj)] += effects.ColorFromCurrentPalette(ms / 37);
       effects.leds[XY(ni, j)] += effects.ColorFromCurrentPalette(ms / 41);
 

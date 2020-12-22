@@ -200,14 +200,17 @@ bool MatrixPanel_I2S_DMA::allocateDMAmemory()
     for(int i=lsbMsbTransitionBit + 1; i<PIXEL_COLOR_DEPTH_BITS; i++) {
         numDMAdescriptorsPerRow += (1<<(i - lsbMsbTransitionBit - 1));
     }
+    #if SERIAL_DEBUG
+      Serial.printf("Recalculated number of DMA descriptors per row: %d\n", numDMAdescriptorsPerRow);
+    #endif
 
     // Refer to 'DMA_LL_PAYLOAD_SPLIT' code in configureDMA() below to understand why this exists.
     // numDMAdescriptorsPerRow is also used to calcaulte descount which is super important in i2s_parallel_config_t SoC DMA setup. 
     if ( sizeof(rowColorDepthStruct) > DMA_MAX ) {
 
         #if SERIAL_DEBUG  
-          Serial.println("Split DMA payload required.");        
-		    #endif      
+          Serial.printf("rowColorDepthStruct struct is too large, split DMA payload required. Adding %d DMA descriptors\n", PIXEL_COLOR_DEPTH_BITS-1);
+		    #endif
 
         numDMAdescriptorsPerRow += PIXEL_COLOR_DEPTH_BITS-1; 
         // Not if numDMAdescriptorsPerRow is even just one descriptor too large, DMA linked list will not correctly loop.
@@ -273,7 +276,7 @@ bool MatrixPanel_I2S_DMA::allocateDMAmemory()
 
     return true;
 
-} // end initMatrixDMABuffer()
+} // end allocateDMAmemory()
 
 
 
@@ -301,7 +304,7 @@ void MatrixPanel_I2S_DMA::configureDMA(int r1_pin, int  g1_pin, int  b1_pin, int
         rowColorDepthStruct *fb_malloc_ptr = matrix_row_framebuffer_malloc[row]; 
 
         #if SERIAL_DEBUG          
-          Serial.printf("DMA payload of %d bytes. DMA_MAX is %d.\r\n", sizeof(rowBitStruct) * PIXEL_COLOR_DEPTH_BITS, DMA_MAX);
+          Serial.printf("Row %d DMA payload of %d bytes. DMA_MAX is %d.\r\n", row, sizeof(rowBitStruct) * PIXEL_COLOR_DEPTH_BITS, DMA_MAX);
         #endif        
 
         
@@ -389,13 +392,6 @@ void MatrixPanel_I2S_DMA::configureDMA(int r1_pin, int  g1_pin, int  b1_pin, int
     }
 
     
-/*
-    //End markers
-    dmadesc_a[desccount-1].eof = 1;
-    dmadesc_b[desccount-1].eof = 1;
-    dmadesc_a[desccount-1].qe.stqe_next=(lldesc_t*)&dmadesc_a[0];
-    dmadesc_b[desccount-1].qe.stqe_next=(lldesc_t*)&dmadesc_b[0];   
-*/
     //Serial.printf("Performing I2S setup.\n");
 	
     i2s_parallel_config_t cfg={

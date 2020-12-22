@@ -124,15 +124,16 @@ void setup()
 
 void patternAdvance(){
     // Go to next pattern in the list (se Patterns.h)
-    patterns.stop();      
-    patterns.move(1);
+    patterns.stop();
+    patterns.moveRandom(1);
+    //patterns.move(1);
     patterns.start();  
     // Select a random palette as well
     effects.RandomPalette();
     Serial.print("Changing pattern to:  ");
     Serial.println(patterns.getCurrentPatternName());
-    Serial.println(patterns.getPatternIndex());
-    lastPattern = patterns.getPatternIndex();
+    //Serial.println(patterns.getPatternIndex());
+    //lastPattern = patterns.getPatternIndex();
     // Save last index.
     preferences.begin("RGBMATRIX", false);
     preferences.putInt("lastPattern", lastPattern);

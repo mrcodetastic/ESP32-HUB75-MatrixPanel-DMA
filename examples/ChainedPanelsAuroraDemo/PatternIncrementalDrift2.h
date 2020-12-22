@@ -21,25 +21,38 @@
 * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#ifndef PatternIncrementalDrift_H
-#define PatternIncrementalDrift_H
+#ifndef PatternIncrementalDrift2_H
+#define PatternIncrementalDrift2_H
 
-class PatternIncrementalDrift : public Drawable {
+class PatternIncrementalDrift2 : public Drawable {
   public:
-    PatternIncrementalDrift() {
-      name = (char *)"Incremental Drift";
+    PatternIncrementalDrift2() {
+      name = (char *)"Incremental Drift Rose";
     }
 
     unsigned int drawFrame() {
-      uint8_t dim = beatsin8(2, 230, 250);
+      uint8_t dim = beatsin8(2, 170, 250);
       effects.DimAll(dim); effects.ShowFrame();
 
-      for (int i = 2; i <= VPANEL_W / 2; i++)
+      for (int i = 2; i < VPANEL_H / 2; ++i)
+      //for (uint8_t i = 0; i < 32; i++)
       {
-        CRGB color = effects.ColorFromCurrentPalette((i - 2) * (240 / (VPANEL_W / 2)));
+        CRGB color;
 
-        uint8_t x = beatcos8((17 - i) * 2, MATRIX_CENTER_X - i, MATRIX_CENTER_X + i);
-        uint8_t y = beatsin8((17 - i) * 2, MATRIX_CENTER_Y - i, MATRIX_CENTER_Y + i);
+        uint8_t x = 0;
+        uint8_t y = 0;
+
+        if (i < 16) {
+          x = beatcos8((i + 1) * 2, i, VPANEL_W - i);
+          y = beatsin8((i + 1) * 2, i, VPANEL_H - i);
+          color = effects.ColorFromCurrentPalette(i * 14);
+        }
+        else
+        {
+          x = beatsin8((32 - i) * 2, VPANEL_W - i, i + 1);
+          y = beatcos8((32 - i) * 2, VPANEL_H - i, i + 1);
+          color = effects.ColorFromCurrentPalette((31 - i) * 14);
+        }
 
         effects.drawBackgroundFastLEDPixelCRGB(x, y, color);
       }

@@ -34,7 +34,7 @@ public:
 
     Attractor() {
         location = PVector(MATRIX_CENTRE_X, MATRIX_CENTRE_Y);
-        mass = 8;
+        mass = 10;
         G = .5;
     }
 

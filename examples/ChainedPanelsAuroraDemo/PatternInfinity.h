@@ -31,7 +31,9 @@ public:
     unsigned int drawFrame() {
         // dim all pixels on the display slightly 
         // to 250/255 (98%) of their current brightness
-        effects.DimAll(250); effects.ShowFrame();
+      blur2d(effects.leds, VPANEL_W > 255 ? 255 : VPANEL_W, VPANEL_H > 255 ? 255 : VPANEL_H, 250);
+        //        effects.DimAll(250); effects.ShowFrame();
+
 
         // the Effects class has some sample oscillators
         // that move from 0 to 255 at different speeds
@@ -51,7 +53,8 @@ public:
         // draw a pixel at x,y using a color from the current palette
         effects.Pixel(x, y, hue);
 
-        return 15;
+        effects.ShowFrame();
+        return 30;
     }
 };
 
