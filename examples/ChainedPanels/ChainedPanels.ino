@@ -5,10 +5,13 @@
 
     1) In ESP32-HUB75-MatrixPanel-I2S-DMA.h:
 
-    - Set the MATRIX_HEIGHT to be the y resolution of the physical chained 
-      panels in a line (if the panels are 32 x 16, set it to be 16)
+    - Set the MATRIX_HEIGHT to be the y resolution of a physical chained 
+      panels in the line (as panels each must be of the same dimensions).
+      i.e. If you are chaining 32px 'high' panels, then set MATRIX_HEIGHT to 32.
+
     - Set the MATRIX_WIDTH to be the sum of the x resolution of all the physical 
-      chained panels (i.e. If you have 4 x (32px w x 16px h) panels, 32x4 = 128) 
+      chained panels (i.e. If you have 4 (four) x (64px w x 32px h) panels, then 64x4 = 256) 
+      i.e. The total pixel 'width' of all the chained panels. 
 
     2) In the sketch (i.e. this example):
     

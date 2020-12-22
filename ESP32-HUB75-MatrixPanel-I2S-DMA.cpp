@@ -651,7 +651,7 @@ void MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint8_t red, uint8_t green, uint
  */
 void MatrixPanel_I2S_DMA::shiftDriver(const shift_driver _drv, const int dma_r1_pin, const int dma_g1_pin, const int dma_b1_pin, const int dma_r2_pin, const int dma_g2_pin, const int dma_b2_pin, const int dma_a_pin, const int dma_b_pin, const int dma_c_pin, const int dma_d_pin, const int dma_e_pin, const int dma_lat_pin, const int dma_oe_pin, const int dma_clk_pin){
     switch (_drv){
-    case ICN2038S:
+	case ICN2038S:
     case FM6124:
     case FM6126A:
     {

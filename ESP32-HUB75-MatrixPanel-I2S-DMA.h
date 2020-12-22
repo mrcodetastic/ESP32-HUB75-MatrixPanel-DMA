@@ -25,11 +25,12 @@
  *
  */
 #ifndef MATRIX_WIDTH
- #define MATRIX_WIDTH                64   // CHANGE THIS VALUE IF CHAINING
+ #define MATRIX_WIDTH                64   // Single panel of 64 pixel width
+ // #define MATRIX_WIDTH                64*4   // Example of chaining four (4) panels.  Need to multiply the width.
 #endif
 
 #ifndef MATRIX_HEIGHT
- #define MATRIX_HEIGHT               32   // CHANGE THIS VALUE ONLY IF USING 64px HIGH panel with E PIN
+ #define MATRIX_HEIGHT               32   // CHANGE THIS VALUE to 64 IF USING 64px HIGH panel(s) with E PIN
 #endif
 
 /* Best to keep these values as is. */
