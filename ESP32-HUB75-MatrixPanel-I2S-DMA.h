@@ -116,12 +116,7 @@
 
 /***************************************************************************************/
 // Lib includes
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/semphr.h"
-#include "freertos/queue.h"
 #include <memory>
-
 #include "esp_heap_caps.h"
 #include "esp32_i2s_parallel.h"
 
@@ -295,20 +290,20 @@ class MatrixPanel_I2S_DMA : public Adafruit_GFX {
 
       // Change 'if' to '1' to enable, 0 to not include this Serial output in compiled program        
       #if SERIAL_DEBUG       
-            Serial.printf("Using pin %d for the R1_PIN\n", m_cfg.gpio.r1);
-            Serial.printf("Using pin %d for the G1_PIN\n", m_cfg.gpio.g1);
-            Serial.printf("Using pin %d for the B1_PIN\n", m_cfg.gpio.b1);
-            Serial.printf("Using pin %d for the R2_PIN\n", m_cfg.gpio.r2);
-            Serial.printf("Using pin %d for the G2_PIN\n", m_cfg.gpio.g2);
-            Serial.printf("Using pin %d for the B2_PIN\n", m_cfg.gpio.b2);
-            Serial.printf("Using pin %d for the A_PIN\n", m_cfg.gpio.a);
-            Serial.printf("Using pin %d for the B_PIN\n", m_cfg.gpio.b);
-            Serial.printf("Using pin %d for the C_PIN\n", m_cfg.gpio.c);
-            Serial.printf("Using pin %d for the D_PIN\n", m_cfg.gpio.d);
-            Serial.printf("Using pin %d for the E_PIN\n", m_cfg.gpio.e);
-            Serial.printf("Using pin %d for the LAT_PIN\n", m_cfg.gpio.lat);
-            Serial.printf("Using pin %d for the OE_PIN\n",  m_cfg.gpio.oe);
-            Serial.printf("Using pin %d for the CLK_PIN\n", m_cfg.gpio.clk);
+            Serial.printf_P(PSTR("Using pin %d for the R1_PIN\n"), m_cfg.gpio.r1);
+            Serial.printf_P(PSTR("Using pin %d for the G1_PIN\n"), m_cfg.gpio.g1);
+            Serial.printf_P(PSTR("Using pin %d for the B1_PIN\n"), m_cfg.gpio.b1);
+            Serial.printf_P(PSTR("Using pin %d for the R2_PIN\n"), m_cfg.gpio.r2);
+            Serial.printf_P(PSTR("Using pin %d for the G2_PIN\n"), m_cfg.gpio.g2);
+            Serial.printf_P(PSTR("Using pin %d for the B2_PIN\n"), m_cfg.gpio.b2);
+            Serial.printf_P(PSTR("Using pin %d for the A_PIN\n"), m_cfg.gpio.a);
+            Serial.printf_P(PSTR("Using pin %d for the B_PIN\n"), m_cfg.gpio.b);
+            Serial.printf_P(PSTR("Using pin %d for the C_PIN\n"), m_cfg.gpio.c);
+            Serial.printf_P(PSTR("Using pin %d for the D_PIN\n"), m_cfg.gpio.d);
+            Serial.printf_P(PSTR("Using pin %d for the E_PIN\n"), m_cfg.gpio.e);
+            Serial.printf_P(PSTR("Using pin %d for the LAT_PIN\n"), m_cfg.gpio.lat);
+            Serial.printf_P(PSTR("Using pin %d for the OE_PIN\n"),  m_cfg.gpio.oe);
+            Serial.printf_P(PSTR("Using pin %d for the CLK_PIN\n"), m_cfg.gpio.clk);
       #endif   
 
       // initialize some sppecific panel drivers
@@ -336,7 +331,7 @@ class MatrixPanel_I2S_DMA : public Adafruit_GFX {
 
       #if SERIAL_DEBUG 
         if (!initialized)    
-              Serial.println("MatrixPanel_I2S_DMA::begin() failed.");
+              Serial.println(F("MatrixPanel_I2S_DMA::begin() failed."));
       #endif      
 
       return initialized;
@@ -372,7 +367,7 @@ class MatrixPanel_I2S_DMA : public Adafruit_GFX {
         back_buffer_id ^= 1; 
         
         #if SERIAL_DEBUG     
-                Serial.printf("Set back buffer to: %d\n", back_buffer_id);
+                Serial.printf_P(PSTR("Set back buffer to: %d\n"), back_buffer_id);
         #endif      
 
         // Wait before we allow any writing to the buffer. Stop flicker.
@@ -385,7 +380,7 @@ class MatrixPanel_I2S_DMA : public Adafruit_GFX {
         if (!m_cfg.double_buff) return;
 
         #if SERIAL_DEBUG     
-                Serial.printf("Showtime for buffer: %d\n", back_buffer_id);
+                Serial.printf_P(PSTR("Showtime for buffer: %d\n"), back_buffer_id);
         #endif      
       
         i2s_parallel_flip_to_buffer(&I2S1, back_buffer_id);
