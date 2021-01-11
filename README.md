@@ -1,6 +1,6 @@
 # HUB75 LED matrix library for the ESP32, utilising DMA
 
-## First time user? Please take the time to read the below (RTM!).
+## First time user? Please take the time to read the below
 
 This ESP32 Arduino library for HUB75 / HUB75E connector type 64x32 RGB LED  1/16 Scan OR 64x64 RGB LED  1/32 Scan LED Matrix Panel, utilises the DMA functionality provided by the ESP32's I2S 'LCD Mode' which basically means that pixel data is sent straight from memory, via the DMA controller, to the relevant LED Matrix GPIO pins with little CPU overhead.
 
