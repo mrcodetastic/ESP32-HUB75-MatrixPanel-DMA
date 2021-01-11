@@ -12,7 +12,7 @@ As a result, this library can theoretically provide ~16-24 bit colour, at variou
 * [FM6126](FM6126A.md) / ICN2038S panels based on [this example](/examples/FM6126Panel) will also work with the correct initialisation.
 
 ## Panels Not Supported
-* 1/8 Scan LED Matrix Panels are not supported, please use an alternative library if you bought one of these.
+* 1/4, 1/8 Scan LED Matrix Panels are not supported, please use an alternative library if you bought one of these.
 * Panels with a resolution of less than 64x32pixels and/or scan rate != 1/32 or 1/16
 
 # Installation
