@@ -16,8 +16,9 @@
 
 /* -------------------------- Display Config Initialisation -------------------- */
 
-#define MATRIX_WIDTH 64
-#define MATRIX_HEIGHT 32
+// MATRIX_WIDTH and MATRIX_HEIGHT *must* be changed in ESP32-HUB75-MatrixPanel-I2S-DMA.h
+// If you are using Platform IO (you should), pass MATRIX_WIDTH and MATRIX_HEIGHT as a compile time option.
+// Refer to: https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/issues/48#issuecomment-749402379
 
 /* -------------------------- Class Initialisation -------------------------- */
 #include <ESP32-HUB75-MatrixPanel-I2S-DMA.h>

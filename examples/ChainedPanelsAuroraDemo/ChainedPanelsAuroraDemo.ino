@@ -17,8 +17,12 @@
 
 
 /* -------------------------- Display Config Initialisation -------------------- */
-#define MATRIX_WIDTH 128  // Overall matrix dimensions if laid out end-to-end.
-#define MATRIX_HEIGHT 32
+// MATRIX_WIDTH and MATRIX_HEIGHT *must* be changed in ESP32-HUB75-MatrixPanel-I2S-DMA.h
+// If you are using Platform IO (you should), pass MATRIX_WIDTH and MATRIX_HEIGHT as a compile time option.
+// Refer to: https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/issues/48#issuecomment-749402379
+
+//This will not work here -> #define MATRIX_WIDTH 128  // Overall matrix dimensions if laid out end-to-end.
+//This will not work here -> #define MATRIX_HEIGHT 32
 
 #define PANEL_RES_X 64 // Number of pixels wide of each INDIVIDUAL panel module. 
 #define PANEL_RES_Y 32 // Number of pixels tall of each INDIVIDUAL panel module.

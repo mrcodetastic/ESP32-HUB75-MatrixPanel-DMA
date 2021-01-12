@@ -1,16 +1,18 @@
 # HUB75 LED matrix library for the ESP32, utilising DMA
 
+## First time user? Please take the time to read the below
+
 This ESP32 Arduino library for HUB75 / HUB75E connector type 64x32 RGB LED  1/16 Scan OR 64x64 RGB LED  1/32 Scan LED Matrix Panel, utilises the DMA functionality provided by the ESP32's I2S 'LCD Mode' which basically means that pixel data is sent straight from memory, via the DMA controller, to the relevant LED Matrix GPIO pins with little CPU overhead.
 
 As a result, this library can theoretically provide ~16-24 bit colour, at various brightness levels without noticeable flicker.
 
 ## Panels Supported
 * 64x32 pixel 1/16 Scan LED Matrix 'Indoor' Panel, such as this [typical RGB panel available for purchase](https://www.aliexpress.com/item/256-128mm-64-32-pixels-1-16-Scan-Indoor-3in1-SMD2121-RGB-full-color-P4-led/32810362851.html). 
-* 64x64 pixel 1/32 Scan LED Matrix 'Indoor' Panel. 
+* 64x64 pixel 1/32 Scan LED Matrix 'Indoor' Panel (experimental). 
 * [FM6126](FM6126A.md) / ICN2038S panels based on [this example](/examples/FM6126Panel) will also work with the correct initialisation.
 
 ## Panels Not Supported
-* 1/8 Scan LED Matrix Panels are not supported, please use an alternative library if you bought one of these.
+* 1/4, 1/8 Scan LED Matrix Panels are not supported, please use an alternative library if you bought one of these.
 * Panels with a resolution of less than 64x32pixels and/or scan rate != 1/32 or 1/16
 
 # Installation
@@ -96,9 +98,13 @@ If you want to use with a 64x64 pixel panel (typically a HUB75*E* panel) you MUS
 
 ## Can I chain panels?
 
-Yes. If you want to chain two of these horizontally to make a 128x32 panel you can easily by setting the MATRIX_WIDTH to '128' and connecting the panels in series using the HUB75 ribbon cable.
+Yes. 
+
+For example: If you want to chain two of these horizontally to make a 128x32 panel you can do so by setting the MATRIX_WIDTH to '128' and connecting the panels in series using the HUB75 ribbon cable.
 
 Similarly, if you wanted to chain 4 panels to make a 256x32 px horizontal panel, you can easily by setting the MATRIX_WIDTH to '256' and connecting the panels in series using the HUB75 ribbon cable.
+
+You MUST either change the MATRIX_WIDTH or MATRIX_HEIGHT values within the 'ESP32-HUB75-MatrixPanel-I2S-DMA.h' file OR pass a [compile time option](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/issues/48#issuecomment-749402379) if using PlatformIO for your development (you should use this).
 
 Finally, if you wanted to chain 4 x (64x32px) panels to make 128x64px display (essentially a 2x2 grid of 64x32 LED Matrix modules), a little more magic will be required. Refer to the [Chained Panels](examples/ChainedPanels/) example.
 
@@ -142,7 +148,6 @@ Refer to this guide written for the [rpi-rgb-led-matrix library](https://github.
 
 - Refer to this [example](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/issues/39#issuecomment-722691127) issue of what can go wrong with a poor powersupply.
 - Refer to [this comment](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/issues/35#issuecomment-726419862) in regards to certain panels not playing nice with voltages, and a 3.3volt signal that the ESP32 GPIO can only provide.
-
 
 ## Inspiration
 
