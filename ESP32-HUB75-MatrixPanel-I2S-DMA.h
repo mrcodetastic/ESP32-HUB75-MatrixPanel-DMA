@@ -227,13 +227,6 @@ struct  HUB75_I2S_CFG {
   shift_driver driver;
   // I2S clock speed
   clk_speed i2sspeed;
-  /**
-   * this var controls how DMA buffers are updated on every pixel change
-   * if set to false - full recalculation performed, including address line bits, OE, LAT
-   * if set to true (default), only RGB1, RGB2 bits are updated on pixel change. Other bits are updated only when clearing screen/brightness change
-   * Could be toggled any time
-   */
-  bool fastmode;
   // use DMA double buffer (twice as much RAM required)
   bool double_buff;
 
@@ -247,7 +240,6 @@ struct  HUB75_I2S_CFG {
       A_PIN_DEFAULT, B_PIN_DEFAULT, C_PIN_DEFAULT, D_PIN_DEFAULT, E_PIN_DEFAULT,
       LAT_PIN_DEFAULT, OE_PIN_DEFAULT, CLK_PIN_DEFAULT },
     shift_driver _drv = SHIFT,
-    bool _fast = true,
     bool _dbuff = false,
     clk_speed _i2sspeed = HZ_10M
   ) : mx_width(_w),
@@ -255,7 +247,6 @@ struct  HUB75_I2S_CFG {
       chain_length(_chain),
       gpio(_pinmap),
       driver(_drv), i2sspeed(_i2sspeed),
-      fastmode(_fast),
       double_buff(_dbuff) {}
 
 }; // end of structure HUB75_I2S_CFG
@@ -389,11 +380,12 @@ class MatrixPanel_I2S_DMA : public Adafruit_GFX {
     {
       // Change to set the brightness of the display, range of 1 to matrixWidth (i.e. 1 - 64)
         brightness = b;
+        if (!initialized)
+          return;
+
         brtCtrlOE(b);
         if (m_cfg.double_buff)
                 brtCtrlOE(b, 1);
-        //if (m_cfg.fastmode)     // in 'fast' mode we should always reset DMA buffer to update OE bits that controls brightness
-        //  clearScreen();  // and YES, it WILL flicker. you've been warned :)
     }
 
     /**
@@ -403,30 +395,13 @@ class MatrixPanel_I2S_DMA : public Adafruit_GFX {
      */
     void setBrightness8(const uint8_t b)
     {
-      setPanelBrightness(b * MATRIX_WIDTH / 256);
+      setPanelBrightness(b * PIXELS_PER_ROW / 256);
     }
 
     inline void setMinRefreshRate(int rr)
     {
         min_refresh_rate = rr;
     } 
-
-    /**
-     * Controls fast-update mode, when only RGB bits are upated in DMA buffer
-     * @param mode bool - set/clear fastmode. Will take effect on newly updated pixels only
-     * @return fastmode status
-     */
-    bool setFastMode(const bool mode){
-      m_cfg.fastmode = mode;
-      return m_cfg.fastmode;
-    };
-
-    /**
-     * Controls fast-update mode, when only RGB bits are upated in DMA buffer
-     * @param void - returns current fastmode status
-     */
-    bool setFastMode(){return m_cfg.fastmode;};
-
 
   int  calculated_refresh_rate  = 0;         
 
