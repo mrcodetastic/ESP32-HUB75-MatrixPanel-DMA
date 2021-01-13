@@ -138,13 +138,17 @@ struct rowBitStruct {
     const bool double_buff;
     ESP32_I2S_DMA_STORAGE_TYPE *data;
 
-    /** @brief - returns size (in bytes) of data vector holding _dpth bits of colors for a SINGLE buff
+    /** @brief - returns size of row of data vectorfor a SINGLE buff
+     * size (in bytes) of a vector holding full DMA data for a row of pixels with _dpth color bits
+     * a SINGLE buffer only size is accounted, when using double buffers it actually takes twice as much space
+     * but returned size is for a half of double-buffer
+     * 
      * default - returns full data vector size for a SINGLE buff
      *
      */
     size_t size(uint8_t _dpth=0 ) { if (!_dpth) _dpth = color_depth; return width * _dpth * sizeof(ESP32_I2S_DMA_STORAGE_TYPE); };
 
-    /** @brief - returns pointer to the row's data vector at _dpth color bit
+    /** @brief - returns pointer to the row's data vector begining at pixel[0] for _dpth color bit
      * default - returns pointer to the data vector's head
      */
     ESP32_I2S_DMA_STORAGE_TYPE* getDataPtr(const uint8_t _dpth=0, const bool buff_id=0) { return &(data[_dpth*width + buff_id*(width*color_depth)]); };
@@ -262,11 +266,25 @@ class MatrixPanel_I2S_DMA : public Adafruit_GFX {
 
   // ------- PUBLIC -------
   public:
-    
+
+    /**
+     * MatrixPanel_I2S_DMA
+     *
+     * default predefined values are used for matrix configuraton
+     *
+     */
+    MatrixPanel_I2S_DMA()
+#ifdef USE_GFX_ROOT
+      : GFX(MATRIX_WIDTH, MATRIX_HEIGHT)  {
+#else
+      : Adafruit_GFX(MATRIX_WIDTH, MATRIX_HEIGHT) {
+#endif
+    }
+
     /**
      * MatrixPanel_I2S_DMA 
      * 
-     * @param  {bool} _double_buffer : Double buffer is disabled by default. Enable only if you know what you're doing. Manual switching required with flipDMABuffer() and showDMABuffer()
+     * @param  {HUB75_I2S_CFG} opts : structure with matrix configuration
      *        
      */
     MatrixPanel_I2S_DMA(const HUB75_I2S_CFG& opts)
@@ -324,7 +342,12 @@ class MatrixPanel_I2S_DMA : public Adafruit_GFX {
       return initialized;
 
     }
-    
+
+    /*
+     *  overload for compatibility
+     */
+    bool begin(int r1, int g1 = G1_PIN_DEFAULT, int b1 = B1_PIN_DEFAULT, int r2 = R2_PIN_DEFAULT, int g2 = G2_PIN_DEFAULT, int b2 = B2_PIN_DEFAULT, int a  = A_PIN_DEFAULT, int b = B_PIN_DEFAULT, int c = C_PIN_DEFAULT, int d = D_PIN_DEFAULT, int e = E_PIN_DEFAULT, int lat = LAT_PIN_DEFAULT, int oe = OE_PIN_DEFAULT, int clk = CLK_PIN_DEFAULT);
+
     // TODO: Disable/Enable auto buffer flipping (useful for lots of drawPixel usage)...
 
     // Draw pixels
@@ -471,8 +494,12 @@ class MatrixPanel_I2S_DMA : public Adafruit_GFX {
      */
     void clearFrameBuffer(bool _buff_id = 0);
 
-
-    void brtCtrlOE(const int brt, const bool _buff_id=0);
+    /**
+     * @brief - reset OE bits in DMA buffer in a way to control brightness
+     * @param brt - brightness level from 0 to row_width
+     * @param _buff_id - buffer id to control
+     */
+    void brtCtrlOE(int brt, const bool _buff_id=0);
 
 }; // end Class header
 
