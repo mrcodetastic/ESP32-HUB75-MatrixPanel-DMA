@@ -473,29 +473,25 @@ void MatrixPanel_I2S_DMA::updateMatrixDMABuffer(int16_t x_coord, int16_t y_coord
 	 * so we have to check for this and check the correct position of the MATRIX_DATA_STORAGE_TYPE
 	 * data.
 	 */
-    bool painting_top_frame = true;
-    if ( y_coord >= rpf) // co-ords start at zero, y_coord = 15 => 16 (rows per frame)
-    {
-        y_coord -= rpf;  // Subtract the ROWS_PER_FRAME from the pixel co-ord to get the panel ROW (not really the 'y_coord' anymore)
-        painting_top_frame = false;
-    }
-	
+
     // We need to update the correct uint16_t in the rowBitStruct array, that gets sent out in parallel
     // 16 bit parallel mode - Save the calculated value to the bitplane memory in reverse order to account for I2S Tx FIFO mode1 ordering
     uint16_t rowBitStruct_x_coord_uint16_t_position = (x_coord % 2) ? (x_coord-1):(x_coord+1);
 
-    for(uint8_t color_depth_idx=0; color_depth_idx<PIXEL_COLOR_DEPTH_BITS; color_depth_idx++)  // color depth - 8 iterations
-    {
+    // Iterating through color depth bits (8 iterations)
+    uint8_t color_depth_idx = PIXEL_COLOR_DEPTH_BITS;
+    do {
+        --color_depth_idx;
         uint8_t mask = (1 << color_depth_idx); // 24 bit color
-        
+
         // Get the contents at this address,
-        // it would represent a vector pointing to the full row of pixels for the specified color depth bit
-        ESP32_I2S_DMA_STORAGE_TYPE *p = dma_buff.rowBits[y_coord]->getDataPtr(color_depth_idx, back_buffer_id);
+        // it would represent a vector pointing to the full row of pixels for the specified color depth bit at Y coordinate
+        ESP32_I2S_DMA_STORAGE_TYPE *p = dma_buff.rowBits[y_coord%rpf]->getDataPtr(color_depth_idx, back_buffer_id);
 
         // We need to update the correct uint16_t word in the rowBitStruct array poiting to a specific pixel at X - coordinate
         uint16_t &v = p[rowBitStruct_x_coord_uint16_t_position];
 
-        if (painting_top_frame)
+        if (y_coord<rpf)
         { // Need to copy what the RGB status is for the bottom pixels
           v &= BITMASK_RGB1_CLEAR; // reset R1G1B1 bits
           // Set the color of the pixel of interest
@@ -511,36 +507,8 @@ void MatrixPanel_I2S_DMA::updateMatrixDMABuffer(int16_t x_coord, int16_t y_coord
           if (blue & mask)  { v|=BIT_B2; }
         } // paint
 
-        if (m_cfg.fastmode)
-          continue;
+    } while(color_depth_idx);  // end of color depth loop (8)
 
-        // update address/control bits
-        v &= BITMASK_CTRL_CLEAR;      // reset ABCDE,EO,LAT address bits
-		
-        // normally output current rows ADDX, special case for LSB, output previous row's ADDX (as previous row is being displayed for one latch cycle)
-        // uint16_t _y = (color_depth_idx == 0) ? 
-        //  gpioRowAddress = y_coord-1;
-		
-        //uint16_t _y = color_depth_idx ? y_coord : y_coord -1;
-		uint16_t _y = y_coord;
-        v|=_y << BITS_ADDR_OFFSET;         // shift row coord to match ABCDE bits from bit positions 8 to 12 and set bitvector
-
-        // drive latch while shifting out last bit of RGB data
-        if((x_coord) == PIXELS_PER_ROW-1) v|=BIT_LAT;
-
-        // need to disable OE after latch to hide row transition
-        // OR one clock before latch, otherwise can get ghosting
-        if((x_coord) == 0 || (x_coord)==PIXELS_PER_ROW-2){ v|=BIT_OE; continue;}
-
-        if((color_depth_idx > lsbMsbTransitionBit || !color_depth_idx) && ((x_coord) >= brightness))
-          {v|=BIT_OE; continue;}// For Brightness
-
-        // special case for the bits *after* LSB through (lsbMsbTransitionBit) - OE is output after data is shifted, so need to set OE to fractional brightness
-        if(color_depth_idx && color_depth_idx <= lsbMsbTransitionBit) {
-          // divide brightness in half for each bit below lsbMsbTransitionBit
-          int lsbBrightness = brightness >> (lsbMsbTransitionBit - color_depth_idx + 1);
-          if((x_coord) >= lsbBrightness) v|=BIT_OE; // For Brightness
-        }
 		/*
 		// Development / testing code only.
 		Serial.printf("r value of %d, color depth: %d, mask: %d\r\n", red,	color_depth_idx, mask);
@@ -548,8 +516,6 @@ void MatrixPanel_I2S_DMA::updateMatrixDMABuffer(int16_t x_coord, int16_t y_coord
 		Serial.printf("val2pwm r value:  %d\r\n", val2PWM(red));
 		if (val2PWM(red) & mask) { Serial.println("Success - PWM"); v|=BIT_R2; }
 		*/
-    } // color depth loop (8)
-		
 
 } // updateMatrixDMABuffer (specific co-ords change)
 
@@ -560,11 +526,6 @@ void MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint8_t red, uint8_t green, uint
   if ( !initialized ) return;
   
 	/* https://ledshield.wordpress.com/2012/11/13/led-brightness-to-your-eye-gamma-correction-no/ */	 
-	/*
-	red 	= val2PWM(red);
-	green 	= val2PWM(green);
-	blue 	= val2PWM(blue);  
-	*/
 	red 	= lumConvTab[red];
 	green	= lumConvTab[green];
 	blue 	= lumConvTab[blue]; 	
@@ -589,59 +550,22 @@ void MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint8_t red, uint8_t green, uint
     //Serial.printf("Fill with: 0x%#06x\n", RGB_output_bits);
 
     // iterate rows
-    for (uint16_t matrix_frame_parallel_row = 0; matrix_frame_parallel_row < rpf; matrix_frame_parallel_row++) // half height - 16 iterations
-    {
+    int matrix_frame_parallel_row = dma_buff.rowBits.size();
+    do {
+      --matrix_frame_parallel_row;
+
       // The destination for the pixel row bitstream
       ESP32_I2S_DMA_STORAGE_TYPE *p = dma_buff.rowBits[matrix_frame_parallel_row]->getDataPtr(color_depth_idx, back_buffer_id);
 
       // iterate pixels in a row
-      if (m_cfg.fastmode){
-		  
-        for(uint16_t x_coord=0; x_coord < PIXELS_PER_ROW; x_coord++) {
-          uint16_t &v = p[(x_coord % 2) ? (x_coord-1):(x_coord+1)]; // take reference to a specific pixel (two actually)
-          v &= BITMASK_RGB12_CLEAR;  // reset color bits
-          v |= RGB_output_bits;     // set new color bits
-        }
-		
-      } else {
+		  int x_coord=dma_buff.rowBits[matrix_frame_parallel_row]->width;
+      do { 
+        --x_coord;
+        p[x_coord] &= BITMASK_RGB12_CLEAR;  // reset color bits
+        p[x_coord] |= RGB_output_bits;      // set new color bits
+      } while(x_coord);
 
-        // Set ABCDE address bits vector
-        //uint16_t _y = color_depth_idx ? matrix_frame_parallel_row : matrix_frame_parallel_row -1;
-		uint16_t _y = matrix_frame_parallel_row;
-        _y <<= BITS_ADDR_OFFSET;    // shift row y-coord to match ABCDE bits in vector from 8 to 12
-
-        for(uint16_t x_coord=0; x_coord < PIXELS_PER_ROW; x_coord++) {
-			
-  	      // We need to update the correct uint16_t in the rowBitStruct array, that gets sent out in parallel
-	        // 16 bit parallel mode - Save the calculated value to the bitplane memory in reverse order to account for I2S Tx FIFO mode1 ordering
-	        uint16_t rowBitStruct_x_coord_uint16_t_position = (x_coord % 2) ? (x_coord-1):(x_coord+1);
-          uint16_t &v = p[rowBitStruct_x_coord_uint16_t_position]; // persist what we already have
-          v = RGB_output_bits;    // set colot bits and reset all others
-          v|=_y;                  // set ABCDE address bits for current row
-
-          // drive latch while shifting out last bit of RGB data
-          if((x_coord) == PIXELS_PER_ROW-1) v|=BIT_LAT;
-
-          // need to disable OE after latch to hide row transition
-          // OR one clock before latch, otherwise can get ghosting
-          if(!x_coord || (x_coord)==PIXELS_PER_ROW-2){
-            v|=BIT_OE; continue;
-          }
-
-          // BRT OE
-          if((color_depth_idx > lsbMsbTransitionBit || !color_depth_idx) && ((x_coord) >= brightness)){
-            v|=BIT_OE; continue;  // For Brightness control
-          }
-
-          // special case for the bits *after* LSB through (lsbMsbTransitionBit) - OE is output after data is shifted, so need to set OE to fractional brightness
-          if(color_depth_idx && color_depth_idx <= lsbMsbTransitionBit) {
-            // divide brightness in half for each bit below lsbMsbTransitionBit
-            int lsbBrightness = brightness >> (lsbMsbTransitionBit - color_depth_idx + 1);
-            if((x_coord) >= lsbBrightness) v|=BIT_OE; // For Brightness
-          }
-        } // end of x-iterator
-      } // end x_coord iteration
-    } // end row iteration
+    } while(matrix_frame_parallel_row); // end row iteration
   } // colour depth loop (8)
 } // updateMatrixDMABuffer (full frame paint)
 
@@ -725,11 +649,108 @@ void MatrixPanel_I2S_DMA::shiftDriver(const HUB75_I2S_CFG& _cfg){
  * clear screen to black and reset service bits
  */
 void MatrixPanel_I2S_DMA::clearScreen(){
-  if (m_cfg.fastmode) {
-    m_cfg.fastmode = false;       // we always clear screen in 'slow' mode to update all bits in DMA buffer
-    updateMatrixDMABuffer(0, 0, 0);
-    m_cfg.fastmode = true;        // restore fastmode
-  } else {
-    updateMatrixDMABuffer(0, 0, 0);
+
+  // Must fill the DMA buffer with the initial output bit sequence or the panel will display garbage
+  clearFrameBuffer();
+  brtCtrlOE(brightness);
+  if (m_cfg.double_buff){
+    clearFrameBuffer(1); 
+    brtCtrlOE(brightness, 1);
   }
+}
+
+/**
+ * @brief - clears and reinitializes color/control data in DMA buffs
+ * When allocated, DMA buffs might be dirtry, so we need to blank it and initialize ABCDE,LAT,OE control bits.
+ * Those control bits are constants during the entire DMA sweep and never changed when updating just pixel color data
+ * so we could set it once on DMA buffs initialization and forget. 
+ * This effectively clears buffers to blank BLACK and makes it ready to display output.
+ * (Brightness control via OE bit manipulation is another case)
+ */
+void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id){
+
+  // we start with iterating all rows in dma_buff structure
+  int row_idx = dma_buff.rowBits.size();
+  do {
+    --row_idx;
+    //Serial.printf("\nclearing row %d", row_idx);
+
+    ESP32_I2S_DMA_STORAGE_TYPE* row = dma_buff.rowBits[row_idx]->getDataPtr(0, _buff_id);   // set pointer to the HEAD of a buffer holding data for the entire matrix row
+    ESP32_I2S_DMA_STORAGE_TYPE abcde = (ESP32_I2S_DMA_STORAGE_TYPE)row_idx;
+    abcde <<= BITS_ADDR_OFFSET;    // shift row y-coord to match ABCDE bits in vector from 8 to 12
+
+    // get last pixel index in a row of all colordepths
+    int x_pixel = dma_buff.rowBits[row_idx]->width * dma_buff.rowBits[row_idx]->color_depth;
+    //Serial.printf(" from pixel %d, ", x_pixel);
+
+    // fill the entire row with the same abcde address, this also clears all color data to 0's black
+    do {
+      --x_pixel;
+      row[x_pixel] = abcde;
+    } while(x_pixel);
+
+
+    // let's set LAT/OE control bits for specific pixels in each color_index subrows
+    uint8_t coloridx = dma_buff.rowBits[row_idx]->color_depth;
+
+    do {
+      --coloridx;
+
+      // switch pointer to a row for a specific color index
+      row = dma_buff.rowBits[row_idx]->getDataPtr(coloridx, _buff_id);
+
+      // drive latch while shifting out last bit of RGB data
+      row[dma_buff.rowBits[row_idx]->width - 1] |= BIT_LAT;
+
+      // need to disable OE after latch to hide row transition
+      // OR one clock before latch, otherwise can get ghosting
+      row[0] |= BIT_OE;
+      row[dma_buff.rowBits[row_idx]->width - 2] |= BIT_OE;
+    } while(coloridx);
+
+  } while(row_idx);
+}
+
+void MatrixPanel_I2S_DMA::brtCtrlOE(const int brt, const bool _buff_id){
+  // we start with iterating all rows in dma_buff structure
+  int row_idx = dma_buff.rowBits.size();
+  do {
+    --row_idx;
+
+    // let's set OE control bits for specific pixels in each color_index subrows
+    uint8_t coloridx = dma_buff.rowBits[row_idx]->color_depth;
+    do {
+      --coloridx;
+
+      // switch pointer to a row for a specific color index
+      ESP32_I2S_DMA_STORAGE_TYPE* p = dma_buff.rowBits[row_idx]->getDataPtr(coloridx, _buff_id);
+      int x_coord = dma_buff.rowBits[row_idx]->width;
+      do {
+        --x_coord;
+
+        // BRT OE
+        if((coloridx > lsbMsbTransitionBit || !coloridx) && ((x_coord) >= brt)){
+          p[x_coord] |= BIT_OE; continue;  // For Brightness control
+        }
+        // special case for the bits *after* LSB through (lsbMsbTransitionBit) - OE is output after data is shifted, so need to set OE to fractional brightness
+        if(coloridx && coloridx <= lsbMsbTransitionBit) {
+          // divide brightness in half for each bit below lsbMsbTransitionBit
+          int lsbBrightness = brt >> (lsbMsbTransitionBit - coloridx + 1);
+          if((x_coord) >= lsbBrightness)
+            p[x_coord] |= BIT_OE; // For Brightness
+
+          continue;
+        }
+
+        // clear OE bit for all other pixels
+        p[x_coord] &= BITMASK_OE_CLEAR;
+      } while(x_coord);
+
+      // need to disable OE after latch to hide row transition
+      // OR one clock before latch, otherwise can get ghosting
+      p[0] |= BIT_OE;
+      p[dma_buff.rowBits[row_idx]->width - 2] |= BIT_OE;
+
+    } while(coloridx);
+  } while(row_idx);
 }

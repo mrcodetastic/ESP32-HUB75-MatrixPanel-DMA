@@ -112,6 +112,7 @@
 #define BITMASK_RGB2_CLEAR   (0xffc7)    // inverted bitmask for R2G2B2 bit in pixel vector
 #define BITMASK_RGB12_CLEAR  (0xffc0)    // inverted bitmask for R1G1B1R2G2B2 bit in pixel vector
 #define BITMASK_CTRL_CLEAR   (0xe03f)    // inverted bitmask for control bits ABCDE,LAT,OE in pixel vector
+#define BITMASK_OE_CLEAR     (0xff7f)    // inverted bitmask for control bit OE in pixel vector
 
 
 /***************************************************************************************/
@@ -129,7 +130,7 @@
 /***************************************************************************************/
 
 /** @brief - Structure holds raw DMA data to drive TWO full rows of pixels spaning through all chained modules
- * 
+ * Note: sizeof(data) must be multiple of 32 bits, as ESP32 DMA linked list buffer address pointer must be word-aligned
  */
 struct rowBitStruct {
     const size_t width;
@@ -137,7 +138,7 @@ struct rowBitStruct {
     const bool double_buff;
     ESP32_I2S_DMA_STORAGE_TYPE *data;
 
-    /** @brief - returns size of data vector holding _dpth bits of colors for a SINGLE buff
+    /** @brief - returns size (in bytes) of data vector holding _dpth bits of colors for a SINGLE buff
      * default - returns full data vector size for a SINGLE buff
      *
      */
@@ -164,7 +165,7 @@ struct rowBitStruct {
  *       memory per row (per rowColorDepthStruct) instead.
  */
 struct frameStruct {
-    uint8_t rows=0;    // number of rows held in current frame
+    uint8_t rows=0;    // number of rows held in current frame, not used actually, just to keep the idea of struct
     std::vector<std::shared_ptr<rowBitStruct> > rowBits;
 };
 
@@ -318,12 +319,7 @@ class MatrixPanel_I2S_DMA : public Adafruit_GFX {
 
       // Flush the DMA buffers prior to configuring DMA - Avoid visual artefacts on boot.
       clearScreen(); // Must fill the DMA buffer with the initial output bit sequence or the panel will display garbage
-      if (m_cfg.double_buff){
-        flipDMABuffer(); // flip to backbuffer 1
-        clearScreen(); // Must fill the DMA buffer with the initial output bit sequence or the panel will display garbage
-        flipDMABuffer(); // backbuffer 0
-      }
-      
+
       // Setup the ESP32 DMA Engine. Sprite_TM built this stuff.
       configureDMA(m_cfg); //DMA and I2S configuration and setup
 
@@ -393,8 +389,11 @@ class MatrixPanel_I2S_DMA : public Adafruit_GFX {
     {
       // Change to set the brightness of the display, range of 1 to matrixWidth (i.e. 1 - 64)
         brightness = b;
-        if (m_cfg.fastmode)     // in 'fast' mode we should always reset DMA buffer to update OE bits that controls brightness
-          clearScreen();  // and YES, it WILL flicker. you've been warned :)
+        brtCtrlOE(b);
+        if (m_cfg.double_buff)
+                brtCtrlOE(b, 1);
+        //if (m_cfg.fastmode)     // in 'fast' mode we should always reset DMA buffer to update OE bits that controls brightness
+        //  clearScreen();  // and YES, it WILL flicker. you've been warned :)
     }
 
     /**
@@ -486,6 +485,19 @@ class MatrixPanel_I2S_DMA : public Adafruit_GFX {
      * 
      */
     void shiftDriver(const HUB75_I2S_CFG& opts);
+
+    /**
+     * @brief - clears and reinitializes color/control data in DMA buffs
+     * When allocated, DMA buffs might be dirtry, so we need to blank it and initialize ABCDE,LAT,OE control bits.
+     * Those control bits are constants during the entire DMA sweep and never changed when updating just pixel color data
+     * so we could set it once on DMA buffs initialization and forget. 
+     * This effectively clears buffers to blank BLACK and makes it ready to display output.
+     * (Brightness control via OE bit manipulation is another case)
+     */
+    void clearFrameBuffer(bool _buff_id = 0);
+
+
+    void brtCtrlOE(const int brt, const bool _buff_id=0);
 
 }; // end Class header
 
