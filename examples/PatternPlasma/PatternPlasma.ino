@@ -101,11 +101,11 @@ void setup() {
     mxconfig.mx_width = 64;                   // physical width of a single matrix panel module (in pixels, usually it is always 64 ;) )
     mxconfig.mx_height = 32;                  // physical height of a single matrix panel module (in pixels, usually amost always it is either 32 or 64)
     mxconfig.chain_length = 1;                // number of chained panels regardless of the topology, default 1 - a single matrix module
-    mxconfig.gpio.g1 = R1;                    // pin mappings
+    mxconfig.gpio.r1 = R1;                    // pin mappings
     mxconfig.gpio.g1 = G1;
-    mxconfig.gpio.g1 = B1;                    // etc
-    mxconfig.driver = HUB75_I2S_CFG::SHIFT;   // shift reg driver, default is plain shit register
-    mxconfig.double_buff = false;             // use double buffer
+    mxconfig.gpio.b1 = B1;                    // etc
+    mxconfig.driver = HUB75_I2S_CFG::SHIFT;   // shift reg driver, default is plain shift register
+    mxconfig.double_buff = false;             // use double buffer (twice amount of RAM required)
     mxconfig.i2sspeed = HUB75_I2S_CFG::HZ_10M;// I2S clock speed, better leave as-is unless you want to experiment
   */
 
@@ -116,7 +116,7 @@ void setup() {
   HUB75_I2S_CFG mxconfig;
   mxconfig.mx_height = PANEL_HEIGHT;      // we have 64 pix heigh panels
   mxconfig.chain_length = PANELS_NUMBER;  // we have 2 panels chained
-  mxconfig.gpio.e = PIN_E;                // we MUST assign pin e to some free pin on a board to drive 64 height panel
+  mxconfig.gpio.e = PIN_E;                // we MUST assign pin e to some free pin on a board to drive 64 pix height panels with 1/32 scan
   //mxconfig.driver = HUB75_I2S_CFG::FM6126A;     // in case that we use panels based on FM6126A chip, we can change that
 
   /*
@@ -182,8 +182,8 @@ void loop() {
                 v += cos16(y * (128 - wibble)  + time_counter);
                 v += sin16(y * x * cos8(-time_counter) / 8);
 
-				        currentColor = ColorFromPalette(currentPalette, (v >> 8) + 127); //, brightness, currentBlendType);
-				        dma_display->drawPixelRGB888(x, y, currentColor.r, currentColor.g, currentColor.b);
+                currentColor = ColorFromPalette(currentPalette, (v >> 8) + 127); //, brightness, currentBlendType);
+                dma_display->drawPixelRGB888(x, y, currentColor.r, currentColor.g, currentColor.b);
             }
     }
 

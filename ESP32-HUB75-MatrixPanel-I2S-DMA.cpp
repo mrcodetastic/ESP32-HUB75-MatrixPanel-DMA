@@ -395,9 +395,10 @@ void MatrixPanel_I2S_DMA::configureDMA(const HUB75_I2S_CFG& _cfg)
       dmadesc_b = dmadesc_a; // link to same 'a' buffer
     }
 
-    
+#if SERIAL_DEBUG
     Serial.println(F("Performing I2S setup:"));
-	
+#endif
+
     i2s_parallel_config_t cfg={
         .gpio_bus={_cfg.gpio.r1, _cfg.gpio.g1, _cfg.gpio.b1, _cfg.gpio.r2, _cfg.gpio.g2, _cfg.gpio.b2, _cfg.gpio.lat, _cfg.gpio.oe, _cfg.gpio.a, _cfg.gpio.b, _cfg.gpio.c, _cfg.gpio.d, _cfg.gpio.e, -1, -1, -1},
         .gpio_clk=_cfg.gpio.clk,
@@ -558,7 +559,7 @@ void MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint8_t red, uint8_t green, uint
       ESP32_I2S_DMA_STORAGE_TYPE *p = dma_buff.rowBits[matrix_frame_parallel_row]->getDataPtr(color_depth_idx, back_buffer_id);
 
       // iterate pixels in a row
-		  int x_coord=dma_buff.rowBits[matrix_frame_parallel_row]->width;
+      int x_coord=dma_buff.rowBits[matrix_frame_parallel_row]->width;
       do { 
         --x_coord;
         p[x_coord] &= BITMASK_RGB12_CLEAR;  // reset color bits
@@ -646,11 +647,9 @@ void MatrixPanel_I2S_DMA::shiftDriver(const HUB75_I2S_CFG& _cfg){
 }
 
 /**
- * clear screen to black and reset service bits
+ * clear screen to black and reset all service bits
  */
 void MatrixPanel_I2S_DMA::clearScreen(){
-
-  // Must fill the DMA buffer with the initial output bit sequence or the panel will display garbage
   clearFrameBuffer();
   brtCtrlOE(brightness);
   if (m_cfg.double_buff){
@@ -668,6 +667,8 @@ void MatrixPanel_I2S_DMA::clearScreen(){
  * (Brightness control via OE bit manipulation is another case)
  */
 void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id){
+  if (!initialized)
+    return;
 
   // we start with iterating all rows in dma_buff structure
   int row_idx = dma_buff.rowBits.size();
@@ -683,16 +684,22 @@ void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id){
     int x_pixel = dma_buff.rowBits[row_idx]->width * dma_buff.rowBits[row_idx]->color_depth;
     //Serial.printf(" from pixel %d, ", x_pixel);
 
-    // fill the entire row with the same abcde address, this also clears all color data to 0's black
+    // fill all x_pixels except color_index[0] (LSB) ones, this also clears all color data to 0's black
+    do {
+      --x_pixel;
+      row[x_pixel] = abcde;
+    } while(x_pixel!=dma_buff.rowBits[row_idx]->width);
+
+    // color_index[0] (LSB) x_pixels must be "marked" with a previous's row address, 'cause  it is used to display
+    //  previous row while we pump in LSB's for a new row
+    abcde = ((ESP32_I2S_DMA_STORAGE_TYPE)row_idx-1) << BITS_ADDR_OFFSET;
     do {
       --x_pixel;
       row[x_pixel] = abcde;
     } while(x_pixel);
 
-
     // let's set LAT/OE control bits for specific pixels in each color_index subrows
     uint8_t coloridx = dma_buff.rowBits[row_idx]->color_depth;
-
     do {
       --coloridx;
 
@@ -700,19 +707,33 @@ void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id){
       row = dma_buff.rowBits[row_idx]->getDataPtr(coloridx, _buff_id);
 
       // drive latch while shifting out last bit of RGB data
-      row[dma_buff.rowBits[row_idx]->width - 1] |= BIT_LAT;
+      row[dma_buff.rowBits[row_idx]->width - 2] |= BIT_LAT;   // -1 pixel to compensate index starting with 0
 
       // need to disable OE after latch to hide row transition
       // OR one clock before latch, otherwise can get ghosting
       row[0] |= BIT_OE;
-      row[dma_buff.rowBits[row_idx]->width - 2] |= BIT_OE;
+      row[dma_buff.rowBits[row_idx]->width - 3] |= BIT_OE;    // -1 pixel to compensate index starting with 0
     } while(coloridx);
 
   } while(row_idx);
 }
 
-void MatrixPanel_I2S_DMA::brtCtrlOE(const int brt, const bool _buff_id){
-  // we start with iterating all rows in dma_buff structure
+/**
+ * @brief - reset OE bits in DMA buffer in a way to control brightness
+ * @param brt - brightness level from 0 to row_width
+ * @param _buff_id - buffer id to control
+ */
+void MatrixPanel_I2S_DMA::brtCtrlOE(int brt, const bool _buff_id){
+  if (!initialized)
+    return;
+
+  if (brt > PIXELS_PER_ROW)   // can't control values larger than row width
+    brt = PIXELS_PER_ROW;
+
+  if (brt < 0)
+    brt = 0;
+
+  // start with iterating all rows in dma_buff structure
   int row_idx = dma_buff.rowBits.size();
   do {
     --row_idx;
@@ -749,8 +770,21 @@ void MatrixPanel_I2S_DMA::brtCtrlOE(const int brt, const bool _buff_id){
       // need to disable OE after latch to hide row transition
       // OR one clock before latch, otherwise can get ghosting
       p[0] |= BIT_OE;
-      p[dma_buff.rowBits[row_idx]->width - 2] |= BIT_OE;
+      p[dma_buff.rowBits[row_idx]->width - 3] |= BIT_OE;    // -1 pixel to compensate index starting with 0
 
     } while(coloridx);
   } while(row_idx);
+}
+
+
+/*
+ *  overload for compatibility
+ */
+bool MatrixPanel_I2S_DMA::begin(int r1, int g1, int b1, int r2, int g2, int b2, int a, int b, int c, int d, int e, int lat, int oe, int clk){
+
+  m_cfg.gpio.r1 = r1; m_cfg.gpio.r1 = g1; m_cfg.gpio.r1 = b1;
+  m_cfg.gpio.r2 = r2; m_cfg.gpio.r2 = g2; m_cfg.gpio.r1 = b2;
+  m_cfg.gpio.lat = lat; m_cfg.gpio.oe = oe; m_cfg.gpio.clk = clk;
+
+  return begin();
 }
