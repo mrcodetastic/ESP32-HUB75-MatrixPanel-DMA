@@ -684,16 +684,22 @@ void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id){
     int x_pixel = dma_buff.rowBits[row_idx]->width * dma_buff.rowBits[row_idx]->color_depth;
     //Serial.printf(" from pixel %d, ", x_pixel);
 
-    // fill the entire row with the same abcde address, this also clears all color data to 0's black
+    // fill all x_pixels except color_index[0] (LSB) ones, this also clears all color data to 0's black
+    do {
+      --x_pixel;
+      row[x_pixel] = abcde;
+    } while(x_pixel!=dma_buff.rowBits[row_idx]->width);
+
+    // color_index[0] (LSB) x_pixels must be "marked" with a previous's row address, 'cause  it is used to display
+    //  previous row while we pump in LSB's for a new row
+    abcde = ((ESP32_I2S_DMA_STORAGE_TYPE)row_idx-1) << BITS_ADDR_OFFSET;
     do {
       --x_pixel;
       row[x_pixel] = abcde;
     } while(x_pixel);
 
-
     // let's set LAT/OE control bits for specific pixels in each color_index subrows
     uint8_t coloridx = dma_buff.rowBits[row_idx]->color_depth;
-
     do {
       --coloridx;
 
