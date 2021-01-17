@@ -59,7 +59,8 @@ Draw String at postion x/y wit foreground `color` and background `bg`
 Set scrolling direction 0=left to right, 1= right to left (default)
 
 ## scrollText
-`void scrollText(const char *str, uint16_t speed, uint16_t pixels)``
+`void scrollText(const char *str, uint16_t speed, uint16_t pixels)`
+
 Scroll text `str` into `setScrollDir`. Speed indicates how fast in ms per pixel, pixels are the number pixes which should be scrolled, if not set or 0, than pixels is calculates by size of `*str`
 
 ## drawPixel(int16_t x, int16_t y, uint16_t color)
