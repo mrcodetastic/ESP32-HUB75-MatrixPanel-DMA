@@ -519,12 +519,7 @@ void MatrixPanel_I2S_DMA::updateMatrixDMABuffer(int16_t x_coord, int16_t y_coord
         // update address/control bits
         v &= BITMASK_CTRL_CLEAR;      // reset ABCDE,EO,LAT address bits
 		
-        // normally output current rows ADDX, special case for LSB, output previous row's ADDX (as previous row is being displayed for one latch cycle)
-        // uint16_t _y = (color_depth_idx == 0) ? 
-        //  gpioRowAddress = y_coord-1;
-		
-        //uint16_t _y = color_depth_idx ? y_coord : y_coord -1;
-		uint16_t _y = y_coord;
+        uint16_t _y = color_depth_idx ? y_coord : y_coord -1;
         v|=_y << BITS_ADDR_OFFSET;         // shift row coord to match ABCDE bits from bit positions 8 to 12 and set bitvector
 
         // drive latch while shifting out last bit of RGB data
@@ -611,8 +606,7 @@ void MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint8_t red, uint8_t green, uint
       } else {
 
         // Set ABCDE address bits vector
-        //uint16_t _y = color_depth_idx ? matrix_frame_parallel_row : matrix_frame_parallel_row -1;
-		uint16_t _y = matrix_frame_parallel_row;
+        uint16_t _y = color_depth_idx ? matrix_frame_parallel_row : matrix_frame_parallel_row -1;
         _y <<= BITS_ADDR_OFFSET;    // shift row y-coord to match ABCDE bits in vector from 8 to 12
 
         for(uint16_t x_coord=0; x_coord < MATRIX_WIDTH; x_coord++) {
