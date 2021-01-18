@@ -108,11 +108,12 @@
 #define BIT_D (1<<11)   
 #define BIT_E (1<<12)   
 
-#define BITMASK_RGB1_CLEAR   (0xfff8)    // inverted bitmask for R1G1B1 bit in pixel vector
-#define BITMASK_RGB2_CLEAR   (0xffc7)    // inverted bitmask for R2G2B2 bit in pixel vector
-#define BITMASK_RGB12_CLEAR  (0xffc0)    // inverted bitmask for R1G1B1R2G2B2 bit in pixel vector
-#define BITMASK_CTRL_CLEAR   (0xe03f)    // inverted bitmask for control bits ABCDE,LAT,OE in pixel vector
-#define BITMASK_OE_CLEAR     (0xff7f)    // inverted bitmask for control bit OE in pixel vector
+// BitMasks are pre-computed based on the above #define's for performance.
+#define BITMASK_RGB1_CLEAR   (0b1111111111111000)    // inverted bitmask for R1G1B1 bit in pixel vector
+#define BITMASK_RGB2_CLEAR   (0b1111111111000111)    // inverted bitmask for R2G2B2 bit in pixel vector
+#define BITMASK_RGB12_CLEAR  (0b1111111111000000)    // inverted bitmask for R1G1B1R2G2B2 bit in pixel vector
+#define BITMASK_CTRL_CLEAR   (0b1110000000111111)    // inverted bitmask for control bits ABCDE,LAT,OE in pixel vector
+#define BITMASK_OE_CLEAR     (0b1111111101111111)    // inverted bitmask for control bit OE in pixel vector
 
 
 /***************************************************************************************/
