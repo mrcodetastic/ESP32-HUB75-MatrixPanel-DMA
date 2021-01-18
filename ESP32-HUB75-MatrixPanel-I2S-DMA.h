@@ -154,7 +154,7 @@ struct rowBitStruct {
     ESP32_I2S_DMA_STORAGE_TYPE* getDataPtr(const uint8_t _dpth=0, const bool buff_id=0) { return &(data[_dpth*width + buff_id*(width*color_depth)]); };
 
     // constructor - allocates DMA-capable memory to hold the struct data
-    rowBitStruct(const size_t _cnt, const uint8_t _depth, const bool _dbuff) : width(_cnt), color_depth(_depth), double_buff(_dbuff) {
+    rowBitStruct(const size_t _width, const uint8_t _depth, const bool _dbuff) : width(_width), color_depth(_depth), double_buff(_dbuff) {
       data = (ESP32_I2S_DMA_STORAGE_TYPE *)heap_caps_malloc( size()+size()*double_buff, MALLOC_CAP_DMA);
     }
     ~rowBitStruct() { delete data;}
@@ -437,7 +437,7 @@ class MatrixPanel_I2S_DMA : public Adafruit_GFX {
     /* ESP32-HUB75-MatrixPanel-I2S-DMA functioning constants
      * we can't change those once object instance initialized it's DMA structs
      */
-    const uint8_t rpf = m_cfg.mx_height / MATRIX_ROWS_IN_PARALLEL;   // RPF - rows per frame, either 16 or 32 depending on matrix module
+    const uint8_t ROWS_PER_FRAME = m_cfg.mx_height / MATRIX_ROWS_IN_PARALLEL;   // RPF - rows per frame, either 16 or 32 depending on matrix module
     const uint16_t PIXELS_PER_ROW = m_cfg.mx_width * m_cfg.chain_length;   // number of pixels in a single row of all chained matrix modules (WIDTH of a combined matrix chain)
 
     // Other private variables

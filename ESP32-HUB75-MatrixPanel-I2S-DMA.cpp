@@ -60,7 +60,7 @@
 #define val2PWM(val) { lumConvTab[(uint8_t)val]; }
 // macro's to calculate sizes of a single buffer (double biffer takes twice as this)
 #define rowBitStructBuffSize        sizeof(ESP32_I2S_DMA_STORAGE_TYPE) * (PIXELS_PER_ROW + CLKS_DURING_LATCH) * PIXEL_COLOR_DEPTH_BITS
-#define frameStructBuffSize         rpf * rowBitStructBuffSize
+#define frameStructBuffSize         ROWS_PER_FRAME * rowBitStructBuffSize
 
 bool MatrixPanel_I2S_DMA::allocateDMAmemory()
 {
@@ -105,10 +105,10 @@ bool MatrixPanel_I2S_DMA::allocateDMAmemory()
 	
 	// Alright, theoretically we should be OK, so let us do this, so
 	// lets allocate a chunk of memory for each row (a row could span multiple panels if chaining is in place)
-  dma_buff.rowBits.reserve(rpf);
+  dma_buff.rowBits.reserve(ROWS_PER_FRAME);
 
   // iterate through number of rows
-	for (int malloc_num =0; malloc_num < rpf; ++malloc_num)
+	for (int malloc_num =0; malloc_num < ROWS_PER_FRAME; ++malloc_num)
 	{
     auto ptr = std::make_shared<rowBitStruct>(PIXELS_PER_ROW, PIXEL_COLOR_DEPTH_BITS, m_cfg.double_buff);
 
@@ -149,7 +149,7 @@ bool MatrixPanel_I2S_DMA::allocateDMAmemory()
             numDMAdescriptorsPerRow += (1<<(i - lsbMsbTransitionBit - 1));
         }
 
-        size_t ramrequired = numDMAdescriptorsPerRow * rpf * _num_frame_buffers * sizeof(lldesc_t);
+        size_t ramrequired = numDMAdescriptorsPerRow * ROWS_PER_FRAME * _num_frame_buffers * sizeof(lldesc_t);
         size_t largestblockfree = heap_caps_get_largest_free_block(MALLOC_CAP_DMA);
         #if SERIAL_DEBUG  
           Serial.printf_P(PSTR("lsbMsbTransitionBit of %d with %d DMA descriptors per frame row, requires %d bytes RAM, %d available, leaving %d free: \r\n"), lsbMsbTransitionBit, numDMAdescriptorsPerRow, ramrequired, largestblockfree, largestblockfree - ramrequired);
@@ -180,7 +180,7 @@ bool MatrixPanel_I2S_DMA::allocateDMAmemory()
         for(int i=lsbMsbTransitionBit + 1; i<PIXEL_COLOR_DEPTH_BITS; i++)
             nsPerRow += (1<<(i - lsbMsbTransitionBit - 1)) * (PIXEL_COLOR_DEPTH_BITS - i) * nsPerLatch;
 
-        int nsPerFrame = nsPerRow * rpf;
+        int nsPerFrame = nsPerRow * ROWS_PER_FRAME;
         int actualRefreshRate = 1000000000UL/(nsPerFrame);
         calculated_refresh_rate = actualRefreshRate;
 
@@ -229,9 +229,9 @@ bool MatrixPanel_I2S_DMA::allocateDMAmemory()
    * Step 3: Allocate memory for DMA linked list, linking up each framebuffer row in sequence for GPIO output.
    */        
 
-    _dma_linked_list_memory_required = numDMAdescriptorsPerRow * rpf * _num_frame_buffers * sizeof(lldesc_t);
+    _dma_linked_list_memory_required = numDMAdescriptorsPerRow * ROWS_PER_FRAME * _num_frame_buffers * sizeof(lldesc_t);
   #if SERIAL_DEBUG
-		Serial.printf_P(PSTR("Descriptors for lsbMsbTransitionBit of %d/%d with %d frame rows require %d bytes of DMA RAM with %d numDMAdescriptorsPerRow.\r\n"), lsbMsbTransitionBit, PIXEL_COLOR_DEPTH_BITS - 1, rpf, _dma_linked_list_memory_required, numDMAdescriptorsPerRow);    
+		Serial.printf_P(PSTR("Descriptors for lsbMsbTransitionBit of %d/%d with %d frame rows require %d bytes of DMA RAM with %d numDMAdescriptorsPerRow.\r\n"), lsbMsbTransitionBit, PIXEL_COLOR_DEPTH_BITS - 1, ROWS_PER_FRAME, _dma_linked_list_memory_required, numDMAdescriptorsPerRow);    
 	#endif   
 
     _total_dma_capable_memory_reserved += _dma_linked_list_memory_required;
@@ -244,7 +244,7 @@ bool MatrixPanel_I2S_DMA::allocateDMAmemory()
     } // linked list descriptors memory check
 
     // malloc the DMA linked list descriptors that i2s_parallel will need
-    desccount = numDMAdescriptorsPerRow * rpf;
+    desccount = numDMAdescriptorsPerRow * ROWS_PER_FRAME;
 
     //lldesc_t * dmadesc_a = (lldesc_t *)heap_caps_malloc(desccount * sizeof(lldesc_t), MALLOC_CAP_DMA);
     dmadesc_a = (lldesc_t *)heap_caps_malloc(desccount * sizeof(lldesc_t), MALLOC_CAP_DMA);
@@ -306,7 +306,7 @@ void MatrixPanel_I2S_DMA::configureDMA(const HUB75_I2S_CFG& _cfg)
     }
 
     // Fill DMA linked lists for both frames (as in, halves of the HUB75 panel) and if double buffering is enabled, link it up for both buffers.
-    for(int row = 0; row < rpf; row++) {
+    for(int row = 0; row < ROWS_PER_FRAME; row++) {
 
         #if SERIAL_DEBUG          
           Serial.printf_P(PSTR( "Row %d DMA payload of %d bytes. DMA_MAX is %d.\n"), row, dma_buff.rowBits[row]->size(), DMA_MAX);
@@ -487,12 +487,12 @@ void MatrixPanel_I2S_DMA::updateMatrixDMABuffer(int16_t x_coord, int16_t y_coord
 
         // Get the contents at this address,
         // it would represent a vector pointing to the full row of pixels for the specified color depth bit at Y coordinate
-        ESP32_I2S_DMA_STORAGE_TYPE *p = dma_buff.rowBits[y_coord%rpf]->getDataPtr(color_depth_idx, back_buffer_id);
+        ESP32_I2S_DMA_STORAGE_TYPE *p = dma_buff.rowBits[y_coord%ROWS_PER_FRAME]->getDataPtr(color_depth_idx, back_buffer_id);
 
         // We need to update the correct uint16_t word in the rowBitStruct array poiting to a specific pixel at X - coordinate
         uint16_t &v = p[rowBitStruct_x_coord_uint16_t_position];
 
-        if (y_coord<rpf)
+        if (y_coord<ROWS_PER_FRAME)
         { // Need to copy what the RGB status is for the bottom pixels
           v &= BITMASK_RGB1_CLEAR; // reset R1G1B1 bits
           // Set the color of the pixel of interest
