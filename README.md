@@ -15,6 +15,9 @@ As a result, this library can theoretically provide ~16-24 bit colour, at variou
 * 1/4, 1/8 Scan LED Matrix Panels are not supported, please use an alternative library if you bought one of these.
 * Panels with a resolution of less than 64x32pixels and/or scan rate != 1/32 or 1/16
 
+## Update for 16x32 Panels
+* there is a virtual panel available to work with 16x32 panels (see: examples/16x32 Panel. This Panel includes drawing lines and rectanges, text and scrolling text
+
 # Installation
 
 * Dependency: You will need to install Adafruit_GFX from the "Library > Manage Libraries" menu.
