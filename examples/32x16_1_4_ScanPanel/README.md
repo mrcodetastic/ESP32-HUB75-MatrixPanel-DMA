@@ -12,7 +12,7 @@ Creation of a 'QuarterScanMatrixPanel.h' class which sends an adjusted x,y co-or
 
 * Only one font (glcd - standard font) is implemented. This font can't be resized.
 
-# New functions (and adapted function)
+## New functions (and adapted function) in this QuarterScanMatrixPanel class
 ### drawLine
 `void drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, uint16_t color)`
 
