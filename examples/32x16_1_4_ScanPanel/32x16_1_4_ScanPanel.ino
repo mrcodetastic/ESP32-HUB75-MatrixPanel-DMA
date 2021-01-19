@@ -1,52 +1,28 @@
-/*
- * Portions of this code are adapted from Aurora: https://github.com/pixelmatix/aurora
- * Copyright (c) 2014 Jason Coon
+/*************************************************************************
+ * Contributor: https://github.com/mrRobot62  
  *
- * Portions of this code are adapted from LedEffects Plasma by Robert Atkins: https://bitbucket.org/ratkins/ledeffects/src/26ed3c51912af6fac5f1304629c7b4ab7ac8ca4b/Plasma.cpp?at=default
- * Copyright (c) 2013 Robert Atkins
+ * Description: 
+ * 
+ * The underlying implementation of the ESP32-HUB75-MatrixPanel-I2S-DMA only
+ * supports output to 1/16 or 1/32 scan panels (two scan parallel scan lines)
+ * this is fixed and cannot be changed.
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of
- * this software and associated documentation files (the "Software"), to deal in
- * the Software without restriction, including without limitation the rights to
- * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
- * the Software, and to permit persons to whom the Software is furnished to do so,
- * subject to the following conditions:
+ * However, it is possible to connect 1/4 scan panels to this same library and
+ * 'trick' the output to work correctly on these panels by way of adjusting the
+ * pixel co-ordinates that are 'sent' to the ESP32-HUB75-MatrixPanel-I2S-DMA
+ * library (in this example, it is the 'dmaOutput' class).
+ * 
+ * This is done by way of the 'QuarterScanMatrixPanel.h' class that sends
+ * adjusted x,y co-ordinates to the underlying ESP32-HUB75-MatrixPanel-I2S-DMA 
+ * library's drawPixel routine.
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * Refer to the 'getCoords' function within 'QuarterScanMatrixPanel.h'
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
- * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
- * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
- * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- */
- 
-#define USE_CUSTOM_PINS // uncomment to use custom pins, then provide below
+ **************************************************************************/
 
-/*
-*/
+// uncomment to use custom pins, then provide below
+#define USE_CUSTOM_PINS 
 
-/*
-#define A_PIN  26
-#define B_PIN  4
-#define C_PIN  27
-#define D_PIN  2
-#define E_PIN  21 
-
-#define R1_PIN   5
-#define R2_PIN  19
-#define G1_PIN  17
-#define G2_PIN  16
-#define B1_PIN  18
-#define B2_PIN  25
-
-#define CLK_PIN  14
-#define LAT_PIN  15
-#define OE_PIN  13
- 
-*/
 /* Pin 1,3,5,7,9,11,13,15 */
 #define R1_PIN  25
 #define B1_PIN  27
@@ -63,17 +39,13 @@
 #define B_PIN  19
 #define D_PIN  17
 #define LAT_PIN  4
-
-
 #define E_PIN  -1 // required for 1/32 scan panels
 
-
-
-#include <ESP-32_HUB75_32x16MatrixPanel-I2S-DMA.h>
+#include "QuarterScanMatrixPanel.h" // Virtual Display to re-map co-ordinates such that they draw correctly on a32x16 1/4 Scan panel 
 #include <Wire.h>
 
-MatrixPanel_I2S_DMA matrixDisplay;
-QuarterScanMatrixPanel display(matrixDisplay);
+MatrixPanel_I2S_DMA dmaOutput;
+QuarterScanMatrixPanel display(dmaOutput);
 
 #include <FastLED.h>
 
@@ -211,11 +183,11 @@ void setup() {
   Serial.begin(115200);
   delay(500);
   Serial.println("*****************************************************");
-  Serial.println(" MatrixDisplay 32x16 !");
+  Serial.println(" dmaOutput 32x16 !");
   Serial.println("*****************************************************");
 
 #ifdef USE_CUSTOM_PINS
-  matrixDisplay.begin(R1_PIN, G1_PIN, B1_PIN, R2_PIN, G2_PIN, B2_PIN, A_PIN, B_PIN, C_PIN, D_PIN, E_PIN, LAT_PIN, OE_PIN, CLK_PIN );  // setup the LED matrix
+  dmaOutput.begin(R1_PIN, G1_PIN, B1_PIN, R2_PIN, G2_PIN, B2_PIN, A_PIN, B_PIN, C_PIN, D_PIN, E_PIN, LAT_PIN, OE_PIN, CLK_PIN );  // setup the LED matrix
 #else
   display.begin(true); // init buffers
 #endif
