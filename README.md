@@ -7,7 +7,7 @@ This ESP32 Arduino library for HUB75 / HUB75E connector type 64x32 RGB LED  1/16
 As a result, this library can theoretically provide ~16-24 bit colour, at various brightness levels without noticeable flicker.
 
 ## Panels Supported
-* 64x32 pixel 1/16 Scan LED Matrix 'Indoor' Panel, such as this [typical RGB panel available for purchase](https://www.aliexpress.com/item/256-128mm-64-32-pixels-1-16-Scan-Indoor-3in1-SMD2121-RGB-full-color-P4-led/32810362851.html). 
+* 64x32 (width x height) pixel 1/16 Scan LED Matrix 'Indoor' Panel, such as this [typical RGB panel available for purchase](https://www.aliexpress.com/item/256-128mm-64-32-pixels-1-16-Scan-Indoor-3in1-SMD2121-RGB-full-color-P4-led/32810362851.html). 
 * 64x64 pixel 1/32 Scan LED Matrix 'Indoor' Panel (experimental). 
 * 32x16 pixel 1/4 Scan LED Matrix 'Indoor' Panel using an ingenious workaround as demonstrated in [this example](/examples/32x16_1_4_ScanPanel).
 * Any of the above panel resolution / scan rates based on [FM6126](FM6126A.md) / ICN2038S chips. Refer to [this example](/examples/FM6126Panel) on how to use!
