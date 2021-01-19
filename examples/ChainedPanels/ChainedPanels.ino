@@ -3,19 +3,9 @@
     Steps to use
     -----------
 
-    1) In ESP32-HUB75-MatrixPanel-I2S-DMA.h:
-
-    - Set the MATRIX_HEIGHT to be the y resolution of a physical chained 
-      panels in the line (as panels each must be of the same dimensions).
-      i.e. If you are chaining 32px 'high' panels, then set MATRIX_HEIGHT to 32.
-
-    - Set the MATRIX_WIDTH to be the sum of the x resolution of all the physical 
-      chained panels (i.e. If you have 4 (four) x (64px w x 32px h) panels, then 64x4 = 256) 
-      i.e. The total pixel 'width' of all the chained panels. 
-
-    2) In the sketch (i.e. this example):
+    1) In the sketch (i.e. this example):
     
-    - Set values for NUM_ROWS, NUM_COLS, PANEL_RES_X, PANEL_RES_Y. 
+    - Set values for NUM_ROWS, NUM_COLS, PANEL_RES_X, PANEL_RES_Y, PANEL_CHAIN. 
       There are comments beside them explaining what they are in more detail.
     - Other than where the matrix is defined and matrix.begin in the setup, you 
       should now be using the virtual display for everything (drawing pixels, writing text etc).
@@ -39,25 +29,6 @@
 
 *****************************************************************************/
 
-//#define USE_CUSTOM_PINS // uncomment to use custom pins, then provide below
-
-#define A_PIN  26
-#define B_PIN  4
-#define C_PIN  27
-#define D_PIN  2
-#define E_PIN  21 
-
-#define R1_PIN   5
-#define R2_PIN  19
-#define G1_PIN  17
-#define G2_PIN  16
-#define B1_PIN  18
-#define B2_PIN  25
-
-#define CLK_PIN  14
-#define LAT_PIN  15
-#define OE_PIN  13
- 
 
  /******************************************************************************
   * VIRTUAL DISPLAY / MATRIX PANEL CHAINING CONFIGURATION
@@ -168,14 +139,16 @@
 
 #define NUM_ROWS 2 // Number of rows of chained INDIVIDUAL PANELS
 #define NUM_COLS 2 // Number of INDIVIDUAL PANELS per ROW
+#define PANEL_CHAIN NUM_ROWS*NUM_COLS    // total number of panels chained one to another
 
-
-/******************************************************************************
- * Create physical DMA panel class AND virtual (chained) display class.   
- ******************************************************************************/
+// library includes
 #include <ESP32-VirtualMatrixPanel-I2S-DMA.h>
-MatrixPanel_I2S_DMA dma_display;
-VirtualMatrixPanel          virtualDisp(dma_display, NUM_ROWS, NUM_COLS, PANEL_RES_X, PANEL_RES_Y, true);
+
+// placeholder for the matrix object
+MatrixPanel_I2S_DMA *dma_display = nullptr;
+
+// placeholder for the virtual display object
+VirtualMatrixPanel  *virtualDisp = nullptr;
 
 
 /******************************************************************************
@@ -190,29 +163,47 @@ void setup() {
   Serial.println(" HELLO !");
   Serial.println("*****************************************************");
 
-#ifdef USE_CUSTOM_PINS
-  dma_display.begin(R1_PIN, G1_PIN, B1_PIN, R2_PIN, G2_PIN, B2_PIN, A_PIN, B_PIN, C_PIN, D_PIN, E_PIN, LAT_PIN, OE_PIN, CLK_PIN );  // setup the LED matrix
-#else
-  dma_display.begin();
-#endif
 
+  /******************************************************************************
+   * Create physical DMA panel class AND virtual (chained) display class.   
+   ******************************************************************************/
 
+  /*
+    The configuration for MatrixPanel_I2S_DMA object is held in HUB75_I2S_CFG structure,
+    All options has it's predefined default values. So we can create a new structure and redefine only the options we need
+
+    Pls, refer to the PaternPlasma example for detailed example on MatrixPanel_I2S_DMA configuration
+  */
+
+  HUB75_I2S_CFG mxconfig(
+                PANEL_RES_X,   // module width
+                PANEL_RES_Y,   // module height
+                PANEL_CHAIN    // chain length
+  );
+
+  //mxconfig.driver = HUB75_I2S_CFG::FM6126A;     // in case that we use panels based on FM6126A chip, we can set it here before creating MatrixPanel_I2S_DMA object
 
   // Sanity checks
   if (NUM_ROWS <= 1) {
     Serial.println(F("There is no reason to use the VirtualDisplay class for a single horizontal chain and row!"));
   }
 
-  if (dma_display.width() != NUM_ROWS*NUM_COLS*PANEL_RES_X )
-  {
-    Serial.println(F("\r\nERROR: MATRIX_WIDTH and/or MATRIX_HEIGHT in 'ESP32-HUB75-MatrixPanel-I2S-DMA.h'\r\nis not configured correctly for the requested VirtualMatrixPanel dimensions!\r\n"));
-    Serial.printf("WIDTH according dma_display is %d, but should be %d. Is your NUM_ROWS and NUM_COLS correct?\r\n", dma_display.width(), NUM_ROWS*NUM_COLS*PANEL_RES_X);
-    return;
-  }
-  
+  // OK, now we can create our matrix object
+  dma_display = new MatrixPanel_I2S_DMA(mxconfig);
+
+  // let's adjust default brightness to about 75%
+  dma_display->setBrightness8(96);    // range is 0-255, 0 - 0%, 255 - 100%
+
+  // Allocate memory and start DMA display
+  if( not dma_display->begin() )
+      Serial.println("****** !KABOOM! I2S memory allocation failed ***********");
+
+  // create VirtualDisplay object based on our newly created dma_display object
+  virtualDisp = new VirtualMatrixPanel((*dma_display), NUM_ROWS, NUM_COLS, PANEL_RES_X, PANEL_RES_Y, true);
+
   // So far so good, so continue
-  virtualDisp.fillScreen(virtualDisp.color444(0, 0, 0));
-  virtualDisp.drawDisplayTest(); // draw text numbering on each screen to check connectivity
+  virtualDisp->fillScreen(virtualDisp->color444(0, 0, 0));
+  virtualDisp->drawDisplayTest(); // draw text numbering on each screen to check connectivity
 
   delay(3000);
 
@@ -225,20 +216,17 @@ void setup() {
   Serial.println("| (ESP)  |         |");
   Serial.println("+--------+---------+");
 
-   virtualDisp.setFont(&FreeSansBold12pt7b);
-   virtualDisp.setTextColor(virtualDisp.color565(0, 0, 255));
-   virtualDisp.setTextSize(2); 
-   virtualDisp.setCursor(10, virtualDisp.height()-20); 
+   virtualDisp->setFont(&FreeSansBold12pt7b);
+   virtualDisp->setTextColor(virtualDisp->color565(0, 0, 255));
+   virtualDisp->setTextSize(2); 
+   virtualDisp->setCursor(10, virtualDisp->height()-20); 
    
    // Red text inside red rect (2 pix in from edge)
-   virtualDisp.print("1234") ;  
-   virtualDisp.drawRect(1,1, virtualDisp.width()-2, virtualDisp.height()-2, virtualDisp.color565(255,0,0));
+   virtualDisp->print("1234");
+   virtualDisp->drawRect(1,1, virtualDisp->width()-2, virtualDisp->height()-2, virtualDisp->color565(255,0,0));
 
    // White line from top left to bottom right
-   virtualDisp.drawLine(0,0, virtualDisp.width()-1, virtualDisp.height()-1, virtualDisp.color565(255,255,255));
-
-
-
+   virtualDisp->drawLine(0,0, virtualDisp->width()-1, virtualDisp->height()-1, virtualDisp->color565(255,255,255));
 }
 
 void loop() {

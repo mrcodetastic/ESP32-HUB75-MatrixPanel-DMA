@@ -54,7 +54,7 @@
 
 */
 
- 
+
 #include <ESP32-HUB75-MatrixPanel-I2S-DMA.h>
 #include <FastLED.h>
 
@@ -125,7 +125,7 @@ void setup() {
     HUB75_I2S_CFG::i2s_pins _pins={R1, G1, BL1, R2, G2, BL2, CH_A, CH_B, CH_C, CH_D, CH_E, LAT, OE, CLK};
     HUB75_I2S_CFG mxconfig(
                             64,   // width
-                            64,   // heigh
+                            64,   // height
                              4,   // chain length
                          _pins,   // pin mapping
       HUB75_I2S_CFG::FM6126A      // driver chip
