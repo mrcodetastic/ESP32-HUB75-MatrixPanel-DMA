@@ -72,3 +72,9 @@ Draw a pixel at x/y in `color`. This function is the atomic function for all abo
 ## clearScreen() (all pixels off (black))
 Same as `fillScreen(0)`
 
+
+# Examples:
+https://user-images.githubusercontent.com/949032/104838449-4aae5600-58bb-11eb-802f-a358b49a9315.mp4
+
+https://user-images.githubusercontent.com/949032/104366906-5647f880-551a-11eb-9792-a6f8276629e6.mp4
+
