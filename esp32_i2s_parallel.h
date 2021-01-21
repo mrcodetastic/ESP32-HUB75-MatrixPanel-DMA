@@ -9,6 +9,7 @@
 extern "C" {
 #endif
 
+#include "driver/gpio.h"
 #include "soc/i2s_struct.h"
 #include "rom/lldesc.h"
 
