@@ -11,7 +11,7 @@ extern "C" {
 
 #include "driver/gpio.h"
 #include "soc/i2s_struct.h"
-#include "esp32/rom/lldesc.h"
+#include "rom/lldesc.h"
 
 #define DMA_MAX (4096-4)
 //#define DMA_MAX (512)
