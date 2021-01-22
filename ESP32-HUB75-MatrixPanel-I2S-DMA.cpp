@@ -727,8 +727,8 @@ void MatrixPanel_I2S_DMA::brtCtrlOE(int brt, const bool _buff_id){
   if (!initialized)
     return;
 
-  if (brt > PIXELS_PER_ROW)   // can't control values larger than row width
-    brt = PIXELS_PER_ROW;
+  if (brt > PIXELS_PER_ROW * 0.9)   // can't control values larger than 90% of row width to avoid ongoing issues being raised about brightness and ghosting.
+    brt = PIXELS_PER_ROW * 0.9;
 
   if (brt < 0)
     brt = 0;
