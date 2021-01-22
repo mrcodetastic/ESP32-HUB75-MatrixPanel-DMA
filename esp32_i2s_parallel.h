@@ -1,7 +1,7 @@
 #ifndef I2S_PARALLEL_H
 #define I2S_PARALLEL_H
 
-#if defined(ESP32)
+#if defined(ESP32) || defined(IDF_VER)
 
 #include <stdint.h>
 
@@ -11,7 +11,7 @@ extern "C" {
 
 #include "driver/gpio.h"
 #include "soc/i2s_struct.h"
-#include "rom/lldesc.h"
+#include "esp32/rom/lldesc.h"
 
 #define DMA_MAX (4096-4)
 //#define DMA_MAX (512)
