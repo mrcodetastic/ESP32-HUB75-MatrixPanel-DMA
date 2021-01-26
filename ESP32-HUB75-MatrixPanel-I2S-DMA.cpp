@@ -602,10 +602,10 @@ void MatrixPanel_I2S_DMA::shiftDriver(const HUB75_I2S_CFG& _cfg){
         for (uint8_t _pin:{_cfg.gpio.r1, _cfg.gpio.r2, _cfg.gpio.g1, _cfg.gpio.g2, _cfg.gpio.b1, _cfg.gpio.b2})
           digitalWrite(_pin, REG1[l%16]);   // we have 16 bits shifters and write the same value all over the matrix array
 
-          if (l > PIXELS_PER_ROW - 12){         // pull the latch 11 clocks before the end of matrix so that REG1 starts counting to save the value
-              digitalWrite(_cfg.gpio.lat, HIGH);
-          }
-          CLK_PULSE
+        if (l > PIXELS_PER_ROW - 12){         // pull the latch 11 clocks before the end of matrix so that REG1 starts counting to save the value
+            digitalWrite(_cfg.gpio.lat, HIGH);
+        }
+        CLK_PULSE
       }
 
       // drop the latch and save data to the REG1 all over the FM6124 chips
@@ -616,10 +616,10 @@ void MatrixPanel_I2S_DMA::shiftDriver(const HUB75_I2S_CFG& _cfg){
         for (uint8_t _pin:{_cfg.gpio.r1, _cfg.gpio.r2, _cfg.gpio.g1, _cfg.gpio.g2, _cfg.gpio.b1, _cfg.gpio.b2})
           digitalWrite(_pin, REG2[l%16]);   // we have 16 bits shifters and we write the same value all over the matrix array
 
-          if (l > PIXELS_PER_ROW - 13){       // pull the latch 12 clocks before the end of matrix so that reg2 stars counting to save the value
-              digitalWrite(_cfg.gpio.lat, HIGH);
-          }
-          CLK_PULSE
+        if (l > PIXELS_PER_ROW - 13){       // pull the latch 12 clocks before the end of matrix so that reg2 stars counting to save the value
+            digitalWrite(_cfg.gpio.lat, HIGH);
+        }
+        CLK_PULSE
       }
 
       // drop the latch and save data to the REG1 all over the FM6126 chips
