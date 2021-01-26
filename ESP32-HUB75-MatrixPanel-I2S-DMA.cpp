@@ -707,12 +707,17 @@ void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id){
       row = dma_buff.rowBits[row_idx]->getDataPtr(coloridx, _buff_id);
 
       // drive latch while shifting out last bit of RGB data
-      row[dma_buff.rowBits[row_idx]->width - 2] |= BIT_LAT;   // -1 pixel to compensate index starting with 0
+      row[dma_buff.rowBits[row_idx]->width - 2] |= BIT_LAT;   // -1 pixel to compensate array index starting at 0
 
-      // need to disable OE after latch to hide row transition
-      // OR one clock before latch, otherwise can get ghosting
-      row[0] |= BIT_OE;
-      row[dma_buff.rowBits[row_idx]->width - 3] |= BIT_OE;    // -1 pixel to compensate index starting with 0
+      // need to disable OE before/after latch to hide row transition
+      // Should be one clock or more before latch, otherwise can get ghosting
+      uint8_t _blank = m_cfg.latch_blanking;
+      do {
+        --_blank;
+        row[0 + _blank] |= BIT_OE;
+        row[dma_buff.rowBits[row_idx]->width - _blank - 3 ] |= BIT_OE;    // (LAT pulse is (width-2) -1 pixel to compensate array index starting at 0
+      } while (_blank);
+
     } while(coloridx);
 
   } while(row_idx);
@@ -727,8 +732,8 @@ void MatrixPanel_I2S_DMA::brtCtrlOE(int brt, const bool _buff_id){
   if (!initialized)
     return;
 
-  if (brt > PIXELS_PER_ROW * 0.9)   // can't control values larger than 90% of row width to avoid ongoing issues being raised about brightness and ghosting.
-    brt = PIXELS_PER_ROW * 0.9;
+  if (brt > PIXELS_PER_ROW - m_cfg.latch_blanking)   // can't control values larger than (row_width - latch_blanking) to avoid ongoing issues being raised about brightness and ghosting.
+    brt = PIXELS_PER_ROW - m_cfg.latch_blanking;
 
   if (brt < 0)
     brt = 0;
@@ -744,33 +749,38 @@ void MatrixPanel_I2S_DMA::brtCtrlOE(int brt, const bool _buff_id){
       --coloridx;
 
       // switch pointer to a row for a specific color index
-      ESP32_I2S_DMA_STORAGE_TYPE* p = dma_buff.rowBits[row_idx]->getDataPtr(coloridx, _buff_id);
+      ESP32_I2S_DMA_STORAGE_TYPE* row = dma_buff.rowBits[row_idx]->getDataPtr(coloridx, _buff_id);
       int x_coord = dma_buff.rowBits[row_idx]->width;
       do {
         --x_coord;
 
-        // BRT OE
+        // Brightness control via OE toggle - disable matrix output at specified x_coord
         if((coloridx > lsbMsbTransitionBit || !coloridx) && ((x_coord) >= brt)){
-          p[x_coord] |= BIT_OE; continue;  // For Brightness control
+          row[x_coord] |= BIT_OE; continue;  // For Brightness control
         }
         // special case for the bits *after* LSB through (lsbMsbTransitionBit) - OE is output after data is shifted, so need to set OE to fractional brightness
         if(coloridx && coloridx <= lsbMsbTransitionBit) {
           // divide brightness in half for each bit below lsbMsbTransitionBit
           int lsbBrightness = brt >> (lsbMsbTransitionBit - coloridx + 1);
           if((x_coord) >= lsbBrightness)
-            p[x_coord] |= BIT_OE; // For Brightness
+            row[x_coord] |= BIT_OE; // For Brightness
 
           continue;
         }
 
         // clear OE bit for all other pixels
-        p[x_coord] &= BITMASK_OE_CLEAR;
+        row[x_coord] &= BITMASK_OE_CLEAR;
       } while(x_coord);
 
-      // need to disable OE after latch to hide row transition
-      // OR one clock before latch, otherwise can get ghosting
-      p[0] |= BIT_OE;
-      p[dma_buff.rowBits[row_idx]->width - 3] |= BIT_OE;    // -1 pixel to compensate index starting with 0
+      // need to disable OE before/after latch to hide row transition
+      // Should be one clock or more before latch, otherwise can get ghosting
+      uint8_t _blank = m_cfg.latch_blanking;
+      do {
+        --_blank;
+        row[0 + _blank] |= BIT_OE;
+        // no need, has been done already
+        //row[dma_buff.rowBits[row_idx]->width - _blank - 3 ] |= BIT_OE;    // (LAT pulse is (width-2) -1 pixel to compensate array index starting at 0
+      } while (_blank);
 
     } while(coloridx);
   } while(row_idx);
@@ -787,4 +797,23 @@ bool MatrixPanel_I2S_DMA::begin(int r1, int g1, int b1, int r2, int g2, int b2, 
   m_cfg.gpio.lat = lat; m_cfg.gpio.oe = oe; m_cfg.gpio.clk = clk;
 
   return begin();
+}
+
+/**
+ * @brief - Sets how many clock cycles to blank OE before/after LAT signal change
+ * @param uint8_t pulses - clocks before/after OE
+ * default is DEFAULT_LAT_BLANKING
+ * Max is MAX_LAT_BLANKING
+ * @returns - new value for m_cfg.latch_blanking
+ */
+uint8_t MatrixPanel_I2S_DMA::setLatBlanking(uint8_t pulses){
+  if (pulses > MAX_LAT_BLANKING)
+    pulses = MAX_LAT_BLANKING;
+
+  if (!pulses)
+    pulses = DEFAULT_LAT_BLANKING;
+
+  m_cfg.latch_blanking = pulses;
+  setPanelBrightness(brightness);    // set brighness to reset OE bits to the values matching new LAT blanking setting
+  return m_cfg.latch_blanking;
 }

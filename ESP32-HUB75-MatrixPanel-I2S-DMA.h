@@ -115,6 +115,11 @@
 #define BITMASK_CTRL_CLEAR   (0b1110000000111111)    // inverted bitmask for control bits ABCDE,LAT,OE in pixel vector
 #define BITMASK_OE_CLEAR     (0b1111111101111111)    // inverted bitmask for control bit OE in pixel vector
 
+// How many clock cycles to blank OE before/after LAT signal change, default is 1 clock
+#define DEFAULT_LAT_BLANKING  1
+// Max clock cycles to blank OE before/after LAT signal change
+#define MAX_LAT_BLANKING  4
+
 
 /***************************************************************************************/
 // Lib includes
@@ -235,6 +240,9 @@ struct  HUB75_I2S_CFG {
   clk_speed i2sspeed;
   // use DMA double buffer (twice as much RAM required)
   bool double_buff;
+  // How many clock cycles to blank OE before/after LAT signal change, default is 1 clock
+  uint8_t latch_blanking;
+
 
   // struct constructor
   HUB75_I2S_CFG (
@@ -247,14 +255,15 @@ struct  HUB75_I2S_CFG {
       LAT_PIN_DEFAULT, OE_PIN_DEFAULT, CLK_PIN_DEFAULT },
     shift_driver _drv = SHIFT,
     bool _dbuff = false,
-    clk_speed _i2sspeed = HZ_10M
+    clk_speed _i2sspeed = HZ_10M,
+    uint16_t _latblk = 1
   ) : mx_width(_w),
       mx_height(_h),
       chain_length(_chain),
       gpio(_pinmap),
       driver(_drv), i2sspeed(_i2sspeed),
-      double_buff(_dbuff) {}
-
+      double_buff(_dbuff),
+      latch_blanking(_latblk) {}
 }; // end of structure HUB75_I2S_CFG
 
 
@@ -429,6 +438,15 @@ class MatrixPanel_I2S_DMA : public Adafruit_GFX {
     } 
 
   int  calculated_refresh_rate  = 0;         
+
+    /**
+     * @brief - Sets how many clock cycles to blank OE before/after LAT signal change
+     * @param uint8_t pulses - clocks before/after OE
+     * default is DEFAULT_LAT_BLANKING
+     * Max is MAX_LAT_BLANKING
+     * @returns - new value for m_cfg.latch_blanking
+     */
+    uint8_t setLatBlanking(uint8_t pulses);
 
    // ------- PRIVATE -------
   private:

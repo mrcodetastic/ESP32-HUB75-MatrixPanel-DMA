@@ -150,6 +150,18 @@ Summary: setPanelBrightness(xx) value can be any number from 0 (display off) to 
 
 ![It's better in real life](image.jpg)
 
+## Latch blanking
+
+If you face issues with image ghosting when pixels has clones with horizontal offset, than you try to change Latch blanking value. Latch blanking controls
+for how many clock pulses matrix output is disabled via EO signal before/after toggling LAT signal. It hides row bits transitioning and different panels may
+require longer times for proper operation. Default value is 1 clock before/after LAT row transition. This could be controlled with `MatrixPanel_I2S_DMA::setLatBlanking(uint8_t v)`. v could be between 1 to 4, default is 1, larger values won't give any benefit other than reducing brigthness.
+
+
+An example:
+```
+matrix.setLatBlanking(2);
+```
+
 ## Power, Power and Power!
 
 Having a good power supply is CRITICAL, and it is highly recommended, for chains of LED Panels to have a 2000uf capacitor soldered to the back of each LED Panel across the [GND and VCC pins](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/issues/39#issuecomment-720780463), otherwise you WILL run into issues with 'flashy' graphics whereby a large amount of LEDs are turned on and off in succession (due to current/power draw peaks and troughs).
