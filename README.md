@@ -6,11 +6,13 @@ This ESP32 Arduino library for HUB75 / HUB75E connector type 64x32 RGB LED  1/16
 
 As a result, this library can theoretically provide ~16-24 bit colour, at various brightness levels without noticeable flicker.
 
+Ones interested in internals of such matrixes could find [this article](https://www.sparkfun.com/news/2650) usefull.
+
 ## Panels Supported
 * 64x32 (width x height) pixel 1/16 Scan LED Matrix 'Indoor' Panel, such as this [typical RGB panel available for purchase](https://www.aliexpress.com/item/256-128mm-64-32-pixels-1-16-Scan-Indoor-3in1-SMD2121-RGB-full-color-P4-led/32810362851.html). 
 * 64x64 pixel 1/32 Scan LED Matrix 'Indoor' Panel (experimental). 
 * 32x16 pixel 1/4 Scan LED Matrix 'Indoor' Panel using an ingenious workaround as demonstrated in [this example](/examples/32x16_1_4_ScanPanel).
-* Any of the above panel resolution / scan rates based on [FM6126](FM6126A.md) / ICN2038S chips. Refer to [this example](/examples/FM6126Panel) on how to use!
+* Any of the above panel resolution / scan rates based on [FM6126](FM6126A.md) / ICN2038S chips. Refer to [this example](/examples/PatternPlasma) on how to use!
 
 ## Panel driver chips known to be working well
 * ICND2012
@@ -20,7 +22,7 @@ As a result, this library can theoretically provide ~16-24 bit colour, at variou
 * 1/8 Scan LED Matrix Panels are not supported, please use an alternative library if you bought one of these.
 
 ## Update for 16x32 Panels
-* there is a virtual panel available to work with 16x32 panels (see: examples/16x32 Panel. This Panel includes drawing lines and rectanges, text and scrolling text
+* there is a virtual panel available to work with 16x32 panels (see: [examples/16x32 Panel](/32x16_1_4_ScanPanel). This Panel includes drawing lines and rectanges, text and scrolling text
 
 # Installation
 
