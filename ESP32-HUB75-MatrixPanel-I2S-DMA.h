@@ -361,10 +361,51 @@ class MatrixPanel_I2S_DMA : public Adafruit_GFX {
 
     // TODO: Disable/Enable auto buffer flipping (useful for lots of drawPixel usage)...
 
-    // Draw pixels
+    // Adafruit's BASIC DRAW API
     virtual void drawPixel(int16_t x, int16_t y, uint16_t color);   // overwrite adafruit implementation
     virtual void fillScreen(uint16_t color);                        // overwrite adafruit implementation
-            void clearScreen();
+
+    /**
+     * clears DMA buffers and reinitializes control bits
+     * to just clear the screen to black fillScreen(0) works faster
+     */
+    void clearScreen();
+
+    /**
+     * @brief - override Adafruit's FastVLine
+     * this works much faster than mulltiple consecutive per-pixel drawPixel() calls
+     */
+    virtual void drawFastVLine(int16_t x, int16_t y, int16_t h, uint16_t color){
+      uint8_t r, g, b;
+      color565to888(color, r, g, b);
+      fillRectInDMABuff(x, y, 1, h, r, g, b);
+    }
+
+    /**
+     * @brief - override Adafruit's FastHLine
+     * this works much faster than mulltiple consecutive per-pixel drawPixel() calls
+     */
+    virtual void drawFastHLine(int16_t x, int16_t y, int16_t w, uint16_t color){
+      uint8_t r, g, b;
+      color565to888(color, r, g, b);
+      fillRectInDMABuff(x, y, w, 1, r, g, b);
+    }
+
+    /**
+     * @brief - override Adafruit's fillRect
+     * this works much faster than mulltiple consecutive per-pixel drawPixel() calls
+     */
+    virtual void fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color){
+      uint8_t r, g, b;
+      color565to888(color, r, g, b);
+      fillRectInDMABuff(x, y, w, h, r, g, b);
+    }
+
+    virtual void fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint8_t r, uint8_t g, uint8_t b){
+      fillRectInDMABuff(x, y, w, h, r, g, b);
+    }
+
+
   	void fillScreenRGB888(uint8_t r, uint8_t g, uint8_t b);
     void drawPixelRGB565(int16_t x, int16_t y, uint16_t color);
     void drawPixelRGB888(int16_t x, int16_t y, uint8_t r, uint8_t g, uint8_t b);
@@ -372,13 +413,21 @@ class MatrixPanel_I2S_DMA : public Adafruit_GFX {
     void drawIcon (int *ico, int16_t x, int16_t y, int16_t cols, int16_t rows);
     
     // Color 444 is a 4 bit scale, so 0 to 15, color 565 takes a 0-255 bit value, so scale up by 255/15 (i.e. 17)!
-    uint16_t color444(uint8_t r, uint8_t g, uint8_t b) { return color565(r*17,g*17,b*17); }
+    static uint16_t color444(uint8_t r, uint8_t g, uint8_t b) { return color565(r*17,g*17,b*17); }
 
     // Converts RGB888 to RGB565
-    uint16_t color565(uint8_t r, uint8_t g, uint8_t b); // This is what is used by Adafruit GFX!
+    static uint16_t color565(uint8_t r, uint8_t g, uint8_t b); // This is what is used by Adafruit GFX!
     
     // Converts RGB333 to RGB565
-    uint16_t color333(uint8_t r, uint8_t g, uint8_t b); // This is what is used by Adafruit GFX! Not sure why they have a capital 'C' for this particular function.
+    static uint16_t color333(uint8_t r, uint8_t g, uint8_t b); // This is what is used by Adafruit GFX! Not sure why they have a capital 'C' for this particular function.
+
+    /**
+     * @brief - convert RGB565 to RGB888
+     * @param uint16_t color - RGB565 input color
+     * @param uint8_t &r, &g, &b - refs to variables where converted colors would be emplaced
+     */
+    static void color565to888(const uint16_t color, uint8_t &r, uint8_t &g, uint8_t &b);
+
 
     inline void flipDMABuffer() 
     {         
@@ -484,25 +533,34 @@ class MatrixPanel_I2S_DMA : public Adafruit_GFX {
     frameStruct dma_buff;
 
 
-// ********** Private methods
-
     /* Calculate the memory available for DMA use, do some other stuff, and allocate accordingly */
     bool allocateDMAmemory();
 
     /* Setup the DMA Link List chain and initiate the ESP32 DMA engine */
     void configureDMA(const HUB75_I2S_CFG& opts);
-   
-    /* Update a specific pixel in the DMA buffer to a colour */
-    void updateMatrixDMABuffer(int16_t x, int16_t y, uint8_t red, uint8_t green, uint8_t blue);
-   
-    /* Update the entire DMA buffer (aka. The RGB Panel) a certain colour (wipe the screen basically) */
-    void updateMatrixDMABuffer(uint8_t red, uint8_t green, uint8_t blue);       
 
     /**
      * pre-init procedures for specific drivers
      * 
      */
     void shiftDriver(const HUB75_I2S_CFG& opts);
+
+    /**
+     * @brief - reset OE bits in DMA buffer in a way to control brightness
+     * @param brt - brightness level from 0 to row_width
+     * @param _buff_id - buffer id to control
+     */
+    void brtCtrlOE(int brt, const bool _buff_id=0);
+
+
+  // ------- PROTECTED -------
+  protected:
+
+    /* Update a specific pixel in the DMA buffer to a colour */
+    void updateMatrixDMABuffer(int16_t x, int16_t y, uint8_t red, uint8_t green, uint8_t blue);
+   
+    /* Update the entire DMA buffer (aka. The RGB Panel) a certain colour (wipe the screen basically) */
+    void updateMatrixDMABuffer(uint8_t red, uint8_t green, uint8_t blue);       
 
     /**
      * @brief - clears and reinitializes color/control data in DMA buffs
@@ -515,11 +573,13 @@ class MatrixPanel_I2S_DMA : public Adafruit_GFX {
     void clearFrameBuffer(bool _buff_id = 0);
 
     /**
-     * @brief - reset OE bits in DMA buffer in a way to control brightness
-     * @param brt - brightness level from 0 to row_width
-     * @param _buff_id - buffer id to control
+     * @brief - update DMA buff drawing a rectangular at specified coordinates
+     * this works much faster than mulltiple consecutive per-pixel calls to updateMatrixDMABuffer()
+     * @param int16_t x_coord, int16_t y_coord - coordinates of a top-left corner
+     * @param int16_t w, int16_t h - width and height of a rectangular, min is 1 px
+     * @param uint8_t red, uint8_t green, uint8_t blue - RGB888 color
      */
-    void brtCtrlOE(int brt, const bool _buff_id=0);
+    void fillRectInDMABuff(int16_t x_coord, int16_t y_coord, int16_t w, int16_t h, uint8_t red, uint8_t green, uint8_t blue);
 
 }; // end Class header
 
@@ -568,13 +628,6 @@ inline void MatrixPanel_I2S_DMA::drawPixelRGB24(int16_t x, int16_t y, RGB24 colo
 // Pass 8-bit (each) R,G,B, get back 16-bit packed color
 //https://github.com/squix78/ILI9341Buffer/blob/master/ILI9341_SPI.cpp
 inline uint16_t MatrixPanel_I2S_DMA::color565(uint8_t r, uint8_t g, uint8_t b) {
-
-/*
-  Serial.printf("Got r value of %d\n", r);
-  Serial.printf("Got g value of %d\n", g);
-  Serial.printf("Got b value of %d\n", b);
-  */
-  
   return ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3);
 }
 
@@ -609,6 +662,17 @@ inline void MatrixPanel_I2S_DMA::drawIcon (int *ico, int16_t x, int16_t y, int16
       drawPixelRGB565 (x + j, y + i, ico[i * cols + j]);
     }
   }  
+}
+
+/**
+ * @brief - convert RGB565 to RGB888
+ * @param uint16_t color - RGB565 input color
+ * @param uint8_t &r, &g, &b - refs to variables where converted colors would be emplaced
+ */
+inline void MatrixPanel_I2S_DMA::color565to888(const uint16_t color, uint8_t &r, uint8_t &g, uint8_t &b){
+  r = ((((color >> 11) & 0x1F) * 527) + 23) >> 6;
+  g = ((((color >> 5) & 0x3F) * 259) + 33) >> 6;
+  b = (((color & 0x1F) * 527) + 23) >> 6;
 }
 
 
