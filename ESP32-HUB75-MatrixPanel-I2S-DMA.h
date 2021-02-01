@@ -376,23 +376,27 @@ class MatrixPanel_I2S_DMA : public Adafruit_GFX {
 
     /**
      * @brief - override Adafruit's FastVLine
-     * this works much faster than mulltiple consecutive per-pixel drawPixel() calls
+     * this works faster than multiple consecutive pixel by pixel drawPixel() call
      */
     virtual void drawFastVLine(int16_t x, int16_t y, int16_t h, uint16_t color){
       uint8_t r, g, b;
       color565to888(color, r, g, b);
-      fillRectDMA(x, y, 1, h, r, g, b);
+      vlineDMA(x, y, h, r, g, b);
     }
+    // rgb888 overload
+    virtual inline void drawFastVLine(int16_t x, int16_t y, int16_t h, uint8_t r, uint8_t g, uint8_t b){ vlineDMA(x, y, h, r, g, b); };
 
     /**
      * @brief - override Adafruit's FastHLine
-     * this works much faster than mulltiple consecutive per-pixel drawPixel() calls
+     * this works faster than multiple consecutive pixel by pixel drawPixel() call
      */
     virtual void drawFastHLine(int16_t x, int16_t y, int16_t w, uint16_t color){
       uint8_t r, g, b;
       color565to888(color, r, g, b);
-      fillRectDMA(x, y, w, 1, r, g, b);
+      hlineDMA(x, y, w, r, g, b);
     }
+    // rgb888 overload
+    virtual inline void drawFastHLine(int16_t x, int16_t y, int16_t w, uint8_t r, uint8_t g, uint8_t b){ hlineDMA(x, y, w, r, g, b); };
 
     /**
      * @brief - override Adafruit's fillRect
@@ -403,11 +407,8 @@ class MatrixPanel_I2S_DMA : public Adafruit_GFX {
       color565to888(color, r, g, b);
       fillRectDMA(x, y, w, h, r, g, b);
     }
-
-    virtual void fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint8_t r, uint8_t g, uint8_t b){
-      fillRectDMA(x, y, w, h, r, g, b);
-    }
-
+    // rgb888 overload
+    virtual inline void fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint8_t r, uint8_t g, uint8_t b){fillRectDMA(x, y, w, h, r, g, b);}
 
   	void fillScreenRGB888(uint8_t r, uint8_t g, uint8_t b);
     void drawPixelRGB565(int16_t x, int16_t y, uint16_t color);
@@ -500,8 +501,57 @@ class MatrixPanel_I2S_DMA : public Adafruit_GFX {
      */
     uint8_t setLatBlanking(uint8_t pulses);
 
+
+  // ------- PROTECTED -------
+  // those might be useful for child classes, like VirtualMatrixPanel
+  protected:
+
+    /**
+     * @brief - clears and reinitializes color/control data in DMA buffs
+     * When allocated, DMA buffs might be dirtry, so we need to blank it and initialize ABCDE,LAT,OE control bits.
+     * Those control bits are constants during the entire DMA sweep and never changed when updating just pixel color data
+     * so we could set it once on DMA buffs initialization and forget. 
+     * This effectively clears buffers to blank BLACK and makes it ready to display output.
+     * (Brightness control via OE bit manipulation is another case)
+     */
+    void clearFrameBuffer(bool _buff_id = 0);
+
+    /* Update a specific pixel in the DMA buffer to a colour */
+    void updateMatrixDMABuffer(int16_t x, int16_t y, uint8_t red, uint8_t green, uint8_t blue);
+   
+    /* Update the entire DMA buffer (aka. The RGB Panel) a certain colour (wipe the screen basically) */
+    void updateMatrixDMABuffer(uint8_t red, uint8_t green, uint8_t blue);       
+
+    /**
+     * @brief - update DMA buff drawing horizontal line at specified coordinates
+     * @param x_ccord - line start coordinate x
+     * @param y_ccord - line start coordinate y
+     * @param l - line length
+     * @param r,g,b, - RGB888 color
+     */
     void hlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, uint8_t red, uint8_t green, uint8_t blue);
+
+    /**
+     * @brief - update DMA buff drawing horizontal line at specified coordinates
+     * @param x_ccord - line start coordinate x
+     * @param y_ccord - line start coordinate y
+     * @param l - line length
+     * @param r,g,b, - RGB888 color
+     */
     void vlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, uint8_t red, uint8_t green, uint8_t blue);
+
+    /**
+     * @brief - update DMA buff drawing a rectangular at specified coordinates
+     * uses Fast H/V line draw internally, works faster than mulltiple consecutive pixel by pixel calls to updateMatrixDMABuffer()
+     * @param int16_t x, int16_t y - coordinates of a top-left corner
+     * @param int16_t w, int16_t h - width and height of a rectangular, min is 1 px
+     * @param uint8_t r - RGB888 color
+     * @param uint8_t g - RGB888 color
+     * @param uint8_t b - RGB888 color
+     */
+    void fillRectDMA(int16_t x_coord, int16_t y_coord, int16_t w, int16_t h, uint8_t r, uint8_t g, uint8_t b);
+
+
 
    // ------- PRIVATE -------
   private:
@@ -558,34 +608,6 @@ class MatrixPanel_I2S_DMA : public Adafruit_GFX {
      */
     void brtCtrlOE(int brt, const bool _buff_id=0);
 
-
-  // ------- PROTECTED -------
-  protected:
-
-    /* Update a specific pixel in the DMA buffer to a colour */
-    void updateMatrixDMABuffer(int16_t x, int16_t y, uint8_t red, uint8_t green, uint8_t blue);
-   
-    /* Update the entire DMA buffer (aka. The RGB Panel) a certain colour (wipe the screen basically) */
-    void updateMatrixDMABuffer(uint8_t red, uint8_t green, uint8_t blue);       
-
-    /**
-     * @brief - clears and reinitializes color/control data in DMA buffs
-     * When allocated, DMA buffs might be dirtry, so we need to blank it and initialize ABCDE,LAT,OE control bits.
-     * Those control bits are constants during the entire DMA sweep and never changed when updating just pixel color data
-     * so we could set it once on DMA buffs initialization and forget. 
-     * This effectively clears buffers to blank BLACK and makes it ready to display output.
-     * (Brightness control via OE bit manipulation is another case)
-     */
-    void clearFrameBuffer(bool _buff_id = 0);
-
-    /**
-     * @brief - update DMA buff drawing a rectangular at specified coordinates
-     * this works much faster than mulltiple consecutive per-pixel calls to updateMatrixDMABuffer()
-     * @param int16_t x_coord, int16_t y_coord - coordinates of a top-left corner
-     * @param int16_t w, int16_t h - width and height of a rectangular, min is 1 px
-     * @param uint8_t red, uint8_t green, uint8_t blue - RGB888 color
-     */
-    void fillRectDMA(int16_t x_coord, int16_t y_coord, int16_t w, int16_t h, uint8_t red, uint8_t green, uint8_t blue);
 
 }; // end Class header
 

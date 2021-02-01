@@ -827,93 +827,24 @@ uint8_t MatrixPanel_I2S_DMA::setLatBlanking(uint8_t pulses){
   return m_cfg.latch_blanking;
 }
 
+
+
 /**
- * @brief - update DMA buff drawing a rectangular at specified coordinates
- * this works much faster than mulltiple consecutive per-pixel calls to updateMatrixDMABuffer()
- * @param x_coord, y_coord - coordinates of a top-left corner
- * @param w, h - width and height of a rectangular, min is 1 px
- * @param red, green, blue - RGB888 color
+ * @brief - update DMA buff drawing horizontal line at specified coordinates
+ * @param x_ccord - line start coordinate x
+ * @param y_ccord - line start coordinate y
+ * @param l - line length
+ * @param r,g,b, - RGB888 color
  */
-void MatrixPanel_I2S_DMA::fillRectDMA(int16_t x_coord, int16_t y_coord, int16_t w, int16_t h, uint8_t red, uint8_t green, uint8_t blue)
-{
-  if ( !initialized )
-    return;
-
-  if ( x_coord < 0 || y_coord < 0 || x_coord >= PIXELS_PER_ROW || y_coord >= m_cfg.mx_height)
-    return;
-
-  if (w<=0 || h <=0)    // it doesn't make sense
-    return;
-
-  if (x_coord+w >= PIXELS_PER_ROW)
-    w = PIXELS_PER_ROW - x_coord;     // reset width to end of row
-
-  if (y_coord+h >= m_cfg.mx_height)
-    h = m_cfg.mx_height - y_coord;    // reset height to bottom of panel
-
-  /* LED Brightness Compensation
-	 */
-	red   = lumConvTab[red];
-	green = lumConvTab[green];
-	blue  = lumConvTab[blue]; 	
-
-  // Iterating through color depth bits (8 iterations)
-  uint8_t color_depth_idx = PIXEL_COLOR_DEPTH_BITS;
-  do {
-    --color_depth_idx;
-
-    // let's precalculate RGB1 and RGB2 bits than flood it over the entire DMA buffer
-    uint16_t RGB_output_bits = 0;
-    uint8_t mask = (1 << color_depth_idx);
-
-    /* Per the .h file, the order of the output RGB bits is:
-      * BIT_B2, BIT_G2, BIT_R2,    BIT_B1, BIT_G1, BIT_R1	  */
-    RGB_output_bits |= (bool)(blue & mask);   // --B
-    RGB_output_bits <<= 1;
-    RGB_output_bits |= (bool)(green & mask);  // -BG
-    RGB_output_bits <<= 1;
-    RGB_output_bits |= (bool)(red & mask);    // BGR
-
-    int16_t _h = 0;
-    do {    // iterate rows
-      uint16_t _clear = BITMASK_RGB1_CLEAR, _newbits = RGB_output_bits, _yy=y_coord + _h;
-
-      if (y_coord+_h >= ROWS_PER_FRAME){    // if we are drawing to the bottom part of the panel
-        _newbits <<= BITS_RGB2_OFFSET;
-        _clear = BITMASK_RGB2_CLEAR;
-        _yy -= ROWS_PER_FRAME;
-      }
-
- 
-      // Get the contents at this address,
-      // it would represent a vector pointing to the full row of pixels for the specified color depth bit at Y coordinate
-      ESP32_I2S_DMA_STORAGE_TYPE *p = dma_buff.rowBits[_yy]->getDataPtr(color_depth_idx, back_buffer_id);
-
-      int16_t _w = 0;
-      do {                 // iterate pixels in a row
-          // We need to update the correct uint16_t word in the rowBitStruct array poiting to a specific pixel at X - coordinate
-          // Save the calculated value to the bitplane memory in reverse order to account for I2S Tx FIFO mode1 ordering
-          int16_t _xx = x_coord+_w;
-          uint16_t &v = p[_xx & 1U ? --_xx : ++_xx];
-
-          v &= _clear;      // reset color bits
-          v |= _newbits;    // set new color bits
-      } while(++_w != w);    // iterate pixels in a row
-    } while(++_h != h); // row iterations
-  } while(color_depth_idx);  // end of color depth loop (8)
-} // fillRectDMA()
-
-
-
 void MatrixPanel_I2S_DMA::hlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, uint8_t red, uint8_t green, uint8_t blue){
   if ( !initialized )
     return;
 
-  if ( x_coord < 0 || y_coord < 0 || l < 0 || x_coord >= PIXELS_PER_ROW || y_coord >= m_cfg.mx_height)
+  if ( x_coord < 0 || y_coord < 0 || l < 1 || x_coord >= PIXELS_PER_ROW || y_coord >= m_cfg.mx_height)
     return;
 
   if (x_coord+l >= PIXELS_PER_ROW)
-    l = PIXELS_PER_ROW - x_coord;     // reset width to end of row
+    l = PIXELS_PER_ROW - x_coord + 1;     // reset width to end of row
 
   /* LED Brightness Compensation
 	 */
@@ -950,7 +881,7 @@ void MatrixPanel_I2S_DMA::hlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, 
     // Get the contents at this address,
     // it would represent a vector pointing to the full row of pixels for the specified color depth bit at Y coordinate
     ESP32_I2S_DMA_STORAGE_TYPE *p = dma_buff.rowBits[y_coord]->getDataPtr(color_depth_idx, back_buffer_id);
-    // inlined version works slowly, dunno why :(
+    // inlined version works slower here, dunno why :(
     // ESP32_I2S_DMA_STORAGE_TYPE *p = getRowDataPtr(y_coord, color_depth_idx, back_buffer_id);
 
     int16_t _l = l;
@@ -966,15 +897,22 @@ void MatrixPanel_I2S_DMA::hlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, 
 } // hlineDMA()
 
 
+/**
+ * @brief - update DMA buff drawing horizontal line at specified coordinates
+ * @param x_ccord - line start coordinate x
+ * @param y_ccord - line start coordinate y
+ * @param l - line length
+ * @param r,g,b, - RGB888 color
+ */
 void MatrixPanel_I2S_DMA::vlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, uint8_t red, uint8_t green, uint8_t blue){
   if ( !initialized )
     return;
 
-  if ( x_coord < 0 || y_coord < 0 || l < 0 || x_coord >= PIXELS_PER_ROW || y_coord >= m_cfg.mx_height)
+  if ( x_coord < 0 || y_coord < 0 || l < 1 || x_coord >= PIXELS_PER_ROW || y_coord >= m_cfg.mx_height)
     return;
 
-  if (y_coord+l > m_cfg.mx_height)
-    l = m_cfg.mx_height - y_coord;     // reset width to end of col
+  if (y_coord + l > m_cfg.mx_height)
+    l = m_cfg.mx_height - y_coord + 1;     // reset width to end of col
 
   /* LED Brightness Compensation
 	 */
@@ -982,46 +920,71 @@ void MatrixPanel_I2S_DMA::vlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, 
 	green = lumConvTab[green];
 	blue  = lumConvTab[blue]; 	
 
+  // Save the calculated value to the bitplane memory in reverse order to account for I2S Tx FIFO mode1 ordering
   x_coord & 1U ? --x_coord : ++x_coord;
 
-  // Iterating through color depth bits (8 iterations)
   uint8_t color_depth_idx = PIXEL_COLOR_DEPTH_BITS;
-  do {
+  do {    // Iterating through color depth bits (8 iterations)
     --color_depth_idx;
 
     // let's precalculate RGB1 and RGB2 bits than flood it over the entire DMA buffer
-    uint16_t RGB_output_bits = 0;
     uint8_t mask = (1 << color_depth_idx);
+    uint16_t RGB_output_bits = 0;
 
     /* Per the .h file, the order of the output RGB bits is:
-      * BIT_B2, BIT_G2, BIT_R2,    BIT_B1, BIT_G1, BIT_R1	  */
+    * BIT_B2, BIT_G2, BIT_R2,    BIT_B1, BIT_G1, BIT_R1	  */
     RGB_output_bits |= (bool)(blue & mask);   // --B
     RGB_output_bits <<= 1;
     RGB_output_bits |= (bool)(green & mask);  // -BG
     RGB_output_bits <<= 1;
     RGB_output_bits |= (bool)(red & mask);    // BGR
 
+    int16_t _l = 0, _y = y_coord;
+    uint16_t _colorbitclear = BITMASK_RGB1_CLEAR;
+    do {    // iterate pixels in a column
 
-    int16_t _l = l, _y;
-    do {                 // iterate pixels in a column
+      if (_y >= ROWS_PER_FRAME){    // if y-coord overlaped bottom-half panel
+        _y -= ROWS_PER_FRAME;
+        _colorbitclear  = BITMASK_RGB2_CLEAR;
+        RGB_output_bits <<= BITS_RGB2_OFFSET;
+      }
 
-      ESP32_I2S_DMA_STORAGE_TYPE _RGB_output_bits = RGB_output_bits;
-      uint16_t _colorbitclear = BITMASK_RGB1_CLEAR;
-      _y = y_coord + --_l;
+      // Get the contents at this address,
+      // it would represent a vector pointing to the full row of pixels for the specified color depth bit at Y coordinate
+      ESP32_I2S_DMA_STORAGE_TYPE *p = getRowDataPtr(_y, color_depth_idx, back_buffer_id);
 
-    if (_y >= ROWS_PER_FRAME){    // if we are drawing to the bottom part of the panel
-      _y -= ROWS_PER_FRAME;
-      _RGB_output_bits <<= BITS_RGB2_OFFSET;      // shift color bits to the required position
-      _colorbitclear  = BITMASK_RGB2_CLEAR;
-    }
-
-
-    // Get the contents at this address,
-    // it would represent a vector pointing to the full row of pixels for the specified color depth bit at Y coordinate
-    ESP32_I2S_DMA_STORAGE_TYPE *p = getRowDataPtr(_y, color_depth_idx, back_buffer_id);
-
-        p[x_coord] &= _colorbitclear;   // reset RGB bits
-        p[x_coord] |= _RGB_output_bits;  // set new RGB bits
-    } while(_l);        // iterate pixels in a row
+      p[x_coord] &= _colorbitclear;   // reset RGB bits
+      p[x_coord] |= RGB_output_bits;  // set new RGB bits
+      ++_y;
+    } while(++_l!=l);        // iterate pixels in a col
   } while(color_depth_idx);  // end of color depth loop (8)
 } // vlineDMA()
+
+
+/**
+ * @brief - update DMA buff drawing a rectangular at specified coordinates
+ * this works much faster than mulltiple consecutive per-pixel calls to updateMatrixDMABuffer()
+ * @param int16_t x, int16_t y - coordinates of a top-left corner
+ * @param int16_t w, int16_t h - width and height of a rectangular, min is 1 px
+ * @param uint8_t r - RGB888 color
+ * @param uint8_t g - RGB888 color
+ * @param uint8_t b - RGB888 color
+ */
+void MatrixPanel_I2S_DMA::fillRectDMA(int16_t x, int16_t y, int16_t w, int16_t h, uint8_t r, uint8_t g, uint8_t b){
+
+  // h-lines are >2 times faster than v-lines
+  // so will use it only for tall rects with h >2w
+  if (h>2*w){
+    // draw using v-lines
+    do {
+      --w;
+      vlineDMA(x+w, y, h, r,g,b);
+    } while(w);
+  } else {
+    // draw using h-lines
+    do {
+      --h;
+      hlineDMA(x, y+h, w, r,g,b);
+    } while(h);
+  }
+}
