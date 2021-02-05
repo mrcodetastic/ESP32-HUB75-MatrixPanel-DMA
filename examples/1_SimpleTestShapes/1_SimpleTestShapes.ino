@@ -1,3 +1,7 @@
+// Example sketch which shows how to display some patterns
+// on a 64x32 LED matrix
+//
+
 #include <ESP32-HUB75-MatrixPanel-I2S-DMA.h>
 MatrixPanel_I2S_DMA dma_display;
 
@@ -94,26 +98,6 @@ void setup() {
   dma_display.setTextColor(dma_display.color444(15,0,8));
   dma_display.println("*");
 
-  delay(2000);
-/*
- for (int i = 15; i > 0; i--)
- {
-    // fade out
-     dma_display.fillScreen(dma_display.color565(0, 0, i*17));
-     delay(250);
- }
-
-  for (int i = 15; i > 0; i--)
- {
-    // draw a blue circle
-    dma_display.drawCircle(10, 10, 10, dma_display.color565(i*17, 0, 0));
-    delay(250);
- }
-*/
-
-
-
-  // whew!
 }
 
 void loop() {
