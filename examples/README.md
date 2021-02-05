@@ -2,7 +2,7 @@
 |--|--|                                                                                                        
 |1_SimpleTestShapes         |Example for new starters - how to display basic shapes.                                                              |
 |2_PatternPlasma            |Example for new starters - how to display a cool plasma pattern.                                                             |
-|32x16_1_4_ScanPanel        |An advanced example on how to use this library on 32w x 16h 1/4 Scan LED Matrix Panels.                                |
+|32x16_1_4_ScanPanel        |An advanced example on how to use this library on 32w x 16h 1/4 Scan LED Matrix Panels ONLY.                                |
 |AnimatedGIFPanel           |Using Larry Bank's GIF Decoder to display animated GIFs to the LED matrix.                                             |
 |AuroraDemo                 |A good starter example demonstrating various animated effects.                                                         |
 |BitmapIcons                |Simple example of how to display a bitmap image to the display.                                                        |
