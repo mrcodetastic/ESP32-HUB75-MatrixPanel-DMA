@@ -1,3 +1,4 @@
+#include <Arduino.h>
 #include "ESP32-HUB75-MatrixPanel-I2S-DMA.h"
 //#include "xtensa/core-macros.h"
 
@@ -62,8 +63,8 @@
 // macro's to calculate sizes of a single buffer (double biffer takes twice as this)
 #define rowBitStructBuffSize        sizeof(ESP32_I2S_DMA_STORAGE_TYPE) * (PIXELS_PER_ROW + CLKS_DURING_LATCH) * PIXEL_COLOR_DEPTH_BITS
 #define frameStructBuffSize         ROWS_PER_FRAME * rowBitStructBuffSize
-/* this replicates same function in rowBitStruct, but due to induced inlining it migh be MUCH faster when used in tight loops
- * while struct method might be flished out of instruction cache between loop cycles
+/* this replicates same function in rowBitStruct, but due to induced inlining it might be MUCH faster when used in tight loops
+ * while method from struct could be flushed out of instruction cache between loop cycles
  * do NOT forget about buff_id param if using this
  */
 #define getRowDataPtr(row, _dpth, buff_id) &(dma_buff.rowBits[row]->data[_dpth * dma_buff.rowBits[row]->width + buff_id*(dma_buff.rowBits[row]->width * dma_buff.rowBits[row]->color_depth)])
@@ -828,7 +829,7 @@ uint8_t MatrixPanel_I2S_DMA::setLatBlanking(uint8_t pulses){
 }
 
 
-
+#ifndef NO_FAST_FUNCTIONS
 /**
  * @brief - update DMA buff drawing horizontal line at specified coordinates
  * @param x_ccord - line start coordinate x
@@ -843,11 +844,10 @@ void MatrixPanel_I2S_DMA::hlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, 
   if ( x_coord < 0 || y_coord < 0 || l < 1 || x_coord >= PIXELS_PER_ROW || y_coord >= m_cfg.mx_height)
     return;
 
-  if (x_coord+l >= PIXELS_PER_ROW)
+  if (x_coord+l > PIXELS_PER_ROW)
     l = PIXELS_PER_ROW - x_coord + 1;     // reset width to end of row
 
-  /* LED Brightness Compensation
-	 */
+  /* LED Brightness Compensation */
 	red   = lumConvTab[red];
 	green = lumConvTab[green];
 	blue  = lumConvTab[blue]; 	
@@ -898,7 +898,7 @@ void MatrixPanel_I2S_DMA::hlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, 
 
 
 /**
- * @brief - update DMA buff drawing horizontal line at specified coordinates
+ * @brief - update DMA buff drawing vertical line at specified coordinates
  * @param x_ccord - line start coordinate x
  * @param y_ccord - line start coordinate y
  * @param l - line length
@@ -914,8 +914,7 @@ void MatrixPanel_I2S_DMA::vlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, 
   if (y_coord + l > m_cfg.mx_height)
     l = m_cfg.mx_height - y_coord + 1;     // reset width to end of col
 
-  /* LED Brightness Compensation
-	 */
+  /* LED Brightness Compensation */
 	red   = lumConvTab[red];
 	green = lumConvTab[green];
 	blue  = lumConvTab[blue]; 	
@@ -988,3 +987,5 @@ void MatrixPanel_I2S_DMA::fillRectDMA(int16_t x, int16_t y, int16_t w, int16_t h
     } while(h);
   }
 }
+
+#endif  // NO_FAST_FUNCTIONS

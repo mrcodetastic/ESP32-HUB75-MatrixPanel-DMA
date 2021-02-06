@@ -106,6 +106,24 @@ void loop()
 
 ```
 
+### Build-time options
+
+Although Arduino IDE does not seem to offer any way of specifing compile-time options for extenal libs there are other IDE's (like Platformio/Eclipse) that could use that. This lib supports the following compile-time define's
+
+**USE_GFX_ROOT** - Use lightweigth version of AdafuitGFX, without Adafruit BusIO extensions
+
+
+**NO_GFX** - Build without AdafuitGFX, only native methods supported based on manipulating DMA buffer. I.e. no methods of drawing circles/shapes, typing text or using fonts!!!
+This might save some resources for applications using it's own internal graphics buffer or works solely with per-pixel manupulation. For example Aurora effects can work fine w/o AdafruitGFX.
+
+
+**NO_FAST_FUNCTIONS** - do not build auxilary speed-optimized functions. Those are used to speed-up operations like drawing straight lines or rectangles. Otherwise lines/shapes are drawn using drawpixel() method. The tradoff for speed is RAM/code-size, take it or leave it ;)
+
+
+## Can I use with a larger panel (i.e. 64x64px square panel)?
+If you want to use with a 64x64 pixel panel (typically a HUB75*E* panel) you MUST configure a valid *E_PIN* to your ESP32 and connect it to the E pin of the HUB75 panel! Hence the 'E' in 'HUB75E'
+
+
 
 ## Can I use with a larger panel (i.e. 64x64px square panel)?
 If you want to use with a 64x64 pixel panel (typically a HUB75*E* panel) you MUST configure a valid *E_PIN* to your ESP32 and connect it to the E pin of the HUB75 panel! Hence the 'E' in 'HUB75E'

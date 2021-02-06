@@ -12,6 +12,12 @@
  */
 //#define USE_GFX_ROOT 1
 
+/*
+ * Do NOT build additional methods optimized for fast drawing,
+ * i.e. Adafruits drawFastHLine, drawFastVLine, etc...
+ */
+//#define NO_FAST_FUNCTIONS
+
 
 /* Physical / Chained HUB75(s) RGB pixel WIDTH and HEIGHT. 
  *
@@ -130,7 +136,7 @@
 
 #ifdef USE_GFX_ROOT
 	#include "GFX.h" // Adafruit GFX core class -> https://github.com/mrfaptastic/GFX_Root
-#else
+#elif !defined NO_GFX
 	#include "Adafruit_GFX.h" // Adafruit class with all the other stuff
 #endif
 
@@ -274,8 +280,10 @@ struct  HUB75_I2S_CFG {
 /***************************************************************************************/   
 #ifdef USE_GFX_ROOT
 class MatrixPanel_I2S_DMA : public GFX {
+#elif !defined NO_GFX
+class MatrixPanel_I2S_DMA : public Adafruit_GFX {
 #else
-class MatrixPanel_I2S_DMA : public Adafruit_GFX {	
+class MatrixPanel_I2S_DMA {
 #endif
 
   // ------- PUBLIC -------
@@ -289,11 +297,11 @@ class MatrixPanel_I2S_DMA : public Adafruit_GFX {
      */
     MatrixPanel_I2S_DMA()
 #ifdef USE_GFX_ROOT
-      : GFX(MATRIX_WIDTH, MATRIX_HEIGHT)  {
-#else
-      : Adafruit_GFX(MATRIX_WIDTH, MATRIX_HEIGHT) {
+      : GFX(MATRIX_WIDTH, MATRIX_HEIGHT)
+#elif !defined NO_GFX
+      : Adafruit_GFX(MATRIX_WIDTH, MATRIX_HEIGHT)
 #endif
-    }
+    {}
 
     /**
      * MatrixPanel_I2S_DMA 
@@ -301,13 +309,13 @@ class MatrixPanel_I2S_DMA : public Adafruit_GFX {
      * @param  {HUB75_I2S_CFG} opts : structure with matrix configuration
      *        
      */
-    MatrixPanel_I2S_DMA(const HUB75_I2S_CFG& opts)
+    MatrixPanel_I2S_DMA(const HUB75_I2S_CFG& opts) :
 #ifdef USE_GFX_ROOT	
-      : GFX(opts.mx_width*opts.chain_length, opts.mx_height), m_cfg(opts)  {
-#else
-      : Adafruit_GFX(opts.mx_width*opts.chain_length, opts.mx_height), m_cfg(opts) {
+      GFX(opts.mx_width*opts.chain_length, opts.mx_height),
+#elif !defined NO_GFX
+      Adafruit_GFX(opts.mx_width*opts.chain_length, opts.mx_height),
 #endif		  
-    }
+      m_cfg(opts) {}
 
     /* Propagate the DMA pin configuration, allocate DMA buffs and start data ouput, initialy blank */
     bool begin(){
@@ -374,6 +382,7 @@ class MatrixPanel_I2S_DMA : public Adafruit_GFX {
      */
     void clearScreen();
 
+#ifndef NO_FAST_FUNCTIONS
     /**
      * @brief - override Adafruit's FastVLine
      * this works faster than multiple consecutive pixel by pixel drawPixel() call
@@ -409,6 +418,7 @@ class MatrixPanel_I2S_DMA : public Adafruit_GFX {
     }
     // rgb888 overload
     virtual inline void fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint8_t r, uint8_t g, uint8_t b){fillRectDMA(x, y, w, h, r, g, b);}
+#endif
 
   	void fillScreenRGB888(uint8_t r, uint8_t g, uint8_t b);
     void drawPixelRGB565(int16_t x, int16_t y, uint16_t color);
@@ -501,6 +511,12 @@ class MatrixPanel_I2S_DMA : public Adafruit_GFX {
      */
     uint8_t setLatBlanking(uint8_t pulses);
 
+    /**
+     * Get a class configuration struct
+     * 
+     */
+    const HUB75_I2S_CFG& getCfg() const {return m_cfg;};
+
 
   // ------- PROTECTED -------
   // those might be useful for child classes, like VirtualMatrixPanel
@@ -522,6 +538,8 @@ class MatrixPanel_I2S_DMA : public Adafruit_GFX {
     /* Update the entire DMA buffer (aka. The RGB Panel) a certain colour (wipe the screen basically) */
     void updateMatrixDMABuffer(uint8_t red, uint8_t green, uint8_t blue);       
 
+
+#ifndef NO_FAST_FUNCTIONS
     /**
      * @brief - update DMA buff drawing horizontal line at specified coordinates
      * @param x_ccord - line start coordinate x
@@ -550,7 +568,7 @@ class MatrixPanel_I2S_DMA : public Adafruit_GFX {
      * @param uint8_t b - RGB888 color
      */
     void fillRectDMA(int16_t x_coord, int16_t y_coord, int16_t w, int16_t h, uint8_t r, uint8_t g, uint8_t b);
-
+#endif
 
 
    // ------- PRIVATE -------
