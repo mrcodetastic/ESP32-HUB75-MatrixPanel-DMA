@@ -120,10 +120,6 @@ This might save some resources for applications using it's own internal graphics
 **NO_FAST_FUNCTIONS** - do not build auxilary speed-optimized functions. Those are used to speed-up operations like drawing straight lines or rectangles. Otherwise lines/shapes are drawn using drawpixel() method. The tradoff for speed is RAM/code-size, take it or leave it ;)
 
 
-## Can I use with a larger panel (i.e. 64x64px square panel)?
-If you want to use with a 64x64 pixel panel (typically a HUB75*E* panel) you MUST configure a valid *E_PIN* to your ESP32 and connect it to the E pin of the HUB75 panel! Hence the 'E' in 'HUB75E'
-
-
 
 ## Can I use with a larger panel (i.e. 64x64px square panel)?
 If you want to use with a 64x64 pixel panel (typically a HUB75*E* panel) you MUST configure a valid *E_PIN* to your ESP32 and connect it to the E pin of the HUB75 panel! Hence the 'E' in 'HUB75E'

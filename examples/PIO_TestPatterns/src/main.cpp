@@ -1,14 +1,15 @@
 // How to use this library with a FM6126 panel, thanks goes to:
 // https://github.com/hzeller/rpi-rgb-led-matrix/issues/746
 
-/*
 // IDF
-#include <stdio.h>
-#include <freertos/FreeRTOS.h>
-#include <freertos/task.h>
-#include <driver/gpio.h>
-#include "sdkconfig.h"
-*/
+#if defined(IDF_VER)
+  #include <stdio.h>
+  #include <freertos/FreeRTOS.h>
+  #include <freertos/task.h>
+  #include <driver/gpio.h>
+  #include "sdkconfig.h"
+#endif
+
 #include <Arduino.h>
 #include "xtensa/core-macros.h"
 #include <ESP32-HUB75-MatrixPanel-I2S-DMA.h>
