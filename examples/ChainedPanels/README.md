@@ -8,6 +8,8 @@ When you link / chain multiple panels together, the ESP32-HUB75-MatrixPanel-I2S-
 
 Non-standard order is essentially the creation of a non-horizontal-only display that you can draw to in the same way you would any other display, with VirtualDisplay library looking after the pixel mapping to the physical chained panels.
 
+For example: You bought four (4) 64x32px panels, and wanted to use them to create a 128x64pixel display. You would use the VirtualMatrixPanel class.
+
 [Refer to this document](VirtualDisplay.pdf) for an explaination and refer to this example on how to use.
 
 
