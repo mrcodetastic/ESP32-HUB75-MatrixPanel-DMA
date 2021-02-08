@@ -60,7 +60,7 @@
 
 
 #define val2PWM(val) { lumConvTab[(uint8_t)val]; }
-// macro's to calculate sizes of a single buffer (double biffer takes twice as this)
+// macro's to calculate sizes of a single buffer (double buffer takes twice as this)
 #define rowBitStructBuffSize        sizeof(ESP32_I2S_DMA_STORAGE_TYPE) * (PIXELS_PER_ROW + CLKS_DURING_LATCH) * PIXEL_COLOR_DEPTH_BITS
 #define frameStructBuffSize         ROWS_PER_FRAME * rowBitStructBuffSize
 /* this replicates same function in rowBitStruct, but due to induced inlining it might be MUCH faster when used in tight loops
@@ -145,7 +145,7 @@ bool MatrixPanel_I2S_DMA::allocateDMAmemory()
    */    
    
 
-    // Calculate what colour depth is actually possible based on memory available vs. required dma linked-list descriptors.
+    // Calculate what colour depth is actually possible based on memory available vs. required DMA linked-list descriptors.
     // aka. Calculate the lowest LSBMSB_TRANSITION_BIT value that will fit in memory
     int numDMAdescriptorsPerRow = 0;
     lsbMsbTransitionBit = 0;
@@ -221,7 +221,7 @@ bool MatrixPanel_I2S_DMA::allocateDMAmemory()
     #endif
 
     // Refer to 'DMA_LL_PAYLOAD_SPLIT' code in configureDMA() below to understand why this exists.
-    // numDMAdescriptorsPerRow is also used to calcaulte descount which is super important in i2s_parallel_config_t SoC DMA setup. 
+    // numDMAdescriptorsPerRow is also used to calculate descount which is super important in i2s_parallel_config_t SoC DMA setup. 
     if ( rowBitStructBuffSize > DMA_MAX ) {
 
         #if SERIAL_DEBUG  
@@ -229,7 +229,7 @@ bool MatrixPanel_I2S_DMA::allocateDMAmemory()
 		    #endif
 
         numDMAdescriptorsPerRow += PIXEL_COLOR_DEPTH_BITS-1; 
-        // Not if numDMAdescriptorsPerRow is even just one descriptor too large, DMA linked list will not correctly loop.
+        // Note: If numDMAdescriptorsPerRow is even just one descriptor too large, DMA linked list will not correctly loop.
     }
 
 
