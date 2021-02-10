@@ -112,8 +112,6 @@ uint8_t noisesmoothing;
 class Effects {
 public:
   CRGB *leds;
-  //CRGB leds[NUM_LEDS];
-  //CRGB leds2[NUM_LEDS]; // Faptastic: getting rid of this and any dependant effects or algos. to save memory 24*64*32 bytes of ram (50k).
 
   Effects(){
     // we do dynamic allocation for leds buffer, otherwise esp32 toolchain can't link static arrays of such a big size for 256+ matrixes
@@ -127,7 +125,6 @@ public:
     }
 
     ClearFrame();
-    matrix.clearScreen();
   }
   ~Effects(){
     free(leds);
@@ -175,7 +172,7 @@ public:
   	    for (int x=0; x<VPANEL_W; ++x){
 		//Serial.printf("Flushing x, y coord %d, %d\n", x, y);
     		uint16_t _pixel = XY16(x,y);
-    		virtualDisp.drawPixelRGB888( x, y, leds[_pixel].r, leds[_pixel].g, leds[_pixel].b);
+    		virtualDisp->drawPixelRGB888( x, y, leds[_pixel].r, leds[_pixel].g, leds[_pixel].b);
 	    } // end loop to copy fast led to the dma matrix
 	}
   }

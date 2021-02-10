@@ -3,47 +3,23 @@
 
 #include <Arduino.h>
 #include <ESP32-HUB75-MatrixPanel-I2S-DMA.h>
-
-MatrixPanel_I2S_DMA dma_display;
-
 #include <FastLED.h>
 
 ////////////////////////////////////////////////////////////////////
-// Reset Panel
 // FM6126 support is still experimental
-//
-// pinout for ESP38 38pin module
-// http://arduinoinfo.mywikis.net/wiki/Esp32#KS0413_keyestudio_ESP32_Core_Board
-//
 
-// HUB75E pinout
-// R1 | G1
-// B1 | GND
-// R2 | G2
-// B2 | E
-//  A | B
-//  C | D
-// CLK| LAT
-// OE | GND
+// Output resolution and panel chain length configuration
+#define PANEL_RES_X 64 	   // Number of pixels wide of each INDIVIDUAL panel module. 
+#define PANEL_RES_Y 32 	   // Number of pixels tall of each INDIVIDUAL panel module.
+#define PANEL_CHAIN 1      // Total number of panels chained one to another
 
-#define R1 25
-#define G1 26
-#define BL1 27
-#define R2 14 // 21 SDA
-#define G2 12 // 22 SDL
-#define BL2 13
-#define CH_A 23
-#define CH_B 19
-#define CH_C 5
-#define CH_D 17
-#define CH_E -1 // assign to any available pin if using two panels or 64x64 panels with 1/32 scan (i.e. 32 works fine)
-#define CLK 16
-#define LAT 4
-#define OE 15
 
-// End of default setup for RGB Matrix 64x32 panel
+// placeholder for the matrix object
+MatrixPanel_I2S_DMA *dma_display = nullptr;
+
 ///////////////////////////////////////////////////////////////
 
+// FastLED variables for pattern output
 uint16_t time_counter = 0, cycles = 0, fps = 0;
 unsigned long fps_timer;
 
@@ -57,38 +33,44 @@ CRGB ColorFromCurrentPalette(uint8_t index = 0, uint8_t brightness = 255, TBlend
 }
 
 void setup(){
+	
+	/*
+		The configuration for MatrixPanel_I2S_DMA object is held in HUB75_I2S_CFG structure,
+		All options has it's predefined default values. So we can create a new structure and redefine only the options we need
 
+		Please refer to the '2_PatternPlasma.ino' example for detailed example of how to use the MatrixPanel_I2S_DMA configuration
+		if you need to change the pin mappings etc.
+	*/
+
+	HUB75_I2S_CFG mxconfig(
+				PANEL_RES_X,   // module width
+				PANEL_RES_Y,   // module height
+				PANEL_CHAIN    // Chain length
+	);
+
+	mxconfig.driver = HUB75_I2S_CFG::FM6126A;     // in case that we use panels based on FM6126A chip, we can set it here before creating MatrixPanel_I2S_DMA object
+
+	// OK, now we can create our matrix object
+	dma_display = new MatrixPanel_I2S_DMA(mxconfig);
+	
     // If you experience ghosting, you will need to reduce the brightness level, not all RGB Matrix
     // Panels are the same - some seem to display ghosting artefacts at lower brightness levels.
     // In the setup() function do something like:
 
-    // SETS THE BRIGHTNESS HERE. MAX value is MATRIX_WIDTH, 2/3 OR LOWER IDEAL, default is about 50%
-    // dma_display.setPanelBrightness(30);
-
-    /* another way to change brightness is to use
-     * dma_display.setPanelBrightness8(uint8_t brt);	// were brt is within range 0-255
-     * it will recalculate to consider matrix width automatically
-     */
-    //dma_display.setPanelBrightness8(180);
-
-	/**
-     * this demo runs pretty fine in fast-mode which gives much better fps on large matrixes (>128x64)
-	 * see comments in the lib header on what does that means
-     */
-    dma_display.setFastMode(true);
-
-    /**
-     * Run display on our matrix, be sure to specify 'FM6126A' as last parametr to the begin(),
-     * it would reset 6126 registers and enables the matrix
-     */
-    dma_display.begin(R1, G1, BL1, R2, G2, BL2, CH_A, CH_B, CH_C, CH_D, CH_E, LAT, OE, CLK, FM6126A);
-
+    // let's adjust default brightness to about 75%
+    dma_display->setBrightness8(96);    // range is 0-255, 0 - 0%, 255 - 100%
+	
+    // Allocate memory and start DMA display
+    if( not dma_display->begin() )
+      Serial.println("****** !KABOOM! Insufficient memory - allocation failed ***********");	
+	
     fps_timer = millis();
+	
 }
 
 void loop(){
-   for (int x = 0; x <  dma_display.width(); x++) {
-        for (int y = 0; y <  dma_display.height(); y++) {
+   for (int x = 0; x <  dma_display->width(); x++) {
+        for (int y = 0; y <  dma_display->height(); y++) {
             int16_t v = 0;
             uint8_t wibble = sin8(time_counter);
             v += sin16(x * wibble * 3 + time_counter);
@@ -96,7 +78,7 @@ void loop(){
             v += sin16(y * x * cos8(-time_counter) / 8);
 
             currentColor = ColorFromPalette(currentPalette, (v >> 8) + 127); //, brightness, currentBlendType);
-            dma_display.drawPixelRGB888(x, y, currentColor.r, currentColor.g, currentColor.b);
+            dma_display->drawPixelRGB888(x, y, currentColor.r, currentColor.g, currentColor.b);
         }
     }
 

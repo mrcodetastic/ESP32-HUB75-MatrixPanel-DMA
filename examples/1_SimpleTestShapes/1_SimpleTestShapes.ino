@@ -1,9 +1,23 @@
-#include <ESP32-HUB75-MatrixPanel-I2S-DMA.h>
-MatrixPanel_I2S_DMA dma_display;
+// Example sketch which shows how to display some patterns
+// on a 64x32 LED matrix
+//
 
-// Or use an Alternative non-DMA library, i.e:
-//#include <P3RGB64x32MatrixPanel.h>
-//P3RGB64x32MatrixPanel display;
+#include <ESP32-HUB75-MatrixPanel-I2S-DMA.h>
+
+/* 
+ * Below is an example of the 'legacy' way of initialising the MatrixPanel_I2S_DMA class.
+ * i.e. Matrix Width and Height will need to be confirmed as compile-time directives.
+ * By default the library assumes a single 64x32 pixel panel is connected.
+ *
+ * Refer to the example '2_PatternPlasma' on the new / correct way to setup this library
+ * for different resolutions / panel chain lengths.
+ * 
+ */ 
+ MatrixPanel_I2S_DMA dma_display;
+
+ // Or use an Alternative non-DMA library, i.e:
+ //#include <P3RGB64x32MatrixPanel.h>
+ //P3RGB64x32MatrixPanel display;
 
 
 void setup() {
@@ -94,26 +108,6 @@ void setup() {
   dma_display.setTextColor(dma_display.color444(15,0,8));
   dma_display.println("*");
 
-  delay(2000);
-/*
- for (int i = 15; i > 0; i--)
- {
-    // fade out
-     dma_display.fillScreen(dma_display.color565(0, 0, i*17));
-     delay(250);
- }
-
-  for (int i = 15; i > 0; i--)
- {
-    // draw a blue circle
-    dma_display.drawCircle(10, 10, 10, dma_display.color565(i*17, 0, 0));
-    delay(250);
- }
-*/
-
-
-
-  // whew!
 }
 
 void loop() {

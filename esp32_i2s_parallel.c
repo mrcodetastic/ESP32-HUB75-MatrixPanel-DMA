@@ -24,11 +24,9 @@
 #include "freertos/semphr.h"
 #include "freertos/queue.h"
 
-#include "soc/i2s_struct.h"
 #include "soc/i2s_reg.h"
 #include "driver/periph_ctrl.h"
 #include "soc/io_mux_reg.h"
-#include "rom/lldesc.h"
 //#include "esp_heap_caps.h"
 #include "esp32_i2s_parallel.h"
 
@@ -208,18 +206,17 @@ void i2s_parallel_setup_without_malloc(i2s_dev_t *dev, const i2s_parallel_config
     dev->fifo_conf.val=0;
     dev->fifo_conf.rx_fifo_mod_force_en=1;
     dev->fifo_conf.tx_fifo_mod_force_en=1;
-    //dev->fifo_conf.tx_fifo_mod=1;
-    dev->fifo_conf.tx_fifo_mod=1;
+    dev->fifo_conf.tx_fifo_mod=1;   // 16-bit sigle channel mode
     dev->fifo_conf.rx_data_num=32; //Thresholds. 
     dev->fifo_conf.tx_data_num=32;
-    dev->fifo_conf.dscr_en=1;
+    dev->fifo_conf.dscr_en=1;       // FIFO will pump the data from DMA
     
     dev->conf1.val=0;
     dev->conf1.tx_stop_en=0;
     dev->conf1.tx_pcm_bypass=1;
     
     dev->conf_chan.val=0;
-    dev->conf_chan.tx_chan_mod=1;
+    dev->conf_chan.tx_chan_mod=1;   // Mono
     dev->conf_chan.rx_chan_mod=1;
     
     //Invert ws to be active-low... ToDo: make this configurable
@@ -241,18 +238,19 @@ void i2s_parallel_setup_without_malloc(i2s_dev_t *dev, const i2s_parallel_config
     st->dmadesc_b = cfg->lldesc_b;
 
     //Reset FIFO/DMA -> needed? Doesn't dma_reset/fifo_reset do this?
+/*
     dev->lc_conf.in_rst=1; dev->lc_conf.out_rst=1; dev->lc_conf.ahbm_rst=1; dev->lc_conf.ahbm_fifo_rst=1;
     dev->lc_conf.in_rst=0; dev->lc_conf.out_rst=0; dev->lc_conf.ahbm_rst=0; dev->lc_conf.ahbm_fifo_rst=0;
     dev->conf.tx_reset=1; dev->conf.tx_fifo_reset=1; dev->conf.rx_fifo_reset=1;
     dev->conf.tx_reset=0; dev->conf.tx_fifo_reset=0; dev->conf.rx_fifo_reset=0;
-    
+*/
     // setup I2S Interrupt
     SET_PERI_REG_BITS(I2S_INT_ENA_REG(1), I2S_OUT_EOF_INT_ENA_V, 1, I2S_OUT_EOF_INT_ENA_S);
     // allocate a level 1 intterupt: lowest priority, as ISR isn't urgent and may take a long time to complete
     esp_intr_alloc(ETS_I2S1_INTR_SOURCE, (int)(ESP_INTR_FLAG_IRAM | ESP_INTR_FLAG_LEVEL1), i2s_isr, NULL, NULL);
 
     //Start dma on front buffer (buffer a)
-    dev->lc_conf.val=I2S_OUT_DATA_BURST_EN | I2S_OUTDSCR_BURST_EN | I2S_OUT_DATA_BURST_EN;
+    dev->lc_conf.val=I2S_OUT_DATA_BURST_EN | I2S_OUTDSCR_BURST_EN;
     dev->out_link.addr=((uint32_t)(&st->dmadesc_a[0]));
     dev->out_link.start=1;
     dev->conf.tx_start=1;

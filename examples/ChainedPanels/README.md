@@ -1,35 +1,33 @@
 ## Chained Panels example - Chaining individual LED matrix panels to make a larger panel ##
 
-This is the PatternPlasma Demo adopted for use with multiple
-displays arranged in a non standard order
+This is the PatternPlasma Demo adopted for use with multiple LED Matrix Panel displays arranged in a non standard order (i.e. a grid) to make a bigger display.
 
-### What is a non standard order? ###
+### What do we mean by 'non standard order'? ###
 
-When you connect multiple panels together, the library treats the
-multiple panels as one big panel arranged horizontally. Arranging
-the displays like this would be a standard order.
+When you link / chain multiple panels together, the ESP32-HUB75-MatrixPanel-I2S-DMA library treats as one wide horizontal panel. This would be a 'standard' (default) order.
 
-Non-standard order is essentially the creation of a non-horizontal only 'virtual' display that you can draw to in the same way you would
-the matrix, but with VirtualDisplay library looking after the pixel mapping to the physical chained panels.
+Non-standard order is essentially the creation of a non-horizontal-only display that you can draw to in the same way you would any other display, with VirtualDisplay library looking after the pixel mapping to the physical chained panels.
 
-[Refer to this document](VirtualDisplay.pdf) for the guide on how to use.
+For example: You bought four (4) 64x32px panels, and wanted to use them to create a 128x64pixel display. You would use the VirtualMatrixPanel class.
+
+[Refer to this document](VirtualMatrixPanel.pdf) for an explanation and refer to this example on how to use.
+
 
 ### Steps to Use ###
 
-1) In ESP32-HUB75-MatrixPanel-I2S-DMA.h:
+1. [Refer to this document](VirtualMatrixPanel.pdf) for an explanation and refer to this example on how to use.
 
-- Set the MATRIX_HEIGHT to be the y resolution of the physical chained panels in a line (if the panels are 32 x 16, set it to be 16)
-- Set the MATRIX_WIDTH to be the sum of the x resolution of all the physical chained panels (i.e. If you have 4 x (32px w x 16px h) panels, 32x4 = 128) 
+2. In your Arduino sketch, configure these defines accordingly:
+```
+#define PANEL_RES_X 64 // Number of pixels wide of each INDIVIDUAL panel module. 
+#define PANEL_RES_Y 32 // Number of pixels tall of each INDIVIDUAL panel module.
 
-2) In the sketch:
+#define NUM_ROWS 2 // Number of rows of chained INDIVIDUAL PANELS
+#define NUM_COLS 2 // Number of INDIVIDUAL PANELS per ROW
+```
 
-- Set values for NUM_ROWS, NUM_COLS, PANEL_RES_X, PANEL_RES_Y. There are comments beside them
-explaining what they are in more detail.
-- Other than where the matrix is defined and matrix.begin in the setup, you should now be using the virtual display
-for everything (drawing pixels, writing text etc). You can do a find and replace of all calls if it's an existing sketch
-(just make sure you don't replace the definition and the matrix.begin)
-- If the sketch makes use of MATRIX_HEIGHT or MATRIX_WIDTH, these will need to be replaced with the width and height
-of your virtual screen. Either make new defines and use that, or you can use virtualDisp.width() or .height()
+3. In your Arduino sketch, use the 'VirtualMatrixPanel' class instance (virtualDisp) to draw to the display (i.e. drawPixel), instead of the underling MatrixPanel_I2S_DMA class instance (dma_display).
+
 
 #### Thanks to ####
 * Brian Lough for the Virtual to Real pixel co-ordinate code.

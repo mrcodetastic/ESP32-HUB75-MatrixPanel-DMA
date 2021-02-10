@@ -10,8 +10,9 @@
  *******************************************************************/
 
 #include "ESP32-HUB75-MatrixPanel-I2S-DMA.h"
-#include <Fonts/FreeSansBold12pt7b.h>
-
+#ifndef NO_GFX
+ #include <Fonts/FreeSansBold12pt7b.h>
+#endif
 
 struct VirtualCoords {
   int16_t x;
@@ -21,8 +22,10 @@ struct VirtualCoords {
  
 #ifdef USE_GFX_ROOT
 class VirtualMatrixPanel : public GFX
-#else	
+#elif !defined NO_GFX
 class VirtualMatrixPanel : public Adafruit_GFX
+#else
+class VirtualMatrixPanel
 #endif	
 {
 
@@ -38,11 +41,10 @@ class VirtualMatrixPanel : public Adafruit_GFX
 
     MatrixPanel_I2S_DMA *display;
 
-#ifdef USE_GFX_ROOT
     VirtualMatrixPanel(MatrixPanel_I2S_DMA &disp, int vmodule_rows, int vmodule_cols, int panelX, int panelY, bool serpentine_chain = true, bool top_down_chain = false)
+#ifdef USE_GFX_ROOT
       : GFX(vmodule_cols*panelX, vmodule_rows*panelY)
-#else
-    VirtualMatrixPanel(MatrixPanel_I2S_DMA &disp, int vmodule_rows, int vmodule_cols, int panelX, int panelY, bool serpentine_chain = true, bool top_down_chain = false )
+#elif !defined NO_GFX
       : Adafruit_GFX(vmodule_cols*panelX, vmodule_rows*panelY)
 #endif            
     {
@@ -128,8 +130,12 @@ inline VirtualCoords VirtualMatrixPanel::getCoords(int16_t x, int16_t y) {
     // Reverse co-ordinates if panel chain from ESP starts from the TOP RIGHT
     if (_chain_top_down)
     {
-      coords.x = (this->display->width()-1) - coords.x;
-      coords.y = (this->display->height()-1) - coords.y;
+      const HUB75_I2S_CFG _cfg = this->display->getCfg();
+      coords.x = (_cfg.mx_width * _cfg.chain_length - 1) - coords.x;
+      coords.y = (_cfg.mx_height-1) - coords.y;
+
+      //coords.x = (this->display->getCfg().mx_width-1) - coords.x;
+      //coords.y = (this->display->getCfg().mx_height-1) - coords.y;
     }
 
   //Serial.print("Mapping to x: "); Serial.print(coords.x, DEC);  Serial.print(", y: "); Serial.println(coords.y, DEC);  
@@ -169,6 +175,7 @@ inline void VirtualMatrixPanel::drawPixelRGB24(int16_t x, int16_t y, RGB24 color
   this->display->drawPixelRGB24(coords.x, coords.y, color);
 }
 
+#ifndef NO_GFX
 inline void VirtualMatrixPanel::drawDisplayTest()
 {  
    this->display->setFont(&FreeSansBold12pt7b);
@@ -183,6 +190,7 @@ inline void VirtualMatrixPanel::drawDisplayTest()
   } 
 
 }
+#endif
 
 // need to recreate this one, as it wouldnt work to just map where it starts.
 inline void VirtualMatrixPanel::drawIcon (int *ico, int16_t x, int16_t y, int16_t module_cols, int16_t module_rows) {
