@@ -22,7 +22,7 @@ Ones interested in internals of such matrixes could find [this article](https://
 * 1/8 Scan LED Matrix Panels are not supported, please use an alternative library if you bought one of these.
 
 ## Update for 16x32 Panels
-* there is a virtual panel available to work with 16x32 panels (see: [examples/16x32 Panel](/32x16_1_4_ScanPanel). This Panel includes drawing lines and rectanges, text and scrolling text
+* There is a virtual panel class available to work with 16x32 panels (see: [examples/16x32 Panel](/examples/P6_32x16_1_4_ScanPanel). This Panel includes drawing lines and rectanges, text and scrolling text
 
 # Installation
 
