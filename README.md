@@ -6,7 +6,7 @@ This ESP32 Arduino library for HUB75 / HUB75E connector type 64x32 RGB LED  1/16
 
 As a result, this library can theoretically provide ~16-24 bit colour, at various brightness levels without noticeable flicker.
 
-Ones interested in internals of such matrixes could find [this article](https://www.sparkfun.com/news/2650) usefull.
+Ones interested in internals of such matrixes could find [this article](https://www.sparkfun.com/news/2650) useful.
 
 ## Panels Supported
 * 64x32 (width x height) pixel 1/16 Scan LED Matrix 'Indoor' Panel, such as this [typical RGB panel available for purchase](https://www.aliexpress.com/item/256-128mm-64-32-pixels-1-16-Scan-Indoor-3in1-SMD2121-RGB-full-color-P4-led/32810362851.html). 
@@ -48,7 +48,7 @@ By default the pin mapping is as follows (defaults defined in ESP32-HUB75-Matrix
 +-----------+
 ```
 
-However, if you want to change this, simply provide the wanted pin mapping as part of the class intialization structure. For example, in your sketch have something like the following:
+However, if you want to change this, simply provide the wanted pin mapping as part of the class initialization structure. For example, in your sketch have something like the following:
 
 ```
 // Change these to whatever suits
@@ -108,16 +108,16 @@ void loop()
 
 ### Build-time options
 
-Although Arduino IDE does not seem to offer any way of specifing compile-time options for extenal libs there are other IDE's (like Platformio/Eclipse) that could use that. This lib supports the following compile-time define's
+Although Arduino IDE does not seem to offer any way of specifying compile-time options for external libs there are other IDE's (like PlatformIO/Eclipse) that could use that. This lib supports the following compile-time defines
 
-**USE_GFX_ROOT** - Use lightweigth version of AdafuitGFX, without Adafruit BusIO extensions
+**USE_GFX_ROOT** - Use lightweight version of AdafuitGFX, without Adafruit BusIO extensions
 
 
 **NO_GFX** - Build without AdafuitGFX, only native methods supported based on manipulating DMA buffer. I.e. no methods of drawing circles/shapes, typing text or using fonts!!!
-This might save some resources for applications using it's own internal graphics buffer or works solely with per-pixel manupulation. For example Aurora effects can work fine w/o AdafruitGFX.
+This might save some resources for applications using it's own internal graphics buffer or works solely with per-pixel manipulation. For example Aurora effects can work fine w/o AdafruitGFX.
 
 
-**NO_FAST_FUNCTIONS** - do not build auxilary speed-optimized functions. Those are used to speed-up operations like drawing straight lines or rectangles. Otherwise lines/shapes are drawn using drawpixel() method. The tradoff for speed is RAM/code-size, take it or leave it ;)
+**NO_FAST_FUNCTIONS** - do not build auxiliary speed-optimized functions. Those are used to speed-up operations like drawing straight lines or rectangles. Otherwise lines/shapes are drawn using drawPixel() method. The trade-off for speed is RAM/code-size, take it or leave it ;)
 
 
 
@@ -143,7 +143,7 @@ Resolutions beyond 128x128 are likely to result in crashes due to memory constra
 
 ## Panel Brightness
 
-By default you should not need to change / set the brightness setting as the default value (16) is sufficent for most purposes. Brightness can be changed by calling `setPanelBrightness(int XX)` or `setBrightness8(uint8_t XX)`.
+By default you should not need to change / set the brightness setting as the default value (16) is sufficient for most purposes. Brightness can be changed by calling `setPanelBrightness(int XX)` or `setBrightness8(uint8_t XX)`.
 
 The value to pass 'setPanelBrightness' must be a value less than MATRIX_CHAIN_WIDTH in pixels. For example for a single 64x32 LED Matrix Module, a value must be less than 64. However, if you set the brightness too high, you may experience ghosting. 
 
@@ -170,7 +170,7 @@ Summary: setPanelBrightness(xx) value can be any number from 0 (display off) to 
 
 If you face issues with image ghosting when pixels has clones with horizontal offset, than you try to change Latch blanking value. Latch blanking controls
 for how many clock pulses matrix output is disabled via EO signal before/after toggling LAT signal. It hides row bits transitioning and different panels may
-require longer times for proper operation. Default value is 1 clock before/after LAT row transition. This could be controlled with `MatrixPanel_I2S_DMA::setLatBlanking(uint8_t v)`. v could be between 1 to 4, default is 1, larger values won't give any benefit other than reducing brigthness.
+require longer times for proper operation. Default value is 1 clock before/after LAT row transition. This could be controlled with `MatrixPanel_I2S_DMA::setLatBlanking(uint8_t v)`. v could be between 1 to 4, default is 1, larger values won't give any benefit other than reducing brightness.
 
 
 An example:

@@ -1,11 +1,11 @@
 # Using this library with 32x16 1/4 Scan Panels
 
 ## Problem
-The underlying implementation of the ESP32-HUB75-MatrixPanel-I2S-DMA only supports output to 1/16 or 1/32 scan panels (two lines in parallel only) this is fixed and cannot be changed.
-
-However, it is possible to connect 1/4 scan panels to this library and 'trick' the output to work correctly on these panels by way of adjusting the pixel co-ordinates that are 'sent' to the ESP32-HUB75-MatrixPanel-I2S-DMA library (in this example, it is the 'dmaOutput' class).
+ESP32-HUB75-MatrixPanel-I2S-DMA library will not display output correctly with 1/4 scan panels such [as this](https://de.aliexpress.com/item/33017477904.html?spm=a2g0o.detail.1000023.16.1fedd556Yw52Zi&algo_pvid=4329f1c0-04d2-43d9-bdfd-7d4ee95e6b40&algo_expid=4329f1c0-04d2-43d9-bdfd-7d4ee95e6b40-52&btsid=9a8bf2b5-334b-45ea-a849-063d7461362e&ws_ab_test=searchweb0_0,searchweb201602_10,searchweb201603_60%5BAliExpress%2016x32%5D).
 
 ## Solution
+It is possible to connect 1/4 scan panels to this library and 'trick' the output to work correctly on these panels by way of adjusting the pixel co-ordinates that are 'sent' to the ESP32-HUB75-MatrixPanel-I2S-DMA library (in this example, it is the 'dmaOutput' class).
+
 Creation of a 'QuarterScanMatrixPanel.h' class which sends an adjusted x,y co-ordinates to the underlying ESP32-HUB75-MatrixPanel-I2S-DMA library's drawPixel routine, to trick the output to look pixel perfect. Refer to the 'getCoords' function within 'QuarterScanMatrixPanel.h'
 
 ## Limitations

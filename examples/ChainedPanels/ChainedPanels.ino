@@ -172,7 +172,7 @@ void setup() {
     The configuration for MatrixPanel_I2S_DMA object is held in HUB75_I2S_CFG structure,
     All options has it's predefined default values. So we can create a new structure and redefine only the options we need
 
-    Pls, refer to the PaternPlasma example for detailed example on MatrixPanel_I2S_DMA configuration
+	Please refer to the '2_PatternPlasma.ino' example for detailed example of how to use the MatrixPanel_I2S_DMA configuration
   */
 
   HUB75_I2S_CFG mxconfig(
