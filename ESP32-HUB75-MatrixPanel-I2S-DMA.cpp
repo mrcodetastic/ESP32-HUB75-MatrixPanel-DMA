@@ -802,8 +802,15 @@ void MatrixPanel_I2S_DMA::brtCtrlOE(int brt, const bool _buff_id){
  */
 bool MatrixPanel_I2S_DMA::begin(int r1, int g1, int b1, int r2, int g2, int b2, int a, int b, int c, int d, int e, int lat, int oe, int clk){
 
+  // RGB
   m_cfg.gpio.r1 = r1; m_cfg.gpio.g1 = g1; m_cfg.gpio.b1 = b1;
-  m_cfg.gpio.r2 = r2; m_cfg.gpio.g2 = g2; m_cfg.gpio.b1 = b2;
+  m_cfg.gpio.r2 = r2; m_cfg.gpio.g2 = g2; m_cfg.gpio.b2 = b2;
+  
+  // Line Select
+  m_cfg.gpio.a = a; m_cfg.gpio.b = b; m_cfg.gpio.c = c;
+  m_cfg.gpio.d = d; m_cfg.gpio.e = e; 
+  
+  // Clock & Control
   m_cfg.gpio.lat = lat; m_cfg.gpio.oe = oe; m_cfg.gpio.clk = clk;
 
   return begin();
