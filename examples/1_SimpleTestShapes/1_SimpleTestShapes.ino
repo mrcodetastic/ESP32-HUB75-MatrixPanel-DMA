@@ -3,11 +3,21 @@
 //
 
 #include <ESP32-HUB75-MatrixPanel-I2S-DMA.h>
-MatrixPanel_I2S_DMA dma_display;
 
-// Or use an Alternative non-DMA library, i.e:
-//#include <P3RGB64x32MatrixPanel.h>
-//P3RGB64x32MatrixPanel display;
+/* 
+ * Below is an example of the 'legacy' way of initialising the MatrixPanel_I2S_DMA class.
+ * i.e. Matrix Width and Height will need to be confirmed as compile-time directives.
+ * By default the library assumes a single 64x32 pixel panel is connected.
+ *
+ * Refer to the example '2_PatternPlasma' on the new / correct way to setup this library
+ * for different resolutions / panel chain lengths.
+ * 
+ */ 
+ MatrixPanel_I2S_DMA dma_display;
+
+ // Or use an Alternative non-DMA library, i.e:
+ //#include <P3RGB64x32MatrixPanel.h>
+ //P3RGB64x32MatrixPanel display;
 
 
 void setup() {

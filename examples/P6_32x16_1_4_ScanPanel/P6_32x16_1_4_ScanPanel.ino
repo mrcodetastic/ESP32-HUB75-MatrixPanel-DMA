@@ -44,7 +44,18 @@
 #include "QuarterScanMatrixPanel.h" // Virtual Display to re-map co-ordinates such that they draw correctly on a32x16 1/4 Scan panel 
 #include <Wire.h>
 
+/* 
+ * Below is an is the 'legacy' way of initialising the MatrixPanel_I2S_DMA class.
+ * i.e. MATRIX_WIDTH and MATRIX_HEIGHT are modified by compile-time directives.
+ * By default the library assumes a single 64x32 pixel panel is connected.
+ *
+ * Refer to the example '2_PatternPlasma' on the new / correct way to setup this library
+ * for different resolutions / panel chain lengths within the sketch 'setup()'.
+ * 
+ */
 MatrixPanel_I2S_DMA dmaOutput;
+
+// Create virtual 1/2 to 1/4 scan pixel co-ordinate mapping class.
 QuarterScanMatrixPanel display(dmaOutput);
 
 #include <FastLED.h>
