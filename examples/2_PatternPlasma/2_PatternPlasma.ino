@@ -58,10 +58,10 @@
 #include <ESP32-HUB75-MatrixPanel-I2S-DMA.h>
 #include <FastLED.h>
 
-// see below
+// Configure for your panel(s) as appropriate!
 #define PANEL_WIDTH 64
-#define PANEL_HEIGHT 64
-#define PANELS_NUMBER 2
+#define PANEL_HEIGHT 64  	// Panel height of 64 will required PIN_E to be defined.
+#define PANELS_NUMBER 2 	// Number of chained panels, if just a single panel, obviously set to 1
 #define PIN_E 32
 
 #define PANE_WIDTH PANEL_WIDTH * PANELS_NUMBER
