@@ -455,7 +455,7 @@ class MatrixPanel_I2S_DMA {
         #endif      
 
         // Wait before we allow any writing to the buffer. Stop flicker.
-        while(!i2s_parallel_is_previous_buffer_free()) {}       
+        while(!i2s_parallel_is_previous_buffer_free()) { delay(1); }       
     }
     
     inline void showDMABuffer()
@@ -470,7 +470,7 @@ class MatrixPanel_I2S_DMA {
         i2s_parallel_flip_to_buffer(&I2S1, back_buffer_id);
 
         // Wait before we allow any writing to the buffer. Stop flicker.
-        while(!i2s_parallel_is_previous_buffer_free()) {}               
+        while(!i2s_parallel_is_previous_buffer_free()) { delay(1); }               
     }
     
     inline void setPanelBrightness(int b)
