@@ -55,20 +55,26 @@
 */
 
 
-// For development testing only
-//#define IGNORE_REFRESH_RATE 1
-
-
-#define val2PWM(val) { lumConvTab[(uint8_t)val]; }
 // macro's to calculate sizes of a single buffer (double buffer takes twice as this)
 #define rowBitStructBuffSize        sizeof(ESP32_I2S_DMA_STORAGE_TYPE) * (PIXELS_PER_ROW + CLKS_DURING_LATCH) * PIXEL_COLOR_DEPTH_BITS
 #define frameStructBuffSize         ROWS_PER_FRAME * rowBitStructBuffSize
+
 /* this replicates same function in rowBitStruct, but due to induced inlining it might be MUCH faster when used in tight loops
  * while method from struct could be flushed out of instruction cache between loop cycles
  * do NOT forget about buff_id param if using this
  */
 #define getRowDataPtr(row, _dpth, buff_id) &(dma_buff.rowBits[row]->data[_dpth * dma_buff.rowBits[row]->width + buff_id*(dma_buff.rowBits[row]->width * dma_buff.rowBits[row]->color_depth)])
 
+/* This library is designed to take an 8 bit / 1 byt value (0-255) for each R G B colour sub-pixel. 
+ * The PIXEL_COLOR_DEPTH_BITS should always be '8' as a result.
+ * However, if the library is to be used with lower colour depth (i.e. 6 bit colour), then we need to ensure the 8-bit value passed to the colour masking
+ * is adjusted accordingly to ensure the LSB's are shifted left to MSB, by the difference. Otherwise the colours will be all screwed up.
+ */
+#if PIXEL_COLOR_DEPTH_BITS < 8
+	#define COLOR_DEPTH_LESS_THAN_8BIT_ADJUST  +(8-PIXEL_COLOR_DEPTH_BITS)
+#else
+	#define COLOR_DEPTH_LESS_THAN_8BIT_ADJUST    // Nothing to adjust.
+#endif
 
 bool MatrixPanel_I2S_DMA::allocateDMAmemory()
 {
@@ -472,6 +478,7 @@ void IRAM_ATTR MatrixPanel_I2S_DMA::updateMatrixDMABuffer(int16_t x_coord, int16
 	 * i.e. It's almost impossible for color_depth_idx of 0 to be sent out to the MATRIX unless the 'value' of a color is exactly '1'
    * https://ledshield.wordpress.com/2012/11/13/led-brightness-to-your-eye-gamma-correction-no/
 	 */
+	 
 	red   = lumConvTab[red];
 	green = lumConvTab[green];
 	blue  = lumConvTab[blue]; 	
@@ -500,11 +507,11 @@ void IRAM_ATTR MatrixPanel_I2S_DMA::updateMatrixDMABuffer(int16_t x_coord, int16
       y_coord -= ROWS_PER_FRAME;
     }
 
-    // Iterating through color depth bits
+    // Iterating through colour depth bits, which we assume are 8 bits per RGB subpixel (24bpp)
     uint8_t color_depth_idx = PIXEL_COLOR_DEPTH_BITS;
     do {
         --color_depth_idx;
-        uint8_t mask = (1 << color_depth_idx); // 24 bit color
+        uint8_t mask = (1 << (color_depth_idx COLOR_DEPTH_LESS_THAN_8BIT_ADJUST)); // expect 24 bit color (8 bits per RGB subpixel)
         uint16_t RGB_output_bits = 0;
 
         /* Per the .h file, the order of the output RGB bits is:
@@ -544,7 +551,7 @@ void MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint8_t red, uint8_t green, uint
   {
     // let's precalculate RGB1 and RGB2 bits than flood it over the entire DMA buffer
     uint16_t RGB_output_bits = 0;
-    uint8_t mask = (1 << color_depth_idx); // 24 bit color
+    uint8_t mask = (1 << color_depth_idx COLOR_DEPTH_LESS_THAN_8BIT_ADJUST); // 24 bit color
 
 	/* Per the .h file, the order of the output RGB bits is:
 	 * BIT_B2, BIT_G2, BIT_R2,    BIT_B1, BIT_G1, BIT_R1	  */
@@ -874,7 +881,7 @@ void MatrixPanel_I2S_DMA::hlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, 
 
     // let's precalculate RGB1 and RGB2 bits than flood it over the entire DMA buffer
     uint16_t RGB_output_bits = 0;
-    uint8_t mask = (1 << color_depth_idx);
+    uint8_t mask = (1 << color_depth_idx COLOR_DEPTH_LESS_THAN_8BIT_ADJUST);
 
     /* Per the .h file, the order of the output RGB bits is:
       * BIT_B2, BIT_G2, BIT_R2,    BIT_B1, BIT_G1, BIT_R1	  */
@@ -934,7 +941,7 @@ void MatrixPanel_I2S_DMA::vlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, 
     --color_depth_idx;
 
     // let's precalculate RGB1 and RGB2 bits than flood it over the entire DMA buffer
-    uint8_t mask = (1 << color_depth_idx);
+    uint8_t mask = (1 << color_depth_idx COLOR_DEPTH_LESS_THAN_8BIT_ADJUST);
     uint16_t RGB_output_bits = 0;
 
     /* Per the .h file, the order of the output RGB bits is:

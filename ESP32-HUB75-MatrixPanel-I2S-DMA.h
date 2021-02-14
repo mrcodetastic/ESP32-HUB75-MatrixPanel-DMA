@@ -77,7 +77,7 @@
 #endif
 
 // 8bit per RGB color = 24 bit/per pixel,
-// might be reduced to save RAM but it corrupts colors badly (curently broken) 
+// might be reduced to save RAM but it corrupts colours badly (currently broken) 
 #ifndef PIXEL_COLOR_DEPTH_BITS
  #define PIXEL_COLOR_DEPTH_BITS      8
 #endif
@@ -85,10 +85,10 @@
 #define COLOR_CHANNELS_PER_PIXEL     3
 
 /***************************************************************************************/
-/* Definitions below shold NOT be ever changed without rewriting libraly logic         */
+/* Definitions below should NOT be ever changed without rewriting library logic         */
 #define ESP32_I2S_DMA_MODE          I2S_PARALLEL_BITS_16    // Pump 16 bits out in parallel
-#define ESP32_I2S_DMA_STORAGE_TYPE  uint16_t                // one uint16_t at a time.
-#define CLKS_DURING_LATCH            0   // Not (yet) used. 
+#define ESP32_I2S_DMA_STORAGE_TYPE  uint16_t                // DMA output of one uint16_t at a time.
+#define CLKS_DURING_LATCH            0   					// Not (yet) used. 
 
 // Panel Upper half RGB (numbering according to order in DMA gpio_bus configuration)
 #define BITS_RGB1_OFFSET 0 // Start point of RGB_X1 bits
@@ -126,6 +126,13 @@
 // Max clock cycles to blank OE before/after LAT signal change
 #define MAX_LAT_BLANKING  4
 
+/***************************************************************************************/
+// Check compile-time only options
+#if PIXEL_COLOR_DEPTH_BITS > 8
+	#error "Pixel color depth bits cannot be greater than 8."
+#elif PIXEL_COLOR_DEPTH_BITS < 1 
+	#error "Pixel color depth bits cannot be less than 1."
+#endif
 
 /***************************************************************************************/
 // Lib includes
