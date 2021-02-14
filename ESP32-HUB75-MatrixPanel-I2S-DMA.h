@@ -130,8 +130,8 @@
 // Check compile-time only options
 #if PIXEL_COLOR_DEPTH_BITS > 8
 	#error "Pixel color depth bits cannot be greater than 8."
-#elif PIXEL_COLOR_DEPTH_BITS < 1 
-	#error "Pixel color depth bits cannot be less than 1."
+#elif PIXEL_COLOR_DEPTH_BITS < 2 
+	#error "Pixel color depth bits cannot be less than 2."
 #endif
 
 /***************************************************************************************/
