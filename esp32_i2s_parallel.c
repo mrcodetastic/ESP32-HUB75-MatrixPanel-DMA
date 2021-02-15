@@ -30,6 +30,18 @@
 //#include "esp_heap_caps.h"
 #include "esp32_i2s_parallel.h"
 
+#include "soc/rtc_cntl_reg.h"
+#include "soc/rtc.h"
+
+#include "soc/rtc_cntl_reg.h"
+#include "soc/rtc.h"
+
+#include "soc/syscon_reg.h"
+#include "soc/rtc_cntl_struct.h"
+
+//#include "esp32-hal-cpu.h"
+#include "driver/i2s.h"
+
 typedef struct {
     volatile lldesc_t *dmadesc_a, *dmadesc_b;
     int desccount_a, desccount_b;
@@ -138,6 +150,37 @@ static void fifo_reset(i2s_dev_t *dev) {
 }
 
 void i2s_parallel_setup_without_malloc(i2s_dev_t *dev, const i2s_parallel_config_t *cfg) {
+	
+	// Based on https://www.esp32.com/viewtopic.php?f=18&p=55305#p55305
+	// to try and get more than 20Mhz out of I2S0.
+	
+	RTCCNTL.ana_conf.plla_force_pd = 0;                               // RTC APLL power down
+	RTCCNTL.ana_conf.plla_force_pd = 1;                               // RTC APLL power down
+	
+	// @param sdm0  frequency adjustment parameter, 0..255
+	// @param sdm1  frequency adjustment parameter, 0..255
+	// @param sdm2  frequency adjustment parameter, 0..63 max = 10
+	// @param o_div  frequency divider, 0..31
+	// The dividend in this expression should be in the range of 240 and 560 MHz - tested 
+
+	// apll_freq = xtal_freq * (4 + sdm0/65536 + sdm1/256 + sdm2)/((o_div + 2) * 2)
+	// rtc_clk_apll_enable(bool enable, uint32_t sdm0, uint32_t sdm1,uint32_t sdm2, uint32_t o_div);
+
+	// apll_freq = 40MHz * (4+0+0+6)/(0+2)*2
+	// apll_freq = 40 * 10 / 4 = 100 MHz          // enable APLL clock 100 Mhz
+
+	// sdm2 =4 = 40mhz
+	// sdm2 = 3 = 30mhz
+	int   sdm0 = 0; int sdm1 = 0; int sdm2 = 3; int o_div = 0;
+	rtc_clk_apll_enable(1, sdm0, sdm1, sdm2, o_div); 
+
+	long int APLL_CLK = 40 * (4 + (sdm0 / 65536) + (sdm1 / 256) + sdm2) / (2 * (o_div + 2));
+	printf("esp32_i2s_parallel.c > APLL clock is %d Mhz\n", APLL_CLK);	
+	
+	
+	  
+	  
+  
     //Figure out which signal numbers to use for routing
     //printf("Setting up parallel I2S bus at I2S%d\n", i2snum(dev));
     int sig_data_base, sig_clk;
@@ -188,6 +231,7 @@ void i2s_parallel_setup_without_malloc(i2s_dev_t *dev, const i2s_parallel_config
     dev->sample_rate_conf.val=0;
     dev->sample_rate_conf.rx_bits_mod=cfg->bits;
     dev->sample_rate_conf.tx_bits_mod=cfg->bits;
+/*
     dev->sample_rate_conf.rx_bck_div_num=4; //ToDo: Unsure about what this does...
 
     // because conf2.lcd_tx_wrx2_en is set for 8-bit mode, the clock speed is doubled, drop it in half here
@@ -207,6 +251,26 @@ void i2s_parallel_setup_without_malloc(i2s_dev_t *dev, const i2s_parallel_config
 	// and https://github.com/espressif/esp-idf/issues/2251
 	// Igor - "Frequencies above 20MHz do not work in I2S mode."
     dev->clkm_conf.clkm_div_num=80000000L/(cfg->clkspeed_hz + 1); // combination of this and tx_bck_div_num
+	*/
+	
+  int div_num = 2; int div_b = 0; int div_a = 1;
+  
+  dev->clkm_conf.clkm_div_num = div_num;                                                    // I2S clock divider’s integral value >= 2
+  dev->clkm_conf.clkm_div_b = div_b;                                                        // Fractional clock divider’s numerator value
+  dev->clkm_conf.clkm_div_a = div_a;                                                        // Fractional clock divider’s denominator value
+  dev->clkm_conf.clk_en 	= 1;                                                            // I2S clock enable
+  dev->clkm_conf.clka_en 	= 1;                                                            // Set this bit to enable clk_apll
+  
+
+  long int i2s_clk = APLL_CLK / ( div_num + ( div_b / div_a));
+  printf("esp32_i2s_parallel.c > I2S clock is %d Mhz\n", i2s_clk);	
+	
+
+  dev->sample_rate_conf.tx_bck_div_num = 1;                                                 // TX BCK clock = MCLK / num
+  dev->sample_rate_conf.rx_bck_div_num = 1;                                                 // RX BCK clock = MCLK / num
+
+  long int output_clk = i2s_clk / dev->sample_rate_conf.tx_bck_div_num;
+  printf("esp32_i2s_parallel.c > Final output bitrate to panel is %d Mhz\n", output_clk);  
 	
 
     dev->fifo_conf.val=0;
