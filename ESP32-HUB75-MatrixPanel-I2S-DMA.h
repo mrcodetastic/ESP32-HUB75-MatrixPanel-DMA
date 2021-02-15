@@ -230,11 +230,6 @@ struct  HUB75_I2S_CFG {
    */
   enum shift_driver {SHIFT=0, FM6124, FM6126A, ICN2038S};
 
-  /**
-   * I2S clock speed selector
-   */
-  enum clk_speed {HZ_10M=10000000, HZ_13340K=13340000, HZ_16M=16000000, HZ_20M=20000000, HZ_26670K=26670000};
-
   // Structure Variables
 
   // physical width of a single matrix panel module (in pixels, usually it is 64 ;) )
@@ -252,8 +247,7 @@ struct  HUB75_I2S_CFG {
 
   // Matrix driver chip type - default is a plain shift register
   shift_driver driver;
-  // I2S clock speed
-  clk_speed i2sspeed;
+  
   // use DMA double buffer (twice as much RAM required)
   bool double_buff;
   // How many clock cycles to blank OE before/after LAT signal change, default is 1 clock
@@ -271,13 +265,12 @@ struct  HUB75_I2S_CFG {
       LAT_PIN_DEFAULT, OE_PIN_DEFAULT, CLK_PIN_DEFAULT },
     shift_driver _drv = SHIFT,
     bool _dbuff = false,
-    clk_speed _i2sspeed = HZ_10M,
     uint16_t _latblk = 1
   ) : mx_width(_w),
       mx_height(_h),
       chain_length(_chain),
       gpio(_pinmap),
-      driver(_drv), i2sspeed(_i2sspeed),
+      driver(_drv),
       double_buff(_dbuff),
       latch_blanking(_latblk) {}
 }; // end of structure HUB75_I2S_CFG

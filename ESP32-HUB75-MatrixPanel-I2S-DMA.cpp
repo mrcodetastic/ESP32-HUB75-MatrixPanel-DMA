@@ -100,11 +100,11 @@ bool MatrixPanel_I2S_DMA::allocateDMAmemory()
         
         Serial.println(F("DMA memory blocks available before any malloc's: "));
         heap_caps_print_heap_info(MALLOC_CAP_DMA);
-        
+		Serial.println(F("******************************************************************"));
         Serial.printf_P(PSTR("We're going to need %d bytes of SRAM just for the frame buffer(s).\r\n"), _frame_buffer_memory_required);  
         Serial.printf_P(PSTR("The total amount of DMA capable SRAM memory is %d bytes.\r\n"), heap_caps_get_free_size(MALLOC_CAP_DMA));
         Serial.printf_P(PSTR("Largest DMA capable SRAM memory block is %d bytes.\r\n"), heap_caps_get_largest_free_block(MALLOC_CAP_DMA));          
-		
+		Serial.println(F("******************************************************************"));		
     #endif
 
     // Can we potentially fit the framebuffer into the DMA capable memory that's available?
@@ -180,11 +180,16 @@ bool MatrixPanel_I2S_DMA::allocateDMAmemory()
 
     Serial.printf_P(PSTR("Raised lsbMsbTransitionBit to %d/%d to fit in remaining RAM\r\n"), lsbMsbTransitionBit, PIXEL_COLOR_DEPTH_BITS - 1);
 
-
+   //#define IGNORE_REFRESH_RATE 1 
    #ifndef IGNORE_REFRESH_RATE	
+   
+	#if SERIAL_DEBUG  
+	  Serial.printf_P(PSTR("Requested I2S clock / gpio output frequency is %d Mhz\r\n"), ESP32_I2S_CLOCK_SPEED/1000000);        	  
+	#endif
+		
     // calculate the lowest LSBMSB_TRANSITION_BIT value that will fit in memory that will meet or exceed the configured refresh rate
     while(1) {           
-        int psPerClock = 1000000000000UL/m_cfg.i2sspeed;
+        int psPerClock = 1000000000000UL/ESP32_I2S_CLOCK_SPEED;
         int nsPerLatch = ((PIXELS_PER_ROW + CLKS_DURING_LATCH) * psPerClock) / 1000;
 
         // add time to shift out LSBs + LSB-MSB transition bit - this ignores fractions...
@@ -198,9 +203,9 @@ bool MatrixPanel_I2S_DMA::allocateDMAmemory()
         int actualRefreshRate = 1000000000UL/(nsPerFrame);
         calculated_refresh_rate = actualRefreshRate;
 
-        #if SERIAL_DEBUG  
+        #if SERIAL_DEBUG     	
           Serial.printf_P(PSTR("lsbMsbTransitionBit of %d gives %d Hz refresh: \r\n"), lsbMsbTransitionBit, actualRefreshRate);        
-		    #endif
+		#endif
 
         if (actualRefreshRate > min_refresh_rate) // HACK Hard Coded: 100
           break;
@@ -416,7 +421,7 @@ void MatrixPanel_I2S_DMA::configureDMA(const HUB75_I2S_CFG& _cfg)
     i2s_parallel_config_t cfg={
         .gpio_bus={_cfg.gpio.r1, _cfg.gpio.g1, _cfg.gpio.b1, _cfg.gpio.r2, _cfg.gpio.g2, _cfg.gpio.b2, _cfg.gpio.lat, _cfg.gpio.oe, _cfg.gpio.a, _cfg.gpio.b, _cfg.gpio.c, _cfg.gpio.d, _cfg.gpio.e, -1, -1, -1},
         .gpio_clk=_cfg.gpio.clk,
-        .clkspeed_hz=_cfg.i2sspeed,   //ESP32_I2S_CLOCK_SPEED,  formula used is 80000000L/(cfg->clkspeed_hz + 1), must result in >=2.  Acceptable values 26.67MHz, 20MHz, 16MHz, 13.34MHz...
+        .clkspeed_hz=ESP32_I2S_CLOCK_SPEED,   //ESP32_I2S_CLOCK_SPEED,  formula used is 80000000L/(cfg->clkspeed_hz + 1), must result in >=2.  Acceptable values 26.67MHz, 20MHz, 16MHz, 13.34MHz...
         .bits=ESP32_I2S_DMA_MODE,     //ESP32_I2S_DMA_MODE,
         .bufa=0,
         .bufb=0,
