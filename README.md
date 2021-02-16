@@ -8,6 +8,8 @@ As a result, this library can theoretically provide ~16-24 bit colour, at variou
 
 Ones interested in internals of such matrixes could find [this article](https://www.sparkfun.com/news/2650) useful.
 
+Due to the high-speed optimised nature of this library, only specific panels are supported. Please do not raised issues with respect to panels not supported on the list below.
+
 ## Panels Supported
 * 64x32 (width x height) pixel 1/16 Scan LED Matrix 'Indoor' Panel, such as this [typical RGB panel available for purchase](https://www.aliexpress.com/item/256-128mm-64-32-pixels-1-16-Scan-Indoor-3in1-SMD2121-RGB-full-color-P4-led/32810362851.html). 
 * 64x64 pixel 1/32 Scan LED Matrix 'Indoor' Panel (experimental). 
@@ -19,7 +21,11 @@ Ones interested in internals of such matrixes could find [this article](https://
 * RUC7258
 * FM6126A AKA ICN2038S, FM6124 (if specified properly)
 ## Panels Not Supported
-* 1/8 Scan LED Matrix Panels are not supported, please use an alternative library if you bought one of these.
+* 1/8 Scan LED Matrix Panels are not supported.
+* RUL5358 / SHIFTREG_ABC_BIN_DE based panels are not supported.
+* Any other panel not listed above.
+
+Please use an [alternative library](https://github.com/2dom/PxMatrix) if you bought one of these.
 
 ## Update for 16x32 Panels
 * There is a virtual panel class available to work with 16x32 panels (see: [examples/16x32 Panel](/examples/P6_32x16_1_4_ScanPanel). This Panel includes drawing lines and rectanges, text and scrolling text
