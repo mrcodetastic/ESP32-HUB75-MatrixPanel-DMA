@@ -67,9 +67,6 @@
 
 /***************************************************************************************/
 /* Do not change definitions below unless you pretty sure you know what you are doing! */
-#ifndef ESP32_I2S_CLOCK_SPEED
-  #define ESP32_I2S_CLOCK_SPEED       (10000000UL)            // @ 10Mhz
-#endif
 
 // RGB Panel Constants / Calculated Values
 #ifndef MATRIX_ROWS_IN_PARALLEL
@@ -233,7 +230,7 @@ struct  HUB75_I2S_CFG {
   /**
    * I2S clock speed selector
    */
-  enum clk_speed {HZ_10M=10000000, HZ_13340K=13340000, HZ_16M=16000000, HZ_20M=20000000, HZ_26670K=26670000};
+  enum clk_speed {HZ_10M=10000000, HZ_20M=20000000};
 
   // Structure Variables
 

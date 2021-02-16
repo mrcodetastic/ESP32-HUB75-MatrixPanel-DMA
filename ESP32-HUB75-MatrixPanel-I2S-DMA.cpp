@@ -100,10 +100,11 @@ bool MatrixPanel_I2S_DMA::allocateDMAmemory()
         
         Serial.println(F("DMA memory blocks available before any malloc's: "));
         heap_caps_print_heap_info(MALLOC_CAP_DMA);
-        
+		Serial.println(F("******************************************************************"));
         Serial.printf_P(PSTR("We're going to need %d bytes of SRAM just for the frame buffer(s).\r\n"), _frame_buffer_memory_required);  
         Serial.printf_P(PSTR("The total amount of DMA capable SRAM memory is %d bytes.\r\n"), heap_caps_get_free_size(MALLOC_CAP_DMA));
         Serial.printf_P(PSTR("Largest DMA capable SRAM memory block is %d bytes.\r\n"), heap_caps_get_largest_free_block(MALLOC_CAP_DMA));          
+		Serial.println(F("******************************************************************"));	    
 		
     #endif
 
