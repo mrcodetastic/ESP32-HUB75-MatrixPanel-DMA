@@ -196,18 +196,12 @@ void i2s_parallel_setup_without_malloc(i2s_dev_t *dev, const i2s_parallel_config
     else
         dev->sample_rate_conf.tx_bck_div_num=1; // datasheet says this must be 2 or greater (but 1 seems to work)
     
-    dev->clkm_conf.val=0;				// Clear the clkm_conf struct
-    dev->clkm_conf.clka_en=0;			// Use the 160mhz system clock (PLL_D2_CLK) when '0'
-    dev->clkm_conf.clkm_div_a=1;		// Page 310 of Technical Reference Manual - Clock denominator
-    dev->clkm_conf.clkm_div_b=1;		// Page 310 of Technical Reference Manual - Clock numerator
+    dev->clkm_conf.val=0;
+    dev->clkm_conf.clka_en=0;
+    dev->clkm_conf.clkm_div_a=63;
+    dev->clkm_conf.clkm_div_b=63;
     //We ignore the possibility for fractional division here, clkspeed_hz must round up for a fractional clock speed, must result in >= 2
-	
-	// It's confusing, but the max output the ESP32 can pump out when using I2S *parallel* output is 20Mhz.
-	// https://easyvolts.com/2018/08/14/esp32-40msps-oscilloscope-project-is-closed-and-here-is-why/
-	// and https://github.com/espressif/esp-idf/issues/2251
-	// Igor - "Frequencies above 20MHz do not work in I2S mode."
-    dev->clkm_conf.clkm_div_num=80000000L/(cfg->clkspeed_hz + 1); // combination of this and tx_bck_div_num
-	
+    dev->clkm_conf.clkm_div_num=80000000L/(cfg->clkspeed_hz + 1);
 
     dev->fifo_conf.val=0;
     dev->fifo_conf.rx_fifo_mod_force_en=1;
