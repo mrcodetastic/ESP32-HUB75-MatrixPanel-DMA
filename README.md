@@ -8,9 +8,11 @@ As a result, this library can theoretically provide ~16-24 bit colour, at variou
 
 Ones interested in internals of such matrixes could find [this article](https://www.sparkfun.com/news/2650) useful.
 
+Due to the high-speed optimised nature of this library, only specific panels are supported. Please do not raised issues with respect to panels not supported on the list below.
+
 ## Panels Supported
 * 64x32 (width x height) pixel 1/16 Scan LED Matrix 'Indoor' Panel, such as this [typical RGB panel available for purchase](https://www.aliexpress.com/item/256-128mm-64-32-pixels-1-16-Scan-Indoor-3in1-SMD2121-RGB-full-color-P4-led/32810362851.html). 
-* 64x64 pixel 1/32 Scan LED Matrix 'Indoor' Panel (experimental). 
+* 64x64 pixel 1/32 Scan LED Matrix 'Indoor' Panel. 
 * 32x16 pixel 1/4 Scan LED Matrix 'Indoor' Panel using an ingenious workaround as demonstrated in [this example](/examples/32x16_1_4_ScanPanel).
 * Any of the above panel resolution / scan rates based on [FM6126](FM6126A.md) / ICN2038S chips. Refer to [this example](/examples/PatternPlasma) on how to use!
 
@@ -19,18 +21,23 @@ Ones interested in internals of such matrixes could find [this article](https://
 * RUC7258
 * FM6126A AKA ICN2038S, FM6124 (if specified properly)
 ## Panels Not Supported
-* 1/8 Scan LED Matrix Panels are not supported, please use an alternative library if you bought one of these.
+* 1/8 Scan LED Matrix Panels are not supported.
+* RUL5358 / SHIFTREG_ABC_BIN_DE based panels are not supported.
+* Any other panel not listed above.
+
+Please use an [alternative library](https://github.com/2dom/PxMatrix) if you bought one of these.
 
 ## Update for 16x32 Panels
 * There is a virtual panel class available to work with 16x32 panels (see: [examples/16x32 Panel](/examples/P6_32x16_1_4_ScanPanel). This Panel includes drawing lines and rectanges, text and scrolling text
 
-# Installation
+# Getting Started
+## 1. Library Installation
 
 * Dependency: You will need to install Adafruit_GFX from the "Library > Manage Libraries" menu.
 * Download and unzip this repository into your Arduino/libraries folder (or better still, use the Arduino 'add library from .zip' option.
 * Library also tested to work fine with PlatformIO, install into your PlatformIO projects' lib/ folder as appropriate.
 
-# Wiring ESP32 with the LED Matrix Panel
+## 2. Wiring ESP32 with the LED Matrix Panel
 
 By default the pin mapping is as follows (defaults defined in ESP32-HUB75-MatrixPanel-I2S-DMA.h).
 
@@ -82,7 +89,7 @@ dma_display = new MatrixPanel_I2S_DMA(mxconfig);
 
 The panel must be powered by 5V AC adapter with enough current capacity. (Current varies due to how many LED are turned on at the same time. To drive all the LEDs, you need 5V4A adapter.)
 
-# How to Use
+## 3. Run a Test Sketch
 
 Below is a bare minimum sketch to draw a single white dot in the top left. You must call .begin() before you call ANY pixel-drawing (fonts, lines, colours etc.) function of the MatrixPanel_I2S_DMA class.
 
@@ -106,7 +113,10 @@ void loop()
 
 ```
 
-### Build-time options
+Once this is working, refer to the [PIO Test Patterns](/examples/PIO_TestPatterns) example. Note: Requires the use of PlatformIO, which you should probably use if you aren't already.
+
+# More Information
+## Build-time options
 
 Although Arduino IDE does not seem to offer any way of specifying compile-time options for external libs there are other IDE's (like PlatformIO/Eclipse) that could use that. This lib supports the following compile-time defines
 
@@ -119,14 +129,22 @@ This might save some resources for applications using it's own internal graphics
 
 **NO_FAST_FUNCTIONS** - do not build auxiliary speed-optimized functions. Those are used to speed-up operations like drawing straight lines or rectangles. Otherwise lines/shapes are drawn using drawPixel() method. The trade-off for speed is RAM/code-size, take it or leave it ;)
 
-**PIXEL_COLOR_DEPTH_BITS** - define color depth in range 2-8 (8 is the default, 24 bpp). Reducing color depth also reduces amount of RAM required for DMA buffer at the expence of a little degradation in color quality.
+
 
 ## Can I use with a larger panel (i.e. 64x64px square panel)?
 If you want to use with a 64x64 pixel panel (typically a HUB75*E* panel) you MUST configure a valid *E_PIN* to your ESP32 and connect it to the E pin of the HUB75 panel! Hence the 'E' in 'HUB75E'
 
-## Can I chained panels?
+## Can I chain panels?
 
-Yes. Refer to the [Chained Panels](examples/ChainedPanels/) example on how to configure panels chaining and  orientation.
+Yes. 
+
+For example: If you want to chain two of these horizontally to make a 128x32 panel you can do so by setting the MATRIX_WIDTH to '128' and connecting the panels in series using the HUB75 ribbon cable.
+
+Similarly, if you wanted to chain 4 panels to make a 256x32 px horizontal panel, you can easily by setting the MATRIX_WIDTH to '256' and connecting the panels in series using the HUB75 ribbon cable.
+
+You MUST either change the MATRIX_WIDTH or MATRIX_HEIGHT values within the 'ESP32-HUB75-MatrixPanel-I2S-DMA.h' file OR pass a [compile time option](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/issues/48#issuecomment-749402379) if using PlatformIO for your development (you should use this).
+
+Finally, if you wanted to chain 4 x (64x32px) panels to make 128x64px display (essentially a 2x2 grid of 64x32 LED Matrix modules), a little more magic will be required. Refer to the [Chained Panels](examples/ChainedPanels/) example.
 
 Resolutions beyond 128x128 are likely to result in crashes due to memory constraints etc. You're on your own at this point.
 
