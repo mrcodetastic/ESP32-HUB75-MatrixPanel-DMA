@@ -30,13 +30,14 @@ Please use an [alternative library](https://github.com/2dom/PxMatrix) if you bou
 ## Update for 16x32 Panels
 * There is a virtual panel class available to work with 16x32 panels (see: [examples/16x32 Panel](/examples/P6_32x16_1_4_ScanPanel). This Panel includes drawing lines and rectanges, text and scrolling text
 
-# Installation
+# Getting Started
+## 1. Library Installation
 
 * Dependency: You will need to install Adafruit_GFX from the "Library > Manage Libraries" menu.
 * Download and unzip this repository into your Arduino/libraries folder (or better still, use the Arduino 'add library from .zip' option.
 * Library also tested to work fine with PlatformIO, install into your PlatformIO projects' lib/ folder as appropriate.
 
-# Wiring ESP32 with the LED Matrix Panel
+## 2. Wiring ESP32 with the LED Matrix Panel
 
 By default the pin mapping is as follows (defaults defined in ESP32-HUB75-MatrixPanel-I2S-DMA.h).
 
@@ -88,7 +89,7 @@ dma_display = new MatrixPanel_I2S_DMA(mxconfig);
 
 The panel must be powered by 5V AC adapter with enough current capacity. (Current varies due to how many LED are turned on at the same time. To drive all the LEDs, you need 5V4A adapter.)
 
-# How to Use
+## 3. Run a Test Sketch
 
 Below is a bare minimum sketch to draw a single white dot in the top left. You must call .begin() before you call ANY pixel-drawing (fonts, lines, colours etc.) function of the MatrixPanel_I2S_DMA class.
 
@@ -112,7 +113,10 @@ void loop()
 
 ```
 
-### Build-time options
+Once this is working, refer to the [PIO Test Patterns](/examples/PIO_TestPatterns) example. Note: Requires the use of PlatformIO, which you should probably use if you aren't already.
+
+# More Information
+## Build-time options
 
 Although Arduino IDE does not seem to offer any way of specifying compile-time options for external libs there are other IDE's (like PlatformIO/Eclipse) that could use that. This lib supports the following compile-time defines
 
