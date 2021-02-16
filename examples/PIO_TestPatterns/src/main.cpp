@@ -1,15 +1,14 @@
 // How to use this library with a FM6126 panel, thanks goes to:
 // https://github.com/hzeller/rpi-rgb-led-matrix/issues/746
 
+/*
 // IDF
-#if defined(IDF_VER)
-  #include <stdio.h>
-  #include <freertos/FreeRTOS.h>
-  #include <freertos/task.h>
-  #include <driver/gpio.h>
-  #include "sdkconfig.h"
-#endif
-
+#include <stdio.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <driver/gpio.h>
+#include "sdkconfig.h"
+*/
 #include <Arduino.h>
 #include "xtensa/core-macros.h"
 #include <ESP32-HUB75-MatrixPanel-I2S-DMA.h>
@@ -26,36 +25,49 @@
 // CLK| LAT
 // OE | GND
 
+/*  Default library pin configuration for the reference
+  you can redefine only ones you need later on object creation
 #define R1 25
 #define G1 26
 #define BL1 27
-#define R2 14 // 21 SDA
-#define G2 12 // 22 SDL
+#define R2 14
+#define G2 12
 #define BL2 13
 #define CH_A 23
 #define CH_B 19
 #define CH_C 5
 #define CH_D 17
-#define CH_E 32 // assign to any available pin if using two panels or 64x64 panels with 1/32 scan
+#define CH_E -1 // assign to any available pin if using panels with 1/32 scan
 #define CLK 16
 #define LAT 4
 #define OE 15
+*/
+
+// Configure for your panel(s) as appropriate!
+#define PANEL_WIDTH 64
+#define PANEL_HEIGHT 64         // Panel height of 64 will required PIN_E to be defined.
+#define PANELS_NUMBER 2         // Number of chained panels, if just a single panel, obviously set to 1
+#define PIN_E 32
+
+#define PANE_WIDTH PANEL_WIDTH * PANELS_NUMBER
+#define PANE_HEIGHT PANEL_HEIGHT
 
 
-#define M_WIDTH 256
-#define M_HEIGHT 64
+// patten change delay
 #define PATTERN_DELAY 2000
 
-#define NUM_LEDS M_WIDTH*M_HEIGHT
+#define NUM_LEDS PANE_WIDTH*PANE_HEIGHT
 
-//#define USE_FASTLINES
+// do tests using fast-line methods
+#define USE_FASTLINES
+
 
 MatrixPanel_I2S_DMA *matrix = nullptr;
 
 uint16_t time_counter = 0, cycles = 0, fps = 0;
 unsigned long fps_timer;
 
-//
+// gradient buffer
 CRGB *ledbuff;
 //
 
@@ -70,19 +82,23 @@ void setup(){
   Serial.begin(BAUD_RATE);
   Serial.println("Starting pattern test...");
 
-  HUB75_I2S_CFG::i2s_pins _pins={R1, G1, BL1, R2, G2, BL2, CH_A, CH_B, CH_C, CH_D, CH_E, LAT, OE, CLK};
-  HUB75_I2S_CFG mxconfig(64, 64, 4, _pins, HUB75_I2S_CFG::FM6126A);
-  mxconfig.i2sspeed = HUB75_I2S_CFG::HZ_20M;
+  // redefine pins if required
+  //HUB75_I2S_CFG::i2s_pins _pins={R1, G1, BL1, R2, G2, BL2, CH_A, CH_B, CH_C, CH_D, CH_E, LAT, OE, CLK};
+  HUB75_I2S_CFG mxconfig(PANEL_WIDTH, PANEL_HEIGHT, PANELS_NUMBER);
+
+  mxconfig.gpio.e = PIN_E;
+  mxconfig.driver = HUB75_I2S_CFG::FM6126A;   // for panels using FM6126A chips
 
   matrix = new MatrixPanel_I2S_DMA(mxconfig);
 
   matrix->begin();
   matrix->setBrightness8(255);
+
+  // longer latch blanking could help to elliminate ghosting in some cases
   //matrix->setLatBlanking(2);
 
   ledbuff = (CRGB *)malloc(NUM_LEDS * sizeof(CRGB));  // allocate buffer for some tests
   buffclear(ledbuff);
-
 }
 
 
@@ -100,8 +116,8 @@ void loop(){
 /*
 // Power supply tester
 // slowly fills matrix with white, stressing PSU
-  for (int y=0; y!=M_HEIGHT; ++y){
-    for (int x=0; x!=M_WIDTH; ++x){
+  for (int y=0; y!=PANE_HEIGHT; ++y){
+    for (int x=0; x!=PANE_WIDTH; ++x){
       matrix->drawPixelRGB888(x, y, 255,255,255);
       //matrix->drawPixelRGB888(x, y-1, 255,0,0);       // pls, be gentle :)
       delay(10);
@@ -154,12 +170,12 @@ void loop(){
 
 
   Serial.print("Estimating full-screen fillrate with looped drawPixelRGB888(): ");
-  y = M_HEIGHT;
+  y = PANE_HEIGHT;
   t1 = micros();
   ccount1 = XTHAL_GET_CCOUNT();
   do {
     --y;
-    uint16_t x = M_WIDTH;
+    uint16_t x = PANE_WIDTH;
     do {
       --x;
         matrix->drawPixelRGB888( x, y, 0, 0, 0);
@@ -179,8 +195,8 @@ void loop(){
   for (uint16_t i = 0; i<NUM_LEDS; ++i){
     ledbuff[i].r=color1++;
     ledbuff[i].g=color2;
-    if (i%M_WIDTH==0)
-      color3+=255/M_HEIGHT;
+    if (i%PANE_WIDTH==0)
+      color3+=255/PANE_HEIGHT;
 
     ledbuff[i].b=color3;
   }
@@ -202,7 +218,7 @@ void loop(){
   // Fillrate for fillRect() function
   Serial.print("Estimating fullscreen fillrate with fillRect() time: ");
   t1 = micros();
-  matrix->fillRect(0, 0, M_WIDTH, M_HEIGHT, 0, 224, 0);
+  matrix->fillRect(0, 0, PANE_WIDTH, PANE_HEIGHT, 0, 224, 0);
   t2 = micros()-t1;
   Serial.printf("%lu us\n", t2);
   delay(PATTERN_DELAY);
@@ -220,11 +236,11 @@ void loop(){
     do{
       matrix->fillRect(x, y, 8, 8, color1, color2, color3);
       x+=16;
-    }while(x < M_WIDTH);
+    }while(x < PANE_WIDTH);
     y+=8;
     toggle = !toggle;
     x = toggle ? 8 : 0;
-  }while(y < M_HEIGHT);
+  }while(y < PANE_HEIGHT);
   t2 = micros()-t1;
   Serial.printf("%lu us\n", t2);
   delay(PATTERN_DELAY);
@@ -242,9 +258,9 @@ void loop(){
     y=0;
     do{
       matrix->drawPixelRGB888(x, y, color1, color2, color3);
-    } while(++y != M_HEIGHT);
+    } while(++y != PANE_HEIGHT);
     x+=2;
-  } while(x != M_WIDTH);
+  } while(x != PANE_WIDTH);
   ccount1 = XTHAL_GET_CCOUNT() - ccount1;
   t2 = micros()-t1;
   Serial.printf("%lu us, %u ticks\n", t2, ccount1);
@@ -258,9 +274,9 @@ void loop(){
   t1 = micros();
   ccount1 = XTHAL_GET_CCOUNT();
   do {
-    matrix->drawFastVLine(x, y, M_HEIGHT, color1, color2, color3);
+    matrix->drawFastVLine(x, y, PANE_HEIGHT, color1, color2, color3);
     x+=2;
-  } while(x != M_WIDTH);
+  } while(x != PANE_WIDTH);
   ccount1 = XTHAL_GET_CCOUNT() - ccount1;
   t2 = micros()-t1;
   Serial.printf("%lu us, %u ticks\n", t2, ccount1);
@@ -274,9 +290,9 @@ void loop(){
   t1 = micros();
   ccount1 = XTHAL_GET_CCOUNT();
   do {
-    matrix->fillRect(x, y, 1, M_HEIGHT, color1, color2, color3);
+    matrix->fillRect(x, y, 1, PANE_HEIGHT, color1, color2, color3);
     x+=2;
-  } while(x != M_WIDTH);
+  } while(x != PANE_WIDTH);
   ccount1 = XTHAL_GET_CCOUNT() - ccount1;
   t2 = micros()-t1;
   Serial.printf("%lu us, %u ticks\n", t2, ccount1);
@@ -296,9 +312,9 @@ void loop(){
     x=0;
     do{
       matrix->drawPixelRGB888(x, y, color1, color2, color3);
-    } while(++x != M_WIDTH);
+    } while(++x != PANE_WIDTH);
     y+=2;
-  } while(y != M_HEIGHT);
+  } while(y != PANE_HEIGHT);
   ccount1 = XTHAL_GET_CCOUNT() - ccount1;
   t2 = micros()-t1;
   Serial.printf("%lu us, %u ticks\n", t2, ccount1);
@@ -313,9 +329,9 @@ void loop(){
   t1 = micros();
   ccount1 = XTHAL_GET_CCOUNT();
   do {
-    matrix->drawFastHLine(x, y, M_WIDTH, color1, color2, color3);
+    matrix->drawFastHLine(x, y, PANE_WIDTH, color1, color2, color3);
     y+=2;
-  } while(y != M_HEIGHT);
+  } while(y != PANE_HEIGHT);
   ccount1 = XTHAL_GET_CCOUNT() - ccount1;
   t2 = micros()-t1;
   Serial.printf("%lu us, %u ticks\n", t2, ccount1);
@@ -329,9 +345,9 @@ void loop(){
   t1 = micros();
   ccount1 = XTHAL_GET_CCOUNT();
   do {
-    matrix->fillRect(x, y, M_WIDTH, 1, color1, color2, color3);
+    matrix->fillRect(x, y, PANE_WIDTH, 1, color1, color2, color3);
     y+=2;
-  } while(y != M_HEIGHT);
+  } while(y != PANE_HEIGHT);
   ccount1 = XTHAL_GET_CCOUNT() - ccount1;
   t2 = micros()-t1;
   Serial.printf("%lu us, %u ticks\n", t2, ccount1);
@@ -353,13 +369,13 @@ void buffclear(CRGB *buf){
 }
 
 void IRAM_ATTR mxfill(CRGB *leds){
-  uint16_t y = M_HEIGHT;
+  uint16_t y = PANE_HEIGHT;
   do {
     --y;
-    uint16_t x = M_WIDTH;
+    uint16_t x = PANE_WIDTH;
     do {
       --x;
-        uint16_t _pixel = y * M_WIDTH + x;
+        uint16_t _pixel = y * PANE_WIDTH + x;
         matrix->drawPixelRGB888( x, y, leds[_pixel].r, leds[_pixel].g, leds[_pixel].b);
     } while(x);
   } while(y);
@@ -374,8 +390,8 @@ void IRAM_ATTR mxfill(CRGB *leds){
  */
 uint16_t XY16( uint16_t x, uint16_t y)
 { 
-  if (x<M_WIDTH && y < M_HEIGHT){
-    return (y * M_WIDTH) + x; // everything offset by one to capute out of bounds stuff - never displayed by ShowFrame()
+  if (x<PANE_WIDTH && y < PANE_HEIGHT){
+    return (y * PANE_WIDTH) + x;
   } else {
     return 0;
   }

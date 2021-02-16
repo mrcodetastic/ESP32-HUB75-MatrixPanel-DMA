@@ -119,22 +119,14 @@ This might save some resources for applications using it's own internal graphics
 
 **NO_FAST_FUNCTIONS** - do not build auxiliary speed-optimized functions. Those are used to speed-up operations like drawing straight lines or rectangles. Otherwise lines/shapes are drawn using drawPixel() method. The trade-off for speed is RAM/code-size, take it or leave it ;)
 
-
+**PIXEL_COLOR_DEPTH_BITS** - define color depth in range 2-8 (8 is the default, 24 bpp). Reducing color depth also reduces amount of RAM required for DMA buffer at the expence of a little degradation in color quality.
 
 ## Can I use with a larger panel (i.e. 64x64px square panel)?
 If you want to use with a 64x64 pixel panel (typically a HUB75*E* panel) you MUST configure a valid *E_PIN* to your ESP32 and connect it to the E pin of the HUB75 panel! Hence the 'E' in 'HUB75E'
 
-## Can I chain panels?
+## Can I chained panels?
 
-Yes. 
-
-For example: If you want to chain two of these horizontally to make a 128x32 panel you can do so by setting the MATRIX_WIDTH to '128' and connecting the panels in series using the HUB75 ribbon cable.
-
-Similarly, if you wanted to chain 4 panels to make a 256x32 px horizontal panel, you can easily by setting the MATRIX_WIDTH to '256' and connecting the panels in series using the HUB75 ribbon cable.
-
-You MUST either change the MATRIX_WIDTH or MATRIX_HEIGHT values within the 'ESP32-HUB75-MatrixPanel-I2S-DMA.h' file OR pass a [compile time option](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/issues/48#issuecomment-749402379) if using PlatformIO for your development (you should use this).
-
-Finally, if you wanted to chain 4 x (64x32px) panels to make 128x64px display (essentially a 2x2 grid of 64x32 LED Matrix modules), a little more magic will be required. Refer to the [Chained Panels](examples/ChainedPanels/) example.
+Yes. Refer to the [Chained Panels](examples/ChainedPanels/) example on how to configure panels chaining and  orientation.
 
 Resolutions beyond 128x128 are likely to result in crashes due to memory constraints etc. You're on your own at this point.
 
