@@ -81,9 +81,24 @@
 
 #define COLOR_CHANNELS_PER_PIXEL     3
 
+
+/***************************************************************************************/
+/* Library Includes!                                                                   */
+#include <vector>
+#include <memory>
+#include "esp_heap_caps.h"
+#include "esp32_i2s_parallel_v2.h"
+
+#ifdef USE_GFX_ROOT
+	#include "GFX.h" // Adafruit GFX core class -> https://github.com/mrfaptastic/GFX_Root
+#elif !defined NO_GFX
+	#include "Adafruit_GFX.h" // Adafruit class with all the other stuff
+#endif
+
+
 /***************************************************************************************/
 /* Definitions below should NOT be ever changed without rewriting library logic         */
-#define ESP32_I2S_DMA_MODE          I2S_PARALLEL_BITS_16    // Pump 16 bits out in parallel
+#define ESP32_I2S_DMA_MODE          I2S_PARALLEL_WIDTH_16    // From esp32_i2s_parallel_v2.h = 16 bits in parallel
 #define ESP32_I2S_DMA_STORAGE_TYPE  uint16_t                // DMA output of one uint16_t at a time.
 #define CLKS_DURING_LATCH            0   					// Not (yet) used. 
 
@@ -129,19 +144,6 @@
 	#error "Pixel color depth bits cannot be greater than 8."
 #elif PIXEL_COLOR_DEPTH_BITS < 2 
 	#error "Pixel color depth bits cannot be less than 2."
-#endif
-
-/***************************************************************************************/
-// Lib includes
-#include <vector>
-#include <memory>
-#include "esp_heap_caps.h"
-#include "esp32_i2s_parallel.h"
-
-#ifdef USE_GFX_ROOT
-	#include "GFX.h" // Adafruit GFX core class -> https://github.com/mrfaptastic/GFX_Root
-#elif !defined NO_GFX
-	#include "Adafruit_GFX.h" // Adafruit class with all the other stuff
 #endif
 
 /***************************************************************************************/
@@ -471,7 +473,7 @@ class MatrixPanel_I2S_DMA {
                 Serial.printf_P(PSTR("Showtime for buffer: %d\n"), back_buffer_id);
         #endif      
       
-        i2s_parallel_flip_to_buffer(&I2S1, back_buffer_id);
+        i2s_parallel_flip_to_buffer(I2S_NUM_1, back_buffer_id);
 
         // Wait before we allow any writing to the buffer. Stop flicker.
         while(!i2s_parallel_is_previous_buffer_free()) { delay(1); }               

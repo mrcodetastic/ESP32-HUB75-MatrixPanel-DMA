@@ -178,8 +178,10 @@ bool MatrixPanel_I2S_DMA::allocateDMAmemory()
         else
             break;
     }
-
-    Serial.printf_P(PSTR("Raised lsbMsbTransitionBit to %d/%d to fit in remaining RAM\r\n"), lsbMsbTransitionBit, PIXEL_COLOR_DEPTH_BITS - 1);
+    
+    #if SERIAL_DEBUG  
+      Serial.printf_P(PSTR("Raised lsbMsbTransitionBit to %d/%d to fit in remaining RAM\r\n"), lsbMsbTransitionBit, PIXEL_COLOR_DEPTH_BITS - 1);
+    #endif
 
 
    #ifndef IGNORE_REFRESH_RATE	
@@ -212,7 +214,10 @@ bool MatrixPanel_I2S_DMA::allocateDMAmemory()
             break;
     }
 
+    #if SERIAL_DEBUG  
     Serial.printf_P(PSTR("Raised lsbMsbTransitionBit to %d/%d to meet minimum refresh rate\r\n"), lsbMsbTransitionBit, PIXEL_COLOR_DEPTH_BITS - 1);
+    #endif
+
 	#endif
 
   /***
@@ -287,12 +292,6 @@ bool MatrixPanel_I2S_DMA::allocateDMAmemory()
     Serial.printf_P(PSTR("Heap Memory Available: %d bytes total. Largest free block: %d bytes.\r\n"), heap_caps_get_free_size(0), heap_caps_get_largest_free_block(0));
     Serial.printf_P(PSTR("General RAM Available: %d bytes total. Largest free block: %d bytes.\r\n"), heap_caps_get_free_size(MALLOC_CAP_DEFAULT), heap_caps_get_largest_free_block(MALLOC_CAP_DEFAULT));
 
-
-    #if SERIAL_DEBUG    
-        Serial.println(F("DMA capable memory map available after malloc's: "));
-        heap_caps_print_heap_info(MALLOC_CAP_DMA);
-        delay(1000);
-    #endif
 
     // Just os we know
   	initialized = true;
@@ -414,28 +413,28 @@ void MatrixPanel_I2S_DMA::configureDMA(const HUB75_I2S_CFG& _cfg)
     Serial.println(F("Performing I2S setup:"));
 #endif
 
-    i2s_parallel_config_t cfg={
+    i2s_parallel_config_t cfg = {
         .gpio_bus={_cfg.gpio.r1, _cfg.gpio.g1, _cfg.gpio.b1, _cfg.gpio.r2, _cfg.gpio.g2, _cfg.gpio.b2, _cfg.gpio.lat, _cfg.gpio.oe, _cfg.gpio.a, _cfg.gpio.b, _cfg.gpio.c, _cfg.gpio.d, _cfg.gpio.e, -1, -1, -1},
         .gpio_clk=_cfg.gpio.clk,
-        .clkspeed_hz=_cfg.i2sspeed,   //ESP32_I2S_CLOCK_SPEED,  formula used is 80000000L/(cfg->clkspeed_hz + 1), must result in >=2.  Acceptable values 26.67MHz, 20MHz, 16MHz, 13.34MHz...
-        .bits=ESP32_I2S_DMA_MODE,     //ESP32_I2S_DMA_MODE,
-        .bufa=0,
-        .bufb=0,
-        desccount,
-        desccount,
-        dmadesc_a,
-        dmadesc_b
+        .sample_rate=_cfg.i2sspeed,   
+        .sample_width=ESP32_I2S_DMA_MODE,        
+        .desccount_a=desccount,
+        .lldesc_a=dmadesc_a,        
+        .desccount_b=desccount,
+        .lldesc_b=dmadesc_b
     };
 
-    //Setup I2S
-    i2s_parallel_setup_without_malloc(&I2S1, &cfg);
+    // Setup I2S 
+    i2s_parallel_driver_install(I2S_NUM_1, &cfg);
+    //i2s_parallel_setup_without_malloc(&I2S1, &cfg);
+
+    // Start DMA Output
+    i2s_parallel_send_dma(I2S_NUM_1, &dmadesc_a[0]);
 
     #if SERIAL_DEBUG  
       Serial.println(F("configureDMA(): DMA configuration completed on I2S1."));
       Serial.println(F("DMA Memory Map after DMA LL allocations:"));
       heap_caps_print_heap_info(MALLOC_CAP_DMA);        
-
-      delay(1000);
     #endif       
 		
 } // end initMatrixDMABuff
