@@ -41,6 +41,7 @@ typedef struct {
     lldesc_t * lldesc_a;
     int desccount_b;      // only used with double buffering
     lldesc_t * lldesc_b;  // only used with double buffering
+    bool clkphase;        // Clock signal phase
 } i2s_parallel_config_t;
 
 static inline int i2s_parallel_get_memory_width(i2s_port_t port, i2s_parallel_cfg_bits_t width) {

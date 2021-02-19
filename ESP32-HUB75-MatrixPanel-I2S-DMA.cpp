@@ -421,7 +421,8 @@ void MatrixPanel_I2S_DMA::configureDMA(const HUB75_I2S_CFG& _cfg)
         .desccount_a=desccount,
         .lldesc_a=dmadesc_a,        
         .desccount_b=desccount,
-        .lldesc_b=dmadesc_b
+        .lldesc_b=dmadesc_b,
+        .clkphase=_cfg.clkphase
     };
 
     // Setup I2S 
@@ -656,6 +657,12 @@ void MatrixPanel_I2S_DMA::shiftDriver(const HUB75_I2S_CFG& _cfg){
       CLK_PULSE
     }
       break;
+    case HUB75_I2S_CFG::MBI5124:
+      /* MBI5124 chips must be clocked with positive-edge, since it's LAT signal
+       * resets on clock's rising edge while high
+       * https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/files/5952216/5a542453754da.pdf
+       */
+      m_cfg.clkphase=true;
     case HUB75_I2S_CFG::SHIFT:
     default:
       break;

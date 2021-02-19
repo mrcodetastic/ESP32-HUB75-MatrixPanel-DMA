@@ -227,7 +227,7 @@ struct  HUB75_I2S_CFG {
    * Enumeration of hardware-specific chips
    * used to drive matrix modules
    */
-  enum shift_driver {SHIFT=0, FM6124, FM6126A, ICN2038S};
+  enum shift_driver {SHIFT=0, FM6124, FM6126A, ICN2038S, MBI5124};
 
   /**
    * I2S clock speed selector
@@ -258,6 +258,20 @@ struct  HUB75_I2S_CFG {
   // How many clock cycles to blank OE before/after LAT signal change, default is 1 clock
   uint8_t latch_blanking;
 
+  /**
+   *  I2S clock phase
+   *  0 (default) - data lines are clocked with negative edge
+   *  Clk  /¯\_/¯\_/
+   *  LAT  __/¯¯¯\__
+   *  EO   ¯¯¯¯¯¯\___
+   *
+   *  1 - data lines are clocked with positive edge
+   *  Clk  \_/¯\_/¯\
+   *  LAT  __/¯¯¯\__
+   *  EO   ¯¯¯¯¯¯\__
+   *
+   */
+  bool clkphase;
 
   // struct constructor
   HUB75_I2S_CFG (
@@ -271,14 +285,16 @@ struct  HUB75_I2S_CFG {
     shift_driver _drv = SHIFT,
     bool _dbuff = false,
     clk_speed _i2sspeed = HZ_10M,
-    uint16_t _latblk = 1
+    uint16_t _latblk = 1,
+    bool _clockphase = false
   ) : mx_width(_w),
       mx_height(_h),
       chain_length(_chain),
       gpio(_pinmap),
       driver(_drv), i2sspeed(_i2sspeed),
       double_buff(_dbuff),
-      latch_blanking(_latblk) {}
+      latch_blanking(_latblk),
+      clkphase(_clockphase) {}
 }; // end of structure HUB75_I2S_CFG
 
 

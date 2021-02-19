@@ -291,7 +291,10 @@ esp_err_t i2s_parallel_driver_install(i2s_port_t port, i2s_parallel_config_t* co
   for(int i = 0; i < bus_width; i++) {
     iomux_set_signal(conf->gpio_bus[i], iomux_signal_base + i);
   }
-  iomux_set_signal(conf->gpio_clk, iomux_clock);  
+  iomux_set_signal(conf->gpio_clk, iomux_clock);
+  // invert clock phase if required
+  if (conf->clkphase)
+    GPIO.func_out_sel_cfg[conf->gpio_clk].inv_sel = 1;
   
   return ESP_OK;
 }
