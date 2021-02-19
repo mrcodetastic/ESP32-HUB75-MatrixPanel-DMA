@@ -1,14 +1,14 @@
 /*
  * ESP32_I2S_PARALLEL_V2 (Version 2)
  * 
- * Author: 		Mrfaptastic - https://github.com/mrfaptastic/
+ * Author:      Mrfaptastic - https://github.com/mrfaptastic/
  * 
  * Description: Pointless reimplementation of ESP32 DMA setup for no reason than
- *				to better understand the internals of the ESP32 SoC DMA.
+ *              to better understand the internals of the ESP32 SoC DMA.
  *
  * Credits: Based on the merging of three ideas:
  *  1) https://www.esp32.com/viewtopic.php?f=17&t=3188          for original ref. implementation 
- *	2) https://www.esp32.com/viewtopic.php?f=18&p=55305#p55305  for APLL overclock (no longer used)
+ *  2) https://www.esp32.com/viewtopic.php?f=18&p=55305#p55305  for APLL overclock (no longer used)
  *  3) https://github.com/TobleMiner/esp_i2s_parallel           for a cleaner implementation
  *
  */
@@ -198,7 +198,7 @@ esp_err_t i2s_parallel_driver_install(i2s_port_t port, i2s_parallel_config_t* co
   // Enable "One datum will be written twice in LCD mode" - for some reason, 
   // if we don't do this in 8-bit mode, data is updated on half-clocks not clocks
   if(conf->sample_width == I2S_PARALLEL_WIDTH_8)
-	dev->conf2.lcd_tx_wrx2_en=1;  
+    dev->conf2.lcd_tx_wrx2_en=1;  
 
   // Setup i2s clock
   dev->sample_rate_conf.val = 0;
@@ -208,7 +208,7 @@ esp_err_t i2s_parallel_driver_install(i2s_port_t port, i2s_parallel_config_t* co
   dev->sample_rate_conf.tx_bits_mod = bus_width;
   dev->sample_rate_conf.rx_bck_div_num = 1;
   dev->sample_rate_conf.tx_bck_div_num = 1; // datasheet says this must be 2 or greater (but 1 seems to work)
-											// note: because it's 1 here, not 2, we need to clkm_div_num = clkm_div_num * 2
+                                            // note: because it's 1 here, not 2, we need to clkm_div_num = clkm_div_num * 2
 
   // No support for fractional dividers (could probably be ported from official serial i2s driver though)
   // 
@@ -220,20 +220,20 @@ esp_err_t i2s_parallel_driver_install(i2s_port_t port, i2s_parallel_config_t* co
   // 16bit parallel I2S = calculated clk_div_main (per line ~142) of 4
 
   
-  dev->clkm_conf.val=0;				// Clear the clkm_conf struct
-  dev->clkm_conf.clka_en=0;			// Use the 160mhz system clock (PLL_D2_CLK) when '0'
-  dev->clkm_conf.clkm_div_b=0;		// Page 310 of Technical Reference Manual - Clock numerator
-  dev->clkm_conf.clkm_div_a=0;		// Page 310 of Technical Reference Manual - Clock denominator
+  dev->clkm_conf.val=0;             // Clear the clkm_conf struct
+  dev->clkm_conf.clka_en=0;         // Use the 160mhz system clock (PLL_D2_CLK) when '0'
+  dev->clkm_conf.clkm_div_b=0;      // Page 310 of Technical Reference Manual - Clock numerator
+  dev->clkm_conf.clkm_div_a=0;      // Page 310 of Technical Reference Manual - Clock denominator
 
   //
   // Final Mhz output = 
-  //	Output = 80000000L / tx_bck_div_num / (clkm_div_num + (clkm_div_b/clkm_div_a) )
+  //    Output = 80000000L / tx_bck_div_num / (clkm_div_num + (clkm_div_b/clkm_div_a) )
   
   // Note: clkm_div_num must only be set AFTER clkm_div_b, clkm_div_a, etc. Or weird things happen!
   // dev->clkm_conf.clkm_div_num = (clk_div_main*2)+1;
   dev->clkm_conf.clkm_div_num=80000000L/(conf->sample_rate + 1);   
    
-  //printf("esp32_i2s_parallel_2.c > I2S clock divider is %d \n", clk_div_main*2);	
+  //printf("esp32_i2s_parallel_2.c > I2S clock divider is %d \n", clk_div_main*2);  
 
   // Some fifo conf I don't quite understand 
   dev->fifo_conf.val = 0;
@@ -277,20 +277,20 @@ esp_err_t i2s_parallel_driver_install(i2s_port_t port, i2s_parallel_config_t* co
   assert(i2s_state[port] != NULL);
   i2s_parallel_state_t *state = i2s_state[port];
   
-  state->desccount_a 	= conf->desccount_a;
-  state->desccount_b 	= conf->desccount_b;
-  state->dmadesc_a 		= conf->lldesc_a;
-  state->dmadesc_b 		= conf->lldesc_b;  
+  state->desccount_a    = conf->desccount_a;
+  state->desccount_b    = conf->desccount_b;
+  state->dmadesc_a      = conf->lldesc_a;
+  state->dmadesc_b      = conf->lldesc_b;  
   state->i2s_interrupt_port_arg  = port; // need to keep this somewhere in static memory for the ISR
 
   // Get ISR setup 
   esp_err_t err =  esp_intr_alloc(irq_source, 
-								 (int)(ESP_INTR_FLAG_IRAM | ESP_INTR_FLAG_LEVEL1),
-								 irq_hndlr, 
-								 &state->i2s_interrupt_port_arg, NULL);
+                                 (int)(ESP_INTR_FLAG_IRAM | ESP_INTR_FLAG_LEVEL1),
+                                 irq_hndlr, 
+                                 &state->i2s_interrupt_port_arg, NULL);
   
   if(err) {
-	  return err;
+      return err;
   }
 
   // Setup interrupt handler which is focussed only on the (page 322 of Tech. Ref. Manual)
