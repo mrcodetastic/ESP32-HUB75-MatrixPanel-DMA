@@ -227,7 +227,7 @@ struct  HUB75_I2S_CFG {
    * Enumeration of hardware-specific chips
    * used to drive matrix modules
    */
-  enum shift_driver {SHIFT=0, FM6124, FM6126A, ICN2038S, MBI5124};
+  enum shift_driver {SHIFTREG=0, FM6124, FM6126A, ICN2038S, MBI5124};
 
   /**
    * I2S clock speed selector
@@ -282,7 +282,7 @@ struct  HUB75_I2S_CFG {
       R1_PIN_DEFAULT, G1_PIN_DEFAULT, B1_PIN_DEFAULT, R2_PIN_DEFAULT, G2_PIN_DEFAULT, B2_PIN_DEFAULT,
       A_PIN_DEFAULT, B_PIN_DEFAULT, C_PIN_DEFAULT, D_PIN_DEFAULT, E_PIN_DEFAULT,
       LAT_PIN_DEFAULT, OE_PIN_DEFAULT, CLK_PIN_DEFAULT },
-    shift_driver _drv = SHIFT,
+    shift_driver _drv = SHIFTREG,
     bool _dbuff = false,
     clk_speed _i2sspeed = HZ_10M,
     uint16_t _latblk = 1,
@@ -640,6 +640,11 @@ class MatrixPanel_I2S_DMA {
      * 
      */
     void shiftDriver(const HUB75_I2S_CFG& opts);
+
+    /**
+     * @brief - FM6124-family chips initialization routine
+     */
+    void fm6124init(const HUB75_I2S_CFG& _cfg);
 
     /**
      * @brief - reset OE bits in DMA buffer in a way to control brightness
