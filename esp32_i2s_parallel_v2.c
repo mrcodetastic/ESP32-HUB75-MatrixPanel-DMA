@@ -207,7 +207,7 @@ esp_err_t i2s_parallel_driver_install(i2s_port_t port, i2s_parallel_config_t* co
   dev->sample_rate_conf.rx_bits_mod = bus_width;
   dev->sample_rate_conf.tx_bits_mod = bus_width;
   dev->sample_rate_conf.rx_bck_div_num = 1;
-  dev->sample_rate_conf.tx_bck_div_num = 1; // datasheet says this must be 2 or greater (but 1 seems to work)
+  dev->sample_rate_conf.tx_bck_div_num = 2; // datasheet says this must be 2 or greater (but 1 seems to work)
                                             // note: because it's 1 here, not 2, we need to clkm_div_num = clkm_div_num * 2
 
   // No support for fractional dividers (could probably be ported from official serial i2s driver though)
@@ -216,22 +216,24 @@ esp_err_t i2s_parallel_driver_install(i2s_port_t port, i2s_parallel_config_t* co
   // https://easyvolts.com/2018/08/14/esp32-40msps-oscilloscope-project-is-closed-and-here-is-why/
   // and https://github.com/espressif/esp-idf/issues/2251
   // Igor - "Frequencies above 20MHz do not work in I2S mode."
-  //
-  // 16bit parallel I2S = calculated clk_div_main (per line ~142) of 4
+
+  // 16bit parallel I2S @ 10Mhz = calculated clk_div_main (per line ~142) of 4
+  // 16bit parallel I2S @ 20Mhz = calculated clk_div_main (per line ~142) of 2
 
   
   dev->clkm_conf.val=0;             // Clear the clkm_conf struct
   dev->clkm_conf.clka_en=0;         // Use the 160mhz system clock (PLL_D2_CLK) when '0'
   dev->clkm_conf.clkm_div_b=0;      // Page 310 of Technical Reference Manual - Clock numerator
-  dev->clkm_conf.clkm_div_a=0;      // Page 310 of Technical Reference Manual - Clock denominator
+  dev->clkm_conf.clkm_div_a=1;      // Page 310 of Technical Reference Manual - Clock denominator
 
   //
   // Final Mhz output = 
   //    Output = 80000000L / tx_bck_div_num / (clkm_div_num + (clkm_div_b/clkm_div_a) )
   
-  // Note: clkm_div_num must only be set AFTER clkm_div_b, clkm_div_a, etc. Or weird things happen!
-  // dev->clkm_conf.clkm_div_num = (clk_div_main*2)+1;
-  dev->clkm_conf.clkm_div_num=80000000L/(conf->sample_rate + 1);   
+  // Note: clkm_div_num must only be set here AFTER clkm_div_b, clkm_div_a, etc. Or weird things happen!
+  dev->clkm_conf.clkm_div_num = clk_div_main;
+  
+  //dev->clkm_conf.clkm_div_num=80000000L/(conf->sample_rate + 1);   
    
   //printf("esp32_i2s_parallel_2.c > I2S clock divider is %d \n", clk_div_main*2);  
 
