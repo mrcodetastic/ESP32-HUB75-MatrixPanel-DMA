@@ -2,18 +2,36 @@
 
   **Table of Content**
 
-[TOC]
+- [Introduction](#introduction)
+  * [Features](#features)
+  * [Panels Supported](#panels-supported)
+  * [Panel driver chips known to be working well](#panel-driver-chips-known-to-be-working-well)
+  * [Panels Not Supported](#panels-not-supported)
+  * [Update for 16x32 Panels](#update-for-16x32-panels)
+- [Getting Started](#getting-started)
+  * [1. Library Installation](#1-library-installation)
+  * [2. Wiring ESP32 with the LED Matrix Panel](#2-wiring-esp32-with-the-led-matrix-panel)
+  * [3. Run a Test Sketch](#3-run-a-test-sketch)
+- [More Information](#more-information)
+  * [Build-time options](#build-time-options)
+  * [Memory constraints](#memory-constraints)
+  * [Can I use with a larger panel (i.e. 64x64px square panel)?](#can-i-use-with-a-larger-panel--ie-64x64px-square-panel--)
+  * [Can I chain panels?](#can-i-chain-panels-)
+  * [Panel Brightness](#panel-brightness)
+  * [Latch blanking](#latch-blanking)
+  * [Power, Power and Power!](#power--power-and-power-)
+  * [Inspiration](#inspiration)
 
 ## Introduction
 This ESP32 Arduino/IDF library for HUB75 / HUB75E connector type 64x32 RGB LED 1/16 Scan OR 64x64 RGB LED 1/32 Scan LED Matrix Panel, utilities the DMA functionality provided by the ESP32's I2S 'LCD Mode'.
 
-**Features**
--  **Low CPU overhead**, once initialized pixel data is pumped to the matrix inputs via DMA engine directly from memory
--  **Fast**, updating pixel data involves only bit-wise logic over DMA buffer memory, no pins manipulation or blocking IO
--  **Full screen BCM**, library utilizes [binary-code modulation](http://www.batsocks.co.uk/readme/art_bcm_5.htm) to render pixel color depth / brightness over the entire matrix
--  **Variable color depth**, up to TrueColor 24 bits output is possible depending on matrix size/refresh rate required
--  **CIE 1931** luminance correction (aka natural LED dimming)
--  **Adafruit GFX API**, library could be build with AdafruitGFX, simplified GFX or without GFX API at all
+### Features
+-  **Low CPU overhead** - once initialized pixel data is pumped to the matrix inputs via DMA engine directly from memory
+-  **Fast** - updating pixel data involves only bit-wise logic over DMA buffer memory, no pins manipulation or blocking IO
+-  **Full screen BCM** - library utilizes [binary-code modulation](http://www.batsocks.co.uk/readme/art_bcm_5.htm) to render pixel color depth / brightness over the entire matrix
+-  **Variable color depth** - up to TrueColor 24 bits output is possible depending on matrix size/refresh rate required
+-  **CIE 1931** luminance [correction](https://ledshield.wordpress.com/2012/11/13/led-brightness-to-your-eye-gamma-correction-no/) (aka natural LED dimming)
+-  **Adafruit GFX API** - library could be build with AdafruitGFX, simplified GFX or without GFX API at all
 
 If you wanna ask "*...OK, OK, than whats the price for those features?*" I'll tell you - "[memory](/doc/i2s_memcalc.md), you pay it all by precious MCU's memory for DMA buffer".
 
@@ -24,7 +42,7 @@ If you wanna ask "*...OK, OK, than whats the price for those features?*" I'll te
 
 Ones interested in internals of such matrixes could find [this article](https://www.sparkfun.com/news/2650) useful.
 
-Due to the high-speed optimized nature of this library, only specific panels are supported. Please do not raised issues with respect to panels not supported on the list below.
+Due to the high-speed optimized nature of this library, only specific panels are supported. Please do not raise issues with respect to panels not supported on the list below.
 
 ## Panel driver chips known to be working well
 
@@ -53,17 +71,17 @@ Please use an [alternative library](https://github.com/2dom/PxMatrix) if you bou
 By default the pin mapping is as follows (defaults defined in ESP32-HUB75-MatrixPanel-I2S-DMA.h).
 
 ```
-HUB 75 PANEL ESP 32 PIN
-+-----------+
-| R1 G1 | R1 -> IO25 G1 -> IO26
-| B1 GND | B1 -> IO27
-| R2 G2 | R2 -> IO14 G2 -> IO12
-| B2 E | B2 -> IO13 E -> N/A (required for 1/32 scan panels, like 64x64. Any available pin would do, i.e. IO32 )
-| A B | A -> IO23 B -> IO19
-| C D | C -> IO 5 D -> IO17
-| CLK LAT | CLK -> IO16 LAT -> IO 4
-| OE GND | OE -> IO15 GND -> ESP32 GND
-+-----------+
+HUB 75 PANEL         ESP 32 PIN
++----------+
+|  R1  G1  |    R1  -> IO25    G1 -> IO26
+|  B1  GND |    B1  -> IO27
+|  R2  G2  |    R2  -> IO14    G2 -> IO12
+|  B2  E   |    B2  -> IO13     E -> N/A (required for 1/32 scan panels, like 64x64. Any available pin would do, i.e. IO32 )
+|   A  B   |    A   -> IO23     B -> IO19
+|   C  D   |    C   -> IO05     D -> IO17
+| CLK  LAT |    CLK -> IO16   LAT -> IO 4
+|  OE  GND |    OE  -> IO15   GND -> ESP32 GND
++----------+
 ```
 
 However, if you want to change this, simply provide the wanted pin mapping as part of the class initialization structure. For example, in your sketch have something like the following:
@@ -110,12 +128,14 @@ void setup(){
 void loop(){ }
 ```
 
-Once this is working, refer to the [PIO Test Patterns](/examples/PIO_TestPatterns) example.
->Note: Requires the use of [PlatformIO](https://platformio.org/), which you should probably use if you aren't already.
-
+Once this is working, refer to the [PIO Test Patterns](/examples/PIO_TestPatterns) example. This sketch draws simple colors/lines/gradients over the entire matrix and it could help to troubleshoot various issues with ghosting, flickering, etc...
+>Note: Requires the use of [PlatformIO](https://platformio.org/), which you should probably use if you aren't already. 
 # More Information
 ## Build-time options
-Although Arduino IDE does not seem to offer any way of specifying compile-time options for external libs there are other IDE's (like [PlatformIO](https://platformio.org/)/[Eclipse](https://www.eclipse.org/ide/)) that could use that. Check [BuldOptions](doc/BuildOptions.md) document for reference.
+Although Arduino IDE does not [seem](https://github.com/arduino/Arduino/issues/421) to offer any way of specifying compile-time options for external libs there are other IDE's (like [PlatformIO](https://platformio.org/)/[Eclipse](https://www.eclipse.org/ide/)) that could use that. Check [Buld Options](doc/BuildOptions.md) document for reference.
+
+## Memory constraints
+If you are going to use large/combined panels make sure to check for [memory constraints](/doc/i2s_memcalc.md).
 
 ## Can I use with a larger panel (i.e. 64x64px square panel)?
 If you want to use with a 64x64 pixel panel (typically a HUB75*E* panel) you MUST configure a valid *E_PIN* to your ESP32 and connect it to the E pin of the HUB75 panel! Hence the 'E' in 'HUB75E'
