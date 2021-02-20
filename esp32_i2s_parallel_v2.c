@@ -37,7 +37,6 @@ void setShiftCompleteCallback(callback f) {
 volatile bool previousBufferFree = true;
 
 static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
- //   REG_WRITE(I2S_INT_CLR_REG(1), (REG_READ(I2S_INT_RAW_REG(1)) & 0xffffffc0) | 0x3f);
 
     if ( (*(i2s_port_t*)arg) == I2S_NUM_1 ) { // https://www.bogotobogo.com/cplusplus/pointers2_voidpointers_arrays.php
       //For I2S1
