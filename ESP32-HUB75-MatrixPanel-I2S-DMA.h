@@ -538,6 +538,16 @@ class MatrixPanel_I2S_DMA {
      * 
      */
     const HUB75_I2S_CFG& getCfg() const {return m_cfg;};
+	
+	
+	/** 
+	 * Stop the ESP32 DMA Engine. Screen will forever be black until next ESP reboot.
+	 */
+	void stopDMAoutput() {	
+		clearScreen();
+		i2s_parallel_stop_dma(I2S_NUM_1);
+	} 
+	
 
 
   // ------- PROTECTED -------
@@ -591,7 +601,6 @@ class MatrixPanel_I2S_DMA {
      */
     void fillRectDMA(int16_t x_coord, int16_t y_coord, int16_t w, int16_t h, uint8_t r, uint8_t g, uint8_t b);
 #endif
-
 
    // ------- PRIVATE -------
   private:

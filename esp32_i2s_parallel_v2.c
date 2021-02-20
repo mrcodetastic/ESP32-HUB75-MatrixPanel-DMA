@@ -299,6 +299,22 @@ esp_err_t i2s_parallel_driver_install(i2s_port_t port, i2s_parallel_config_t* co
   return ESP_OK;
 }
 
+ esp_err_t i2s_parallel_stop_dma(i2s_port_t port) {
+  if(port < I2S_NUM_0 || port >= I2S_NUM_MAX) {
+    return ESP_ERR_INVALID_ARG;
+  }
+
+  i2s_dev_t* dev = I2S[port];
+  
+  // Stop all ongoing DMA operations
+  dev->out_link.stop = 1;
+  dev->out_link.start = 0;
+  dev->conf.tx_start = 0;
+  
+   return ESP_OK;
+}
+
+
  esp_err_t i2s_parallel_send_dma(i2s_port_t port, lldesc_t* dma_descriptor) {
   if(port < I2S_NUM_0 || port >= I2S_NUM_MAX) {
     return ESP_ERR_INVALID_ARG;
