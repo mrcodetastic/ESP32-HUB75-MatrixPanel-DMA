@@ -478,10 +478,11 @@ void IRAM_ATTR MatrixPanel_I2S_DMA::updateMatrixDMABuffer(int16_t x_coord, int16
 	 * i.e. It's almost impossible for color_depth_idx of 0 to be sent out to the MATRIX unless the 'value' of a color is exactly '1'
    * https://ledshield.wordpress.com/2012/11/13/led-brightness-to-your-eye-gamma-correction-no/
 	 */
-	 
+#ifndef NO_CIE1931
 	red   = lumConvTab[red];
 	green = lumConvTab[green];
 	blue  = lumConvTab[blue]; 	
+#endif
 
 	/* When using the drawPixel, we are obviously only changing the value of one x,y position, 
 	 * however, the two-scan panels paint TWO lines at the same time
@@ -543,9 +544,11 @@ void MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint8_t red, uint8_t green, uint
   if ( !initialized ) return;
   
 	/* https://ledshield.wordpress.com/2012/11/13/led-brightness-to-your-eye-gamma-correction-no/ */	 
+#ifndef NO_CIE1931
 	red 	= lumConvTab[red];
 	green	= lumConvTab[green];
 	blue 	= lumConvTab[blue]; 	
+#endif
 
   for(uint8_t color_depth_idx=0; color_depth_idx<PIXEL_COLOR_DEPTH_BITS; color_depth_idx++)  // color depth - 8 iterations
   {
@@ -862,9 +865,11 @@ void MatrixPanel_I2S_DMA::hlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, 
     l = PIXELS_PER_ROW - x_coord + 1;     // reset width to end of row
 
   /* LED Brightness Compensation */
+#ifndef NO_CIE1931
 	red   = lumConvTab[red];
 	green = lumConvTab[green];
 	blue  = lumConvTab[blue]; 	
+#endif
 
   uint16_t _colorbitclear = BITMASK_RGB1_CLEAR, _colorbitoffset = 0;
 
@@ -929,9 +934,11 @@ void MatrixPanel_I2S_DMA::vlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, 
     l = m_cfg.mx_height - y_coord + 1;     // reset width to end of col
 
   /* LED Brightness Compensation */
+#ifndef NO_CIE1931
 	red   = lumConvTab[red];
 	green = lumConvTab[green];
 	blue  = lumConvTab[blue]; 	
+#endif
 
   // Save the calculated value to the bitplane memory in reverse order to account for I2S Tx FIFO mode1 ordering
   x_coord & 1U ? --x_coord : ++x_coord;

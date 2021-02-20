@@ -138,7 +138,7 @@ void setup() {
   dma_display = new MatrixPanel_I2S_DMA(mxconfig);
 
   // let's adjust default brightness to about 75%
-  dma_display->setBrightness8(96);    // range is 0-255, 0 - 0%, 255 - 100%
+  dma_display->setBrightness8(192);    // range is 0-255, 0 - 0%, 255 - 100%
 
   // Allocate memory and start DMA display
   if( not dma_display->begin() )
