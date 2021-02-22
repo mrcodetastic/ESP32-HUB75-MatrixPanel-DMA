@@ -227,7 +227,7 @@ struct  HUB75_I2S_CFG {
    * Enumeration of hardware-specific chips
    * used to drive matrix modules
    */
-  enum shift_driver {SHIFT=0, FM6124, FM6126A, ICN2038S};
+  enum shift_driver {SHIFTREG=0, FM6124, FM6126A, ICN2038S, MBI5124};
 
   /**
    * I2S clock speed selector
@@ -258,6 +258,20 @@ struct  HUB75_I2S_CFG {
   // How many clock cycles to blank OE before/after LAT signal change, default is 1 clock
   uint8_t latch_blanking;
 
+  /**
+   *  I2S clock phase
+   *  0 (default) - data lines are clocked with negative edge
+   *  Clk  /¯\_/¯\_/
+   *  LAT  __/¯¯¯\__
+   *  EO   ¯¯¯¯¯¯\___
+   *
+   *  1 - data lines are clocked with positive edge
+   *  Clk  \_/¯\_/¯\
+   *  LAT  __/¯¯¯\__
+   *  EO   ¯¯¯¯¯¯\__
+   *
+   */
+  bool clkphase;
 
   // struct constructor
   HUB75_I2S_CFG (
@@ -268,17 +282,19 @@ struct  HUB75_I2S_CFG {
       R1_PIN_DEFAULT, G1_PIN_DEFAULT, B1_PIN_DEFAULT, R2_PIN_DEFAULT, G2_PIN_DEFAULT, B2_PIN_DEFAULT,
       A_PIN_DEFAULT, B_PIN_DEFAULT, C_PIN_DEFAULT, D_PIN_DEFAULT, E_PIN_DEFAULT,
       LAT_PIN_DEFAULT, OE_PIN_DEFAULT, CLK_PIN_DEFAULT },
-    shift_driver _drv = SHIFT,
+    shift_driver _drv = SHIFTREG,
     bool _dbuff = false,
     clk_speed _i2sspeed = HZ_10M,
-    uint16_t _latblk = 1
+    uint16_t _latblk = 1,
+    bool _clockphase = false
   ) : mx_width(_w),
       mx_height(_h),
       chain_length(_chain),
       gpio(_pinmap),
       driver(_drv), i2sspeed(_i2sspeed),
       double_buff(_dbuff),
-      latch_blanking(_latblk) {}
+      latch_blanking(_latblk),
+      clkphase(_clockphase) {}
 }; // end of structure HUB75_I2S_CFG
 
 
@@ -522,6 +538,16 @@ class MatrixPanel_I2S_DMA {
      * 
      */
     const HUB75_I2S_CFG& getCfg() const {return m_cfg;};
+	
+	
+	/** 
+	 * Stop the ESP32 DMA Engine. Screen will forever be black until next ESP reboot.
+	 */
+	void stopDMAoutput() {	
+		clearScreen();
+		i2s_parallel_stop_dma(I2S_NUM_1);
+	} 
+	
 
 
   // ------- PROTECTED -------
@@ -576,7 +602,6 @@ class MatrixPanel_I2S_DMA {
     void fillRectDMA(int16_t x_coord, int16_t y_coord, int16_t w, int16_t h, uint8_t r, uint8_t g, uint8_t b);
 #endif
 
-
    // ------- PRIVATE -------
   private:
 
@@ -624,6 +649,11 @@ class MatrixPanel_I2S_DMA {
      * 
      */
     void shiftDriver(const HUB75_I2S_CFG& opts);
+
+    /**
+     * @brief - FM6124-family chips initialization routine
+     */
+    void fm6124init(const HUB75_I2S_CFG& _cfg);
 
     /**
      * @brief - reset OE bits in DMA buffer in a way to control brightness
