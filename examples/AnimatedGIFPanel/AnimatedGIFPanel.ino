@@ -212,11 +212,6 @@ void setup() {
         Serial.println("SPIFFS Mount Failed");
   }
   
-  /* setPanelBrightness should be called before .begin() */
-  /* setMinRefreshRate must be called before .begin() */
-  dma_display.setPanelBrightness(32);
-  dma_display.setMinRefreshRate(200);
-  
   dma_display.begin();
   
   /* all other pixel drawing functions can only be called after .begin() */

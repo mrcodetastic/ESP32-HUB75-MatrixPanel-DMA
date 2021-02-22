@@ -205,7 +205,7 @@ bool MatrixPanel_I2S_DMA::allocateDMAmemory()
           Serial.printf_P(PSTR("lsbMsbTransitionBit of %d gives %d Hz refresh: \r\n"), lsbMsbTransitionBit, actualRefreshRate);        
 		    #endif
 
-        if (actualRefreshRate > min_refresh_rate) // HACK Hard Coded: 100
+        if (actualRefreshRate > m_cfg.min_refresh_rate) 
           break;
                   
         if(lsbMsbTransitionBit < PIXEL_COLOR_DEPTH_BITS - 1)
@@ -433,9 +433,7 @@ void MatrixPanel_I2S_DMA::configureDMA(const HUB75_I2S_CFG& _cfg)
     i2s_parallel_send_dma(I2S_NUM_1, &dmadesc_a[0]);
 
     #if SERIAL_DEBUG  
-      Serial.println(F("configureDMA(): DMA configuration completed on I2S1."));
-      Serial.println(F("DMA Memory Map after DMA LL allocations:"));
-      heap_caps_print_heap_info(MALLOC_CAP_DMA);        
+      Serial.println(F("configureDMA(): DMA setup completed on I2S1.")); 
     #endif       
 		
 } // end initMatrixDMABuff
