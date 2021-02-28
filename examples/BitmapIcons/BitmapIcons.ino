@@ -44,7 +44,7 @@ MatrixPanel_I2S_DMA display; // RGB Panel
  * Python and Paint.Net needs to be installed.
  *
  * 1. SAVE BITMAP AS 1BIT COLOUR in paint.net
- * 2. Run: bmp2hex.py -i -x loading.bmp
+ * 2. Run: bmp2hex.py -i -x <BITMAP FILE>
  * 3. Copy paste output into sketch.
  * 
  */
