@@ -38,7 +38,17 @@
  */
 MatrixPanel_I2S_DMA display; // RGB Panel
 
-// Wifi Logo, generated using LCD Image Converter: http://www.riuson.com/lcd-image-converter 
+/*
+ * Wifi Logo, generated with the following steps: 
+ *
+ * Python and Paint.Net needs to be installed.
+ *
+ * 1. SAVE BITMAP AS 1BIT COLOUR in paint.net
+ * 2. Run: bmp2hex.py -i -x loading.bmp
+ * 3. Copy paste output into sketch.
+ * 
+ */
+ 
 const char wifi_image1bit[] PROGMEM   =  {
  0x00,0x00,0x00,0xf8,0x1f,0x00,0x00,0x00,0x00,0x00,0x80,0xff,0xff,0x01,0x00,
  0x00,0x00,0x00,0xf0,0xff,0xff,0x07,0x00,0x00,0x00,0x00,0xfc,0xff,0xff,0x1f,
@@ -59,10 +69,7 @@ const char wifi_image1bit[] PROGMEM   =  {
  0x00,0x00,0x00,0x80,0x01,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
  0x00  };
 
-/* Draw a bitmap, default bitmap pixels to white if no color provided.
- * Use LCD Image Converter to generate the char array: http://www.riuson.com/lcd-image-converter 
- * In Options>Conversion, use: Monochrome Preset
- */
+
 void drawXbm565(int x, int y, int width, int height, const char *xbm, uint16_t color = 0xffff) 
 {
   if (width % 8 != 0) {
