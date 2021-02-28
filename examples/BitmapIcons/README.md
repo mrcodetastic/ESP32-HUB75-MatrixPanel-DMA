@@ -1,6 +1,6 @@
 # Xbm Bitmap example
 ## Requirements
-* To generate the required Xbm data to be copied into the Sketch. Have python and paint.net installed.
+* To generate the required Xbm data to be copied into the Sketch. Have python and [paint.net](https://www.getpaint.net/) installed.
 * Bitmap should match the resolution of your display configuration.
 
 ## Instructions 
