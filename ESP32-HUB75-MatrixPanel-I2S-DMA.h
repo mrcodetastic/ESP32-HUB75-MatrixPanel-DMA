@@ -259,9 +259,6 @@ struct  HUB75_I2S_CFG {
   // How many clock cycles to blank OE before/after LAT signal change, default is 1 clock
   uint8_t latch_blanking;
   
-  // Minimum refresh / scan rate needs to be configured on start due to LSBMSB_TRANSITION_BIT calculation in allocateDMAmemory()
-  uint8_t min_refresh_rate;
-
   /**
    *  I2S clock phase
    *  0 (default) - data lines are clocked with negative edge
@@ -276,6 +273,9 @@ struct  HUB75_I2S_CFG {
    *
    */
   bool clkphase;
+
+  // Minimum refresh / scan rate needs to be configured on start due to LSBMSB_TRANSITION_BIT calculation in allocateDMAmemory()
+  uint8_t min_refresh_rate;
 
   // struct constructor
   HUB75_I2S_CFG (
