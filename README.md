@@ -137,7 +137,7 @@ Although Arduino IDE does not [seem](https://github.com/arduino/Arduino/issues/4
 ## Memory constraints
 If you are going to use large/combined panels make sure to check for [memory constraints](/doc/i2s_memcalc.md).
 
-NOTE: You *cannot* use PSRAM to expand the amount of memory available to use by this library.  ESP32 hardware [only allows DMA transfer from *internal* SRAM](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/issues/55), so you will be limited to the 200KB or so of usable SRAM the ESP32 regardless of how many megabytes of PSRAM you may have connected.
+NOTE: You *cannot* use PSRAM to expand the amount of memory available to use by this library.  ESP32 hardware [only allows DMA transfer from *internal* SRAM](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/issues/55), so you will be limited to the 200KB or so of usable SRAM of the ESP32 regardless of how many megabytes of PSRAM you may have connected.
 
 ## Can I use with a larger panel (i.e. 64x64px square panel)?
 If you want to use with a 64x64 pixel panel (typically a HUB75*E* panel) you MUST configure a valid *E_PIN* to your ESP32 and connect it to the E pin of the HUB75 panel! Hence the 'E' in 'HUB75E'
