@@ -15,11 +15,11 @@
 - [More Information](#more-information)
   * [Build-time options](#build-time-options)
   * [Memory constraints](#memory-constraints)
-  * [Can I use with a larger panel (i.e. 64x64px square panel)?](#can-i-use-with-a-larger-panel--ie-64x64px-square-panel--)
-  * [Can I chain panels?](#can-i-chain-panels-)
+  * [Can I use with a larger panel (i.e. 64x64px square panel)?](#can-i-use-with-a-larger-panel-ie-64x64px-square-panel)
+  * [Can I chain panels?](#can-i-chain-panels)
   * [Panel Brightness](#panel-brightness)
   * [Latch blanking](#latch-blanking)
-  * [Power, Power and Power!](#power--power-and-power-)
+  * [Power, Power and Power!](#power--power-and-power)
   * [Inspiration](#inspiration)
 
 ## Introduction
