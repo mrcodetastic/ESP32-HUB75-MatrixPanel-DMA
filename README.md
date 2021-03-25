@@ -113,6 +113,13 @@ HUB75_I2S_CFG mxconfig(
 dma_display = new MatrixPanel_I2S_DMA(mxconfig);
 ```
 
+Various people have created PCBs for which one can simply connect an ESP32 to the PCB, and then the PCB to the HUB75 connector, such as:
+
+* Brian Lough's [ESP32 I2S Matrix Shield](http://blough.ie/i2smat/); or
+* Charles Hallard's [WeMos Matrix Shield](https://github.com/hallard/WeMos-Matrix-Shield-DMA}
+
+Please contact or order these products from the respective authors.
+
 ## 3. Run a Test Sketch
 Below is a bare minimum sketch to draw a single white dot in the top left. You must call .begin() before you call ANY pixel-drawing (fonts, lines, colours etc.) function of the MatrixPanel_I2S_DMA class.
 No .begin() before other functions = Crash
