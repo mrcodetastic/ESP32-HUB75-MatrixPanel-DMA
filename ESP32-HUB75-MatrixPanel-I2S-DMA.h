@@ -18,6 +18,12 @@
  */
 //#define NO_FAST_FUNCTIONS
 
+/*
+ * Enable the use of FastLED CRGB values directly to drawPixel.
+ * i.e. drawPixel(x, y, CRGB color)
+ */
+//#define FASTLED_CRGB_SUPPORT 1
+
 
 /* Physical / Chained HUB75(s) RGB pixel WIDTH and HEIGHT. 
  *
@@ -93,6 +99,10 @@
     #include "GFX.h" // Adafruit GFX core class -> https://github.com/mrfaptastic/GFX_Root
 #elif !defined NO_GFX
     #include "Adafruit_GFX.h" // Adafruit class with all the other stuff
+#endif
+
+#ifdef FASTLED_CRGB_SUPPORT
+	#include <FastLED.h>
 #endif
 
 
@@ -193,19 +203,6 @@ struct frameStruct {
     uint8_t rows=0;    // number of rows held in current frame, not used actually, just to keep the idea of struct
     std::vector<std::shared_ptr<rowBitStruct> > rowBits;
 };
-
-typedef struct RGB24 {
-    RGB24() : RGB24(0,0,0) {}
-    RGB24(uint8_t r, uint8_t g, uint8_t b) {
-        red = r; green = g; blue = b;
-    }
-    RGB24& operator=(const RGB24& col);
-
-    uint8_t red;
-    uint8_t green;
-    uint8_t blue;
-} RGB24;
-
 
 /***************************************************************************************/   
 //C/p'ed from https://ledshield.wordpress.com/2012/11/13/led-brightness-to-your-eye-gamma-correction-no/
@@ -401,7 +398,7 @@ class MatrixPanel_I2S_DMA {
 
     // TODO: Disable/Enable auto buffer flipping (useful for lots of drawPixel usage)...
 
-    // Adafruit's BASIC DRAW API
+    // Adafruit's BASIC DRAW API (565 colour format)
     virtual void drawPixel(int16_t x, int16_t y, uint16_t color);   // overwrite adafruit implementation
     virtual void fillScreen(uint16_t color);                        // overwrite adafruit implementation
 
@@ -450,9 +447,14 @@ class MatrixPanel_I2S_DMA {
 #endif
 
     void fillScreenRGB888(uint8_t r, uint8_t g, uint8_t b);
-    void drawPixelRGB565(int16_t x, int16_t y, uint16_t color);
     void drawPixelRGB888(int16_t x, int16_t y, uint8_t r, uint8_t g, uint8_t b);
-    void drawPixelRGB24(int16_t x, int16_t y, RGB24 color);
+	
+#ifdef FASTLED_CRGB_SUPPORT
+	// 24bpp FASTLED CRGB colour struct support
+    void drawPixel(int16_t x, int16_t y, CRGB color);
+	void fillScreen(CRGB color);
+#endif 
+
     void drawIcon (int *ico, int16_t x, int16_t y, int16_t cols, int16_t rows);
     
     // Color 444 is a 4 bit scale, so 0 to 15, color 565 takes a 0-255 bit value, so scale up by 255/15 (i.e. 17)!
@@ -674,44 +676,57 @@ class MatrixPanel_I2S_DMA {
 /***************************************************************************************/   
 // https://stackoverflow.com/questions/5057021/why-are-c-inline-functions-in-the-header
 /* 2. functions declared in the header must be marked inline because otherwise, every translation unit which includes the header will contain a definition of the function, and the linker will complain about multiple definitions (a violation of the One Definition Rule). The inline keyword suppresses this, allowing multiple translation units to contain (identical) definitions. */
+
+/**
+ * @brief - convert RGB565 to RGB888
+ * @param uint16_t color - RGB565 input color
+ * @param uint8_t &r, &g, &b - refs to variables where converted colours would be emplaced
+ */
+inline void MatrixPanel_I2S_DMA::color565to888(const uint16_t color, uint8_t &r, uint8_t &g, uint8_t &b){
+  r = ((((color >> 11) & 0x1F) * 527) + 23) >> 6;
+  g = ((((color >> 5) & 0x3F) * 259) + 33) >> 6;
+  b = (((color & 0x1F) * 527) + 23) >> 6;
+}
+
 inline void MatrixPanel_I2S_DMA::drawPixel(int16_t x, int16_t y, uint16_t color) // adafruit virtual void override
 {
-  drawPixelRGB565( x, y, color);
+  uint8_t r,g,b;
+  color565to888(color,r,g,b);
+  
+  updateMatrixDMABuffer( x, y, r, g, b);
 } 
 
 inline void MatrixPanel_I2S_DMA::fillScreen(uint16_t color)  // adafruit virtual void override
 {
-  uint8_t r = ((((color >> 11) & 0x1F) * 527) + 23) >> 6;
-  uint8_t g = ((((color >> 5) & 0x3F) * 259) + 33) >> 6;
-  uint8_t b = (((color & 0x1F) * 527) + 23) >> 6;
+  uint8_t r,g,b;
+  color565to888(color,r,g,b);
   
-  updateMatrixDMABuffer(r, g, b); // the RGB only (no pixel coordinate) version of 'updateMatrixDMABuffer'
+  updateMatrixDMABuffer(r, g, b); // RGB only (no pixel coordinate) version of 'updateMatrixDMABuffer'
 } 
-
-inline void MatrixPanel_I2S_DMA::fillScreenRGB888(uint8_t r, uint8_t g,uint8_t b)  // adafruit virtual void override
-{
-  updateMatrixDMABuffer(r, g, b);
-} 
-
-// For adafruit
-inline void MatrixPanel_I2S_DMA::drawPixelRGB565(int16_t x, int16_t y, uint16_t color) 
-{
-  uint8_t r = ((((color >> 11) & 0x1F) * 527) + 23) >> 6;
-  uint8_t g = ((((color >> 5) & 0x3F) * 259) + 33) >> 6;
-  uint8_t b = (((color & 0x1F) * 527) + 23) >> 6;
-  
-  updateMatrixDMABuffer( x, y, r, g, b);
-}
 
 inline void MatrixPanel_I2S_DMA::drawPixelRGB888(int16_t x, int16_t y, uint8_t r, uint8_t g,uint8_t b) 
 {
   updateMatrixDMABuffer( x, y, r, g, b);
 }
 
-inline void MatrixPanel_I2S_DMA::drawPixelRGB24(int16_t x, int16_t y, RGB24 color) 
+inline void MatrixPanel_I2S_DMA::fillScreenRGB888(uint8_t r, uint8_t g,uint8_t b)
+{
+  updateMatrixDMABuffer(r, g, b); // RGB only (no pixel coordinate) version of 'updateMatrixDMABuffer'
+} 
+
+#ifdef FASTLED_CRGB_SUPPORT
+// Support for CRGB values provided via FastLED
+inline void MatrixPanel_I2S_DMA::drawPixel(int16_t x, int16_t y, CRGB color) 
 {
   updateMatrixDMABuffer( x, y, color.red, color.green, color.blue);
 }
+
+inline void MatrixPanel_I2S_DMA::fillScreen(CRGB color) 
+{
+  updateMatrixDMABuffer(color.red, color.green, color.blue);
+}
+#endif
+
 
 // Pass 8-bit (each) R,G,B, get back 16-bit packed color
 //https://github.com/squix78/ILI9341Buffer/blob/master/ILI9341_SPI.cpp
@@ -721,11 +736,8 @@ inline uint16_t MatrixPanel_I2S_DMA::color565(uint8_t r, uint8_t g, uint8_t b) {
 
 // Promote 3/3/3 RGB to Adafruit_GFX 5/6/5 RRRrrGGGgggBBBbb
 inline uint16_t MatrixPanel_I2S_DMA::color333(uint8_t r, uint8_t g, uint8_t b) { 
-
-    return ((r & 0x7) << 13) | ((r & 0x6) << 10) | ((g & 0x7) << 8) | ((g & 0x7) << 5) | ((b & 0x7) << 2) | ((b & 0x6) >> 1);
-    
+  return ((r & 0x7) << 13) | ((r & 0x6) << 10) | ((g & 0x7) << 8) | ((g & 0x7) << 5) | ((b & 0x7) << 2) | ((b & 0x6) >> 1); 
 }
-
 
 inline void MatrixPanel_I2S_DMA::drawIcon (int *ico, int16_t x, int16_t y, int16_t cols, int16_t rows) {
 /*  drawIcon draws a C style bitmap.  
@@ -747,20 +759,9 @@ inline void MatrixPanel_I2S_DMA::drawIcon (int *ico, int16_t x, int16_t y, int16
   int i, j;
   for (i = 0; i < rows; i++) {
     for (j = 0; j < cols; j++) {
-      drawPixelRGB565 (x + j, y + i, ico[i * cols + j]);
+      drawPixel (x + j, y + i, (uint16_t) ico[i * cols + j]);
     }
   }  
-}
-
-/**
- * @brief - convert RGB565 to RGB888
- * @param uint16_t color - RGB565 input color
- * @param uint8_t &r, &g, &b - refs to variables where converted colors would be emplaced
- */
-inline void MatrixPanel_I2S_DMA::color565to888(const uint16_t color, uint8_t &r, uint8_t &g, uint8_t &b){
-  r = ((((color >> 11) & 0x1F) * 527) + 23) >> 6;
-  g = ((((color >> 5) & 0x3F) * 259) + 33) >> 6;
-  b = (((color & 0x1F) * 527) + 23) >> 6;
 }
 
 
