@@ -2,15 +2,11 @@
 #define _ESP32_RGB_64_32_MATRIX_PANEL_I2S_DMA
 
 /***************************************************************************************/
-/* COMPILE-TIME OPTIONS - CONFIGURE AS DESIRED                                         */
+/* COMPILE-TIME OPTIONS - Provide as part of PlatformIO project build_flags.           */
 /***************************************************************************************/
 /* Enable serial debugging of the library, to see how memory is allocated etc. */
 //#define SERIAL_DEBUG 1
 
-/* Use GFX_Root (https://github.com/mrfaptastic/GFX_Root) instead of 
- * Adafruit_GFX library. No real benefit unless you don't want Bus_IO & Wire.h library dependencies. 
- */
-//#define USE_GFX_ROOT 1
 
 /*
  * Do NOT build additional methods optimized for fast drawing,
@@ -18,11 +14,21 @@
  */
 //#define NO_FAST_FUNCTIONS
 
+
 /*
  * Enable the use of FastLED CRGB values directly to drawPixel.
  * i.e. drawPixel(x, y, CRGB color)
  */
 //#define FASTLED_CRGB_SUPPORT 1
+
+
+/* Use GFX_Root (https://github.com/mrfaptastic/GFX_Root) instead of Adafruit_GFX library.
+ * > Removes Bus_IO & Wire.h library dependencies. 
+ * > Provides 24bpp (CRGB) color support for  Adafruit_GFX functions like drawCircle etc.
+ * > Use this compile-time directive with FASTLED_CRGB_SUPPORT if 24bpp graphics
+ *  functions are needed.
+ */
+//#define USE_GFX_ROOT 1
 
 
 /* Physical / Chained HUB75(s) RGB pixel WIDTH and HEIGHT. 
