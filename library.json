@@ -10,26 +10,21 @@
     "name": "Faptastic",
     "url": "https://github.com/mrfaptastic/"
   },
-  "version": "2.0.1",
+  "version": "2.0.2",
   "frameworks": "arduino",
   "platforms": "esp32",
   "examples": [
-    "examples/AnimatedGIFPanel/*.ino",
-    "examples/AnimatedGIFPanel/*.cpp",
-    "examples/AnimatedGIFPanel/*.h",	
-    "examples/AuroraDemo/*.ino",
-    "examples/AuroraDemo/*.cpp",
-    "examples/AuroraDemo/*.h",	
-    "examples/BitmapIcons/*.ino",
-    "examples/BitmapIcons/*.cpp",
-    "examples/BitmapIcons/*.h",
-	"examples/DoubleBufferSwap/*.ino",	
+	"examples/1_SimpleTestShapes/*.ino",
+	"examples/1_SimpleTestShapes/*.cpp",
+	"examples/1_SimpleTestShapes/*.h",	
+	"examples/2_PatternPlasma/*.ino",
+	"examples/2_PatternPlasma/*.cpp",
+	"examples/2_PatternPlasma/*.h",	
+	"examples/3_FM6126Panel/*.ino",
+	"examples/3_FM6126Panel/*.cpp",
+	"examples/3_FM6126Panel/*.h",
 	"examples/ChainedPanels/*.ino",	
-	"examples/PatternPlasma/*.ino",
-	"examples/PatternPlasma/*.cpp",
-	"examples/PatternPlasma/*.h",		
-	"examples/testshapes_32x64/*.ino",
-	"examples/testshapes_32x64/*.cpp",
-	"examples/testshapes_32x64/*.h"	
+	"examples/ChainedPanels/*.h",
+	"examples/ChainedPanels/*.cpp"
   ]
 }
