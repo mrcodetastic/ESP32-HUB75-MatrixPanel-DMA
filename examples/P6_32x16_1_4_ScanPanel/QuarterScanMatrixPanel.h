@@ -105,9 +105,9 @@ class QuarterScanMatrixPanel : public Adafruit_GFX
     virtual void drawPixel(int16_t x, int16_t y, uint16_t color);
     virtual void fillScreen(uint16_t color); // overwrite adafruit implementation
     void clearScreen() { fillScreen(0); }
-    void drawPixelRGB565(int16_t x, int16_t y, uint16_t color);
+    //void drawPixelRGB565(int16_t x, int16_t y, uint16_t color);
     void drawPixelRGB888(int16_t x, int16_t y, uint8_t r, uint8_t g, uint8_t b);
-    void drawPixelRGB24(int16_t x, int16_t y, RGB24 color);
+    //void drawPixelRGB24(int16_t x, int16_t y, RGB24 color);
     void drawIcon (int *ico, int16_t x, int16_t y, int16_t module_cols, int16_t module_rows);
 
     uint16_t color444(uint8_t r, uint8_t g, uint8_t b) {
@@ -422,12 +422,13 @@ inline void QuarterScanMatrixPanel::fillScreen(uint16_t color)  // adafruit virt
   // No need to map this.
   this->display->fillScreen(color);
 }
-
+/*
 inline void QuarterScanMatrixPanel::drawPixelRGB565(int16_t x, int16_t y, uint16_t color)
 {
   VirtualCoords coords = getCoords(x, y);
   this->display->drawPixelRGB565( coords.x, coords.y, color);
 }
+*/
 
 
 inline void QuarterScanMatrixPanel::drawPixelRGB888(int16_t x, int16_t y, uint8_t r, uint8_t g, uint8_t b)
@@ -435,12 +436,13 @@ inline void QuarterScanMatrixPanel::drawPixelRGB888(int16_t x, int16_t y, uint8_
   VirtualCoords coords = getCoords(x, y);
   this->display->drawPixelRGB888( coords.x, coords.y, r, g, b);
 }
-
+/*
 inline void QuarterScanMatrixPanel::drawPixelRGB24(int16_t x, int16_t y, RGB24 color)
 {
   VirtualCoords coords = getCoords(x, y);
   this->display->drawPixelRGB24(coords.x, coords.y, color);
 }
+*/
 
 
 // need to recreate this one, as it wouldnt work to just map where it starts.
