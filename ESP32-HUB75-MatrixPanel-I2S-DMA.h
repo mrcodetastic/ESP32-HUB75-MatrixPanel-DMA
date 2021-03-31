@@ -14,19 +14,10 @@
  */
 //#define NO_FAST_FUNCTIONS
 
-
-/*
- * Enable the use of FastLED CRGB values directly to drawPixel.
- * i.e. drawPixel(x, y, CRGB color)
- */
-//#define FASTLED_CRGB_SUPPORT 1
-
-
 /* Use GFX_Root (https://github.com/mrfaptastic/GFX_Root) instead of Adafruit_GFX library.
  * > Removes Bus_IO & Wire.h library dependencies. 
- * > Provides 24bpp (CRGB) color support for  Adafruit_GFX functions like drawCircle etc.
- * > Use this compile-time directive with FASTLED_CRGB_SUPPORT if 24bpp graphics
- *  functions are needed.
+ * > Provides 24bpp (CRGB) colour support for  Adafruit_GFX functions like drawCircle etc.
+ * > Requires FastLED.h
  */
 //#define USE_GFX_ROOT 1
 
@@ -102,14 +93,12 @@
 #include "esp32_i2s_parallel_v2.h"
 
 #ifdef USE_GFX_ROOT
-    #include "GFX.h" // Adafruit GFX core class -> https://github.com/mrfaptastic/GFX_Root
+	#include <FastLED.h>    
+	#include "GFX.h" // Adafruit GFX core class -> https://github.com/mrfaptastic/GFX_Root	
 #elif !defined NO_GFX
     #include "Adafruit_GFX.h" // Adafruit class with all the other stuff
 #endif
 
-#ifdef FASTLED_CRGB_SUPPORT
-	#include <FastLED.h>
-#endif
 
 
 /***************************************************************************************/
@@ -455,10 +444,10 @@ class MatrixPanel_I2S_DMA {
     void fillScreenRGB888(uint8_t r, uint8_t g, uint8_t b);
     void drawPixelRGB888(int16_t x, int16_t y, uint8_t r, uint8_t g, uint8_t b);
 	
-#ifdef FASTLED_CRGB_SUPPORT
+#ifdef USE_GFX_ROOT
 	// 24bpp FASTLED CRGB colour struct support
-    void drawPixel(int16_t x, int16_t y, CRGB color);
 	void fillScreen(CRGB color);
+    void drawPixel(int16_t x, int16_t y, CRGB color);
 #endif 
 
     void drawIcon (int *ico, int16_t x, int16_t y, int16_t cols, int16_t rows);
@@ -720,7 +709,7 @@ inline void MatrixPanel_I2S_DMA::fillScreenRGB888(uint8_t r, uint8_t g,uint8_t b
   updateMatrixDMABuffer(r, g, b); // RGB only (no pixel coordinate) version of 'updateMatrixDMABuffer'
 } 
 
-#ifdef FASTLED_CRGB_SUPPORT
+#ifdef USE_GFX_ROOT
 // Support for CRGB values provided via FastLED
 inline void MatrixPanel_I2S_DMA::drawPixel(int16_t x, int16_t y, CRGB color) 
 {
