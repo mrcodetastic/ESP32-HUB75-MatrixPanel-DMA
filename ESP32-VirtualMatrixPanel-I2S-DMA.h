@@ -111,6 +111,13 @@ inline VirtualCoords VirtualMatrixPanel::getCoords(int16_t x, int16_t y) {
     //Serial.printf("VirtualMatrixPanel::getCoords(): Invalid virtual display coordinate. x,y: %d, %d\r\n", x, y);
     return coords;
   }
+  
+	// We want to rotate?
+	if (_rotate){
+		uint16_t temp_x=x;
+		x=y;
+		y=virtualResY-1-temp_x;
+   }  
 
     uint8_t row = (y / panelResY) + 1; //a non indexed 0 row number
     if(   ( _s_chain_party && !_chain_top_down && (row % 2 == 0) )  // serpentine vertically stacked chain starting from bottom row (i.e. ESP closest to ground), upwards
@@ -141,14 +148,7 @@ inline VirtualCoords VirtualMatrixPanel::getCoords(int16_t x, int16_t y) {
       //coords.x = (this->display->getCfg().mx_width-1) - coords.x;
       //coords.y = (this->display->getCfg().mx_height-1) - coords.y;
     }
-	
-	// Finally, we now want to rotate as well?
-	if (_rotate){
-		uint16_t temp_x=coords.x;
-		coords.x=coords.y;
-		coords.y=virtualResY-1-temp_x;
-   }
-  
+	  
 
   //Serial.print("Mapping to x: "); Serial.print(coords.x, DEC);  Serial.print(", y: "); Serial.println(coords.y, DEC);  
 
