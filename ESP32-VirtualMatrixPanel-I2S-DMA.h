@@ -91,11 +91,15 @@ class VirtualMatrixPanel
 	void showDMABuffer() { display->showDMABuffer(); }
 
     void drawDisplayTest();
+	
+    // Rotate display
+    inline void setRotate(bool rotate);	
 
   private:
     VirtualCoords coords;
     bool _s_chain_party  = true; // Are we chained? Ain't no party like a... 
     bool _chain_top_down = false; // is the ESP at the top or bottom of the matrix of devices?
+	bool _rotate = false;
 
 }; // end Class header
 
@@ -137,6 +141,14 @@ inline VirtualCoords VirtualMatrixPanel::getCoords(int16_t x, int16_t y) {
       //coords.x = (this->display->getCfg().mx_width-1) - coords.x;
       //coords.y = (this->display->getCfg().mx_height-1) - coords.y;
     }
+	
+	// Finally, we now want to rotate as well?
+	if (_rotate){
+		uint16_t temp_x=coords.x;
+		coords.x=coords.y;
+		coords.y=virtualResY-1-temp_x;
+   }
+  
 
   //Serial.print("Mapping to x: "); Serial.print(coords.x, DEC);  Serial.print(", y: "); Serial.println(coords.y, DEC);  
 
@@ -155,14 +167,6 @@ inline void VirtualMatrixPanel::fillScreen(uint16_t color)  // adafruit virtual 
   // No need to map this.
   this->display->fillScreen(color);
 }
-/*
-inline void VirtualMatrixPanel::drawPixelRGB565(int16_t x, int16_t y, uint16_t color)
-{
-  VirtualCoords coords = getCoords(x, y);
-  this->display->drawPixelRGB565( coords.x, coords.y, color);
-}
-*/
-
 
 inline void VirtualMatrixPanel::drawPixelRGB888(int16_t x, int16_t y, uint8_t r, uint8_t g, uint8_t b)
 {
@@ -170,13 +174,10 @@ inline void VirtualMatrixPanel::drawPixelRGB888(int16_t x, int16_t y, uint8_t r,
   this->display->drawPixelRGB888( coords.x, coords.y, r, g, b);
 }
 
-/*
-inline void VirtualMatrixPanel::drawPixelRGB24(int16_t x, int16_t y, RGB24 color)
-{
-  VirtualCoords coords = getCoords(x, y);
-  this->display->drawPixelRGB24(coords.x, coords.y, color);
+inline void VirtualMatrixPanel::setRotate(bool rotate) {
+  _rotate=rotate;
 }
-*/
+
 
 #ifndef NO_GFX
 inline void VirtualMatrixPanel::drawDisplayTest()
