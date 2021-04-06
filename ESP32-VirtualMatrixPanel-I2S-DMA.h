@@ -175,7 +175,10 @@ inline void VirtualMatrixPanel::drawPixelRGB888(int16_t x, int16_t y, uint8_t r,
 }
 
 inline void VirtualMatrixPanel::setRotate(bool rotate) {
-  _rotate=rotate;
+	_rotate=rotate;	
+	
+	// We don't support rotation by degrees.
+	if (rotate) { setRotation(1); } else { setRotation(0); }
 }
 
 
