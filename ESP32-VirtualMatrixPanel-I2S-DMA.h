@@ -107,7 +107,7 @@ inline VirtualCoords VirtualMatrixPanel::getCoords(int16_t x, int16_t y) {
 
   coords.x = coords.y = 0;
 
-  if (x < 0 || x > module_cols*panelResX || y < 0 || y > module_rows*panelResY ) {
+  if (x < 0 || x > width() || y < 0 || y > height() ) {
     //Serial.printf("VirtualMatrixPanel::getCoords(): Invalid virtual display coordinate. x,y: %d, %d\r\n", x, y);
     return coords;
   }
