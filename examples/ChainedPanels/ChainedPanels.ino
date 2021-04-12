@@ -141,6 +141,10 @@
 #define NUM_COLS 2 // Number of INDIVIDUAL PANELS per ROW
 #define PANEL_CHAIN NUM_ROWS*NUM_COLS    // total number of panels chained one to another
 
+// Change this to your needs, for details on VirtualPanel pls read the PDF!
+#define SERPENT true
+#define TOPDOWN false
+
 // library includes
 #include <ESP32-VirtualMatrixPanel-I2S-DMA.h>
 
@@ -199,7 +203,7 @@ void setup() {
       Serial.println("****** !KABOOM! I2S memory allocation failed ***********");
 
   // create VirtualDisplay object based on our newly created dma_display object
-  virtualDisp = new VirtualMatrixPanel((*dma_display), NUM_ROWS, NUM_COLS, PANEL_RES_X, PANEL_RES_Y, true);
+  virtualDisp = new VirtualMatrixPanel((*dma_display), NUM_ROWS, NUM_COLS, PANEL_RES_X, PANEL_RES_Y, SERPENT, TOPDOWN);
 
   // So far so good, so continue
   virtualDisp->fillScreen(virtualDisp->color444(0, 0, 0));

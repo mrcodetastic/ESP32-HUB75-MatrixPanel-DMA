@@ -95,7 +95,7 @@ void GIFDraw(GIFDRAW *pDraw)
         if (iCount) // any opaque pixels?
         {
           for(int xOffset = 0; xOffset < iCount; xOffset++ ){
-            dma_display.drawPixelRGB565(x + xOffset, y, usTemp[xOffset]);
+            dma_display.drawPixel(x + xOffset, y, usTemp[xOffset]); // 565 Color Format
           }
           x += iCount;
           iCount = 0;
