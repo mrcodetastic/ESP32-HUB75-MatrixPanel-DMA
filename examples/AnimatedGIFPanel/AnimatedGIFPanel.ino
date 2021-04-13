@@ -123,7 +123,7 @@ void GIFDraw(GIFDRAW *pDraw)
       // Translate the 8-bit pixels through the RGB565 palette (already byte reversed)
       for (x=0; x<pDraw->iWidth; x++)
       {
-        dma_display.drawPixelRGB565(x, y, usPalette[*s++]);
+        dma_display.drawPixel(x, y, usPalette[*s++]); // color 565
       }
     }
 } /* GIFDraw() */
