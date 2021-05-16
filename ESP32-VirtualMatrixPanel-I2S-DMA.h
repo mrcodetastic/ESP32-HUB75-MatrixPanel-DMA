@@ -105,7 +105,7 @@ class VirtualMatrixPanel
 
 inline VirtualCoords VirtualMatrixPanel::getCoords(int16_t x, int16_t y) {
 
-  coords.x = coords.y = 0;
+  coords.x = coords.y = -1; // By defalt use an invalid co-ordinates that will be rejected by updateMatrixDMABuffer
 
   if (x < 0 || x > width() || y < 0 || y > height() ) {
     //Serial.printf("VirtualMatrixPanel::getCoords(): Invalid virtual display coordinate. x,y: %d, %d\r\n", x, y);
