@@ -589,18 +589,6 @@ void MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint8_t red, uint8_t green, uint
 } // updateMatrixDMABuffer (full frame paint)
 
 /**
- * clear screen to black and reset all service bits
- */
-void MatrixPanel_I2S_DMA::clearScreen(){
-  clearFrameBuffer();
-  brtCtrlOE(brightness);
-  if (m_cfg.double_buff){
-    clearFrameBuffer(1); 
-    brtCtrlOE(brightness, 1);
-  }
-}
-
-/**
  * @brief - clears and reinitializes color/control data in DMA buffs
  * When allocated, DMA buffs might be dirtry, so we need to blank it and initialize ABCDE,LAT,OE control bits.
  * Those control bits are constants during the entire DMA sweep and never changed when updating just pixel color data

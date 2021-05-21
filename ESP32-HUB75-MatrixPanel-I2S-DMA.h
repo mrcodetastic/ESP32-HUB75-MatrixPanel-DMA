@@ -370,7 +370,7 @@ class MatrixPanel_I2S_DMA {
         
 
       // Flush the DMA buffers prior to configuring DMA - Avoid visual artefacts on boot.
-      clearScreen(); // Must fill the DMA buffer with the initial output bit sequence or the panel will display garbage
+      resetbuffers(); // Must fill the DMA buffer with the initial output bit sequence or the panel will display garbage
 
       // Setup the ESP32 DMA Engine. Sprite_TM built this stuff.
       configureDMA(m_cfg); //DMA and I2S configuration and setup
@@ -398,10 +398,10 @@ class MatrixPanel_I2S_DMA {
     virtual void fillScreen(uint16_t color);                        // overwrite adafruit implementation
 
     /**
-     * clears DMA buffers and reinitializes control bits
-     * to just clear the screen to black fillScreen(0) works faster
+     * A wrapper to fill the entire Screen with black
+     * if double buffering is used, than only back buffer is cleared
      */
-    void clearScreen();
+    inline void clearScreen(){ updateMatrixDMABuffer(0,0,0); };
 
 #ifndef NO_FAST_FUNCTIONS
     /**
@@ -547,7 +547,7 @@ class MatrixPanel_I2S_DMA {
      * Stop the ESP32 DMA Engine. Screen will forever be black until next ESP reboot.
      */
     void stopDMAoutput() {  
-        clearScreen();
+        resetbuffers();
         i2s_parallel_stop_dma(I2S_NUM_1);
     } 
     
@@ -572,6 +572,18 @@ class MatrixPanel_I2S_DMA {
    
     /* Update the entire DMA buffer (aka. The RGB Panel) a certain colour (wipe the screen basically) */
     void updateMatrixDMABuffer(uint8_t red, uint8_t green, uint8_t blue);       
+
+    /**
+     * wipes DMA buffer(s) and reset all color/service bits
+     */
+    inline void resetbuffers(){
+      clearFrameBuffer();
+      brtCtrlOE(brightness);
+      if (m_cfg.double_buff){
+        clearFrameBuffer(1); 
+        brtCtrlOE(brightness, 1);
+      }
+    }
 
 
 #ifndef NO_FAST_FUNCTIONS
