@@ -70,7 +70,7 @@ class VirtualMatrixPanel
     virtual void drawPixel(int16_t x, int16_t y, uint16_t color);
     virtual void fillScreen(uint16_t color); // overwrite adafruit implementation
     void clearScreen() {
-      fillScreen(0);
+      display->clearScreen();
     }
     //void drawPixelRGB565(int16_t x, int16_t y, uint16_t color);
     void drawPixelRGB888(int16_t x, int16_t y, uint8_t r, uint8_t g, uint8_t b);
