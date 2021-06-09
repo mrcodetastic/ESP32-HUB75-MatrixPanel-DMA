@@ -107,7 +107,7 @@ inline VirtualCoords VirtualMatrixPanel::getCoords(int16_t x, int16_t y) {
 
   coords.x = coords.y = -1; // By defalt use an invalid co-ordinates that will be rejected by updateMatrixDMABuffer
 
-  if (x < 0 || x > width() || y < 0 || y > height() ) {
+  if (x < 0 || x >= width() || y < 0 || y >= height() ) {
     //Serial.printf("VirtualMatrixPanel::getCoords(): Invalid virtual display coordinate. x,y: %d, %d\r\n", x, y);
     return coords;
   }
@@ -127,7 +127,8 @@ inline VirtualCoords VirtualMatrixPanel::getCoords(int16_t x, int16_t y) {
     {
       // First portion gets you to the correct offset for the row you need
       // Second portion inverts the x on the row
-      coords.x = (y / panelResY) * (module_cols * panelResX) + (virtualResX - 1 - x);
+      //coords.x = (y / panelResY) * (module_cols * panelResX) + (virtualResX - 1 - x);
+	  coords.x = (y / panelResY) * (module_cols * panelResX) + (virtualResX - 0 - x); // hack untested 9/june/21
 
       // inverts the y the row
       coords.y = panelResY - 1 - (y % panelResY);
