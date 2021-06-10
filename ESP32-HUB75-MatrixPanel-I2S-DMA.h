@@ -151,6 +151,15 @@
     #error "Pixel color depth bits cannot be less than 2."
 #endif
 
+/* This library is designed to take an 8 bit / 1 byt value (0-255) for each R G B colour sub-pixel. 
+ * The PIXEL_COLOR_DEPTH_BITS should always be '8' as a result.
+ * However, if the library is to be used with lower colour depth (i.e. 6 bit colour), then we need to ensure the 8-bit value passed to the colour masking
+ * is adjusted accordingly to ensure the LSB's are shifted left to MSB, by the difference. Otherwise the colours will be all screwed up.
+ */
+#if PIXEL_COLOR_DEPTH_BITS != 8
+static constexpr uint8_t const MASK_OFFSET = 8-PIXEL_COLOR_DEPTH_BITS;
+#endif
+
 /***************************************************************************************/
 
 /** @brief - Structure holds raw DMA data to drive TWO full rows of pixels spaning through all chained modules

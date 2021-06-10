@@ -65,18 +65,6 @@
  */
 #define getRowDataPtr(row, _dpth, buff_id) &(dma_buff.rowBits[row]->data[_dpth * dma_buff.rowBits[row]->width + buff_id*(dma_buff.rowBits[row]->width * dma_buff.rowBits[row]->color_depth)])
 
-/* This library is designed to take an 8 bit / 1 byt value (0-255) for each R G B colour sub-pixel. 
- * The PIXEL_COLOR_DEPTH_BITS should always be '8' as a result.
- * However, if the library is to be used with lower colour depth (i.e. 6 bit colour), then we need to ensure the 8-bit value passed to the colour masking
- * is adjusted accordingly to ensure the LSB's are shifted left to MSB, by the difference. Otherwise the colours will be all screwed up.
- */
-#if PIXEL_COLOR_DEPTH_BITS < 8
-	#define COLOR_DEPTH_LESS_THAN_8BIT_ADJUST  +(8-PIXEL_COLOR_DEPTH_BITS)
-#else
-	#define COLOR_DEPTH_LESS_THAN_8BIT_ADJUST    // Nothing to adjust.
-#endif
-
-
 bool MatrixPanel_I2S_DMA::allocateDMAmemory()
 {
 
@@ -514,7 +502,7 @@ void IRAM_ATTR MatrixPanel_I2S_DMA::updateMatrixDMABuffer(int16_t x_coord, int16
         --color_depth_idx;
 //        uint8_t mask = (1 << (color_depth_idx COLOR_DEPTH_LESS_THAN_8BIT_ADJUST)); // expect 24 bit color (8 bits per RGB subpixel)
 	#if PIXEL_COLOR_DEPTH_BITS < 8
-		uint8_t mask = (1 << (color_depth_idx+(8-PIXEL_COLOR_DEPTH_BITS))); // expect 24 bit color (8 bits per RGB subpixel)
+		uint8_t mask = (1 << (color_depth_idx+MASK_OFFSET)); // expect 24 bit color (8 bits per RGB subpixel)
 	#else
 		uint8_t mask = (1 << (color_depth_idx)); // expect 24 bit color (8 bits per RGB subpixel)
 	#endif		
@@ -561,7 +549,7 @@ void MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint8_t red, uint8_t green, uint
     uint16_t RGB_output_bits = 0;
 //    uint8_t mask = (1 << color_depth_idx COLOR_DEPTH_LESS_THAN_8BIT_ADJUST); // 24 bit color
 	#if PIXEL_COLOR_DEPTH_BITS < 8
-		uint8_t mask = (1 << (color_depth_idx+(8-PIXEL_COLOR_DEPTH_BITS))); // expect 24 bit color (8 bits per RGB subpixel)
+		uint8_t mask = (1 << (color_depth_idx+MASK_OFFSET)); // expect 24 bit color (8 bits per RGB subpixel)
 	#else
 		uint8_t mask = (1 << (color_depth_idx)); // expect 24 bit color (8 bits per RGB subpixel)
 	#endif		
@@ -810,7 +798,7 @@ void MatrixPanel_I2S_DMA::hlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, 
     uint16_t RGB_output_bits = 0;
 //    uint8_t mask = (1 << color_depth_idx COLOR_DEPTH_LESS_THAN_8BIT_ADJUST);
 	#if PIXEL_COLOR_DEPTH_BITS < 8
-		uint8_t mask = (1 << (color_depth_idx+(8-PIXEL_COLOR_DEPTH_BITS))); // expect 24 bit color (8 bits per RGB subpixel)
+		uint8_t mask = (1 << (color_depth_idx+MASK_OFFSET)); // expect 24 bit color (8 bits per RGB subpixel)
 	#else
 		uint8_t mask = (1 << (color_depth_idx)); // expect 24 bit color (8 bits per RGB subpixel)
 	#endif		
@@ -877,7 +865,7 @@ void MatrixPanel_I2S_DMA::vlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, 
     // let's precalculate RGB1 and RGB2 bits than flood it over the entire DMA buffer
 //    uint8_t mask = (1 << color_depth_idx COLOR_DEPTH_LESS_THAN_8BIT_ADJUST);
 	#if PIXEL_COLOR_DEPTH_BITS < 8
-		uint8_t mask = (1 << (color_depth_idx+(8-PIXEL_COLOR_DEPTH_BITS))); // expect 24 bit color (8 bits per RGB subpixel)
+		uint8_t mask = (1 << (color_depth_idx+MASK_OFFSET)); // expect 24 bit color (8 bits per RGB subpixel)
 	#else
 		uint8_t mask = (1 << (color_depth_idx)); // expect 24 bit color (8 bits per RGB subpixel)
 	#endif		
