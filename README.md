@@ -155,7 +155,7 @@ For example: If you want to chain two of these horizontally to make a 128x32 pan
 
 Finally, if you wanted to chain 4 x (64x32px) panels to make 128x64px display (essentially a 2x2 grid of 64x32 LED Matrix modules), a little more magic will be required. Refer to the [Chained Panels](examples/ChainedPanels/) example.
 
-Resolutions beyond 128x128 are more likely to result in crashes due to [memory](/doc/i2s_memcalc.md) constraints etc. You're on your own at this point.
+Resolutions beyond 128x64 are more likely to result in crashes due to [memory](/doc/i2s_memcalc.md) constraints etc. You are on your own after this point - PLEASE do not raise issues about this, the library can't magically defeat the SRAM memory constraints of the ESP32.
 
 ![ezgif com-video-to-gif](https://user-images.githubusercontent.com/12006953/89837358-b64c0480-db60-11ea-870d-4b6482068a3b.gif)
 

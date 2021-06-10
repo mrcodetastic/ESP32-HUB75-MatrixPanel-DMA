@@ -58,6 +58,14 @@ class VirtualMatrixPanel
 
       virtualResY = vmodule_rows*panelY;
       virtualResX = vmodule_cols*panelX;      
+	  
+	  /* Virtual Display width() and height() will return a real-world value. For example:
+	   * Virtual Display width: 128
+	   * Virtual Display height: 64
+	   *
+	   * So, not values that at 0 to X-1
+	   */
+
 
       _s_chain_party = serpentine_chain; // serpentine, or 'S' chain?
       _chain_top_down= top_down_chain;
@@ -107,7 +115,7 @@ inline VirtualCoords VirtualMatrixPanel::getCoords(int16_t x, int16_t y) {
 
   coords.x = coords.y = -1; // By defalt use an invalid co-ordinates that will be rejected by updateMatrixDMABuffer
 
-  if (x < 0 || x >= width() || y < 0 || y >= height() ) {
+  if (x < 0 || x >= width() || y < 0 || y >= height() ) { // Co-ordinates go from 0 to X-1 remember! width() and height() are out of range!
     //Serial.printf("VirtualMatrixPanel::getCoords(): Invalid virtual display coordinate. x,y: %d, %d\r\n", x, y);
     return coords;
   }
@@ -127,14 +135,14 @@ inline VirtualCoords VirtualMatrixPanel::getCoords(int16_t x, int16_t y) {
     {
       // First portion gets you to the correct offset for the row you need
       // Second portion inverts the x on the row
-      //coords.x = (y / panelResY) * (module_cols * panelResX) + (virtualResX - 1 - x);
-	  coords.x = (y / panelResY) * (module_cols * panelResX) + (virtualResX - 0 - x); // hack untested 9/june/21
-
+	  coords.x = (y / panelResY) * (module_cols * panelResX) + (virtualResX - x) - 1;
+	  
       // inverts the y the row
-      coords.y = panelResY - 1 - (y % panelResY);
+      coords.y = panelResY - 1 - (y % panelResY);  
     } 
     else 
     {
+	  // Normal chain pixel co-ordinate
       coords.x = x + (y / panelResY) * (module_cols * panelResX) ;
       coords.y = y % panelResY;
     }
@@ -145,15 +153,13 @@ inline VirtualCoords VirtualMatrixPanel::getCoords(int16_t x, int16_t y) {
       const HUB75_I2S_CFG _cfg = this->display->getCfg();
       coords.x = (_cfg.mx_width * _cfg.chain_length - 1) - coords.x;
       coords.y = (_cfg.mx_height-1) - coords.y;
-
-      //coords.x = (this->display->getCfg().mx_width-1) - coords.x;
-      //coords.y = (this->display->getCfg().mx_height-1) - coords.y;
+	  
     }
 	  
 
-  //Serial.print("Mapping to x: "); Serial.print(coords.x, DEC);  Serial.print(", y: "); Serial.println(coords.y, DEC);  
-
-  return coords;  
+    //Serial.print("Mapping to x: "); Serial.print(coords.x, DEC);  Serial.print(", y: "); Serial.println(coords.y, DEC);  
+ 
+	return coords;  
 
 }
 

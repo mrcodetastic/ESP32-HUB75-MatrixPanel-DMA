@@ -262,12 +262,13 @@ struct  HUB75_I2S_CFG {
   
   /**
    *  I2S clock phase
-   *  0 (default) - data lines are clocked with negative edge
+   *  0 - data lines are clocked with negative edge
    *  Clk  /¯\_/¯\_/
    *  LAT  __/¯¯¯\__
    *  EO   ¯¯¯¯¯¯\___
    *
-   *  1 - data lines are clocked with positive edge
+   *  1 - data lines are clocked with positive edge (default now as of 10 June 2021)
+   *  https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/issues/130
    *  Clk  \_/¯\_/¯\
    *  LAT  __/¯¯¯\__
    *  EO   ¯¯¯¯¯¯\__
@@ -291,7 +292,7 @@ struct  HUB75_I2S_CFG {
     bool _dbuff = false,
     clk_speed _i2sspeed = HZ_10M,
     uint8_t _latblk = 1,
-    bool _clockphase = false,
+    bool _clockphase = true,
     uint8_t _min_refresh_rate = 85
   ) : mx_width(_w),
       mx_height(_h),
