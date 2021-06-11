@@ -20,12 +20,12 @@ And there are lot's of hogs for those:
 Equalising ones with the others results in **Refresh rate**,
 
 or (rough approximation) 
-<img src="https://render.githubusercontent.com/render/math?math=RefreshRate=\frac{resolution%20\times%20chain%20\times%20(ColorDepth-LSB2MSB)}{%20I%20^2S%20_%20{clock}%20}">
+<img src="https://render.githubusercontent.com/render/math?math=RefreshRate=\frac{%20I%20^2S%20_%20{clock}%20}{resolution%20\times%20chain%20\times%20(ColorDepth-LSB2MSB)}">
 
 [//]: # (github markdown does not like LaTex formulas)
 [//]: # ($$RefreshRate=\frac{resolution \times chain \times (ColorDepth-LSB2MSB)}{ I ^2S _ {clock} }$$)
 
-So, how to find optimum balance for all of these? Obviously you can't change *resolution* and *chain length*, it is physical characteristics and there is not much you can do about it except cutting of your chain or pushing it to the memory limits.
+So, how to find optimum balance for all of these? Obviously you can't change *resolution* and *chain length*, it is physical characteristics and there is not much you can do about it except cutting off your chain or pushing it to the memory limits.
 
 There are 3 parameters you can choose from (actually two:)
  - **Color Depth** - predefined at [build-time]((/doc/BuildOptions.md)) option
@@ -34,7 +34,7 @@ There are 3 parameters you can choose from (actually two:)
 
 - **LSB-to-MSB** transition - it can't  be controlled in any way, library uses it internaly trying to balance all of the above 
 
-Using provided table it is possible to estimate all of the parameters before running the library. Besides calculating memory requirements it could help to find **optimum color depth** for your matrix configuration. For higher resolutions default 8 bits could be too much to sustain minimal refresh rate and avoid annoying flickering. So the library would increase MSB transition to keep the balance, thus reducing dynamic range in shadows and dark colors. As a result it is nearly almost the same as just reducing overal color depth. **But** reducing global color depth would also saves lot's of precious RAM!
+Using provided table it is possible to estimate all of the parameters before running the library. Besides calculating memory requirements it could help to find **optimum color depth** for your matrix configuration. For higher resolutions default 8 bits could be too much to sustain minimal refresh rate and avoid annoying flickering. So the library would increase MSB transition to keep the balance, thus reducing dynamic range in shadows and dark colors. As a result it is nearly almost the same as just reducing overal color depth. **But** reducing global color depth would also save lot's of precious RAM!
 Now it's all up to you to decide :)
 
 /Vortigont/
