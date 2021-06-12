@@ -33,31 +33,31 @@ class VirtualMatrixPanel
     int16_t virtualResX;
     int16_t virtualResY;
 
-    int16_t module_rows;
-    int16_t module_cols;
+    int16_t vmodule_rows;
+    int16_t vmodule_cols;
 
     int16_t panelResX;
     int16_t panelResY;
 
     MatrixPanel_I2S_DMA *display;
 
-    VirtualMatrixPanel(MatrixPanel_I2S_DMA &disp, int vmodule_rows, int vmodule_cols, int panelX, int panelY, bool serpentine_chain = true, bool top_down_chain = false)
+    VirtualMatrixPanel(MatrixPanel_I2S_DMA &disp, int _vmodule_rows, int _vmodule_cols, int _panelResX, int _panelResY, bool serpentine_chain = true, bool top_down_chain = false)
 #ifdef USE_GFX_ROOT
-      : GFX(vmodule_cols*panelX, vmodule_rows*panelY)
+      : GFX(_vmodule_cols*_panelResX, _vmodule_rows*_panelResY)
 #elif !defined NO_GFX
-      : Adafruit_GFX(vmodule_cols*panelX, vmodule_rows*panelY)
+      : Adafruit_GFX(_vmodule_cols*_panelResX, _vmodule_rows*_panelResY)
 #endif            
     {
       this->display = &disp;
 
-      panelResX = panelX;
-      panelResY = panelY;
+      panelResX = _panelResX;
+      panelResY = _panelResY;
 
-      module_rows = vmodule_rows;
-      module_cols = vmodule_cols;
+      vmodule_rows = _vmodule_rows;
+      vmodule_cols = _vmodule_cols;
 
-      virtualResY = vmodule_rows*panelY;
-      virtualResX = vmodule_cols*panelX;      
+      virtualResX = vmodule_cols*_panelResX;      
+      virtualResY = vmodule_rows*_panelResY;	  
 	  
 	  /* Virtual Display width() and height() will return a real-world value. For example:
 	   * Virtual Display width: 128
@@ -69,6 +69,8 @@ class VirtualMatrixPanel
 
       _s_chain_party = serpentine_chain; // serpentine, or 'S' chain?
       _chain_top_down= top_down_chain;
+	  
+	  coords.x = coords.y = -1; // By default use an invalid co-ordinates that will be rejected by updateMatrixDMABuffer
 
     }
 
@@ -83,7 +85,7 @@ class VirtualMatrixPanel
     //void drawPixelRGB565(int16_t x, int16_t y, uint16_t color);
     void drawPixelRGB888(int16_t x, int16_t y, uint8_t r, uint8_t g, uint8_t b);
     //void drawPixelRGB24(int16_t x, int16_t y, RGB24 color);
-    void drawIcon (int *ico, int16_t x, int16_t y, int16_t module_cols, int16_t module_rows);
+    void drawIcon (int *ico, int16_t x, int16_t y, int16_t icon_cols, int16_t icon_rows);
 
     uint16_t color444(uint8_t r, uint8_t g, uint8_t b) {
       return display->color444(r, g, b);
@@ -107,10 +109,15 @@ class VirtualMatrixPanel
     VirtualCoords coords;
     bool _s_chain_party  = true; // Are we chained? Ain't no party like a... 
     bool _chain_top_down = false; // is the ESP at the top or bottom of the matrix of devices?
-	bool _rotate = false;
+	bool _rotate 		 = false;
 
 }; // end Class header
 
+/**
+ * Calculate virtual->real co-ordinate mapping to underlying single chain of panels connected to ESP32.
+ * Updates the private class member variable 'coords', so no need to use the return value. 
+ * Not thread safe, but not a concern for ESP32 sketch anyway... I think.
+ */
 inline VirtualCoords VirtualMatrixPanel::getCoords(int16_t x, int16_t y) {
 
   coords.x = coords.y = -1; // By defalt use an invalid co-ordinates that will be rejected by updateMatrixDMABuffer
@@ -135,7 +142,7 @@ inline VirtualCoords VirtualMatrixPanel::getCoords(int16_t x, int16_t y) {
     {
       // First portion gets you to the correct offset for the row you need
       // Second portion inverts the x on the row
-	  coords.x = (y / panelResY) * (module_cols * panelResX) + (virtualResX - x) - 1;
+	  coords.x = ((y / panelResY) * (virtualResX)) + (virtualResX - x) - 1;
 	  
       // inverts the y the row
       coords.y = panelResY - 1 - (y % panelResY);  
@@ -143,7 +150,7 @@ inline VirtualCoords VirtualMatrixPanel::getCoords(int16_t x, int16_t y) {
     else 
     {
 	  // Normal chain pixel co-ordinate
-      coords.x = x + (y / panelResY) * (module_cols * panelResX) ;
+      coords.x = x + ((y / panelResY) * (virtualResX)) ;
       coords.y = y % panelResY;
     }
 
@@ -158,14 +165,14 @@ inline VirtualCoords VirtualMatrixPanel::getCoords(int16_t x, int16_t y) {
 	  
 
     //Serial.print("Mapping to x: "); Serial.print(coords.x, DEC);  Serial.print(", y: "); Serial.println(coords.y, DEC);  
- 
 	return coords;  
 
 }
 
 inline void VirtualMatrixPanel::drawPixel(int16_t x, int16_t y, uint16_t color)
 {
-  VirtualCoords coords = getCoords(x, y);
+  //VirtualCoords coords = getCoords(x, y);	
+  getCoords(x, y);
   this->display->drawPixel(coords.x, coords.y, color);
 }
 
@@ -177,7 +184,8 @@ inline void VirtualMatrixPanel::fillScreen(uint16_t color)  // adafruit virtual 
 
 inline void VirtualMatrixPanel::drawPixelRGB888(int16_t x, int16_t y, uint8_t r, uint8_t g, uint8_t b)
 {
-  VirtualCoords coords = getCoords(x, y);
+  //VirtualCoords coords = getCoords(x, y);	
+  getCoords(x, y);
   this->display->drawPixelRGB888( coords.x, coords.y, r, g, b);
 }
 
@@ -196,25 +204,25 @@ inline void VirtualMatrixPanel::drawDisplayTest()
    this->display->setTextColor(this->display->color565(255, 255, 0));
    this->display->setTextSize(1); 
 
-  for ( int panel = 0; panel < module_cols*module_rows; panel++ ) {
+  for ( int panel = 0; panel < vmodule_cols*vmodule_rows; panel++ ) {
     int top_left_x = (panel == 0) ? 0:(panel*panelResX);
     this->display->drawRect( top_left_x, 0, panelResX, panelResY, this->display->color565( 0, 255, 0));
     this->display->setCursor(panel*panelResX, panelResY-3); 
-    this->display->print((module_cols*module_rows)-panel);    
+    this->display->print((vmodule_cols*vmodule_rows)-panel);    
   } 
 
 }
 #endif
 
 // need to recreate this one, as it wouldnt work to just map where it starts.
-inline void VirtualMatrixPanel::drawIcon (int *ico, int16_t x, int16_t y, int16_t module_cols, int16_t module_rows) {
+inline void VirtualMatrixPanel::drawIcon (int *ico, int16_t x, int16_t y, int16_t icon_cols, int16_t icon_rows) {
   int i, j;
-  for (i = 0; i < module_rows; i++) {
-    for (j = 0; j < module_cols; j++) {
+  for (i = 0; i < icon_rows; i++) {
+    for (j = 0; j < icon_cols; j++) {
       // This is a call to this libraries version of drawPixel
       // which will map each pixel, which is what we want.
       //drawPixelRGB565 (x + j, y + i, ico[i * module_cols + j]);
-	  drawPixel (x + j, y + i, ico[i * module_cols + j]);
+	  drawPixel (x + j, y + i, ico[i * icon_cols + j]);
     }
   }
 }
