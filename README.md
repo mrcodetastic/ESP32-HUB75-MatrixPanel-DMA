@@ -115,8 +115,9 @@ dma_display = new MatrixPanel_I2S_DMA(mxconfig);
 
 Various people have created PCBs for which one can simply connect an ESP32 to a PCB, and then the PCB to the HUB75 connector, such as:
 
-* Brian Lough's [ESP32 I2S Matrix Shield](http://blough.ie/i2smat/); or
+* Brian Lough's [ESP32 I2S Matrix Shield](http://blough.ie/i2smat/)
 * Charles Hallard's [WeMos Matrix Shield](https://github.com/hallard/WeMos-Matrix-Shield-DMA)
+* Bogdan Sass's [Morph Clock Shield](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/discussions/110#discussioncomment-861152)
 
 Please contact or order these products from the respective authors.
 
