@@ -169,7 +169,7 @@ By default you should not need to change / set the brightness setting as the def
 
 The value to pass `setPanelBrightness()` must be less than MATRIX_CHAIN_WIDTH in pixels. For example for a single 64x32 LED Matrix Module, a value must be less than 64. For 3 modules 64x32 it must be less than 192. However, if you set the brightness too high, you may experience ghosting. 
 
-Also you may use method `setPanelBrightness8(x)`, where x is a uint8_t value between 0-255. Library will recalculate required brightness level depending on matrix width (mostly useful with FastLED-based sketches).
+Also you may use method `setBrightness8(x)`, where x is a uint8_t value between 0-255. Library will recalculate required brightness level depending on matrix width (mostly useful with FastLED-based sketches).
 
 Example:
 ```
@@ -179,7 +179,7 @@ Serial.begin(115200);
 	matrix.setPanelBrightness(16); // Set the brightness. 32 or lower ideal for a single 64x32 LED Matrix Panel.
 
 	// or another way
-	matrix.setPanelBrightness8(192); // Set the brightness to about 3/4 or 75% (192/256) of maximum.
+	matrix.setBrightness8(192); // Set the brightness to about 3/4 or 75% (192/256) of maximum.
 }
 ```
 
