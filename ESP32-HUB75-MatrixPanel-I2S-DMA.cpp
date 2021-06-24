@@ -637,6 +637,7 @@ void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id){
 
       // drive latch while shifting out last bit of RGB data
       row[dma_buff.rowBits[row_idx]->width - 2] |= BIT_LAT;   // -1 pixel to compensate array index starting at 0
+      row[dma_buff.rowBits[row_idx]->width - 1] |= BIT_LAT;   // -1 pixel to compensate array index starting at 0
 
       // need to disable OE before/after latch to hide row transition
       // Should be one clock or more before latch, otherwise can get ghosting
@@ -661,8 +662,8 @@ void MatrixPanel_I2S_DMA::brtCtrlOE(int brt, const bool _buff_id){
   if (!initialized)
     return;
 
-  if (brt > PIXELS_PER_ROW - m_cfg.latch_blanking)   // can't control values larger than (row_width - latch_blanking) to avoid ongoing issues being raised about brightness and ghosting.
-    brt = PIXELS_PER_ROW - m_cfg.latch_blanking;
+  if (brt > PIXELS_PER_ROW - (MAX_LAT_BLANKING + 2))   // can't control values larger than (row_width - latch_blanking) to avoid ongoing issues being raised about brightness and ghosting.
+    brt = PIXELS_PER_ROW   - (MAX_LAT_BLANKING + 2);   // +2 for a bit of buffer...
 
   if (brt < 0)
     brt = 0;
