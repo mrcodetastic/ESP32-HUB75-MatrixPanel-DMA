@@ -225,7 +225,7 @@ esp_err_t i2s_parallel_driver_install(i2s_port_t port, i2s_parallel_config_t* co
   //    Output = 80000000L / tx_bck_div_num / (clkm_div_num + (clkm_div_b/clkm_div_a) )
   
   // Note: clkm_div_num must only be set here AFTER clkm_div_b, clkm_div_a, etc. Or weird things happen!
-  dev->clkm_conf.clkm_div_num = clk_div_main*16;
+  dev->clkm_conf.clkm_div_num = clk_div_main;
   
   //printf("esp32_i2s_parallel_2.c > I2S clock divider is %d \n", clk_div_main*2);  
 
