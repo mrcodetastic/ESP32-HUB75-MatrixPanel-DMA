@@ -84,6 +84,7 @@
 
 #define COLOR_CHANNELS_PER_PIXEL     3
 
+// #define NO_CIE1931
 
 /***************************************************************************************/
 /* Library Includes!                                                                   */
