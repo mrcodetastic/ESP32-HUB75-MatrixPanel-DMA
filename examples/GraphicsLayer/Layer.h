@@ -1,5 +1,5 @@
 /**
- * Experimental layer class to do play with pixel in an off-screen buffer before painting to the DMA 
+ * Experimental layer class to play with pixel in an off-screen buffer before painting to the DMA 
  *
  * Requires FastLED
  *
