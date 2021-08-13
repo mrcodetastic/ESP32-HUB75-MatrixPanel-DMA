@@ -768,9 +768,8 @@ uint8_t MatrixPanel_I2S_DMA::setLatBlanking(uint8_t pulses){
 void MatrixPanel_I2S_DMA::hlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, uint8_t red, uint8_t green, uint8_t blue){
   if ( !initialized )
     return;
-	
- // AdaFruit_GFX x and y co-ords start at 0 and go to width-1 or height-1 (i.e. 0-63, 0-31 for a 64x32 panel)
-  if ( x_coord < 0 || y_coord < 0 || l < 1 || x_coord > PIXELS_PER_ROW || y_coord > m_cfg.mx_height)
+
+  if ( x_coord < 0 || y_coord < 0 || l < 1 || x_coord >= PIXELS_PER_ROW || y_coord >= m_cfg.mx_height)
     return;
 
   if (x_coord+l > PIXELS_PER_ROW)
@@ -843,9 +842,8 @@ void MatrixPanel_I2S_DMA::hlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, 
 void MatrixPanel_I2S_DMA::vlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, uint8_t red, uint8_t green, uint8_t blue){
   if ( !initialized )
     return;
-	
-  // AdaFruit_GFX x and y co-ords start at 0 and go to width-1 or height-1 (i.e. 0-63, 0-31 for a 64x32 panel)
-  if ( x_coord < 0 || y_coord < 0 || l < 1 || x_coord > PIXELS_PER_ROW || y_coord > m_cfg.mx_height) 
+
+  if ( x_coord < 0 || y_coord < 0 || l < 1 || x_coord >= PIXELS_PER_ROW || y_coord >= m_cfg.mx_height)
     return;
 
   if (y_coord + l > m_cfg.mx_height)
