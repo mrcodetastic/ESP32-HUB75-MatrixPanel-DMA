@@ -754,6 +754,7 @@ void MatrixPanel_I2S_DMA::brtCtrlOE(int brt, const bool _buff_id){
 /*
  *  overload for compatibility
  */
+ /*
 bool MatrixPanel_I2S_DMA::begin(int r1, int g1, int b1, int r2, int g2, int b2, int a, int b, int c, int d, int e, int lat, int oe, int clk) {
 
   // RGB
@@ -769,6 +770,7 @@ bool MatrixPanel_I2S_DMA::begin(int r1, int g1, int b1, int r2, int g2, int b2, 
 
   return begin();
 }
+*/
 
 /**
  * @brief - Sets how many clock cycles to blank OE before/after LAT signal change
@@ -879,8 +881,10 @@ void MatrixPanel_I2S_DMA::vlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, 
   if ( x_coord < 0 || y_coord < 0 || l < 1 || x_coord >= PIXELS_PER_ROW || y_coord >= m_cfg.mx_height)
     return;
 
-  if (y_coord + l > m_cfg.mx_height)
-    l = m_cfg.mx_height - y_coord + 1;     // reset width to end of col
+  // check for a length that goes beyond the height of the screen! Array out of bounds dma memory changes = screwed output #163
+  l = ( (y_coord + l) >= m_cfg.mx_height ) ? (m_cfg.mx_height - y_coord):l; 
+  //if (y_coord + l > m_cfg.mx_height)
+  ///    l = m_cfg.mx_height - y_coord + 1;     // reset width to end of col
 
   /* LED Brightness Compensation */
 #ifndef NO_CIE1931
