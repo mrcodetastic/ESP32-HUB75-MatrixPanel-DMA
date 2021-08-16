@@ -111,9 +111,6 @@ void setup() {
   dma_display->clearScreen();
   dma_display->fillScreen(myWHITE);
   
-//
-  dma_display->begin(); // use default pins  
-
   // fix the screen with green
   dma_display->fillRect(0, 0, dma_display->width(), dma_display->height(), dma_display->color444(0, 15, 0));
   delay(500);

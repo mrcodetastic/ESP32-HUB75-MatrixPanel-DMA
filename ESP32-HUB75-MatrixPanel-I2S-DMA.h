@@ -350,6 +350,8 @@ class MatrixPanel_I2S_DMA {
 
     /* Propagate the DMA pin configuration, allocate DMA buffs and start data ouput, initialy blank */
     bool begin(){
+		
+	  if (initialized) return; // we don't do this twice or more!
 
       // Change 'if' to '1' to enable, 0 to not include this Serial output in compiled program        
       #if SERIAL_DEBUG       
