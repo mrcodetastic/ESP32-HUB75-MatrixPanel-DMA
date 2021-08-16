@@ -504,7 +504,7 @@ class MatrixPanel_I2S_DMA {
                 Serial.printf_P(PSTR("Showtime for buffer: %d\n"), back_buffer_id);
         #endif      
       
-        i2s_parallel_flip_to_buffer(I2S_NUM_1, back_buffer_id);
+        i2s_parallel_flip_to_buffer(I2S_NUM_0, back_buffer_id);
 
         // Wait before we allow any writing to the buffer. Stop flicker.
         while(!i2s_parallel_is_previous_buffer_free()) { delay(1); }               
@@ -559,7 +559,7 @@ class MatrixPanel_I2S_DMA {
      */
     void stopDMAoutput() {  
         resetbuffers();
-        i2s_parallel_stop_dma(I2S_NUM_1);
+        i2s_parallel_stop_dma(I2S_NUM_0);
     } 
     
 

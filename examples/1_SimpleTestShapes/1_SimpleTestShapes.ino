@@ -93,8 +93,7 @@ void drawText(int colorWheelOffset)
 
 void setup() {
 
-//
-
+  // Module configuration
   HUB75_I2S_CFG mxconfig(
     PANEL_RES_X,   // module width
     PANEL_RES_Y,   // module height

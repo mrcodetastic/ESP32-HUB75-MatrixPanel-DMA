@@ -415,14 +415,14 @@ void MatrixPanel_I2S_DMA::configureDMA(const HUB75_I2S_CFG& _cfg)
     };
 
     // Setup I2S 
-    i2s_parallel_driver_install(I2S_NUM_1, &cfg);
+    i2s_parallel_driver_install(I2S_NUM_0, &cfg);
     //i2s_parallel_setup_without_malloc(&I2S1, &cfg);
 
     // Start DMA Output
-    i2s_parallel_send_dma(I2S_NUM_1, &dmadesc_a[0]);
+    i2s_parallel_send_dma(I2S_NUM_0, &dmadesc_a[0]);
 
     #if SERIAL_DEBUG  
-      Serial.println(F("configureDMA(): DMA setup completed on I2S1.")); 
+      Serial.println(F("configureDMA(): DMA setup completed on I2S_NUM_0.")); 
     #endif       
 		
 } // end initMatrixDMABuff
