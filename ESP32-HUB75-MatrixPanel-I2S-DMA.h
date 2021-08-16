@@ -397,6 +397,17 @@ class MatrixPanel_I2S_DMA {
 
     }
 
+    // Obj destructor
+    ~MatrixPanel_I2S_DMA(){
+      stopDMAoutput();
+
+      delete dmadesc_a;
+
+      if (m_cfg.double_buff)
+        delete dmadesc_b;
+    }
+
+
     /*
      *  overload for compatibility
      */
