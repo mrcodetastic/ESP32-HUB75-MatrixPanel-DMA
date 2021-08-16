@@ -807,8 +807,11 @@ void MatrixPanel_I2S_DMA::hlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, 
   if ( x_coord < 0 || y_coord < 0 || l < 1 || x_coord >= PIXELS_PER_ROW || y_coord >= m_cfg.mx_height)
     return;
 
-  if (x_coord+l > PIXELS_PER_ROW)
-    l = PIXELS_PER_ROW - x_coord + 1;     // reset width to end of row
+
+  l = ( (x_coord + l) >= PIXELS_PER_ROW ) ? (PIXELS_PER_ROW - x_coord):l; 
+
+  //if (x_coord+l > PIXELS_PER_ROW)
+//    l = PIXELS_PER_ROW - x_coord + 1;     // reset width to end of row
 
   /* LED Brightness Compensation */
 #ifndef NO_CIE1931
