@@ -603,7 +603,7 @@ void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id){
   int row_idx = dma_buff.rowBits.size();
   do {
     --row_idx;
-
+	
     ESP32_I2S_DMA_STORAGE_TYPE* row = dma_buff.rowBits[row_idx]->getDataPtr(0, _buff_id);   // set pointer to the HEAD of a buffer holding data for the entire matrix row
 
     ESP32_I2S_DMA_STORAGE_TYPE abcde = (ESP32_I2S_DMA_STORAGE_TYPE)row_idx;
@@ -616,7 +616,15 @@ void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id){
     // fill all x_pixels except color_index[0] (LSB) ones, this also clears all color data to 0's black
     do {
       --x_pixel;
-      row[x_pixel] = abcde;
+	  
+	  if ( m_cfg.driver == HUB75_I2S_CFG::SM5266P) {
+		// modifications here for row shift register type SM5266P 
+		// https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/issues/164
+		row[x_pixel] = abcde & (0x18 << BITS_ADDR_OFFSET); // mask out the bottom 3 bits which are the clk di bk inputs  
+	  } else {		  
+		row[x_pixel] = abcde;
+	  }
+	  
     } while(x_pixel!=dma_buff.rowBits[row_idx]->width);
 
     // color_index[0] (LSB) x_pixels must be "marked" with a previous's row address, 'cause  it is used to display
@@ -624,8 +632,33 @@ void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id){
     abcde = ((ESP32_I2S_DMA_STORAGE_TYPE)row_idx-1) << BITS_ADDR_OFFSET;
     do {
       --x_pixel;
-      row[x_pixel] = abcde;
+	  
+	  if ( m_cfg.driver == HUB75_I2S_CFG::SM5266P) {
+		// modifications here for row shift register type SM5266P 
+		// https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/issues/164
+		row[x_pixel] = abcde & (0x18 << BITS_ADDR_OFFSET); // mask out the bottom 3 bits which are the clk di bk inputs  
+	  } else {		  
+		row[x_pixel] = abcde;
+	  }	  
+      //row[x_pixel] = abcde;
     } while(x_pixel);
+	
+	
+	// modifications here for row shift register type SM5266P 
+	// https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/issues/164	
+	if ( m_cfg.driver == HUB75_I2S_CFG::SM5266P) {	
+		uint16_t serialCount;
+		uint16_t latch;
+		x_pixel = dma_buff.rowBits[row_idx]->width - 16; // come back 8*2 pixels to allow for 8 writes
+		serialCount = 8;
+		do{
+			serialCount--;
+			latch = row[x_pixel] | (((((ESP32_I2S_DMA_STORAGE_TYPE)row_idx) % 8) == serialCount) << 1) << BITS_ADDR_OFFSET; // data on 'B'
+			row[x_pixel++] = latch| (0x05<< BITS_ADDR_OFFSET); // clock high on 'A'and BK high for update
+			row[x_pixel++] = latch| (0x04<< BITS_ADDR_OFFSET); // clock low on 'A'and BK high for update
+		} while (serialCount);
+	} // end SM5266P	
+	
 
     // let's set LAT/OE control bits for specific pixels in each color_index subrows
     uint8_t coloridx = dma_buff.rowBits[row_idx]->color_depth;

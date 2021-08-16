@@ -229,7 +229,7 @@ struct  HUB75_I2S_CFG {
    * Enumeration of hardware-specific chips
    * used to drive matrix modules
    */
-  enum shift_driver {SHIFTREG=0, FM6124, FM6126A, ICN2038S, MBI5124};
+  enum shift_driver {SHIFTREG=0, FM6124, FM6126A, ICN2038S, MBI5124, SM5266P};
 
   /**
    * I2S clock speed selector
