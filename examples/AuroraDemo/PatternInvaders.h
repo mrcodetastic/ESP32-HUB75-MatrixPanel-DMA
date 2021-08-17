@@ -36,7 +36,7 @@ class PatternInvadersSmall : public Drawable {
     }
 
     void start() {
-      matrix.fillScreen(0);
+      dma_display->fillScreen(0);
     }
 
     unsigned int drawFrame() {
@@ -80,7 +80,7 @@ class PatternInvadersMedium : public Drawable {
     }
 
     void start() {
-      matrix.fillScreen(0);
+      dma_display->fillScreen(0);
     }
 
     unsigned int drawFrame() {
@@ -92,10 +92,10 @@ class PatternInvadersMedium : public Drawable {
 
           if (random(0, 2) == 1) color = color1;
 
-          matrix.fillRect(x + (i * 2), y + (j * 2), x + (i * 2 + 1), y + (j * 2 + 1), color);
+          dma_display->fillRect(x + (i * 2), y + (j * 2), x + (i * 2 + 1), y + (j * 2 + 1), color);
 
           if (i < 2)
-            matrix.fillRect(x + (8 - i * 2), y + (j * 2), x + (9 - i * 2), y + (j * 2 + 1), color);
+            dma_display->fillRect(x + (8 - i * 2), y + (j * 2), x + (9 - i * 2), y + (j * 2 + 1), color);
         }
       }
 
@@ -122,11 +122,11 @@ class PatternInvadersLarge : public Drawable {
     }
 
     void start() {
-      matrix.fillScreen(0);
+      dma_display->fillScreen(0);
     }
 
     unsigned int drawFrame() {
-      matrix.fillScreen(0);
+      dma_display->fillScreen(0);
 
       CRGB color1 = effects.ColorFromCurrentPalette(random(0, 255));
 
@@ -138,10 +138,10 @@ class PatternInvadersLarge : public Drawable {
             color = color1;
           }
 
-          matrix.fillRect(1 + x * 6, 1 + y * 6, 5 + x * 6, 5 + y * 6, color);
+          dma_display->fillRect(1 + x * 6, 1 + y * 6, 5 + x * 6, 5 + y * 6, color);
 
           if (x < 2)
-            matrix.fillRect(1 + (4 - x) * 6, 1 + y * 6, 5 + (4 - x) * 6, 5 + y * 6, color);
+            dma_display->fillRect(1 + (4 - x) * 6, 1 + y * 6, 5 + (4 - x) * 6, 5 + y * 6, color);
         }
       }
 

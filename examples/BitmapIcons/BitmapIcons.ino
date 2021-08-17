@@ -27,16 +27,39 @@
 #define CLK_PIN 16
 
 
-/* 
- * Below is an is the 'legacy' way of initialising the MatrixPanel_I2S_DMA class.
- * i.e. MATRIX_WIDTH and MATRIX_HEIGHT are modified by compile-time directives.
- * By default the library assumes a single 64x32 pixel panel is connected.
- *
- * Refer to the example '2_PatternPlasma' on the new / correct way to setup this library
- * for different resolutions / panel chain lengths within the sketch 'setup()'.
- * 
- */
-MatrixPanel_I2S_DMA display; // RGB Panel
+/*--------------------- MATRIX LILBRARY CONFIG -------------------------*/
+#define PANEL_RES_X 64      // Number of pixels wide of each INDIVIDUAL panel module. 
+#define PANEL_RES_Y 32     // Number of pixels tall of each INDIVIDUAL panel module.
+#define PANEL_CHAIN 1      // Total number of panels chained one to another
+ 
+MatrixPanel_I2S_DMA *dma_display = nullptr;
+
+// Module configuration
+HUB75_I2S_CFG mxconfig(
+	PANEL_RES_X,   // module width
+	PANEL_RES_Y,   // module height
+	PANEL_CHAIN    // Chain length
+);
+
+/*
+//Another way of creating config structure
+//Custom pin mapping for all pins
+HUB75_I2S_CFG::i2s_pins _pins={R1, G1, BL1, R2, G2, BL2, CH_A, CH_B, CH_C, CH_D, CH_E, LAT, OE, CLK};
+HUB75_I2S_CFG mxconfig(
+						64,   // width
+						64,   // height
+						 4,   // chain length
+					 _pins,   // pin mapping
+  HUB75_I2S_CFG::FM6126A      // driver chip
+);
+
+*/
+
+
+//mxconfig.gpio.e = -1; // Assign a pin if you have a 64x64 panel
+//mxconfig.clkphase = false; // Change this if you have issues with ghosting.
+//mxconfig.driver = HUB75_I2S_CFG::FM6126A; // Change this according to your pane.
+
 
 /*
  * Wifi Logo, generated with the following steps: 
@@ -81,7 +104,7 @@ void drawXbm565(int x, int y, int width, int height, const char *xbm, uint16_t c
         int targetX = (i * 8 + j) % width + x;
         int targetY = (8 * i / (width)) + y;
         if (bitRead(charColumn, j)) {
-          display.drawPixel(targetX, targetY, color);
+          dma_display->drawPixel(targetX, targetY, color);
         }
       }
     }
@@ -148,19 +171,22 @@ void setup() {
 
   /************** DISPLAY **************/
   Sprintln("...Starting Display");
-  display.begin(R1_PIN, G1_PIN, B1_PIN, R2_PIN, G2_PIN, B2_PIN, A_PIN, B_PIN, C_PIN, D_PIN, E_PIN, LAT_PIN, OE_PIN, CLK_PIN );
+  dma_display = new MatrixPanel_I2S_DMA(mxconfig);
+  dma_display->begin();
+  dma_display->setBrightness8(90); //0-255
+  dma_display->clearScreen();
   
-  display.fillScreen(display.color444(0, 1, 0));  
+  dma_display->fillScreen(dma_display->color444(0, 1, 0));  
 
   // Fade a Red Wifi Logo In
   for (int r=0; r < 255; r++ )
   {
-    drawXbm565(0,0,64,32, wifi_image1bit, display.color565(r,0,0));  
+    drawXbm565(0,0,64,32, wifi_image1bit, dma_display->color565(r,0,0));  
     delay(10);
   }
 
   delay(2000);
-  display.clearScreen();
+  dma_display->clearScreen();
 }
 
 
@@ -173,6 +199,6 @@ void loop() {
 
   current_icon = (current_icon  +1 ) % num_icons;
   delay(2000);
-  display.clearScreen();
+  dma_display->clearScreen();
   
 }

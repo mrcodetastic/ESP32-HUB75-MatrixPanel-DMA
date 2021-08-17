@@ -318,7 +318,7 @@ class Boid {
       //vertex(r, r*2);
       //endShape();
       //popMatrix();
-      //matrix.drawBackgroundPixelRGB888(location.x, location.y, CRGB::Blue);
+      //dma_display->drawBackgroundPixelRGB888(location.x, location.y, CRGB::Blue);
     }
 };
 

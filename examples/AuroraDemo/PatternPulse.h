@@ -52,17 +52,17 @@ class PatternPulse : public Drawable {
       }
 
       if (step == 0) {
-        matrix.drawCircle(centerX, centerY, step, effects.ColorFromCurrentPalette(hue));
+        dma_display->drawCircle(centerX, centerY, step, effects.ColorFromCurrentPalette(hue));
         step++;
       }
       else {
         if (step < maxSteps) {
           // initial pulse
-          matrix.drawCircle(centerX, centerY, step, effects.ColorFromCurrentPalette(hue, pow(fadeRate, step - 2) * 255));
+          dma_display->drawCircle(centerX, centerY, step, effects.ColorFromCurrentPalette(hue, pow(fadeRate, step - 2) * 255));
 
           // secondary pulse
           if (step > 3) {
-            matrix.drawCircle(centerX, centerY, step - 3, effects.ColorFromCurrentPalette(hue, pow(fadeRate, step - 2) * 255));
+            dma_display->drawCircle(centerX, centerY, step - 3, effects.ColorFromCurrentPalette(hue, pow(fadeRate, step - 2) * 255));
           }
           step++;
         }

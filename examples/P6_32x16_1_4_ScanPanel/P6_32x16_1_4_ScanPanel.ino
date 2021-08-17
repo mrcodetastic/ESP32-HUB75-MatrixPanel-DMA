@@ -19,6 +19,9 @@
  * Refer to the 'getCoords' function within 'QuarterScanMatrixPanel.h'
  *
  **************************************************************************/
+ 
+ // PLEASE NOTE THIS EXAMPLE NO LONGER WORKS AS OF AUGUST 2021
+ // IT NEEDS TO BE UPDATED TO THE NEW WAY OF USING THE LIBRARY
 
 // uncomment to use custom pins, then provide below
 #define USE_CUSTOM_PINS 

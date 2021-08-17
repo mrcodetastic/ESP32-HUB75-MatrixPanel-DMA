@@ -188,7 +188,7 @@ class PatternCube : public Drawable {
       {
         e = edge + i;
         if (!e->visible) {
-          matrix.drawLine(screen[e->x].x, screen[e->x].y, screen[e->y].x, screen[e->y].y, color);
+          dma_display->drawLine(screen[e->x].x, screen[e->x].y, screen[e->y].x, screen[e->y].y, color);
         }
       }
 
@@ -200,7 +200,7 @@ class PatternCube : public Drawable {
         e = edge + i;
         if (e->visible)
         {
-          matrix.drawLine(screen[e->x].x, screen[e->x].y, screen[e->y].x, screen[e->y].y, color);
+          dma_display->drawLine(screen[e->x].x, screen[e->x].y, screen[e->y].x, screen[e->y].y, color);
         }
       }
 

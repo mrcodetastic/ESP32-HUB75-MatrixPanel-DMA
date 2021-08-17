@@ -127,7 +127,7 @@ public:
     }
 
     ClearFrame();
-    matrix.clearScreen();
+    //dma_display->clearScreen();
   }
   ~Effects(){
     free(leds);
@@ -147,13 +147,13 @@ public:
   void drawBackgroundFastLEDPixelCRGB(int16_t x, int16_t y, CRGB color)
   {
 	  leds[XY(x, y)] = color;
-	  //matrix.drawPixelRGB888(x, y, color.r, color.g, color.b); 
+	  //dma_display->drawPixelRGB888(x, y, color.r, color.g, color.b); 
   }
 
   // write one pixel with the specified color from the current palette to coordinates
   void Pixel(int x, int y, uint8_t colorIndex) {
     leds[XY(x, y)] = ColorFromCurrentPalette(colorIndex);
-    //matrix.drawPixelRGB888(x, y, temp.r, temp.g, temp.b); // now draw it?
+    //dma_display->drawPixelRGB888(x, y, temp.r, temp.g, temp.b); // now draw it?
   }
   
  void PrepareFrame() {
@@ -175,7 +175,7 @@ public:
   	    for (int x=0; x<MATRIX_WIDTH; ++x){
 		//Serial.printf("Flushing x, y coord %d, %d\n", x, y);
     		uint16_t _pixel = XY16(x,y);
-    		matrix.drawPixelRGB888( x, y, leds[_pixel].r, leds[_pixel].g, leds[_pixel].b);
+    		dma_display->drawPixelRGB888( x, y, leds[_pixel].r, leds[_pixel].g, leds[_pixel].b);
 	    } // end loop to copy fast led to the dma matrix
 	}
   }
@@ -734,13 +734,6 @@ public:
     }
   }
 
-  // write one pixel with the specified color from the current palette to coordinates
-  /*
-  void Pixel(int x, int y, uint8_t colorIndex) {
-    leds[XY(x, y)] = ColorFromCurrentPalette(colorIndex);
-    matrix.drawBackgroundPixelRGB888(x,y, leds[XY(x, y)]); // now draw it?
-  }
-  */
 
   CRGB ColorFromCurrentPalette(uint8_t index = 0, uint8_t brightness = 255, TBlendType blendType = LINEARBLEND) {
     return ColorFromPalette(currentPalette, index, brightness, currentBlendType);

@@ -38,7 +38,7 @@ public:
     // a single frame should be drawn as fast as possible, without any delay or blocking
     // return how many millisecond delay is requested before the next call to drawFrame()
     virtual unsigned int drawFrame() {
-		matrix.fillScreen(0);
+		dma_display->fillScreen(0);
         //backgroundLayer.fillScreen({ 0, 0, 0 });
         return 0;
     };

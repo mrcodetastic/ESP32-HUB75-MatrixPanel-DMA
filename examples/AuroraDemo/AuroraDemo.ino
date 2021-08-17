@@ -1,38 +1,55 @@
-/* ------------------------- CUSTOM GPIO PIN MAPPING ------------------------- */
-#define R1_PIN 18
-#define G1_PIN 25
-#define B1_PIN 5
-#define R2_PIN 17
-#define G2_PIN 26
-#define B2_PIN 16
-#define A_PIN 14
-#define B_PIN 27 
-#define C_PIN 12
-#define D_PIN 4
-#define E_PIN -1
-#define LAT_PIN 13
-#define OE_PIN 15
-#define CLK_PIN 2
-
-/* -------------------------- Display Config Initialisation -------------------- */
-
-// MATRIX_WIDTH and MATRIX_HEIGHT *must* be changed in ESP32-HUB75-MatrixPanel-I2S-DMA.h
-// If you are using Platform IO (you should), pass MATRIX_WIDTH and MATRIX_HEIGHT as a compile time option.
-// Refer to: https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/issues/48#issuecomment-749402379
-
-/* -------------------------- Class Initialisation -------------------------- */
 #include <ESP32-HUB75-MatrixPanel-I2S-DMA.h>
 
-/* 
- * Below is an is the 'legacy' way of initialising the MatrixPanel_I2S_DMA class.
- * i.e. MATRIX_WIDTH and MATRIX_HEIGHT are modified by compile-time directives.
- * By default the library assumes a single 64x32 pixel panel is connected.
- *
- * Refer to the example '2_PatternPlasma' on the new / correct way to setup this library
- * for different resolutions / panel chain lengths within the sketch 'setup()'.
- * 
- */
-MatrixPanel_I2S_DMA matrix;
+/*--------------------- MATRIX GPIO CONFIG  -------------------------*/
+#define R1_PIN 25
+#define G1_PIN 26
+#define B1_PIN 27
+#define R2_PIN 14
+#define G2_PIN 12
+#define B2_PIN 13
+#define A_PIN 23
+#define B_PIN 19 // Changed from library default
+#define C_PIN 5
+#define D_PIN 17
+#define E_PIN -1
+#define LAT_PIN 4
+#define OE_PIN 15
+#define CLK_PIN 16
+
+
+/*--------------------- MATRIX PANEL CONFIG -------------------------*/
+#define PANEL_RES_X 64      // Number of pixels wide of each INDIVIDUAL panel module. 
+#define PANEL_RES_Y 32     // Number of pixels tall of each INDIVIDUAL panel module.
+#define PANEL_CHAIN 1      // Total number of panels chained one to another
+ 
+/*
+//Another way of creating config structure
+//Custom pin mapping for all pins
+HUB75_I2S_CFG::i2s_pins _pins={R1, G1, BL1, R2, G2, BL2, CH_A, CH_B, CH_C, CH_D, CH_E, LAT, OE, CLK};
+HUB75_I2S_CFG mxconfig(
+						64,   // width
+						64,   // height
+						 4,   // chain length
+					 _pins,   // pin mapping
+  HUB75_I2S_CFG::FM6126A      // driver chip
+);
+
+*/
+MatrixPanel_I2S_DMA *dma_display = nullptr;
+
+// Module configuration
+HUB75_I2S_CFG mxconfig(
+	PANEL_RES_X,   // module width
+	PANEL_RES_Y,   // module height
+	PANEL_CHAIN    // Chain length
+);
+
+
+//mxconfig.gpio.e = -1; // Assign a pin if you have a 64x64 panel
+//mxconfig.clkphase = false; // Change this if you have issues with ghosting.
+//mxconfig.driver = HUB75_I2S_CFG::FM6126A; // Change this according to your pane.
+
+
 
 #include <FastLED.h>
 
@@ -54,25 +71,24 @@ unsigned long last_frame=0, ms_previous=0;
 
 void setup()
 {
-  // Setup serial interface
+ /************** SERIAL **************/
   Serial.begin(115200);
   delay(250);
-  matrix.begin(R1_PIN, G1_PIN, B1_PIN, R2_PIN, G2_PIN, B2_PIN, A_PIN, B_PIN, C_PIN, D_PIN, E_PIN, LAT_PIN, OE_PIN, CLK_PIN );  // setup the LED matrix
-  /**
-   * this demos runs pretty fine in fast-mode which gives much better fps on large matrixes (>128x64)
-   * see comments in the lib header on what does that means
-   */
-  //dma_display.setFastMode(true);
+  
+ /************** DISPLAY **************/
+  Serial.println("...Starting Display");
+  dma_display = new MatrixPanel_I2S_DMA(mxconfig);
+  dma_display->begin();
+  dma_display->setBrightness8(90); //0-255
 
-  // SETS THE BRIGHTNESS HERE. MAX value is MATRIX_WIDTH, 2/3 OR LOWER IDEAL, default is about 50%
-  // dma_display.setPanelBrightness(30);
-  /* another way to change brightness is to use
-   * dma_display.setPanelBrightness8(uint8_t brt);	// were brt is within range 0-255
-   * it will recalculate to consider matrix width automatically
-   */
-  //dma_display.setPanelBrightness8(180);
-
+  dma_display->fillScreenRGB888(128,0,0);
+  delay(1000);
+  dma_display->fillScreenRGB888(0,0,128);
+  delay(1000);
+  dma_display->clearScreen();  
+  delay(1000);  
   Serial.println("**************** Starting Aurora Effects Demo ****************");
+
 
    // setup the effects generator
   effects.Setup();
@@ -80,7 +96,7 @@ void setup()
   delay(500);
   Serial.println("Effects being loaded: ");
   listPatterns();
-
+ 
 
   patterns.moveRandom(1); // start from a random pattern
 

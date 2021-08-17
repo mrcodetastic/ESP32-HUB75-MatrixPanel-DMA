@@ -124,19 +124,7 @@ Various people have created PCBs for which one can simply connect an ESP32 to a 
 Please contact or order these products from the respective authors.
 
 ## 3. Run a Test Sketch
-Below is a bare minimum sketch to draw a single white dot in the top left. You must call .begin() before you call ANY pixel-drawing (fonts, lines, colours etc.) function of the MatrixPanel_I2S_DMA class.
-No .begin() before other functions = Crash
-```  
-#include <ESP32-HUB75-MatrixPanel-I2S-DMA.h>
-MatrixPanel_I2S_DMA matrix;
-void setup(){
-	// MUST DO THIS FIRST!
-	matrix.begin(); // Use default values for matrix dimentions and pins supplied within ESP32-HUB75-MatrixPanel-I2S-DMA.h
-	// Draw a single white pixel
-	matrix.drawPixel(0,0, matrix.color565(255,255,255)); // can do this after .begin() only
-}
-void loop(){ }
-```
+Below is a bare minimum sketch to draw a single white dot in the top left. You must call begin() before you call ANY pixel-drawing (fonts, lines, colours etc.) function of the MatrixPanel_I2S_DMA class.
 
 Once this is working, refer to the [PIO Test Patterns](/examples/PIO_TestPatterns) example. This sketch draws simple colors/lines/gradients over the entire matrix and it could help to troubleshoot various issues with ghosting, flickering, etc...
 >Note: Requires the use of [PlatformIO](https://platformio.org/), which you should probably use if you aren't already. 
@@ -177,11 +165,9 @@ Example:
 ```
 void setup() {
 Serial.begin(115200);
-	matrix.begin(); // setup the LED matrix
-	matrix.setPanelBrightness(16); // Set the brightness. 32 or lower ideal for a single 64x32 LED Matrix Panel.
-
-	// or another way
-	matrix.setBrightness8(192); // Set the brightness to about 3/4 or 75% (192/256) of maximum.
+	dma_display->begin(); // setup the LED matrix
+    dma_display->setBrightness8(90); //0-255
+    dma_display->clearScreen();	
 }
 ```
 
@@ -195,7 +181,7 @@ If you are facing issues with image ghosting when pixels has clones with horizon
 
 An example:
 ```
-matrix.setLatBlanking(2);
+dma_display->setLatBlanking(2);
 ```
 
 ## Power, Power and Power!
