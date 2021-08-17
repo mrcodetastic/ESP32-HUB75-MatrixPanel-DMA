@@ -84,6 +84,11 @@ static void dma_reset(i2s_dev_t* dev) {
   dev->lc_conf.in_rst = 0;
   dev->lc_conf.out_rst = 1;
   dev->lc_conf.out_rst = 0;
+  
+  dev->lc_conf.ahbm_rst = 1;
+  dev->lc_conf.ahbm_rst = 0;
+    
+  
 }
 
 static void fifo_reset(i2s_dev_t* dev) {

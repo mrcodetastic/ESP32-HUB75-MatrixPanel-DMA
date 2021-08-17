@@ -415,14 +415,14 @@ void MatrixPanel_I2S_DMA::configureDMA(const HUB75_I2S_CFG& _cfg)
     };
 
     // Setup I2S 
-    i2s_parallel_driver_install(I2S_NUM_1, &cfg);
+    i2s_parallel_driver_install(I2S_NUM_0, &cfg);
     //i2s_parallel_setup_without_malloc(&I2S1, &cfg);
 
     // Start DMA Output
-    i2s_parallel_send_dma(I2S_NUM_1, &dmadesc_a[0]);
+    i2s_parallel_send_dma(I2S_NUM_0, &dmadesc_a[0]);
 
     #if SERIAL_DEBUG  
-      Serial.println(F("configureDMA(): DMA setup completed on I2S1.")); 
+      Serial.println(F("configureDMA(): DMA setup completed on I2S_NUM_0.")); 
     #endif       
 		
 } // end initMatrixDMABuff
@@ -603,7 +603,7 @@ void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id){
   int row_idx = dma_buff.rowBits.size();
   do {
     --row_idx;
-
+	
     ESP32_I2S_DMA_STORAGE_TYPE* row = dma_buff.rowBits[row_idx]->getDataPtr(0, _buff_id);   // set pointer to the HEAD of a buffer holding data for the entire matrix row
 
     ESP32_I2S_DMA_STORAGE_TYPE abcde = (ESP32_I2S_DMA_STORAGE_TYPE)row_idx;
@@ -616,7 +616,15 @@ void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id){
     // fill all x_pixels except color_index[0] (LSB) ones, this also clears all color data to 0's black
     do {
       --x_pixel;
-      row[x_pixel] = abcde;
+	  
+	  if ( m_cfg.driver == HUB75_I2S_CFG::SM5266P) {
+		// modifications here for row shift register type SM5266P 
+		// https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/issues/164
+		row[x_pixel] = abcde & (0x18 << BITS_ADDR_OFFSET); // mask out the bottom 3 bits which are the clk di bk inputs  
+	  } else {		  
+		row[x_pixel] = abcde;
+	  }
+	  
     } while(x_pixel!=dma_buff.rowBits[row_idx]->width);
 
     // color_index[0] (LSB) x_pixels must be "marked" with a previous's row address, 'cause  it is used to display
@@ -624,8 +632,33 @@ void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id){
     abcde = ((ESP32_I2S_DMA_STORAGE_TYPE)row_idx-1) << BITS_ADDR_OFFSET;
     do {
       --x_pixel;
-      row[x_pixel] = abcde;
+	  
+	  if ( m_cfg.driver == HUB75_I2S_CFG::SM5266P) {
+		// modifications here for row shift register type SM5266P 
+		// https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/issues/164
+		row[x_pixel] = abcde & (0x18 << BITS_ADDR_OFFSET); // mask out the bottom 3 bits which are the clk di bk inputs  
+	  } else {		  
+		row[x_pixel] = abcde;
+	  }	  
+      //row[x_pixel] = abcde;
     } while(x_pixel);
+	
+	
+	// modifications here for row shift register type SM5266P 
+	// https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/issues/164	
+	if ( m_cfg.driver == HUB75_I2S_CFG::SM5266P) {	
+		uint16_t serialCount;
+		uint16_t latch;
+		x_pixel = dma_buff.rowBits[row_idx]->width - 16; // come back 8*2 pixels to allow for 8 writes
+		serialCount = 8;
+		do{
+			serialCount--;
+			latch = row[x_pixel] | (((((ESP32_I2S_DMA_STORAGE_TYPE)row_idx) % 8) == serialCount) << 1) << BITS_ADDR_OFFSET; // data on 'B'
+			row[x_pixel++] = latch| (0x05<< BITS_ADDR_OFFSET); // clock high on 'A'and BK high for update
+			row[x_pixel++] = latch| (0x04<< BITS_ADDR_OFFSET); // clock low on 'A'and BK high for update
+		} while (serialCount);
+	} // end SM5266P	
+	
 
     // let's set LAT/OE control bits for specific pixels in each color_index subrows
     uint8_t coloridx = dma_buff.rowBits[row_idx]->color_depth;
@@ -721,7 +754,8 @@ void MatrixPanel_I2S_DMA::brtCtrlOE(int brt, const bool _buff_id){
 /*
  *  overload for compatibility
  */
-bool MatrixPanel_I2S_DMA::begin(int r1, int g1, int b1, int r2, int g2, int b2, int a, int b, int c, int d, int e, int lat, int oe, int clk){
+ /*
+bool MatrixPanel_I2S_DMA::begin(int r1, int g1, int b1, int r2, int g2, int b2, int a, int b, int c, int d, int e, int lat, int oe, int clk) {
 
   // RGB
   m_cfg.gpio.r1 = r1; m_cfg.gpio.g1 = g1; m_cfg.gpio.b1 = b1;
@@ -736,6 +770,7 @@ bool MatrixPanel_I2S_DMA::begin(int r1, int g1, int b1, int r2, int g2, int b2, 
 
   return begin();
 }
+*/
 
 /**
  * @brief - Sets how many clock cycles to blank OE before/after LAT signal change
@@ -772,8 +807,11 @@ void MatrixPanel_I2S_DMA::hlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, 
   if ( x_coord < 0 || y_coord < 0 || l < 1 || x_coord >= PIXELS_PER_ROW || y_coord >= m_cfg.mx_height)
     return;
 
-  if (x_coord+l > PIXELS_PER_ROW)
-    l = PIXELS_PER_ROW - x_coord + 1;     // reset width to end of row
+
+  l = ( (x_coord + l) >= PIXELS_PER_ROW ) ? (PIXELS_PER_ROW - x_coord):l; 
+
+  //if (x_coord+l > PIXELS_PER_ROW)
+//    l = PIXELS_PER_ROW - x_coord + 1;     // reset width to end of row
 
   /* LED Brightness Compensation */
 #ifndef NO_CIE1931
@@ -846,8 +884,10 @@ void MatrixPanel_I2S_DMA::vlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, 
   if ( x_coord < 0 || y_coord < 0 || l < 1 || x_coord >= PIXELS_PER_ROW || y_coord >= m_cfg.mx_height)
     return;
 
-  if (y_coord + l > m_cfg.mx_height)
-    l = m_cfg.mx_height - y_coord + 1;     // reset width to end of col
+  // check for a length that goes beyond the height of the screen! Array out of bounds dma memory changes = screwed output #163
+  l = ( (y_coord + l) >= m_cfg.mx_height ) ? (m_cfg.mx_height - y_coord):l; 
+  //if (y_coord + l > m_cfg.mx_height)
+  ///    l = m_cfg.mx_height - y_coord + 1;     // reset width to end of col
 
   /* LED Brightness Compensation */
 #ifndef NO_CIE1931
