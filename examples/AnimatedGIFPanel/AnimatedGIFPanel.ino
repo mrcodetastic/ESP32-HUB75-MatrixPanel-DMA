@@ -34,7 +34,19 @@
  * for different resolutions / panel chain lengths within the sketch 'setup()'.
  * 
  */
-MatrixPanel_I2S_DMA dma_display;
+
+#define PANEL_RES_X 64      // Number of pixels wide of each INDIVIDUAL panel module. 
+#define PANEL_RES_Y 32     // Number of pixels tall of each INDIVIDUAL panel module.
+#define PANEL_CHAIN 1      // Total number of panels chained one to another
+ 
+//MatrixPanel_I2S_DMA dma_display;
+MatrixPanel_I2S_DMA *dma_display = nullptr;
+
+uint16_t myBLACK = dma_display->color565(0, 0, 0);
+uint16_t myWHITE = dma_display->color565(255, 255, 255);
+uint16_t myRED = dma_display->color565(255, 0, 0);
+uint16_t myGREEN = dma_display->color565(0, 255, 0);
+uint16_t myBLUE = dma_display->color565(0, 0, 255);
 
 
 AnimatedGIF gif;
@@ -95,7 +107,7 @@ void GIFDraw(GIFDRAW *pDraw)
         if (iCount) // any opaque pixels?
         {
           for(int xOffset = 0; xOffset < iCount; xOffset++ ){
-            dma_display.drawPixel(x + xOffset, y, usTemp[xOffset]); // 565 Color Format
+            dma_display->drawPixel(x + xOffset, y, usTemp[xOffset]); // 565 Color Format
           }
           x += iCount;
           iCount = 0;
@@ -123,7 +135,7 @@ void GIFDraw(GIFDRAW *pDraw)
       // Translate the 8-bit pixels through the RGB565 palette (already byte reversed)
       for (x=0; x<pDraw->iWidth; x++)
       {
-        dma_display.drawPixel(x, y, usPalette[*s++]); // color 565
+        dma_display->drawPixel(x, y, usPalette[*s++]); // color 565
       }
     }
 } /* GIFDraw() */
@@ -203,6 +215,28 @@ void ShowGIF(char *name)
 /************************* Arduino Sketch Setup and Loop() *******************************/
 void setup() {
 
+//
+
+  HUB75_I2S_CFG mxconfig(
+    PANEL_RES_X,   // module width
+    PANEL_RES_Y,   // module height
+    PANEL_CHAIN    // Chain length
+  );
+
+  mxconfig.gpio.e = 18;
+  mxconfig.clkphase = false;
+  mxconfig.driver = HUB75_I2S_CFG::FM6126A;
+
+  // Display Setup
+  dma_display = new MatrixPanel_I2S_DMA(mxconfig);
+  dma_display->begin();
+  dma_display->setBrightness8(90); //0-255
+  dma_display->clearScreen();
+  dma_display->fillScreen(myWHITE);
+  
+//
+
+
   Serial.begin(115200);
   Serial.println("Starting AnimatedGIFs Sketch");
 
@@ -212,10 +246,10 @@ void setup() {
         Serial.println("SPIFFS Mount Failed");
   }
   
-  dma_display.begin();
+  dma_display->begin();
   
   /* all other pixel drawing functions can only be called after .begin() */
-  dma_display.fillScreen(dma_display.color565(0, 0, 0));
+  dma_display->fillScreen(dma_display->color565(0, 0, 0));
   gif.begin(LITTLE_ENDIAN_PIXELS);
 
 }
