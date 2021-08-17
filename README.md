@@ -39,6 +39,7 @@ If you wanna ask "*...OK, OK, than whats the price for those features?*" I'll te
 * 64x32 (width x height) pixel 1/16 Scan LED Matrix 'Indoor' Panel, such as this [typical RGB panel available for purchase](https://www.aliexpress.com/item/256-128mm-64-32-pixels-1-16-Scan-Indoor-3in1-SMD2121-RGB-full-color-P4-led/32810362851.html).
 * 64x64 pixel 1/32 Scan LED Matrix 'Indoor' Panel.
 * 32x16 pixel 1/4 Scan LED Matrix 'Indoor' Panel using an ingenious workaround as demonstrated in the 32x16_1_4_ScanPanel example.
+* 126x64 [SM5266P](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/issues/164) 1/32 Scan Panel 
 
 Ones interested in internals of such matrixes could find [this article](https://www.sparkfun.com/news/2650) useful.
 
@@ -49,6 +50,7 @@ Due to the high-speed optimized nature of this library, only specific panels are
 * ICND2012
 * [RUC7258](http://www.ruichips.com/en/products.html?cateid=17496)
 * FM6126A AKA ICN2038S, [FM6124](https://datasheet4u.com/datasheet-pdf/FINEMADELECTRONICS/FM6124/pdf.php?id=1309677) (Refer to [PatternPlasma](/examples/2_PatternPlasma) example on how to use.)
+* SM5266P 
 
 ## Panels Not Supported
 * 1/8 Scan LED Matrix Panels are not supported.
