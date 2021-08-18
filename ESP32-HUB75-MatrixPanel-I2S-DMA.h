@@ -407,9 +407,7 @@ class MatrixPanel_I2S_DMA {
 
       if (m_cfg.double_buff)
         delete dmadesc_b;
-	    
-      initialized = false;
-	    
+
     }
 
 
