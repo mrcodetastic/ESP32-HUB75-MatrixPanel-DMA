@@ -532,9 +532,9 @@ void IRAM_ATTR MatrixPanel_I2S_DMA::updateMatrixDMABuffer(int16_t x_coord, int16
 
 
 /* Update the entire buffer with a single specific colour - quicker */
-void MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint8_t red, uint8_t green, uint8_t blue)
+bool MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint8_t red, uint8_t green, uint8_t blue)
 {
-  if ( !initialized ) return;
+  if ( !initialized ) return false;
   
 	/* https://ledshield.wordpress.com/2012/11/13/led-brightness-to-your-eye-gamma-correction-no/ */	 
 #ifndef NO_CIE1931
@@ -585,6 +585,8 @@ void MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint8_t red, uint8_t green, uint
 
     } while(matrix_frame_parallel_row); // end row iteration
   } // colour depth loop (8)
+  
+  return true;
 } // updateMatrixDMABuffer (full frame paint)
 
 /**
