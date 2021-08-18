@@ -414,11 +414,8 @@ class MatrixPanel_I2S_DMA {
     /*
      *  overload for compatibility
      */
-	/*
     bool begin(int r1, int g1 = G1_PIN_DEFAULT, int b1 = B1_PIN_DEFAULT, int r2 = R2_PIN_DEFAULT, int g2 = G2_PIN_DEFAULT, int b2 = B2_PIN_DEFAULT, int a  = A_PIN_DEFAULT, int b = B_PIN_DEFAULT, int c = C_PIN_DEFAULT, int d = D_PIN_DEFAULT, int e = E_PIN_DEFAULT, int lat = LAT_PIN_DEFAULT, int oe = OE_PIN_DEFAULT, int clk = CLK_PIN_DEFAULT);
-	*/
 
-    // TODO: Disable/Enable auto buffer flipping (useful for lots of drawPixel usage)...
 
     // Adafruit's BASIC DRAW API (565 colour format)
     virtual void drawPixel(int16_t x, int16_t y, uint16_t color);   // overwrite adafruit implementation
