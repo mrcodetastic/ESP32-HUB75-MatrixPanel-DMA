@@ -425,8 +425,7 @@ class MatrixPanel_I2S_DMA {
     virtual void fillScreen(uint16_t color);                        // overwrite adafruit implementation
 
     /**
-     * A wrapper to fill the entire Screen with black
-     * if double buffering is used, than only back buffer is cleared
+     * A wrapper to fill whatever selected DMA buffer / screen with black
      */
     inline void clearScreen(){ updateMatrixDMABuffer(0,0,0); };
 
