@@ -422,10 +422,9 @@ class MatrixPanel_I2S_DMA {
     virtual void fillScreen(uint16_t color);                        // overwrite adafruit implementation
 
     /**
-     * A wrapper to fill whatever selected DMA buffer / screen with black.
-	 * Returns true when operation is completed for syncronisation reasons. 
+     * A wrapper to fill whatever selected DMA buffer / screen with black
      */
-    inline bool clearScreen(){ return updateMatrixDMABuffer(0,0,0); };
+    inline void clearScreen(){ updateMatrixDMABuffer(0,0,0); };
 
 #ifndef NO_FAST_FUNCTIONS
     /**
@@ -595,7 +594,7 @@ class MatrixPanel_I2S_DMA {
     void updateMatrixDMABuffer(int16_t x, int16_t y, uint8_t red, uint8_t green, uint8_t blue);
    
     /* Update the entire DMA buffer (aka. The RGB Panel) a certain colour (wipe the screen basically) */
-    bool updateMatrixDMABuffer(uint8_t red, uint8_t green, uint8_t blue);       
+    void updateMatrixDMABuffer(uint8_t red, uint8_t green, uint8_t blue);       
 
     /**
      * wipes DMA buffer(s) and reset all color/service bits
