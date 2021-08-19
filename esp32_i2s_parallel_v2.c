@@ -198,6 +198,11 @@ esp_err_t i2s_parallel_driver_install(i2s_port_t port, i2s_parallel_config_t* co
   // Set i2s mode to LCD mode
   dev->conf2.val = 0;
   dev->conf2.lcd_en = 1;
+  dev->conf.tx_slave_mod = 0;
+  
+  // dev->conf.tx_dma_equal=1; // esp32-s2 only
+  dev->conf2.lcd_tx_wrx2_en=0; 
+  dev->conf2.lcd_tx_sdx2_en=0;    
   
   // Enable "One datum will be written twice in LCD mode" - for some reason, 
   // if we don't do this in 8-bit mode, data is updated on half-clocks not clocks
