@@ -388,7 +388,7 @@ class MatrixPanel_I2S_DMA {
       // Setup the ESP32 DMA Engine. Sprite_TM built this stuff.
       configureDMA(m_cfg); //DMA and I2S configuration and setup
 
-      showDMABuffer(); // show backbuf_id of 0
+      flipDMABuffer(); // show backbuf_id of 0
 
       #if SERIAL_DEBUG 
         if (!initialized)    
@@ -495,33 +495,27 @@ class MatrixPanel_I2S_DMA {
     inline void flipDMABuffer() 
     {         
       if ( !m_cfg.double_buff) return;
-        
-        // Flip to other buffer as the backbuffer. i.e. Graphic changes happen to this buffer (but aren't displayed until showDMABuffer())
-        back_buffer_id ^= 1; 
-        
-        #if SERIAL_DEBUG     
-                Serial.printf_P(PSTR("Set back buffer to: %d\n"), back_buffer_id);
-        #endif      
 
-        // Wait before we allow any writing to the buffer. Stop flicker.
-        while(!i2s_parallel_is_previous_buffer_free()) { delay(1); }       
-    }
-    
-    inline void showDMABuffer()
-    {
-      
-        if (!m_cfg.double_buff) return;
-
-        #if SERIAL_DEBUG     
+        #if SERIAL_DEBUG
                 Serial.printf_P(PSTR("Showtime for buffer: %d\n"), back_buffer_id);
-        #endif      
+        #endif
       
         i2s_parallel_flip_to_buffer(I2S_NUM_0, back_buffer_id);
 
-        // Wait before we allow any writing to the buffer. Stop flicker.
-        while(!i2s_parallel_is_previous_buffer_free()) { delay(1); }               
+        // Flip to other buffer as the backbuffer. i.e. Graphic changes happen to this buffer (but aren't displayed until showDMABuffer())
+        back_buffer_id ^= 1; 
+        
+        #if SERIAL_DEBUG
+                Serial.printf_P(PSTR("Set back buffer to: %d\n"), back_buffer_id);
+        #endif
     }
     
+    // stub function for compatibility
+    void showDMABuffer(){}
+
+    // check if backbuffer still has DMA transfer in progress or is it safe to write there
+    bool backbuffready(){ return i2s_parallel_is_previous_buffer_free(); }
+
     inline void setPanelBrightness(int b)
     {
       // Change to set the brightness of the display, range of 1 to matrixWidth (i.e. 1 - 64)
