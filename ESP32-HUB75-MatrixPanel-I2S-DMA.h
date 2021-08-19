@@ -505,7 +505,8 @@ class MatrixPanel_I2S_DMA {
         // Wait before we allow any writing to the buffer. Stop flicker.
         while(i2s_parallel_is_previous_buffer_free() == false) { }       
 		
-        // Flip to other buffer as the backbuffer. i.e. Graphic changes happen to this buffer (but aren't displayed until showDMABuffer())
+        // Flip to other buffer as the backbuffer. 
+		// i.e. Graphic changes happen to this buffer, but aren't displayed until flipDMABuffer() is called again.
         back_buffer_id ^= 1; 
 		
     }
