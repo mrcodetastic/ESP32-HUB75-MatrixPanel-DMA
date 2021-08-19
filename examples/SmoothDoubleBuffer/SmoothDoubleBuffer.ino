@@ -19,14 +19,13 @@ void setup()
 
   Serial.println("...Starting Display");
   HUB75_I2S_CFG mxconfig;
-  mxconfig.double_buff 	= true; // Turn of double buffer
-  mxconfig.clkphase 	= true;
+  mxconfig.double_buff = true; // Turn of double buffer
+  mxconfig.clkphase = true;
 
   // OK, now we can create our matrix object
   display = new MatrixPanel_I2S_DMA(mxconfig);  
   
   display->begin();  // setup display with pins as pre-defined in the library
-  display->setTextColor(display->color565(255, 255, 255));  
   
   start_x = display->width();
 }
@@ -49,12 +48,14 @@ void loop()
   if (buffer_id)
   {
     display->setCursor(3, row1);    
+    display->setTextColor(display->color565(200, 0, 0));      
     display->fillRect(start_x, 6, square_size, square_size, display->color565(200,0,0));
     //delay(40); // simulate slow drawing operation
   } 
   else 
   {
     display->setCursor(3, row2);    
+    display->setTextColor(display->color565(0, 200, 0));          
     display->fillRect(10, start_x, square_size, square_size, display->color565(0,200,0));    
   }
   
