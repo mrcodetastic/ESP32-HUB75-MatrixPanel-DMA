@@ -31,7 +31,7 @@ void setup()
 }
 /*
  This example draws a red square on one buffer only, and a green square on another buffer only.
- It then flips between buffers as fast as possible - to give the impression they're both on screen at the same time!
+ It then flips between buffers as fast as possible whilst moving them as well - to give the impression they're both on screen at the same time!
  
  The only thing that's painted to both buffers is a blue square.
  */
