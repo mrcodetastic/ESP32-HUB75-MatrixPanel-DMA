@@ -98,9 +98,7 @@ class VirtualMatrixPanel
     }
 	
 	void flipDMABuffer() { display->flipDMABuffer(); }
-	void showDMABuffer() {}
-  bool backbuffready(){ return display->backbuffready(); }
-
+	void showDMABuffer() { display->showDMABuffer(); }
 
     void drawDisplayTest();
 	
