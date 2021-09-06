@@ -1,17 +1,16 @@
 #ifndef _ESP32_RGB_64_32_MATRIX_PANEL_I2S_DMA
 #define _ESP32_RGB_64_32_MATRIX_PANEL_I2S_DMA
 
-/***************************************************************************************/
-/* COMPILE-TIME OPTIONS - Provide as part of PlatformIO project build_flags.           */
-/***************************************************************************************/
+/*******************************************************************************************
+ * COMPILE-TIME OPTIONS - MUST BE PROVIDED as part of PlatformIO project build_flags.      *
+ * Changing the values just here won't work - as defines needs to persist beyond the scope *
+ * of just this file.                                                                      *
+ *******************************************************************************************/
 /* Enable serial debugging of the library, to see how memory is allocated etc. */
 //#define SERIAL_DEBUG 1
 
-
-/*
- * Do NOT build additional methods optimized for fast drawing,
- * i.e. Adafruits drawFastHLine, drawFastVLine, etc...
- */
+/* Do NOT build additional methods optimized for fast drawing,
+ * i.e. Adafruits drawFastHLine, drawFastVLine, etc...                         */
 //#define NO_FAST_FUNCTIONS
 
 /* Use GFX_Root (https://github.com/mrfaptastic/GFX_Root) instead of Adafruit_GFX library.
@@ -20,7 +19,6 @@
  * > Requires FastLED.h
  */
 //#define USE_GFX_ROOT 1
-
 
 /* Physical / Chained HUB75(s) RGB pixel WIDTH and HEIGHT. 
  *
@@ -87,11 +85,16 @@
 // #define NO_CIE1931
 
 /***************************************************************************************/
-/* Library Includes!                                                                   */
+/* Core ESP32 hardware / idf includes!                                                 */
 #include <vector>
 #include <memory>
 #include "esp_heap_caps.h"
-#include "esp32_i2s_parallel_v2.h"
+
+#ifdef ESP32_S2
+	#include "esp32-s2_i2s_parallel_v1.h"
+#else
+	#include "esp32_i2s_parallel_v2.h"
+#endif
 
 #ifdef USE_GFX_ROOT
 	#include <FastLED.h>    
@@ -99,7 +102,6 @@
 #elif !defined NO_GFX
     #include "Adafruit_GFX.h" // Adafruit class with all the other stuff
 #endif
-
 
 
 /***************************************************************************************/
