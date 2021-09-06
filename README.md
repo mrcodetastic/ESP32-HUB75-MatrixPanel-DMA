@@ -4,7 +4,8 @@
 
 - [Introduction](#introduction)
   * [Features](#features)
-  * [Panels Supported](#panels-supported)
+  * [Supported ESP32](#esp32-supported)
+  * [Supported Panels](#panels-supported)
   * [Panel driver chips known to be working well](#panel-driver-chips-known-to-be-working-well)
   * [Panels Not Supported](#panels-not-supported)
   * [Update for 16x32 Panels](#update-for-16x32-panels)
