@@ -79,7 +79,7 @@ static void iomux_set_signal(int gpio, int signal) {
   gpio_matrix_out(gpio, signal, false, false);
   
   // More mA the better...
-  gpio_set_drive_capability((gpio_num_t)gpio, GPIO_DRIVE_CAP_MAX);
+  gpio_set_drive_capability((gpio_num_t)gpio, (gpio_drive_cap_t)3);
   
 }
 
