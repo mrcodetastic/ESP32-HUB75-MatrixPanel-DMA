@@ -77,6 +77,10 @@ static void iomux_set_signal(int gpio, int signal) {
   PIN_FUNC_SELECT(GPIO_PIN_MUX_REG[gpio], PIN_FUNC_GPIO);
   gpio_set_direction(gpio, GPIO_MODE_DEF_OUTPUT);
   gpio_matrix_out(gpio, signal, false, false);
+  
+  // More mA the better...
+  gpio_set_drive_capability((gpio_num_t)gpio, GPIO_DRIVE_CAP_MAX);
+  
 }
 
 static void dma_reset(i2s_dev_t* dev) {
