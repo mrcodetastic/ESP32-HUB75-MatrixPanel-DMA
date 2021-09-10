@@ -39,7 +39,9 @@ If you wanna ask "*...OK, OK, than whats the price for those features?*" I'll te
 ## ESP32 Supported
 Espressif have kept the 'ESP32' name for all their chips for brand recognition, but their new variant MCU's are different to the ESP32 this library was built for.
 
-This library supports the *original* ESP32 only. That being the ESP-WROOM-32 module with ESP32‑D0WDQ6 chip from 2017. This MCU has 520kB of SRAM which is much more than all the recent 'reboots' of the ESP32 such as the S2, S3, C3 etc. If you want to use this library, use with an original ESP32 as it has the most SRAM for DMA.
+This library supports the *original* ESP32. That being the ESP-WROOM-32 module with ESP32‑D0WDQ6 chip from 2017. This MCU has 520kB of SRAM which is much more than all the recent 'reboots' of the ESP32 such as the S2, S3, C3 etc. If you want to use this library, use with an original ESP32 as it has the most SRAM for DMA.
+
+Experimental support (fully working) is available in the ESP32-S2-dev branch.
 
 ## Panels Supported
 * 64x32 (width x height) pixel 1/16 Scan LED Matrix 'Indoor' Panel, such as this [typical RGB panel available for purchase](https://www.aliexpress.com/item/256-128mm-64-32-pixels-1-16-Scan-Indoor-3in1-SMD2121-RGB-full-color-P4-led/32810362851.html).
