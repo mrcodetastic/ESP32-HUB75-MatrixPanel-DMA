@@ -89,12 +89,7 @@
 #include <vector>
 #include <memory>
 #include "esp_heap_caps.h"
-
-#ifdef ESP32_S2
-	#include "esp32-s2_i2s_parallel_v1.h"
-#else
-	#include "esp32_i2s_parallel_v2.h"
-#endif
+#include "esp32_i2s_parallel_dma.h"
 
 #ifdef USE_GFX_ROOT
 	#include <FastLED.h>    

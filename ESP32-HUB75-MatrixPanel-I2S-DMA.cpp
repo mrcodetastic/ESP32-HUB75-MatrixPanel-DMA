@@ -1,6 +1,18 @@
 #include <Arduino.h>
 #include "ESP32-HUB75-MatrixPanel-I2S-DMA.h"
 
+
+#if defined(ESP32_SXXX)
+	#pragma message "Compiling for ESP32-Sx MCUs"	
+#elif defined(ESP32_CXXX)
+	#pragma message "Compiling for ESP32-Cx MCUs"		
+#elif CONFIG_IDF_TARGET_ESP32 || defined(ESP32)
+	#pragma message "Compiling for original 520kB SRAM ESP32."	
+#else
+    #error "Compiling for something unknown!"
+#endif
+
+
 // Credits: Louis Beaudoin <https://github.com/pixelmatix/SmartMatrix/tree/teensylc>
 // and Sprite_TM: 			https://www.esp32.com/viewtopic.php?f=17&t=3188 and https://www.esp32.com/viewtopic.php?f=13&t=3256
 
@@ -483,7 +495,7 @@ void IRAM_ATTR MatrixPanel_I2S_DMA::updateMatrixDMABuffer(int16_t x_coord, int16
 	 * data.
 	 */
 
-#ifndef ESP32_S2
+#ifndef ESP32_SXXX
     // We need to update the correct uint16_t in the rowBitStruct array, that gets sent out in parallel
     // 16 bit parallel mode - Save the calculated value to the bitplane memory in reverse order to account for I2S Tx FIFO mode1 ordering
 	// Irrelevant for ESP32-S2 the way the FIFO ordering works is different - refer to page 679 of S2 technical reference manual
@@ -672,7 +684,7 @@ void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id){
 	  // switch pointer to a row for a specific color index
 	  row = dma_buff.rowBits[row_idx]->getDataPtr(coloridx, _buff_id);
 
-	  #ifdef ESP32_S2
+	  #ifdef ESP32_SXXX
 		// -1 works better on ESP32-S2 ? Because bytes get sent out in order...
 		row[dma_buff.rowBits[row_idx]->width - 1] |= BIT_LAT;   // -1 pixel to compensate array index starting at 0					
 	  #else
@@ -688,7 +700,7 @@ void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id){
       do {
         --_blank;
         
-	  #ifdef ESP32_S2		
+	  #ifdef ESP32_SXXX		
 			row[0 + _blank] |= BIT_OE;
 			row[dma_buff.rowBits[row_idx]->width - _blank - 1 ] |= BIT_OE;    // (LAT pulse is (width-2) -1 pixel to compensate array index starting at 0
  	  #else
@@ -767,7 +779,7 @@ void MatrixPanel_I2S_DMA::brtCtrlOE(int brt, const bool _buff_id){
       do {
         --_blank;
 
-	  #ifdef ESP32_S2		
+	  #ifdef ESP32_SXXX		
 			row[0 + _blank] |= BIT_OE;
  	  #else 
 			// Original ESP32 WROOM FIFO Ordering Sucks
@@ -896,7 +908,7 @@ void MatrixPanel_I2S_DMA::hlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, 
     do {                 // iterate pixels in a row
         int16_t _x = x_coord + --_l;
 		
-#ifdef ESP32_S2		
+#ifdef ESP32_SXXX		
         // ESP 32 doesn't need byte flipping for TX FIFO.
         uint16_t &v = p[_x];
 #else
@@ -937,7 +949,7 @@ void MatrixPanel_I2S_DMA::vlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, 
 	blue  = lumConvTab[blue]; 	
 #endif
 
-#ifndef ESP32_S2
+#ifndef ESP32_SXXX
   // Save the calculated value to the bitplane memory in reverse order to account for I2S Tx FIFO mode1 ordering 
   x_coord & 1U ? --x_coord : ++x_coord;
 #endif  
