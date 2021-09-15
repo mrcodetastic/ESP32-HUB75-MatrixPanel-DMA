@@ -77,10 +77,6 @@ static void iomux_set_signal(int gpio, int signal) {
   PIN_FUNC_SELECT(GPIO_PIN_MUX_REG[gpio], PIN_FUNC_GPIO);
   gpio_set_direction(gpio, GPIO_MODE_DEF_OUTPUT);
   gpio_matrix_out(gpio, signal, false, false);
-  
-  // More mA the better...
-  gpio_set_drive_capability((gpio_num_t)gpio, (gpio_drive_cap_t)3);
-  
 }
 
 static void dma_reset(i2s_dev_t* dev) {
@@ -88,11 +84,6 @@ static void dma_reset(i2s_dev_t* dev) {
   dev->lc_conf.in_rst = 0;
   dev->lc_conf.out_rst = 1;
   dev->lc_conf.out_rst = 0;
-  
-  dev->lc_conf.ahbm_rst = 1;
-  dev->lc_conf.ahbm_rst = 0;
-    
-  
 }
 
 static void fifo_reset(i2s_dev_t* dev) {
@@ -202,11 +193,6 @@ esp_err_t i2s_parallel_driver_install(i2s_port_t port, i2s_parallel_config_t* co
   // Set i2s mode to LCD mode
   dev->conf2.val = 0;
   dev->conf2.lcd_en = 1;
-  dev->conf.tx_slave_mod = 0;
-  
-  // dev->conf.tx_dma_equal=1; // esp32-s2 only
-  dev->conf2.lcd_tx_wrx2_en=0; 
-  dev->conf2.lcd_tx_sdx2_en=0;    
   
   // Enable "One datum will be written twice in LCD mode" - for some reason, 
   // if we don't do this in 8-bit mode, data is updated on half-clocks not clocks
@@ -334,7 +320,7 @@ esp_err_t i2s_parallel_driver_install(i2s_port_t port, i2s_parallel_config_t* co
 }
 
 
- esp_err_t i2s_parallel_send_dma(i2s_port_t port, lldesc_t* dma_descriptor) {
+esp_err_t i2s_parallel_send_dma(i2s_port_t port, lldesc_t* dma_descriptor) {
   if(port < I2S_NUM_0 || port >= I2S_NUM_MAX) {
     return ESP_ERR_INVALID_ARG;
   }
