@@ -6,7 +6,11 @@
 #include <Arduino.h>
 #include "ESP32-HUB75-MatrixPanel-I2S-DMA.h"
 
+#ifndef CLK_MANUAL_PIN 
 #define CLK_PULSE          digitalWrite(_cfg.gpio.clk, HIGH); digitalWrite(_cfg.gpio.clk, LOW);
+#else
+#define CLK_PULSE          delay(1); digitalWrite(_cfg.gpio.clk, HIGH); digitalWrite(CLK_MANUAL_PIN, HIGH); delay(1); digitalWrite(_cfg.gpio.clk, LOW); digitalWrite(CLK_MANUAL_PIN, LOW); delay(1);   
+#endif
 
 /**
  * @brief - pre-init procedures for specific led-drivers
@@ -39,13 +43,18 @@ void MatrixPanel_I2S_DMA::fm6124init(const HUB75_I2S_CFG& _cfg){
     #if SERIAL_DEBUG 
         Serial.println( F("MatrixPanel_I2S_DMA - initializing FM6124 driver..."));
     #endif
-    bool REG1[16] = {0,0,0,0,0, 1,1,1,1,1,1, 0,0,0,0,0};    // this sets global matrix brightness power
+//    bool REG1[16] = {0,0,0,0,0, 1,1,1,1,1,1, 0,0,0,0,0};    // this sets global matrix brightness power
+    bool REG1[16] = {0,1,1,1,1, 1,1,1,1,1,1, 1,1,1,1,1};    // this sets global matrix brightness power
     bool REG2[16] = {0,0,0,0,0, 0,0,0,0,1,0, 0,0,0,0,0};    // a single bit enables the matrix output
 
-    for (uint8_t _pin:{_cfg.gpio.r1, _cfg.gpio.r2, _cfg.gpio.g1, _cfg.gpio.g2, _cfg.gpio.b1, _cfg.gpio.b2, _cfg.gpio.clk, _cfg.gpio.lat, _cfg.gpio.oe}){
+    for (uint8_t _pin:{_cfg.gpio.r1, _cfg.gpio.r2, _cfg.gpio.g1, _cfg.gpio.g2, _cfg.gpio.b1, _cfg.gpio.b2, _cfg.gpio.clk, _cfg.gpio.lat, _cfg.gpio.oe }){
         pinMode(_pin, OUTPUT);
         digitalWrite(_pin, LOW);
     }
+#ifdef CLK_MANUAL_PIN 
+        pinMode(CLK_MANUAL_PIN, OUTPUT);
+        digitalWrite(CLK_MANUAL_PIN, LOW);
+#endif
 
     digitalWrite(_cfg.gpio.oe, HIGH); // Disable Display
 
