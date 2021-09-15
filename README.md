@@ -1,6 +1,8 @@
 # HUB75 RGB LED matrix library utilizing ESP32 DMA Engine
 
- This fork nearly halves the memory need due to adding support for a latch that latches address lines while the RGB data is being sent out.
+ This fork adds support for a latch that latches address lines while the RGB data is being sent out. Since the DMA buffer memory is only 8 bits wide, it about halves the overall memory requirement.
+ 
+ A sample circuit is included as a .pdf file.
 
 
   **Table of Content**
