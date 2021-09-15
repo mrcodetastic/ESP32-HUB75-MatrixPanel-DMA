@@ -1,16 +1,19 @@
 #ifndef _ESP32_RGB_64_32_MATRIX_PANEL_I2S_DMA
 #define _ESP32_RGB_64_32_MATRIX_PANEL_I2S_DMA
 
-/*******************************************************************************************
- * COMPILE-TIME OPTIONS - MUST BE PROVIDED as part of PlatformIO project build_flags.      *
- * Changing the values just here won't work - as defines needs to persist beyond the scope *
- * of just this file.                                                                      *
- *******************************************************************************************/
+/***************************************************************************************/
+/* COMPILE-TIME OPTIONS - Provide as part of PlatformIO project build_flags.           */
+/***************************************************************************************/
 /* Enable serial debugging of the library, to see how memory is allocated etc. */
-//#define SERIAL_DEBUG 1
+#define SERIAL_DEBUG 1
 
-/* Do NOT build additional methods optimized for fast drawing,
- * i.e. Adafruits drawFastHLine, drawFastVLine, etc...                         */
+#define WITH_LATCH 1
+
+
+/*
+ * Do NOT build additional methods optimized for fast drawing,
+ * i.e. Adafruits drawFastHLine, drawFastVLine, etc...
+ */
 //#define NO_FAST_FUNCTIONS
 
 /* Use GFX_Root (https://github.com/mrfaptastic/GFX_Root) instead of Adafruit_GFX library.
@@ -18,7 +21,8 @@
  * > Provides 24bpp (CRGB) colour support for  Adafruit_GFX functions like drawCircle etc.
  * > Requires FastLED.h
  */
-//#define USE_GFX_ROOT 1
+#define USE_GFX_ROOT 1
+
 
 /* Physical / Chained HUB75(s) RGB pixel WIDTH and HEIGHT. 
  *
@@ -82,19 +86,13 @@
 
 #define COLOR_CHANNELS_PER_PIXEL     3
 
-// #define NO_CIE1931
 
 /***************************************************************************************/
-/* Core ESP32 hardware / idf includes!                                                 */
+/* Library Includes!                                                                   */
 #include <vector>
 #include <memory>
 #include "esp_heap_caps.h"
-
-#ifdef ESP32_S2
-	#include "esp32-s2_i2s_parallel_v1.h"
-#else
-	#include "esp32_i2s_parallel_v2.h"
-#endif
+#include "esp32_i2s_parallel_v2.h"
 
 #ifdef USE_GFX_ROOT
 	#include <FastLED.h>    
@@ -104,11 +102,19 @@
 #endif
 
 
+
 /***************************************************************************************/
 /* Definitions below should NOT be ever changed without rewriting library logic         */
+#if WITH_LATCH
+#define ESP32_I2S_DMA_MODE          I2S_PARALLEL_WIDTH_8    // From esp32_i2s_parallel_v2.h = 16 bits in parallel
+#define ESP32_I2S_DMA_STORAGE_TYPE  uint8_t                // DMA output of one uint16_t at a time.
+#define CLKS_DURING_LATCH            4                      // the clocks where the address lines are clocked out. must be multiple of 4.
+#define CLK_MANUAL_PIN GPIO_NUM_16		            // bit cludgy, but the FM612x chips need data clocked out while OE is being held low. In those circuits which use a mux, this allows that clock to still happen 
+#else
 #define ESP32_I2S_DMA_MODE          I2S_PARALLEL_WIDTH_16    // From esp32_i2s_parallel_v2.h = 16 bits in parallel
 #define ESP32_I2S_DMA_STORAGE_TYPE  uint16_t                // DMA output of one uint16_t at a time.
-#define CLKS_DURING_LATCH            0                      // Not (yet) used. 
+#define CLKS_DURING_LATCH            0                      // address lines aren't clocked out separately, so no need for extra CLKS
+#endif
 
 // Panel Upper half RGB (numbering according to order in DMA gpio_bus configuration)
 #define BITS_RGB1_OFFSET 0 // Start point of RGB_X1 bits
@@ -231,7 +237,7 @@ struct  HUB75_I2S_CFG {
    * Enumeration of hardware-specific chips
    * used to drive matrix modules
    */
-  enum shift_driver {SHIFTREG=0, FM6124, FM6126A, ICN2038S, MBI5124, SM5266P};
+  enum shift_driver {SHIFTREG=0, FM6124, FM6126A, ICN2038S, MBI5124};
 
   /**
    * I2S clock speed selector
@@ -266,15 +272,15 @@ struct  HUB75_I2S_CFG {
   /**
    *  I2S clock phase
    *  0 - data lines are clocked with negative edge
-   *  Clk  /¯\_/¯\_/
-   *  LAT  __/¯¯¯\__
-   *  EO   ¯¯¯¯¯¯\___
+   *  Clk  /Â¯\_/Â¯\_/
+   *  LAT  __/Â¯Â¯Â¯\__
+   *  EO   Â¯Â¯Â¯Â¯Â¯Â¯\___
    *
    *  1 - data lines are clocked with positive edge (default now as of 10 June 2021)
    *  https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/issues/130
-   *  Clk  \_/¯\_/¯\
-   *  LAT  __/¯¯¯\__
-   *  EO   ¯¯¯¯¯¯\__
+   *  Clk  \_/Â¯\_/Â¯\
+   *  LAT  __/Â¯Â¯Â¯\__
+   *  EO   Â¯Â¯Â¯Â¯Â¯Â¯\__
    *
    */
   bool clkphase;
@@ -293,8 +299,8 @@ struct  HUB75_I2S_CFG {
       LAT_PIN_DEFAULT, OE_PIN_DEFAULT, CLK_PIN_DEFAULT },
     shift_driver _drv = SHIFTREG,
     bool _dbuff = false,
-    clk_speed _i2sspeed = HZ_10M,
-    uint8_t _latblk  = 1, // Anything > 1 seems to cause artifacts on ICS panels
+    clk_speed _i2sspeed = HZ_20M,
+    uint8_t _latblk = 1,
     bool _clockphase = true,
     uint8_t _min_refresh_rate = 85
   ) : mx_width(_w),
@@ -352,8 +358,6 @@ class MatrixPanel_I2S_DMA {
 
     /* Propagate the DMA pin configuration, allocate DMA buffs and start data ouput, initialy blank */
     bool begin(){
-		
-	  if (initialized) return true; // we don't do this twice or more!
 
       // Change 'if' to '1' to enable, 0 to not include this Serial output in compiled program        
       #if SERIAL_DEBUG       
@@ -390,7 +394,7 @@ class MatrixPanel_I2S_DMA {
       // Setup the ESP32 DMA Engine. Sprite_TM built this stuff.
       configureDMA(m_cfg); //DMA and I2S configuration and setup
 
-      //showDMABuffer(); // show backbuf_id of 0
+      showDMABuffer(); // show backbuf_id of 0
 
       #if SERIAL_DEBUG 
         if (!initialized)    
@@ -401,30 +405,20 @@ class MatrixPanel_I2S_DMA {
 
     }
 
-    // Obj destructor
-    ~MatrixPanel_I2S_DMA(){
-      stopDMAoutput();
-
-      delete dmadesc_a;
-
-      if (m_cfg.double_buff)
-        delete dmadesc_b;
-
-    }
-
-
     /*
      *  overload for compatibility
      */
     bool begin(int r1, int g1 = G1_PIN_DEFAULT, int b1 = B1_PIN_DEFAULT, int r2 = R2_PIN_DEFAULT, int g2 = G2_PIN_DEFAULT, int b2 = B2_PIN_DEFAULT, int a  = A_PIN_DEFAULT, int b = B_PIN_DEFAULT, int c = C_PIN_DEFAULT, int d = D_PIN_DEFAULT, int e = E_PIN_DEFAULT, int lat = LAT_PIN_DEFAULT, int oe = OE_PIN_DEFAULT, int clk = CLK_PIN_DEFAULT);
 
+    // TODO: Disable/Enable auto buffer flipping (useful for lots of drawPixel usage)...
 
     // Adafruit's BASIC DRAW API (565 colour format)
     virtual void drawPixel(int16_t x, int16_t y, uint16_t color);   // overwrite adafruit implementation
     virtual void fillScreen(uint16_t color);                        // overwrite adafruit implementation
 
     /**
-     * A wrapper to fill whatever selected DMA buffer / screen with black
+     * A wrapper to fill the entire Screen with black
+     * if double buffering is used, than only back buffer is cleared
      */
     inline void clearScreen(){ updateMatrixDMABuffer(0,0,0); };
 
@@ -494,25 +488,36 @@ class MatrixPanel_I2S_DMA {
     static void color565to888(const uint16_t color, uint8_t &r, uint8_t &g, uint8_t &b);
 
 
-    inline void IRAM_ATTR flipDMABuffer() 
+    inline void flipDMABuffer() 
     {         
       if ( !m_cfg.double_buff) return;
+        
+        // Flip to other buffer as the backbuffer. i.e. Graphic changes happen to this buffer (but aren't displayed until showDMABuffer())
+        back_buffer_id ^= 1; 
         
         #if SERIAL_DEBUG     
                 Serial.printf_P(PSTR("Set back buffer to: %d\n"), back_buffer_id);
         #endif      
 
-        i2s_parallel_flip_to_buffer(I2S_NUM_0, back_buffer_id);
-		
         // Wait before we allow any writing to the buffer. Stop flicker.
-        while(i2s_parallel_is_previous_buffer_free() == false) { }       
-		
-        // Flip to other buffer as the backbuffer. 
-		// i.e. Graphic changes happen to this buffer, but aren't displayed until flipDMABuffer() is called again.
-        back_buffer_id ^= 1; 
-		
+        while(!i2s_parallel_is_previous_buffer_free()) { delay(1); }       
     }
-        
+    
+    inline void showDMABuffer()
+    {
+      
+        if (!m_cfg.double_buff) return;
+
+        #if SERIAL_DEBUG     
+                Serial.printf_P(PSTR("Showtime for buffer: %d\n"), back_buffer_id);
+        #endif      
+      
+        i2s_parallel_flip_to_buffer(I2S_NUM_1, back_buffer_id);
+
+        // Wait before we allow any writing to the buffer. Stop flicker.
+        while(!i2s_parallel_is_previous_buffer_free()) { delay(1); }               
+    }
+    
     inline void setPanelBrightness(int b)
     {
       // Change to set the brightness of the display, range of 1 to matrixWidth (i.e. 1 - 64)
@@ -562,9 +567,11 @@ class MatrixPanel_I2S_DMA {
      */
     void stopDMAoutput() {  
         resetbuffers();
-        i2s_parallel_stop_dma(I2S_NUM_0);
+        i2s_parallel_stop_dma(I2S_NUM_1);
     } 
     
+    void printBuffer();
+
 
 
   // ------- PROTECTED -------
