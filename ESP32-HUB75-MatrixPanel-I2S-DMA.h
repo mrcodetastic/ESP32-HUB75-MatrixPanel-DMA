@@ -1,5 +1,18 @@
 #ifndef _ESP32_RGB_64_32_MATRIX_PANEL_I2S_DMA
 #define _ESP32_RGB_64_32_MATRIX_PANEL_I2S_DMA
+/***************************************************************************************/
+/* Core ESP32 hardware / idf includes!                                                 */
+#include <vector>
+#include <memory>
+#include "esp_heap_caps.h"
+#include "esp32_i2s_parallel_dma.h"
+
+#ifdef USE_GFX_ROOT
+    #include <FastLED.h>    
+    #include "GFX.h" // Adafruit GFX core class -> https://github.com/mrfaptastic/GFX_Root  
+#elif !defined NO_GFX
+    #include "Adafruit_GFX.h" // Adafruit class with all the other stuff
+#endif
 
 /*******************************************************************************************
  * COMPILE-TIME OPTIONS - MUST BE PROVIDED as part of PlatformIO project build_flags.      *
@@ -46,22 +59,44 @@
 /* ESP32 Default Pin definition. You can change this, but best if you keep it as is and provide custom pin mappings 
  * as part of the begin(...) function.
  */
-#define R1_PIN_DEFAULT  25
-#define G1_PIN_DEFAULT  26
-#define B1_PIN_DEFAULT  27
-#define R2_PIN_DEFAULT  14
-#define G2_PIN_DEFAULT  12
-#define B2_PIN_DEFAULT  13
 
-#define A_PIN_DEFAULT   23
-#define B_PIN_DEFAULT   19
-#define C_PIN_DEFAULT   5
-#define D_PIN_DEFAULT   17
-#define E_PIN_DEFAULT   -1 // IMPORTANT: Change to a valid pin if using a 64x64px panel.
-          
-#define LAT_PIN_DEFAULT 4
-#define OE_PIN_DEFAULT  15
-#define CLK_PIN_DEFAULT 16
+#ifdef ESP32_SXXX 
+ 
+    #define R1_PIN_DEFAULT 45
+    #define G1_PIN_DEFAULT 42
+    #define B1_PIN_DEFAULT 41
+    #define R2_PIN_DEFAULT 40
+    #define G2_PIN_DEFAULT 39
+    #define B2_PIN_DEFAULT 38
+    #define A_PIN_DEFAULT  37
+    #define B_PIN_DEFAULT  36
+    #define C_PIN_DEFAULT  35
+    #define D_PIN_DEFAULT  34
+    #define E_PIN_DEFAULT  -1 // required for 1/32 scan panels, like 64x64. Any available pin would do, i.e. IO32
+    #define LAT_PIN_DEFAULT 26
+    #define OE_PIN_DEFAULT  21
+    #define CLK_PIN_DEFAULT 33
+
+#else 
+     
+    #define R1_PIN_DEFAULT  25
+    #define G1_PIN_DEFAULT  26
+    #define B1_PIN_DEFAULT  27
+    #define R2_PIN_DEFAULT  14
+    #define G2_PIN_DEFAULT  12
+    #define B2_PIN_DEFAULT  13
+
+    #define A_PIN_DEFAULT   23
+    #define B_PIN_DEFAULT   19
+    #define C_PIN_DEFAULT   5
+    #define D_PIN_DEFAULT   17
+    #define E_PIN_DEFAULT   -1 // IMPORTANT: Change to a valid pin if using a 64x64px panel.
+              
+    #define LAT_PIN_DEFAULT 4
+    #define OE_PIN_DEFAULT  15
+    #define CLK_PIN_DEFAULT 16
+    
+#endif  
 
 // Interesting Fact: We end up using a uint16_t to send data in parallel to the HUB75... but 
 //                   given we only map to 14 physical output wires/bits, we waste 2 bits.
@@ -83,20 +118,6 @@
 #define COLOR_CHANNELS_PER_PIXEL     3
 
 // #define NO_CIE1931
-
-/***************************************************************************************/
-/* Core ESP32 hardware / idf includes!                                                 */
-#include <vector>
-#include <memory>
-#include "esp_heap_caps.h"
-#include "esp32_i2s_parallel_dma.h"
-
-#ifdef USE_GFX_ROOT
-	#include <FastLED.h>    
-	#include "GFX.h" // Adafruit GFX core class -> https://github.com/mrfaptastic/GFX_Root	
-#elif !defined NO_GFX
-    #include "Adafruit_GFX.h" // Adafruit class with all the other stuff
-#endif
 
 
 /***************************************************************************************/
@@ -347,8 +368,8 @@ class MatrixPanel_I2S_DMA {
 
     /* Propagate the DMA pin configuration, allocate DMA buffs and start data ouput, initialy blank */
     bool begin(){
-		
-	  if (initialized) return true; // we don't do this twice or more!
+        
+      if (initialized) return true; // we don't do this twice or more!
 
       // Change 'if' to '1' to enable, 0 to not include this Serial output in compiled program        
       #if SERIAL_DEBUG       
@@ -463,10 +484,10 @@ class MatrixPanel_I2S_DMA {
 
     void fillScreenRGB888(uint8_t r, uint8_t g, uint8_t b);
     void drawPixelRGB888(int16_t x, int16_t y, uint8_t r, uint8_t g, uint8_t b);
-	
+    
 #ifdef USE_GFX_ROOT
-	// 24bpp FASTLED CRGB colour struct support
-	void fillScreen(CRGB color);
+    // 24bpp FASTLED CRGB colour struct support
+    void fillScreen(CRGB color);
     void drawPixel(int16_t x, int16_t y, CRGB color);
 #endif 
 
@@ -498,14 +519,14 @@ class MatrixPanel_I2S_DMA {
         #endif      
 
         i2s_parallel_flip_to_buffer(I2S_NUM_0, back_buffer_id);
-		
+        
         // Wait before we allow any writing to the buffer. Stop flicker.
         while(i2s_parallel_is_previous_buffer_free() == false) { }       
-		
+        
         // Flip to other buffer as the backbuffer. 
-		// i.e. Graphic changes happen to this buffer, but aren't displayed until flipDMABuffer() is called again.
+        // i.e. Graphic changes happen to this buffer, but aren't displayed until flipDMABuffer() is called again.
         back_buffer_id ^= 1; 
-		
+        
     }
         
     inline void setPanelBrightness(int b)
