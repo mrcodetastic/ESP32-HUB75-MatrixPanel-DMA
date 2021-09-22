@@ -9,6 +9,7 @@
   * [Panel driver chips known to be working well](#panel-driver-chips-known-to-be-working-well)
   * [Panels Not Supported](#panels-not-supported)
   * [Update for 16x32 Panels](#update-for-16x32-panels)
+  * [Cool uses of this library](#cool-uses-of-this-library)
 - [Getting Started](#getting-started)
   * [1. Library Installation](#1-library-installation)
   * [2. Wiring ESP32 with the LED Matrix Panel](#2-wiring-esp32-with-the-led-matrix-panel)
@@ -69,6 +70,14 @@ Please use an [alternative library](https://github.com/2dom/PxMatrix) if you bou
 
 ## Update for 16x32 Panels
 * There is a virtual panel class available to work with 16x32 panels (see: [examples/16x32 Panel](/examples/P6_32x16_1_4_ScanPanel). This Panel includes drawing lines and rectanges, text and scrolling text
+
+## Cool uses of this library
+There are a number of great looking LED graphical display projects which leverage this library, these include:
+* [128x64 Morph Clock](https://github.com/bogd/esp32-morphing-clock)
+* [FFT Audio Visualisation](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/discussions/149)
+* [Clock, GIF Animator and Audio Visualiser](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/discussions/153)
+* [Aurora Audio Visualiser](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/discussions/188)
+* [Big Visualisation](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/discussions/155)
 
 # Getting Started
 ## 1. Library Installation
