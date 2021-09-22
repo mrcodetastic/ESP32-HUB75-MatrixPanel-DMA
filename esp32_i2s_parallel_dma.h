@@ -1,5 +1,6 @@
+#pragma once
 /*
- * ESP32_I2S_PARALLEL_V2 (Version 2)
+ * ESP32_I2S_PARALLEL_DMA
  */
  
 #pragma once
@@ -12,18 +13,12 @@
 extern "C" {
 #endif
 
-
-
-#include <stdbool.h>
-#include <sys/types.h>
-
-#include <freertos/FreeRTOS.h>
-#include <driver/i2s.h>
 #include <esp_err.h>
+#include <driver/i2s.h>
 #include <rom/lldesc.h>
 
-#define I2S_PARALLEL_CLOCK_HZ 80000000L
-#define DMA_MAX (4096-4)
+// Get MCU Type and Max CLK Hz for MCU
+#include <esp32_i2s_parallel_mcu_def.h>
 
 typedef enum {
   I2S_PARALLEL_WIDTH_8,
@@ -47,10 +42,16 @@ typedef struct {
 static inline int i2s_parallel_get_memory_width(i2s_port_t port, i2s_parallel_cfg_bits_t width) {
   switch(width) {
     case I2S_PARALLEL_WIDTH_8:
+
+#ifdef ESP32_ORIG	
       // IS21 supports space saving single byte 8 bit parallel access
       if(port == I2S_NUM_1) {
         return 1;
       }
+#else 
+		return 1;
+#endif
+
     case I2S_PARALLEL_WIDTH_16:
       return 2;
     case I2S_PARALLEL_WIDTH_24:
