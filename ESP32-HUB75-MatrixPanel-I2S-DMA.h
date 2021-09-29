@@ -4,6 +4,12 @@
 /* Core ESP32 hardware / idf includes!                                                 */
 #include <vector>
 #include <memory>
+
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/semphr.h"
+#include "freertos/queue.h"
+
 #include "esp_heap_caps.h"
 #include "esp32_i2s_parallel_dma.h"
 

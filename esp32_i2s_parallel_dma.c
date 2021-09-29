@@ -14,39 +14,15 @@
 // Header
 #include "esp32_i2s_parallel_dma.h" 
 
-#if defined(ESP32_ORIG) || defined (ESP32_SXXX)
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
 
-
-#include <esp_err.h>
- 
- // Turn on and off a periphal
-#include <driver/periph_ctrl.h>
-
-// GPIO
-#include <soc/gpio_periph.h>
-#include <hal/gpio_types.h>
 #include <driver/gpio.h>
 #include <driver/periph_ctrl.h>
-
 #include <rom/gpio.h>
 #include <soc/gpio_sig_map.h>
-
-// DMA Linked List Struct
-#include <soc/lldesc.h>
-#include <soc/io_mux_reg.h>
-
-// I2S
-#include <soc/i2s_struct.h>
-#include <soc/i2s_reg.h>
-
-
-#ifdef ESP32_CXXX
-	// GDMA
-	#include <soc/gdma_channel.h>
-	#include <soc/gdma_periph.h>
-	#include <soc/gdma_reg.h>
-	#include <soc/gdma_struct.h>
-#endif
 
 // For I2S state management.
 static i2s_parallel_state_t *i2s_state 	= NULL;
@@ -448,6 +424,3 @@ void i2s_parallel_flip_to_buffer(i2s_port_t port, int buffer_id) {
 bool i2s_parallel_is_previous_buffer_free() {
     return previousBufferFree;
 }
-
-// End ESP32 original / S2, S3 check
-#endif

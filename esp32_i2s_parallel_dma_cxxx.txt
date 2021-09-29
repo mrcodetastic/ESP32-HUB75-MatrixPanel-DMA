@@ -4,6 +4,8 @@
  * Author:      Mrfaptastic @ https://github.com/mrfaptastic/
  * 
  * Description: Multi-ESP32 product DMA setup functions for ESP32 C3/H2 RISC-V chips
+ * 
+ * ESP32C series doesn't support LCD mode / parallel DMA! 
  *
  */
 

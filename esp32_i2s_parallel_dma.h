@@ -13,8 +13,12 @@
 extern "C" {
 #endif
 
-#include <esp_err.h>
+#include <stdbool.h>
+#include <sys/types.h>
+
+#include <freertos/FreeRTOS.h>
 #include <driver/i2s.h>
+#include <esp_err.h>
 #include <rom/lldesc.h>
 
 // Get MCU Type and Max CLK Hz for MCU
