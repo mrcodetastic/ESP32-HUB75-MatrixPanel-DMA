@@ -154,8 +154,16 @@ inline VirtualCoords OneEighthMatrixPanel::getCoords(int16_t x, int16_t y) {
    // Double the length of the x-coord if required
    if ( (coords.y /8) % 2 == 0) { // returns true/1 for the 1st and 3rd 8-pixel 1/4th of a 32px high panel
         coords.x += (panelResX*col);
+        
+        coords.y -= 8; // half the row-coord, to match the PHYSICAL DMA configuration.
    }
-   coords.y /= 2; // half the row-coord, to match the PHYSICAL DMA configuration.
+   else
+   {
+    // Or should it be here?
+	 //  coords.y -= 8; // half the row-coord, to match the PHYSICAL DMA configuration.
+   }
+	   
+   
 
   /* 
    * END: 1/8 Scan Panel Pixel Re-Mapping
@@ -163,19 +171,14 @@ inline VirtualCoords OneEighthMatrixPanel::getCoords(int16_t x, int16_t y) {
    */
 
   // Reverse co-ordinates if panel chain from ESP starts from the TOP RIGHT
+  /*
   if (_chain_top_down)
   {
-	/*
-  // TODO: Remove use of underyling _cfg configuration values! 	
-    const HUB75_I2S_CFG _cfg = this->display->getCfg();
-    coords.x = (_cfg.mx_width * _cfg.chain_length - 1) - coords.x;
-    coords.y = (_cfg.mx_height-1) - coords.y;
-	*/
-	
     coords.x = (panelResX * vmodule_rows * vmodule_cols - 1) - coords.x;
     coords.y = (panelResY-1) - coords.y;
 	
-  }   
+  } 
+  */  
 	
 	return coords;  
 
