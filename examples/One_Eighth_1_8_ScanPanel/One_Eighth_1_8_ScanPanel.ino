@@ -77,12 +77,20 @@
   
   	Please refer to the '2_PatternPlasma.ino' example for detailed example of how to use the MatrixPanel_I2S_DMA configuration
   	*/
-  
-  	HUB75_I2S_CFG mxconfig(
-  				PANEL_RES_X*2,   	// DO NOT CHANGE THIS
-  				PANEL_RES_Y/2,   	// DO NOT CHANGE THIS
-  				PANEL_CHAIN    		// DO NOT CHANGE THIS
-  	);
+
+	HUB75_I2S_CFG::i2s_pins _pins = {
+		R1_PIN, G1_PIN, B1_PIN, R2_PIN, G2_PIN, B2_PIN, 
+		A_PIN, B_PIN, C_PIN, D_PIN, E_PIN, 
+		LAT_PIN, OE_PIN, CLK_PIN
+	 };
+
+
+	HUB75_I2S_CFG mxconfig(
+				PANEL_RES_X*2,   	// DO NOT CHANGE THIS
+				PANEL_RES_Y/2,   	// DO NOT CHANGE THIS
+				PANEL_CHAIN    		// DO NOT CHANGE THIS
+				//,_pins			// Uncomment to enable custom pins
+	);
   
   	//mxconfig.driver = HUB75_I2S_CFG::FM6126A;     // in case that we use panels based on FM6126A chip, we can set it here before creating MatrixPanel_I2S_DMA object
   
