@@ -154,12 +154,11 @@ inline VirtualCoords OneEighthMatrixPanel::getCoords(int16_t x, int16_t y) {
    // Double the length of the x-coord if required
    if ( (coords.y /8) % 2 == 1) { // returns true/1 for the 1st and 3rd 8-pixel 1/4th of a 32px high panel
         coords.x += (panelResX*col);
-        
-      //  coords.y -= 8; // half the row-coord, to match the PHYSICAL DMA configuration.
    }
    else
    {
-    // Or should it be here?
+	   // Every odd row, so 'virtual coords' of 8-16, 25-31
+	   // Update the pixels at the tart of the double-width row data to send to the DMA engine.
 	   coords.y -= 8; // half the row-coord, to match the PHYSICAL DMA configuration.
    }
 	   
