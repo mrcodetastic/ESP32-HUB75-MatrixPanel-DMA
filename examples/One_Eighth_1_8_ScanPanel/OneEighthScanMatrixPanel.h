@@ -155,15 +155,11 @@ inline VirtualCoords OneEighthMatrixPanel::getCoords(int16_t x, int16_t y) {
    if ( ((coords.y /8) % 2) == 0) { // returns true/1 for the 1st and 3rd 8-pixel 1/4th of a 32px high panel
         coords.x += (panelResX*col);
    }
-   else
-   {
-	   // Every odd row, so 'virtual coords' of 8-16, 25-31
-	   // Update the pixels at the tart of the double-width row data to send to the DMA engine.
-	   coords.y -= 8; // half the row-coord, to match the PHYSICAL DMA configuration.
-   }
-	   
-   
 
+   // Half the y coord.
+   y = (i % 8);   
+   if ( i >= panelResY/2 ) y +=8;
+           
   /* 
    * END: 1/8 Scan Panel Pixel Re-Mapping
    * *******
@@ -216,3 +212,68 @@ inline void OneEighthMatrixPanel::drawIcon (int *ico, int16_t x, int16_t y, int1
 }
 
 #endif
+
+/*
+// http://cpp.sh/6skpy
+
+
+// Example program
+#include <iostream>
+#include <string>
+
+int main()
+{
+  for (int i = 0; i < 32; i++)
+  {
+       int x = 0;
+       int y = i;
+       if ( ((y /8) % 2) == 0) { // returns true/1 for the 1st and 3rd 8-pixel 1/4th of a 32px high panel
+            x += 64;
+       }
+       
+  
+       y = (i % 8);
+       if ( i >= 32/2 ) y +=8;
+       
+       std::cout << "For input y =  " << i << " mapping to y: " << y << " and x " << x << " \n";
+         
+  }
+  
+  
+}
+
+
+For input y =  0 mapping to y: 0 and x 64 
+For input y =  1 mapping to y: 1 and x 64 
+For input y =  2 mapping to y: 2 and x 64 
+For input y =  3 mapping to y: 3 and x 64 
+For input y =  4 mapping to y: 4 and x 64 
+For input y =  5 mapping to y: 5 and x 64 
+For input y =  6 mapping to y: 6 and x 64 
+For input y =  7 mapping to y: 7 and x 64 
+For input y =  8 mapping to y: 0 and x 0 
+For input y =  9 mapping to y: 1 and x 0 
+For input y =  10 mapping to y: 2 and x 0 
+For input y =  11 mapping to y: 3 and x 0 
+For input y =  12 mapping to y: 4 and x 0 
+For input y =  13 mapping to y: 5 and x 0 
+For input y =  14 mapping to y: 6 and x 0 
+For input y =  15 mapping to y: 7 and x 0 
+For input y =  16 mapping to y: 8 and x 64 
+For input y =  17 mapping to y: 9 and x 64 
+For input y =  18 mapping to y: 10 and x 64 
+For input y =  19 mapping to y: 11 and x 64 
+For input y =  20 mapping to y: 12 and x 64 
+For input y =  21 mapping to y: 13 and x 64 
+For input y =  22 mapping to y: 14 and x 64 
+For input y =  23 mapping to y: 15 and x 64 
+For input y =  24 mapping to y: 8 and x 0 
+For input y =  25 mapping to y: 9 and x 0 
+For input y =  26 mapping to y: 10 and x 0 
+For input y =  27 mapping to y: 11 and x 0 
+For input y =  28 mapping to y: 12 and x 0 
+For input y =  29 mapping to y: 13 and x 0 
+For input y =  30 mapping to y: 14 and x 0 
+For input y =  31 mapping to y: 15 and x 0 
+
+*/
