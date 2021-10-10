@@ -157,8 +157,8 @@ inline VirtualCoords OneEighthMatrixPanel::getCoords(int16_t x, int16_t y) {
    }
 
    // Half the y coord.
-   y = (i % 8);   
-   if ( i >= panelResY/2 ) y +=8;
+   coords.y = (y % 8);   
+   if ( y >= panelResY/2 ) coords.y +=8;
            
   /* 
    * END: 1/8 Scan Panel Pixel Re-Mapping
