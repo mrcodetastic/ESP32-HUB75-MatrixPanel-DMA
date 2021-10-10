@@ -163,13 +163,18 @@ inline VirtualCoords OneEighthMatrixPanel::getCoords(int16_t x, int16_t y) {
    */
 
   // Reverse co-ordinates if panel chain from ESP starts from the TOP RIGHT
-  // TODO: Remove use of underyling _cfg configuration values! 
   if (_chain_top_down)
   {
+	/*
+  // TODO: Remove use of underyling _cfg configuration values! 	
     const HUB75_I2S_CFG _cfg = this->display->getCfg();
     coords.x = (_cfg.mx_width * _cfg.chain_length - 1) - coords.x;
     coords.y = (_cfg.mx_height-1) - coords.y;
-  
+	*/
+	
+    coords.x = (panelResX * rows * cols - 1) - coords.x;
+    coords.y = (panelResY-1) - coords.y;
+	
   }   
 	
 	return coords;  
