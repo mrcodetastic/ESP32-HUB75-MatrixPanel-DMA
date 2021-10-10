@@ -8,7 +8,14 @@ struct VirtualCoords {
   int16_t y;
 };
 
- 
+#ifndef NUM_COLS
+#define NUM_COLS 1 // Number of INDIVIDUAL PANELS per ROW
+#endif
+
+#ifndef NUM_ROWS
+#define NUM_ROWS 1 // Number of rows of chained INDIVIDUAL PANELS
+#endif
+
 #ifdef USE_GFX_ROOT
 class OneEighthMatrixPanel : public GFX
 #elif !defined NO_GFX
@@ -172,7 +179,7 @@ inline VirtualCoords OneEighthMatrixPanel::getCoords(int16_t x, int16_t y) {
     coords.y = (_cfg.mx_height-1) - coords.y;
 	*/
 	
-    coords.x = (panelResX * rows * cols - 1) - coords.x;
+    coords.x = (panelResX * NUM_ROWS * NUM_COLS - 1) - coords.x;
     coords.y = (panelResY-1) - coords.y;
 	
   }   
