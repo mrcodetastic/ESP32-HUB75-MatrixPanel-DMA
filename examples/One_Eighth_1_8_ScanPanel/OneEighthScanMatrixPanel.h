@@ -172,7 +172,7 @@ inline VirtualCoords OneEighthMatrixPanel::getCoords(int16_t x, int16_t y) {
     coords.y = (_cfg.mx_height-1) - coords.y;
 	*/
 	
-    coords.x = (panelResX * row * col - 1) - coords.x;
+    coords.x = (panelResX * vmodule_rows * vmodule_cols - 1) - coords.x;
     coords.y = (panelResY-1) - coords.y;
 	
   }   
