@@ -153,12 +153,18 @@ inline VirtualCoords OneEighthMatrixPanel::getCoords(int16_t x, int16_t y) {
    // 1/8 Scan Panel - Is the final x-coord on the 1st or 3rd, 1/4ths (8 pixel 'blocks') of the panel (i.e. Row 0-7 or 17-24) ?
    // Double the length of the x-coord if required
    if ( ((coords.y /8) % 2) == 0) { // returns true/1 for the 1st and 3rd 8-pixel 1/4th of a 32px high panel
-        coords.x += (panelResX*col);
+        coords.x += (panelResX);
    }
 
    // Half the y coord.
    coords.y = (y % 8);   
    if ( y >= panelResY/2 ) coords.y +=8;
+   
+   // Push all the pixels across a bit more if we're on another column or row
+   if (row*col > 1)
+   {
+		coords.x += ((panelResX)*2*(col*row))-1;
+   }
            
   /* 
    * END: 1/8 Scan Panel Pixel Re-Mapping
