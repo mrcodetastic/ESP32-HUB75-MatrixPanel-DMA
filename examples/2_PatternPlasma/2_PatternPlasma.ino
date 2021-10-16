@@ -99,7 +99,7 @@ void setup() {
 
     // those are the defaults
     mxconfig.mx_width = 64;                   // physical width of a single matrix panel module (in pixels, usually it is always 64 ;) )
-    mxconfig.mx_height = 32;                  // physical height of a single matrix panel module (in pixels, usually amost always it is either 32 or 64)
+    mxconfig.mx_height = 32;                  // physical height of a single matrix panel module (in pixels, usually almost always it is either 32 or 64)
     mxconfig.chain_length = 1;                // number of chained panels regardless of the topology, default 1 - a single matrix module
     mxconfig.gpio.r1 = R1;                    // pin mappings
     mxconfig.gpio.g1 = G1;

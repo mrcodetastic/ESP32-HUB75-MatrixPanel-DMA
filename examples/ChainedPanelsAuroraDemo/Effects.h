@@ -48,7 +48,7 @@ uint16_t XY16( uint16_t x, uint16_t y);
 /* Convert x,y co-ordinate to flat array index. 
  * x and y positions start from 0, so must not be >= 'real' panel width or height 
  * (i.e. 64 pixels or 32 pixels.).  Max value: VPANEL_W-1 etc.
- * Ugh... uint8_t - really??? this weak method can't cope with 256+ pixel matrixes :(
+ * Ugh... uint8_t - really??? this weak method can't cope with 256+ pixel matrices :(
  */
 uint16_t XY( uint8_t x, uint8_t y) 
 {
@@ -56,7 +56,7 @@ uint16_t XY( uint8_t x, uint8_t y)
 }
 
 /**
- *  The one for 256+ matrixes
+ *  The one for 256+ matrices
  *  otherwise this:
  *    for (uint8_t i = 0; i < VPANEL_W; i++) {}
  *  turns into an infinite loop
@@ -66,7 +66,7 @@ uint16_t XY16( uint16_t x, uint16_t y)
     if( x >= VPANEL_W) return 0;
     if( y >= VPANEL_H) return 0;
 
-    return (y * VPANEL_W) + x + 1; // everything offset by one to capute out of bounds stuff - never displayed by ShowFrame()
+    return (y * VPANEL_W) + x + 1; // everything offset by one to compute out of bounds stuff - never displayed by ShowFrame()
 }
 
 
@@ -114,7 +114,7 @@ public:
   CRGB *leds;
 
   Effects(){
-    // we do dynamic allocation for leds buffer, otherwise esp32 toolchain can't link static arrays of such a big size for 256+ matrixes
+    // we do dynamic allocation for leds buffer, otherwise esp32 toolchain can't link static arrays of such a big size for 256+ matrices
     leds = (CRGB *)malloc(NUM_LEDS * sizeof(CRGB));
 
     // allocate mem for noise effect
@@ -491,7 +491,7 @@ public:
         leds[XY16(i, y - d)].nscale8(dimm);
       }
       for (int i = y - d; i <= y + d; i++) {
-        leds[XY16(x + d, i)] += leds[XY16(x + d, i + 1)]; // right colum up
+        leds[XY16(x + d, i)] += leds[XY16(x + d, i + 1)]; // right column up
         leds[XY16(x + d, i)].nscale8(dimm);
       }
       for (int i = x + d; i >= x - d; i--) {
@@ -499,7 +499,7 @@ public:
         leds[XY16(i, y + d)].nscale8(dimm);
       }
       for (int i = y + d; i >= y - d; i--) {
-        leds[XY16(x - d, i)] += leds[XY16(x - d, i - 1)]; // left colum down
+        leds[XY16(x - d, i)] += leds[XY16(x - d, i - 1)]; // left column down
         leds[XY16(x - d, i)].nscale8(dimm);
       }
     }

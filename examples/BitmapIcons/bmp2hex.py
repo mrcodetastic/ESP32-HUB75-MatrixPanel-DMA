@@ -146,7 +146,7 @@ def bmp2hex(infile, tablewidth, sizebytes, invert, raw, named, double, xbm):
 	# Convert tablewidth to characters from hex bytes
 	tablewidth = int(tablewidth) * 6
 
-	# Initilize output buffer
+	# Initialize output buffer
 	outstring =  ''
 
 	# Open File
@@ -165,7 +165,7 @@ def bmp2hex(infile, tablewidth, sizebytes, invert, raw, named, double, xbm):
 	if ((values[0] != 0x42) or (values[1] != 0x4D)):
 		sys.exit ("Error: Unsupported BMP format. Make sure your file is a Windows BMP.")
 
-	# Calculate width, heigth
+	# Calculate width, height
 	dataOffset	= getLONG(values, 10)	# Offset to image data
 	pixelWidth  = getLONG(values, 18)	# Width of image
 	pixelHeight = getLONG(values, 22)	# Height of image

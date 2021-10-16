@@ -214,7 +214,7 @@ inline void VirtualMatrixPanel::drawDisplayTest()
 }
 #endif
 
-// need to recreate this one, as it wouldnt work to just map where it starts.
+// need to recreate this one, as it wouldn't work to just map where it starts.
 inline void VirtualMatrixPanel::drawIcon (int *ico, int16_t x, int16_t y, int16_t icon_cols, int16_t icon_rows) {
   int i, j;
   for (i = 0; i < icon_rows; i++) {

@@ -94,7 +94,7 @@ void setup(){
   matrix->begin();
   matrix->setBrightness8(255);
 
-  // longer latch blanking could help to elliminate ghosting in some cases
+  // longer latch blanking could help to eliminate ghosting in some cases
   //matrix->setLatBlanking(2);
 
   ledbuff = (CRGB *)malloc(NUM_LEDS * sizeof(CRGB));  // allocate buffer for some tests
@@ -383,7 +383,7 @@ void IRAM_ATTR mxfill(CRGB *leds){
 //
 
 /**
- *  The one for 256+ matrixes
+ *  The one for 256+ matrices
  *  otherwise this:
  *    for (uint8_t i = 0; i < MATRIX_WIDTH; i++) {}
  *  turns into an infinite loop

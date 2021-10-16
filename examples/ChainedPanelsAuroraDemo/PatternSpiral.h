@@ -28,7 +28,7 @@
 
 class PatternSpiral : public Drawable {
 private:
-    // Timer stuff (Oszillators)
+    // Timer stuff (Oscillators)
     struct timer {
         unsigned long takt;
         unsigned long lastMillis;
@@ -68,7 +68,7 @@ public:
         // set all counting directions positive for the beginning
         for (int i = 0; i < timers; i++) multiTimer[i].delta = 1;
 
-        // set range (up/down), speed (takt=ms between steps) and starting point of all oszillators
+        // set range (up/down), speed (takt=ms between steps) and starting point of all oscillators
 
         unsigned long now = millis();
 
@@ -104,10 +104,10 @@ public:
     }
 
     unsigned int drawFrame() {
-        // manage the Oszillators
+        // manage the Oscillators
         UpdateTimers();
 
-        // draw just a line defined by 5 oszillators
+        // draw just a line defined by 5 oscillators
         effects.BresenhamLine(
             multiTimer[3].count,  // x1
             multiTimer[4].count,  // y1
@@ -116,7 +116,7 @@ public:
             multiTimer[2].count); // color
 
         // manipulate the screen buffer
-        // with fixed parameters (could be oszillators too)
+        // with fixed parameters (could be oscillators too)
         // Params: center x, y, radius, scale color down
         // --> NOTE: Affects always a SQUARE with an odd length
      //   effects.SpiralStream(15, 15, 10, 128);

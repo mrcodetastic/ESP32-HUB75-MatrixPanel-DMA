@@ -63,7 +63,7 @@ void loop()
 
   for (int i = 0; i < numSquares; i++)
   {
-    // Draw rect and then calculatae
+    // Draw rect and then calculate
     display->fillRect(Squares[i].xpos, Squares[i].ypos, Squares[i].square_size, Squares[i].square_size, Squares[i].colour);
 
     if (Squares[i].square_size + Squares[i].xpos >= display->width()) {
