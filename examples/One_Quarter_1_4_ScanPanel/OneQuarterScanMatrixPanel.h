@@ -74,7 +74,7 @@ class QuarterScanMatrixPanel : public Adafruit_GFX
       return coords.y;
     }
 //    int16_t getVirtualY(int16_t y) {return getCoords(0,y).y;}
-    /** extende function to draw lines/rects/... **/
+    /** extended function to draw lines/rects/... **/
     virtual uint8_t width() {return VP_WIDTH;};
     virtual uint8_t height() {return VP_HEIGHT;};
 
@@ -87,8 +87,8 @@ class QuarterScanMatrixPanel : public Adafruit_GFX
     virtual void drawChar(int16_t x, int16_t y, unsigned char c, uint16_t color, uint16_t bg, uint8_t size_x, uint8_t size_y);
     virtual void scrollChar(int16_t x, int16_t y, unsigned char c, uint16_t color, uint16_t bg, uint16_t dir, uint16_t speed);
     virtual void drawString(int16_t x, int16_t y, unsigned char* c, uint16_t color, uint16_t bg);
-    virtual size_t write(unsigned char c);   // write a character on current cursor postion
-    virtual size_t write(const char *str);  // write a character array (string) on curreont cursor postion
+    virtual size_t write(unsigned char c);   // write a character on current cursor position
+    virtual size_t write(const char *str);  // write a character array (string) on current cursor position
 
     virtual void setTextWrap(bool w);
     virtual void setCursor (int16_t x, int16_t y);
@@ -127,7 +127,7 @@ class QuarterScanMatrixPanel : public Adafruit_GFX
 
   protected:
     int16_t cursor_x, cursor_y;   // Cursor position
-    uint8_t size_x, size_y;       // Font size Multiplikator default = 1 => 5x7 Font (5widht,7Height)
+    uint8_t size_x, size_y;       // Font size Multiplier default = 1 => 5x7 Font (5width,7Height)
     uint16_t textFGColor, textBGColor;
     bool wrap ;           //  < If set, 'wrap' text at right edge of display 
     uint8_t dir ;   // used for scrolling text direction
@@ -150,7 +150,7 @@ class QuarterScanMatrixPanel : public Adafruit_GFX
 ***************************************************************************************/
 void QuarterScanMatrixPanel::scrollText(const char *str,uint16_t speed,  uint16_t pixels = 0) {
   // first we put all columns of every char inside str into a big array of lines
-  // than we move through this arry and draw line per line and move this line
+  // than we move through this array and draw line per line and move this line
   // one position to dir
   const uint8_t xSize = 6;
   uint16_t len = strlen(str);
@@ -308,7 +308,7 @@ inline void QuarterScanMatrixPanel::scrollChar(int16_t x, int16_t y, unsigned ch
     fillRect(x,y,5,7,0);
     x = lastX - s;
     for (int8_t i = 0; i < 5; i++) {
-      // first line is the firste vertical part of a character and 8bits long
+      // first line is the first vertical part of a character and 8bits long
       // last bit is everytime 0
       // we read 5 lines with 8 bit (5x7 char + 8bit with zeros)
       // Example : char A (90deg cw)
@@ -320,7 +320,7 @@ inline void QuarterScanMatrixPanel::scrollChar(int16_t x, int16_t y, unsigned ch
       uint8_t line = pgm_read_byte(&font[c * 5 + i]); 
       // shift from right to left bit per bit  
       // loop j = height of a character
-      // loop through a colunm of currenc character
+      // loop through a column of current character
       Serial.printf("i:%d ", i);
       // ignore all pixels outside panel
       if (x+i >= VP_WIDTH) continue;
@@ -360,7 +360,7 @@ inline void QuarterScanMatrixPanel::drawChar(int16_t x, int16_t y, unsigned char
 {
   //Serial.printf("unmapped : drawChar(%d, %d, %c) \n",x, y, c);
 
-  // note: remapping to 16x32 coordinats is done inside drawPixel() or fillRect
+  // note: remapping to 16x32 coordinates is done inside drawPixel() or fillRect
 
   if ((x >= VP_WIDTH) ||
       (y >= VP_HEIGHT) ||
@@ -377,14 +377,14 @@ inline void QuarterScanMatrixPanel::drawChar(int16_t x, int16_t y, unsigned char
             //Serial.printf("");
             drawPixel(x + i, y + j, color);
           else
-            // remark: it's important to call function with orgininal coordinates for x/y
+            // remark: it's important to call function with original coordinates for x/y
             fillRect(x + i * size_x, y + j * size_y, size_x, size_y,
                           color);
         } else if (bg != color) {
           if (size_x == 1 && size_y == 1)
             drawPixel(x + i, y + j, bg);
           else
-            // remark: it's important to call function with orgininal coordinates for x/y
+            // remark: it's important to call function with original coordinates for x/y
             fillRect(x + i * size_x, y + j * size_y, size_x, size_y, bg);
         }
       }
@@ -445,7 +445,7 @@ inline void QuarterScanMatrixPanel::drawPixelRGB24(int16_t x, int16_t y, RGB24 c
 */
 
 
-// need to recreate this one, as it wouldnt work to just map where it starts.
+// need to recreate this one, as it wouldn't work to just map where it starts.
 inline void QuarterScanMatrixPanel::drawIcon (int *ico, int16_t x, int16_t y, int16_t module_cols, int16_t module_rows) { }
 
 #endif

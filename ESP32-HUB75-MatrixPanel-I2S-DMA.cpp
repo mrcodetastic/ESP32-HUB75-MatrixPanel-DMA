@@ -60,7 +60,7 @@
     Then we ask the I2S-parallel driver to set up a DMA chain so the subframes are sent out in a sequence that satisfies the requirement that
     subframe x has to be sent out for (2^x) ticks. Finally, we fill the subframes with image data.
 
-    We use a front buffer/back buffer technique here to make sure the display is refreshed in one go and drawing artifacts do not reach the display.
+    We use a front buffer/back buffer technique here to make sure the display is refreshed in one go and drawing artefacts do not reach the display.
     In practice, for small displays this is not really necessarily.
     
 */
@@ -327,7 +327,7 @@ void MatrixPanel_I2S_DMA::configureDMA(const HUB75_I2S_CFG& _cfg)
         #endif
 
         
-        // first set of data is LSB through MSB, single pass (IF TOTAL SIZE < DMA_MAX) - all color bits are displayed once, which takes care of everything below and inlcluding LSBMSB_TRANSITION_BIT
+        // first set of data is LSB through MSB, single pass (IF TOTAL SIZE < DMA_MAX) - all color bits are displayed once, which takes care of everything below and including LSBMSB_TRANSITION_BIT
         // NOTE: size must be less than DMA_MAX - worst case for library: 16-bpp with 256 pixels per row would exceed this, need to break into two
         link_dma_desc(&dmadesc_a[current_dmadescriptor_offset], previous_dmadesc_a, dma_buff.rowBits[row]->getDataPtr(), dma_buff.rowBits[row]->size(num_dma_payload_color_depths));
           previous_dmadesc_a = &dmadesc_a[current_dmadescriptor_offset];
@@ -342,12 +342,12 @@ void MatrixPanel_I2S_DMA::configureDMA(const HUB75_I2S_CFG& _cfg)
         if ( rowBitStructBuffSize > DMA_MAX )
         {
           #if SERIAL_DEBUG     
-              Serial.printf_P(PSTR("Spliting DMA payload for %d color depths into %d byte payloads.\r\n"), PIXEL_COLOR_DEPTH_BITS-1, rowBitStructBuffSize/PIXEL_COLOR_DEPTH_BITS );
+              Serial.printf_P(PSTR("Splitting DMA payload for %d color depths into %d byte payloads.\r\n"), PIXEL_COLOR_DEPTH_BITS-1, rowBitStructBuffSize/PIXEL_COLOR_DEPTH_BITS );
           #endif
           
           for (int cd = 1; cd < PIXEL_COLOR_DEPTH_BITS; cd++) 
           {
-            // first set of data is LSB through MSB, single pass - all color bits are displayed once, which takes care of everything below and inlcluding LSBMSB_TRANSITION_BIT
+            // first set of data is LSB through MSB, single pass - all color bits are displayed once, which takes care of everything below and including LSBMSB_TRANSITION_BIT
             // TODO: size must be less than DMA_MAX - worst case for library: 16-bpp with 256 pixels per row would exceed this, need to break into two
             link_dma_desc(&dmadesc_a[current_dmadescriptor_offset], previous_dmadesc_a, dma_buff.rowBits[row]->getDataPtr(cd, 0), dma_buff.rowBits[row]->size(num_dma_payload_color_depths) );
             previous_dmadesc_a = &dmadesc_a[current_dmadescriptor_offset];
@@ -441,7 +441,7 @@ void MatrixPanel_I2S_DMA::configureDMA(const HUB75_I2S_CFG& _cfg)
 
 /* There are 'bits' set in the frameStruct that we simply don't need to set every single time we change a pixel / DMA buffer co-ordinate.
  * 	For example, the bits that determine the address lines, we don't need to set these every time. Once they're in place, and assuming we
- *  don't accidently clear them, then we don't need to set them again.
+ *  don't accidentally clear them, then we don't need to set them again.
  *  So to save processing, we strip this logic out to the absolute bare minimum, which is toggling only the R,G,B pixels (bits) per co-ord.
  *
  *  Critical dependency: That 'updateMatrixDMABuffer(uint8_t red, uint8_t green, uint8_t blue)' has been run at least once over the
@@ -538,7 +538,7 @@ void IRAM_ATTR MatrixPanel_I2S_DMA::updateMatrixDMABuffer(int16_t x_coord, int16
         ESP32_I2S_DMA_STORAGE_TYPE *p = getRowDataPtr(y_coord, color_depth_idx, back_buffer_id);
 
 
-        // We need to update the correct uint16_t word in the rowBitStruct array poiting to a specific pixel at X - coordinate
+        // We need to update the correct uint16_t word in the rowBitStruct array pointing to a specific pixel at X - coordinate
         p[x_coord] &= _colorbitclear;   // reset RGB bits
         p[x_coord] |= RGB_output_bits;  // set new RGB bits
 
@@ -604,7 +604,7 @@ void MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint8_t red, uint8_t green, uint
 
 /**
  * @brief - clears and reinitializes color/control data in DMA buffs
- * When allocated, DMA buffs might be dirtry, so we need to blank it and initialize ABCDE,LAT,OE control bits.
+ * When allocated, DMA buffs might be dirty, so we need to blank it and initialize ABCDE,LAT,OE control bits.
  * Those control bits are constants during the entire DMA sweep and never changed when updating just pixel color data
  * so we could set it once on DMA buffs initialization and forget. 
  * This effectively clears buffers to blank BLACK and makes it ready to display output.
@@ -834,7 +834,7 @@ uint8_t MatrixPanel_I2S_DMA::setLatBlanking(uint8_t pulses){
     pulses = DEFAULT_LAT_BLANKING;
 
   m_cfg.latch_blanking = pulses;
-  setPanelBrightness(brightness);    // set brighness to reset OE bits to the values matching new LAT blanking setting
+  setPanelBrightness(brightness);    // set brightness to reset OE bits to the values matching new LAT blanking setting
   return m_cfg.latch_blanking;
 }
 
@@ -979,7 +979,7 @@ void MatrixPanel_I2S_DMA::vlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, 
     uint16_t _colorbitclear = BITMASK_RGB1_CLEAR;
     do {    // iterate pixels in a column
 
-      if (_y >= ROWS_PER_FRAME){    // if y-coord overlaped bottom-half panel
+      if (_y >= ROWS_PER_FRAME){    // if y-coord overlapped bottom-half panel
         _y -= ROWS_PER_FRAME;
         _colorbitclear  = BITMASK_RGB2_CLEAR;
         RGB_output_bits <<= BITS_RGB2_OFFSET;
@@ -999,7 +999,7 @@ void MatrixPanel_I2S_DMA::vlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, 
 
 /**
  * @brief - update DMA buff drawing a rectangular at specified coordinates
- * this works much faster than mulltiple consecutive per-pixel calls to updateMatrixDMABuffer()
+ * this works much faster than multiple consecutive per-pixel calls to updateMatrixDMABuffer()
  * @param int16_t x, int16_t y - coordinates of a top-left corner
  * @param int16_t w, int16_t h - width and height of a rectangular, min is 1 px
  * @param uint8_t r - RGB888 color

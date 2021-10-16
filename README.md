@@ -35,7 +35,7 @@ This ESP32 Arduino/IDF library for HUB75 / HUB75E connector type 64x32 RGB LED 1
 -  **CIE 1931** luminance [correction](https://ledshield.wordpress.com/2012/11/13/led-brightness-to-your-eye-gamma-correction-no/) (aka natural LED dimming)
 -  **Adafruit GFX API** - library could be build with AdafruitGFX, simplified GFX or without GFX API at all
 
-If you wanna ask "*...OK, OK, than whats the price for those features?*" I'll tell you - "[memory](/doc/i2s_memcalc.md), you pay it all by precious MCU's memory for DMA buffer".
+If you wanna ask "*...OK, OK, than what's the price for those features?*" I'll tell you - "[memory](/doc/i2s_memcalc.md), you pay it all by precious MCU's memory for DMA buffer".
 
 ## ESP32 Supported
 Espressif have kept the 'ESP32' name for all their chips for brand recognition, but their new variant MCU's are different to the ESP32 this library was built for.
@@ -52,7 +52,7 @@ RISC-V ESP32's (like the C3) are not, and will never be supported  as they do no
 * 32x16 pixel 1/4 Scan LED Matrix 'Indoor' Panel using an ingenious workaround as demonstrated in the 32x16_1_4_ScanPanel example.
 * 126x64 [SM5266P](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/issues/164) 1/32 Scan Panel 
 
-Ones interested in internals of such matrixes could find [this article](https://www.sparkfun.com/news/2650) useful.
+Ones interested in internals of such matrices could find [this article](https://www.sparkfun.com/news/2650) useful.
 
 Due to the high-speed optimized nature of this library, only specific panels are supported. Please do not raise issues with respect to panels not supported on the list below.
 
@@ -71,7 +71,7 @@ Due to the high-speed optimized nature of this library, only specific panels are
 Please use an [alternative library](https://github.com/2dom/PxMatrix) if you bought one of these.
 
 ## Update for 16x32 Panels
-* There is a virtual panel class available to work with 16x32 panels (see: [examples/16x32 Panel](/examples/P6_32x16_1_4_ScanPanel). This Panel includes drawing lines and rectanges, text and scrolling text
+* There is a virtual panel class available to work with 16x32 panels (see: [examples/16x32 Panel](/examples/P6_32x16_1_4_ScanPanel). This Panel includes drawing lines and rectangles, text and scrolling text
 
 ## Cool uses of this library
 There are a number of great looking LED graphical display projects which leverage this library, these include:
@@ -149,7 +149,7 @@ Once this is working, refer to the [PIO Test Patterns](/examples/PIO_TestPattern
 >Note: Requires the use of [PlatformIO](https://platformio.org/), which you should probably use if you aren't already. 
 # More Information
 ## Build-time options
-Although Arduino IDE does not [seem](https://github.com/arduino/Arduino/issues/421) to offer any way of specifying compile-time options for external libs there are other IDE's (like [PlatformIO](https://platformio.org/)/[Eclipse](https://www.eclipse.org/ide/)) that could use that. Check [Buld Options](doc/BuildOptions.md) document for reference.
+Although Arduino IDE does not [seem](https://github.com/arduino/Arduino/issues/421) to offer any way of specifying compile-time options for external libs there are other IDE's (like [PlatformIO](https://platformio.org/)/[Eclipse](https://www.eclipse.org/ide/)) that could use that. Check [Build Options](doc/BuildOptions.md) document for reference.
 
 ## Memory constraints
 If you are going to use large/combined panels make sure to check for [memory constraints](/doc/i2s_memcalc.md).

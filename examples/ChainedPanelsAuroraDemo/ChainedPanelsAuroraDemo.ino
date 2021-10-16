@@ -22,7 +22,7 @@
 
 
 /* -------------------------- Display Config Initialisation -------------------- */
-//    Assume we have four 64x32 panels daizy-chained and ESP32 attached to the bottom right corner
+//    Assume we have four 64x32 panels daisy-chained and ESP32 attached to the bottom right corner
 #define PANEL_RES_X 64 // Number of pixels wide of each INDIVIDUAL panel module. 
 #define PANEL_RES_Y 32 // Number of pixels tall of each INDIVIDUAL panel module.
 
@@ -34,7 +34,7 @@
 #define SERPENT false
 #define TOPDOWN false
 
-// Virtual Panl dimensions - our combined panel would be a square 4x4 modules with a combined resolution of 128x128 pixels
+// Virtual Panel dimensions - our combined panel would be a square 4x4 modules with a combined resolution of 128x128 pixels
 #define VPANEL_W PANEL_RES_X*NUM_COLS // Kosso: All Pattern files have had the MATRIX_WIDTH and MATRIX_HEIGHT replaced by these.
 #define VPANEL_H PANEL_RES_Y*NUM_ROWS //
 

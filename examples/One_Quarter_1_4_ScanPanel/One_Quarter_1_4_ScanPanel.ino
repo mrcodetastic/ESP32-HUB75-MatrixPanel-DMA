@@ -44,7 +44,7 @@
 #define LAT_PIN  4
 #define E_PIN  -1 // required for 1/32 scan panels
 
-#include "OneQuarterScanMatrixPanel.h" // Virtual Display to re-map co-ordinates such that they draw correctly on a32x16 1/4 Scan panel 
+#include "OneQuarterScanMatrixPanel.h" // Virtual Display to re-map co-ordinates such that they draw correctly on a 32x16 1/4 Scan panel 
 #include <Wire.h>
 
 /* 

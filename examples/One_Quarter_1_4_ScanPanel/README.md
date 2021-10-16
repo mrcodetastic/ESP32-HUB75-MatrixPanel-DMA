@@ -53,7 +53,7 @@ You have to use `setCursor(x,y)` and `setTextFGColor() / setTextBGColor()`
 ### drawString (5x7)
 `void drawString(int16_t x, int16_t y, unsigned char* c, uint16_t color, uint16_t bg)`
 
-Draw String at postion x/y wit foreground `color` and background `bg`
+Draw String at position x/y wit foreground `color` and background `bg`
 Example: `display.drawString(0,5,"**Welcome**",display.color565(0,60,255));`
 
 ### void setScrollDir(uint8_t d = 1)

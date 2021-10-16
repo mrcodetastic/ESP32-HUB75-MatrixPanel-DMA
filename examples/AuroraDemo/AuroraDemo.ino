@@ -64,8 +64,8 @@ Effects effects;
 Patterns patterns;
 
 /* -------------------------- Some variables -------------------------- */
-unsigned long fps = 0, fps_timer; // fps (this is NOT a matix refresh rate!)
-unsigned int default_fps = 30, pattern_fps = 30;  // default fps limit (this is not a matix refresh conuter!)
+unsigned long fps = 0, fps_timer; // fps (this is NOT a matrix refresh rate!)
+unsigned int default_fps = 30, pattern_fps = 30;  // default fps limit (this is not a matrix refresh counter!)
 unsigned long ms_animation_max_duration = 20000;  // 20 seconds
 unsigned long last_frame=0, ms_previous=0;
 

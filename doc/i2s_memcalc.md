@@ -1,7 +1,7 @@
 ### I2S HUB75 Calculator
 
-I've made this [spreadsheet](i2s_memcalc.xlsm) to estimate all of the main parameters for ESP32-HUB75-MatrixPanel-I2S-DMA lib driving any combination of matrixes/chains so that I do not need to reflash it hundreds of times just to check for the debug info about memory.
-Be sure to enable embeded macro's to allow refresh rate calculations.
+I've made this [spreadsheet](i2s_memcalc.xlsm) to estimate all of the main parameters for ESP32-HUB75-MatrixPanel-I2S-DMA lib driving any combination of matrices/chains so that I do not need to reflash it hundreds of times just to check for the debug info about memory.
+Be sure to enable embedded macro's to allow refresh rate calculations.
 
 ![](i2scalc.png)
 Just fill-in all of the INPUT fields and get the OUTPUTs.
@@ -32,9 +32,9 @@ There are 3 parameters you can choose from (actually two:)
 
  -   I2S clock speed - run-time tunable with a very limited options
 
-- **LSB-to-MSB** transition - it can't  be controlled in any way, library uses it internaly trying to balance all of the above 
+- **LSB-to-MSB** transition - it can't  be controlled in any way, library uses it internally trying to balance all of the above 
 
-Using provided table it is possible to estimate all of the parameters before running the library. Besides calculating memory requirements it could help to find **optimum color depth** for your matrix configuration. For higher resolutions default 8 bits could be too much to sustain minimal refresh rate and avoid annoying flickering. So the library would increase MSB transition to keep the balance, thus reducing dynamic range in shadows and dark colors. As a result it is nearly almost the same as just reducing overal color depth. **But** reducing global color depth would also save lot's of precious RAM!
+Using provided table it is possible to estimate all of the parameters before running the library. Besides calculating memory requirements it could help to find **optimum color depth** for your matrix configuration. For higher resolutions default 8 bits could be too much to sustain minimal refresh rate and avoid annoying flickering. So the library would increase MSB transition to keep the balance, thus reducing dynamic range in shadows and dark colors. As a result it is nearly almost the same as just reducing overall color depth. **But** reducing global color depth would also save lot's of precious RAM!
 Now it's all up to you to decide :)
 
 /Vortigont/

@@ -64,7 +64,7 @@ void loop()
 
   for (int i = 0; i < numSquares; i++)
   {
-    // Draw rect and then calculatae
+    // Draw rect and then calculate
     display->fillRect(Squares[i].xpos, Squares[i].ypos, Squares[i].square_size, Squares[i].square_size, Squares[i].colour);
 
     if (Squares[i].xpos >= display->width())  { Squares[i].velocityx *= -1;   } else if (Squares[i].xpos <= 0) { Squares[i].velocityx = abs (Squares[i].velocityx); } 

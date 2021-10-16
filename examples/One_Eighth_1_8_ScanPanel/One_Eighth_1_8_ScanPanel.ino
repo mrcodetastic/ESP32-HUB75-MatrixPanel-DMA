@@ -46,7 +46,7 @@
   #define OE_PIN  25
   #define CLK_PIN 22 
   
-  #include "OneEighthScanMatrixPanel.h" // Virtual Display to re-map co-ordinates such that they draw correctly on a32x16 1/4 Scan panel 
+  #include "OneEighthScanMatrixPanel.h" // Virtual Display to re-map co-ordinates such that they draw correctly on a 32x16 1/4 Scan panel 
   
   // placeholder for the matrix object
   MatrixPanel_I2S_DMA *dma_display   = nullptr;
