@@ -156,6 +156,8 @@ inline VirtualCoords OneEighthMatrixPanel::getCoords(int16_t x, int16_t y) {
         coords.x += (panelResX);
    }
    
+   // If virtual x-coord 'x' is on a panel n, then we need to start sending data from (panelResX)*2*n, given 
+   // at the underlying DMA level these panels are actually 1/2 the height and double the length
    coords.x += (panelResX)*2 * (panelResX)/x;
    
 
