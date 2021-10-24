@@ -122,7 +122,7 @@ inline VirtualCoords OneEighthMatrixPanel::getCoords(int16_t x, int16_t y) {
    }  
 
     uint8_t row = (y / panelResY) + 1; //a non indexed 0 row number
-    uint8_t col = (x / panelResX) + 1; //a non indexed 0 row number    
+    //uint8_t col = (x / panelResX) + 1; //a non indexed 0 row number    
     if(   ( _s_chain_party && !_chain_top_down && (row % 2 == 0) )  // serpentine vertically stacked chain starting from bottom row (i.e. ESP closest to ground), upwards
           ||
           ( _s_chain_party && _chain_top_down  && (row % 2 != 0) )  // serpentine vertically stacked chain starting from the sky downwards
@@ -149,22 +149,31 @@ inline VirtualCoords OneEighthMatrixPanel::getCoords(int16_t x, int16_t y) {
 	 * for, this being 1/8 or 1/16 scan panels. We have to do some further hacking to convert co-ords to the 
 	 * double length and 1/2 physical dma output length that is required for these panels to work electronically.
 	 */
-
+   // https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/issues/154
    // 1/8 Scan Panel - Is the final x-coord on the 1st or 3rd, 1/4ths (8 pixel 'blocks') of the panel (i.e. Row 0-7 or 17-24) ?
    // Double the length of the x-coord if required
    if ( ((coords.y /8) % 2) == 0) { // returns true/1 for the 1st and 3rd 8-pixel 1/4th of a 32px high panel
         coords.x += (panelResX);
    }
+   
+   coords.x += (panelResX)*2 * (panelResX)/x;
+   
 
    // Half the y coord.
    coords.y = (y % 8);   
    if ( y >= panelResY/2 ) coords.y +=8;
    
    // Push all the pixels across a bit more if we're on another column or row
-   if (row*col > 1)
+   /*
+   uint8_t module_num = (row*col)-1;
+   if (module_num > 1)
    {
-		coords.x += ((panelResX)*2*(col*row))-1;
+		//coords.x += ((panelResX)*2*(col*row))-1;
+		
    }
+   */
+   
+   
            
   /* 
    * END: 1/8 Scan Panel Pixel Re-Mapping
