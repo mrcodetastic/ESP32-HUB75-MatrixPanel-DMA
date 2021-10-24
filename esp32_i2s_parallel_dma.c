@@ -295,7 +295,7 @@ esp_err_t i2s_parallel_driver_install(i2s_port_t port, i2s_parallel_config_t* co
     dev->fifo_conf.tx_fifo_mod = 3;
   } else {
     // Mode 1, single 16-bit channel, load 16 bit sample(*) into fifo and pad to 32 bit with zeros
-    // *Actually a 32 bit read where two samples are read at once. Length of fifo must thus still be word-alligned
+    // *Actually a 32 bit read where two samples are read at once. Length of fifo must thus still be word-aligned
     dev->fifo_conf.tx_fifo_mod = 1;
   }
   

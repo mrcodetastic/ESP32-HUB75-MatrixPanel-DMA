@@ -135,13 +135,13 @@ class Patterns : public Playlist {
       &incrementalDrift2, // 13 fail
       &munch, // 14 ok
    //   &electricMandala, // 15 ok, but ugly (vortigont)
-   //   &spin, // 16 ok but repeditivev
+   //   &spin, // 16 ok but repetitive
    //   &simplexNoise, // 17 - cool!
    //   &wave, // 18 ok (can't work with 256+ matrix due to uint8_t vars)
    //   &rainbowFlag, //20 // fail
       &attract, // 21 ok
    //   &swirl, // 22 ok, but ugly (vortigont)
-   //   &bounce, // boncing line crap
+   //   &bounce, // bouncing line crap
       &flock, // works
       &infinity, // works
       &plasma, // works

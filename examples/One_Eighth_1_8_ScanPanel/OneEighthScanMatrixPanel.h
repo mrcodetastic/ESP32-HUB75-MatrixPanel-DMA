@@ -103,7 +103,7 @@ class OneEighthMatrixPanel
  */
 inline VirtualCoords OneEighthMatrixPanel::getCoords(int16_t x, int16_t y) {
 
-  coords.x = coords.y = -1; // By defalt use an invalid co-ordinates that will be rejected by updateMatrixDMABuffer
+  coords.x = coords.y = -1; // By default use an invalid co-ordinates that will be rejected by updateMatrixDMABuffer
 
   // Check if virtual work co-ordinates are outside the virtual display resolution space. This does NOT check
   // against the physical real-world DMA matrix resolution / setup configured, that is used to actually output
@@ -221,7 +221,7 @@ inline void OneEighthMatrixPanel::setRotate(bool rotate) {
 	if (rotate) { setRotation(1); } else { setRotation(0); }
 }
 
-// need to recreate this one, as it wouldnt work to just map where it starts.
+// need to recreate this one, as it wouldn't work to just map where it starts.
 inline void OneEighthMatrixPanel::drawIcon (int *ico, int16_t x, int16_t y, int16_t icon_cols, int16_t icon_rows) {
 	
 }

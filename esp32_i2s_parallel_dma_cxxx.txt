@@ -17,7 +17,7 @@
 
 #include <esp_err.h>
  
- // Turn on and off a periphal
+ // Turn on and off a peripheral
 #include <driver/periph_ctrl.h>
 
 // GPIO
@@ -227,7 +227,7 @@ esp_err_t i2s_parallel_driver_install(i2s_port_t port, i2s_parallel_config_t* cf
 
     // setup I2S Interrupt
     // SET_PERI_REG_BITS(I2S_INT_ENA_REG(1), I2S_OUT_EOF_INT_ENA_V, 1, I2S_OUT_EOF_INT_ENA_S);
-    // allocate a level 1 intterupt: lowest priority, as ISR isn't urgent and may take a long time to complete
+    // allocate a level 1 interrupt: lowest priority, as ISR isn't urgent and may take a long time to complete
 
     esp_intr_alloc(ETS_I2S1_INTR_SOURCE, (int)(ESP_INTR_FLAG_IRAM | ESP_INTR_FLAG_LEVEL1), gdma_irq_handler, NULL, NULL);
     GDMA.intr[0].ena.out_eof  = 1; //?
@@ -243,7 +243,7 @@ esp_err_t i2s_parallel_driver_install(i2s_port_t port, i2s_parallel_config_t* cf
     // Setup interrupt
 
     // Setup outlink
-    GDMA.channel[0].out.out_link.addr       = ((uint32_t)(&st->dmadesc_a[0]));// Set a vlaue here
+    GDMA.channel[0].out.out_link.addr       = ((uint32_t)(&st->dmadesc_a[0]));// Set a value here
     GDMA.channel[0].out.out_peri_sel.sel    = SOC_GDMA_TRIG_PERIPH_I2S0; // 3 = I2S0
     GDMA.channel[0].out.out_conf0.out_data_burst_en = 1;
     GDMA.channel[0].out.out_conf0.outdscr_burst_en  = 1;

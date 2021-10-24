@@ -176,7 +176,7 @@
     #error "Pixel color depth bits cannot be less than 2."
 #endif
 
-/* This library is designed to take an 8 bit / 1 byt value (0-255) for each R G B colour sub-pixel. 
+/* This library is designed to take an 8 bit / 1 byte value (0-255) for each R G B colour sub-pixel. 
  * The PIXEL_COLOR_DEPTH_BITS should always be '8' as a result.
  * However, if the library is to be used with lower colour depth (i.e. 6 bit colour), then we need to ensure the 8-bit value passed to the colour masking
  * is adjusted accordingly to ensure the LSB's are shifted left to MSB, by the difference. Otherwise the colours will be all screwed up.
@@ -187,7 +187,7 @@ static constexpr uint8_t const MASK_OFFSET = 8-PIXEL_COLOR_DEPTH_BITS;
 
 /***************************************************************************************/
 
-/** @brief - Structure holds raw DMA data to drive TWO full rows of pixels spaning through all chained modules
+/** @brief - Structure holds raw DMA data to drive TWO full rows of pixels spanning through all chained modules
  * Note: sizeof(data) must be multiple of 32 bits, as ESP32 DMA linked list buffer address pointer must be word-aligned
  */
 struct rowBitStruct {
@@ -206,7 +206,7 @@ struct rowBitStruct {
      */
     size_t size(uint8_t _dpth=0 ) { if (!_dpth) _dpth = color_depth; return width * _dpth * sizeof(ESP32_I2S_DMA_STORAGE_TYPE); };
 
-    /** @brief - returns pointer to the row's data vector begining at pixel[0] for _dpth color bit
+    /** @brief - returns pointer to the row's data vector beginning at pixel[0] for _dpth color bit
      * default - returns pointer to the data vector's head
      * NOTE: this call might be very slow in loops. Due to poor instruction caching in esp32 it might be required a reread from flash 
      * every loop cycle, better use inlined #define instead in such cases
@@ -264,7 +264,7 @@ struct  HUB75_I2S_CFG {
 
   // physical width of a single matrix panel module (in pixels, usually it is 64 ;) )
   uint16_t mx_width;
-  // physical height of a single matrix panel module (in pixels, usually amost always it is either 32 or 64)
+  // physical height of a single matrix panel module (in pixels, usually almost always it is either 32 or 64)
   uint16_t mx_height;
   // number of chained panels regardless of the topology, default 1 - a single matrix module
   uint16_t chain_length;
@@ -316,7 +316,7 @@ struct  HUB75_I2S_CFG {
     shift_driver _drv = SHIFTREG,
     bool _dbuff = false,
     clk_speed _i2sspeed = HZ_10M,
-    uint8_t _latblk  = 1, // Anything > 1 seems to cause artifacts on ICS panels
+    uint8_t _latblk  = 1, // Anything > 1 seems to cause artefacts on ICS panels
     bool _clockphase = true,
     uint8_t _min_refresh_rate = 85
   ) : mx_width(_w),
@@ -347,7 +347,7 @@ class MatrixPanel_I2S_DMA {
     /**
      * MatrixPanel_I2S_DMA
      *
-     * default predefined values are used for matrix configuraton
+     * default predefined values are used for matrix configuration
      *
      */
     MatrixPanel_I2S_DMA()
@@ -372,7 +372,7 @@ class MatrixPanel_I2S_DMA {
 #endif        
       m_cfg(opts) {}
 
-    /* Propagate the DMA pin configuration, allocate DMA buffs and start data ouput, initialy blank */
+    /* Propagate the DMA pin configuration, allocate DMA buffs and start data output, initially blank */
     bool begin(){
         
       if (initialized) return true; // we don't do this twice or more!
@@ -477,7 +477,7 @@ class MatrixPanel_I2S_DMA {
 
     /**
      * @brief - override Adafruit's fillRect
-     * this works much faster than mulltiple consecutive per-pixel drawPixel() calls
+     * this works much faster than multiple consecutive per-pixel drawPixel() calls
      */
     virtual void fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color){
       uint8_t r, g, b;
@@ -595,7 +595,7 @@ class MatrixPanel_I2S_DMA {
 
     /**
      * @brief - clears and reinitializes color/control data in DMA buffs
-     * When allocated, DMA buffs might be dirtry, so we need to blank it and initialize ABCDE,LAT,OE control bits.
+     * When allocated, DMA buffs might be dirty, so we need to blank it and initialize ABCDE,LAT,OE control bits.
      * Those control bits are constants during the entire DMA sweep and never changed when updating just pixel color data
      * so we could set it once on DMA buffs initialization and forget. 
      * This effectively clears buffers to blank BLACK and makes it ready to display output.
@@ -643,7 +643,7 @@ class MatrixPanel_I2S_DMA {
 
     /**
      * @brief - update DMA buff drawing a rectangular at specified coordinates
-     * uses Fast H/V line draw internally, works faster than mulltiple consecutive pixel by pixel calls to updateMatrixDMABuffer()
+     * uses Fast H/V line draw internally, works faster than multiple consecutive pixel by pixel calls to updateMatrixDMABuffer()
      * @param int16_t x, int16_t y - coordinates of a top-left corner
      * @param int16_t w, int16_t h - width and height of a rectangular, min is 1 px
      * @param uint8_t r - RGB888 color
@@ -683,7 +683,7 @@ class MatrixPanel_I2S_DMA {
      * (two rows of pixels are refreshed in parallel) 
      * Memory is allocated (malloc'd) by the row, and not in one massive chunk, for flexibility.
      * The whole DMA framebuffer is just a vector of pointers to structs with ESP32_I2S_DMA_STORAGE_TYPE arrays
-     * Since it's dimensions is unknown prior to class initialization, we just decrale it here as empty struct and will do all allocations later.
+     * Since it's dimensions is unknown prior to class initialization, we just declare it here as empty struct and will do all allocations later.
      * Refer to rowBitStruct to get the idea of it's internal structure
      */
     frameStruct dma_buff;

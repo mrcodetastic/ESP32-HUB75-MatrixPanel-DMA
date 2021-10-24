@@ -43,7 +43,7 @@ public:
         float d = force.mag();                              // Distance between objects
         d = constrain(d, 5.0, 32.0);                        // Limiting the distance to eliminate "extreme" results for very close or very far objects
         force.normalize();                                  // Normalize vector (distance doesn't matter here, we just want this vector for direction)
-        float strength = (G * mass * m.mass) / (d * d);      // Calculate gravitional force magnitude
+        float strength = (G * mass * m.mass) / (d * d);     // Calculate gravitational force magnitude
         force *= strength;                                  // Get force vector --> magnitude * direction
         return force;
     }
