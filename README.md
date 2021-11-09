@@ -220,7 +220,7 @@ This project was inspired by the following projects:
 
 # Thank you
 * [Brian Lough](https://www.tindie.com/stores/brianlough/) for providing code and hardware
-* [Vortigont](https://github.com/vortigont) for his game changer code contribution and performance optimisation of the library
+* [Vortigont](https://github.com/vortigont) for his game changing code contributions and performance optimisations
 * [Galaxy Man](https://github.com/Galaxy-Man) for the donation of hardware to assist with the multi-panel (virtual display) testing
 * [Pipimaxi](https://github.com/Pipimaxi) for the donation of a ESP32-S2 to build support for ESP32 S2/S3's
 * And lots of others, let me know if I've missed you.
