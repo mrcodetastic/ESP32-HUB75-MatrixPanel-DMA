@@ -23,6 +23,7 @@
   * [Latch blanking](#latch-blanking)
   * [Power, Power and Power!](#power--power-and-power)
   * [Inspiration](#inspiration)
+ - [Thank you](#thank-you)
 
 ## Introduction
 This ESP32 Arduino/IDF library for HUB75 / HUB75E connector type 64x32 RGB LED 1/16 Scan OR 64x64 RGB LED 1/32 Scan LED Matrix Panel, utilities the DMA functionality provided by the ESP32's I2S 'LCD Mode'.
@@ -215,3 +216,10 @@ Having a good power supply is CRITICAL, and it is highly recommended, for chains
 ## Inspiration
 * 'SmartMatrix' project code: https://github.com/pixelmatix/SmartMatrix/tree/teensylc
 * Sprite_TM's demo implementation here: https://www.esp32.com/viewtopic.php?f=17&t=3188
+
+# Thank you
+* [Brian Lough](https://www.tindie.com/stores/brianlough/) for providing code and hardware
+* [Vortigont](https://github.com/vortigont) for their huge code contributions and performance optimisiations of the library
+* [Galaxy Man](https://github.com/Galaxy-Man) for the donation of hardware to assist with the multi-panel (virtual display) testing.
+* [Pipimaxi](https://github.com/Pipimaxi) for the donation of an ESP32-S2 to build out support for S2/S3
+* Any lots of others, let me know if I've missed you.
