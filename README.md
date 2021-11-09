@@ -214,6 +214,7 @@ Having a good power supply is CRITICAL, and it is highly recommended, for chains
 - Refer to [this comment](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/issues/35#issuecomment-726419862) in regards to certain panels not playing nice with voltages, and a 3.3volt signal that the ESP32 GPIO can only provide.
 
 ## Inspiration
+This project was inspired by the following projects:
 * 'SmartMatrix' project code: https://github.com/pixelmatix/SmartMatrix/tree/teensylc
 * Sprite_TM's demo implementation here: https://www.esp32.com/viewtopic.php?f=17&t=3188
 
@@ -222,4 +223,4 @@ Having a good power supply is CRITICAL, and it is highly recommended, for chains
 * [Vortigont](https://github.com/vortigont) for his game changer code contribution and performance optimisation of the library
 * [Galaxy Man](https://github.com/Galaxy-Man) for the donation of hardware to assist with the multi-panel (virtual display) testing
 * [Pipimaxi](https://github.com/Pipimaxi) for the donation of a ESP32-S2 to build support for ESP32 S2/S3's
-* Any lots of others, let me know if I've missed you.
+* And lots of others, let me know if I've missed you.
