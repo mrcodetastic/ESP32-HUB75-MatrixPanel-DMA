@@ -219,8 +219,8 @@ This project was inspired by the following projects:
 * Sprite_TM's demo implementation here: https://www.esp32.com/viewtopic.php?f=17&t=3188
 
 # Thank you
-* [Brian Lough](https://www.tindie.com/stores/brianlough/) for providing code and hardware
+* [Brian Lough](https://www.tindie.com/stores/brianlough/) for providing code contributions, hardware and suggestions
 * [Vortigont](https://github.com/vortigont) for his game changing code contributions and performance optimisations
-* [Galaxy Man](https://github.com/Galaxy-Man) for the donation of hardware to assist with the multi-panel (virtual display) testing
-* [Pipimaxi](https://github.com/Pipimaxi) for the donation of a ESP32-S2 to build support for ESP32 S2/S3's
+* [Galaxy Man](https://github.com/Galaxy-Man) for HUB75 panels to assist with the multi-panel (virtual display) testing
+* [Pipimaxi](https://github.com/Pipimaxi) for the donation of a ESP32-S2 to enable support for ESP32 S2/S3's to be implemented
 * And lots of others, let me know if I've missed you.
