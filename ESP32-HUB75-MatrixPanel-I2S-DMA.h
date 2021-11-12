@@ -65,7 +65,7 @@
 /* ESP32 Default Pin definition. You can change this, but best if you keep it as is and provide custom pin mappings 
  * as part of the begin(...) function.
  */
-
+// Default pin mapping for ESP32-S2 and ESP32-S3
 #ifdef ESP32_SXXX 
  
     #define R1_PIN_DEFAULT 45
@@ -83,6 +83,7 @@
     #define OE_PIN_DEFAULT  21
     #define CLK_PIN_DEFAULT 33
 
+// Else use default pin mapping for ESP32 Original WROOM module.
 #else 
      
     #define R1_PIN_DEFAULT  25
