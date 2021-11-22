@@ -258,8 +258,9 @@ bool MatrixPanel_I2S_DMA::allocateDMAmemory()
 
     // Do a final check to see if we have enough space for the additional DMA linked list descriptors that will be required to link it all up!
     if(_dma_linked_list_memory_required > heap_caps_get_largest_free_block(MALLOC_CAP_DMA)) {
+#if SERIAL_DEBUG     		
        Serial.println(F("ERROR: Not enough SRAM left over for DMA linked-list descriptor memory reservation! Oh so close!\r\n"));
-  
+#endif  
         return false;
     } // linked list descriptors memory check
 
@@ -270,7 +271,9 @@ bool MatrixPanel_I2S_DMA::allocateDMAmemory()
     dmadesc_a = (lldesc_t *)heap_caps_malloc(desccount * sizeof(lldesc_t), MALLOC_CAP_DMA);
     assert("Can't allocate descriptor framebuffer a");
     if(!dmadesc_a) {
+#if SERIAL_DEBUG     		
         Serial.println(F("ERROR: Could not malloc descriptor framebuffer a."));
+#endif		
         return false;
     }
 	
@@ -280,18 +283,21 @@ bool MatrixPanel_I2S_DMA::allocateDMAmemory()
         dmadesc_b = (lldesc_t *)heap_caps_malloc(desccount * sizeof(lldesc_t), MALLOC_CAP_DMA);
         assert("Could not malloc descriptor framebuffer b.");
         if(!dmadesc_b) {
+#if SERIAL_DEBUG     			
             Serial.println(F("ERROR: Could not malloc descriptor framebuffer b."));
+#endif			
             return false;
         }
     }
 
+#if SERIAL_DEBUG     
     Serial.println(F("*** ESP32-HUB75-MatrixPanel-I2S-DMA: Memory Allocations Complete ***"));
     Serial.printf_P(PSTR("Total memory that was reserved: %d kB.\r\n"), _total_dma_capable_memory_reserved/1024);
     Serial.printf_P(PSTR("... of which was used for the DMA Linked List(s): %d kB.\r\n"), _dma_linked_list_memory_required/1024);
 	
     Serial.printf_P(PSTR("Heap Memory Available: %d bytes total. Largest free block: %d bytes.\r\n"), heap_caps_get_free_size(0), heap_caps_get_largest_free_block(0));
     Serial.printf_P(PSTR("General RAM Available: %d bytes total. Largest free block: %d bytes.\r\n"), heap_caps_get_free_size(MALLOC_CAP_DEFAULT), heap_caps_get_largest_free_block(MALLOC_CAP_DEFAULT));
-
+#endif
 
     // Just os we know
   	initialized = true;

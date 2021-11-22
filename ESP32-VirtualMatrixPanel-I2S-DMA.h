@@ -15,8 +15,15 @@
 #endif
 
 struct VirtualCoords {
+  
   int16_t x;
   int16_t y;
+  int16_t virt_row; // chain of panels row
+  int16_t virt_col; // chain of panels col
+  
+  VirtualCoords()  : x(0), y(0)
+  { }
+	  
 };
 
  
@@ -38,6 +45,8 @@ class VirtualMatrixPanel
 
     int16_t panelResX;
     int16_t panelResY;
+	
+	int16_t dmaResX; // The width of the chain in pixels (as the DMA engine sees it)
 
     MatrixPanel_I2S_DMA *display;
 
@@ -57,7 +66,11 @@ class VirtualMatrixPanel
       vmodule_cols = _vmodule_cols;
 
       virtualResX = vmodule_cols*_panelResX;      
-      virtualResY = vmodule_rows*_panelResY;	  
+      virtualResY = vmodule_rows*_panelResY;	
+
+	  dmaResX     = panelResX * vmodule_rows * vmodule_cols;
+
+	 
 	  
 	  /* Virtual Display width() and height() will return a real-world value. For example:
 	   * Virtual Display width: 128
@@ -66,7 +79,6 @@ class VirtualMatrixPanel
 	   * So, not values that at 0 to X-1
 	   */
 
-
       _s_chain_party = serpentine_chain; // serpentine, or 'S' chain?
       _chain_top_down= top_down_chain;
 	  
@@ -74,39 +86,25 @@ class VirtualMatrixPanel
 
     }
 
-    VirtualCoords getCoords(int16_t x, int16_t y);
-
     // equivalent methods of the matrix library so it can be just swapped out.
     virtual void drawPixel(int16_t x, int16_t y, uint16_t color);
     virtual void fillScreen(uint16_t color); // overwrite adafruit implementation
-    void clearScreen() {
-      display->clearScreen();
-    }
-    //void drawPixelRGB565(int16_t x, int16_t y, uint16_t color);
+    void clearScreen() 	{  display->clearScreen(); }
     void drawPixelRGB888(int16_t x, int16_t y, uint8_t r, uint8_t g, uint8_t b);
-    //void drawPixelRGB24(int16_t x, int16_t y, RGB24 color);
-    void drawIcon (int *ico, int16_t x, int16_t y, int16_t icon_cols, int16_t icon_rows);
 
-    uint16_t color444(uint8_t r, uint8_t g, uint8_t b) {
-      return display->color444(r, g, b);
-    }
-    uint16_t color565(uint8_t r, uint8_t g, uint8_t b) {
-      return display->color565(r, g, b);
-    }
-    uint16_t color333(uint8_t r, uint8_t g, uint8_t b) {
-      return display->color333(r, g, b);
-    }
+    uint16_t color444(uint8_t r, uint8_t g, uint8_t b) { return display->color444(r, g, b); }
+    uint16_t color565(uint8_t r, uint8_t g, uint8_t b) { return display->color565(r, g, b); }
+    uint16_t color333(uint8_t r, uint8_t g, uint8_t b) { return display->color333(r, g, b); }
 	
 	void flipDMABuffer() { display->flipDMABuffer(); }
-	//void showDMABuffer() { display->showDMABuffer(); }
+	void drawDisplayTest();
+    void setRotate(bool rotate);	
 
-    void drawDisplayTest();
-	
-    // Rotate display
-    inline void setRotate(bool rotate);	
-
-  private:
+  protected:
+  
+    virtual VirtualCoords getCoords(int16_t &x, int16_t &y); 
     VirtualCoords coords;
+	
     bool _s_chain_party  = true; // Are we chained? Ain't no party like a... 
     bool _chain_top_down = false; // is the ESP at the top or bottom of the matrix of devices?
 	bool _rotate 		 = false;
@@ -118,21 +116,29 @@ class VirtualMatrixPanel
  * Updates the private class member variable 'coords', so no need to use the return value. 
  * Not thread safe, but not a concern for ESP32 sketch anyway... I think.
  */
-inline VirtualCoords VirtualMatrixPanel::getCoords(int16_t x, int16_t y) {
+inline VirtualCoords VirtualMatrixPanel::getCoords(int16_t &x, int16_t &y) {
+	//Serial.println("Called Base.");
+	coords.x = coords.y = -1; // By defalt use an invalid co-ordinates that will be rejected by updateMatrixDMABuffer
 
-  coords.x = coords.y = -1; // By defalt use an invalid co-ordinates that will be rejected by updateMatrixDMABuffer
+	if ( x < 0 || x >= width() || y < 0 || y >= height() ) { // Co-ordinates go from 0 to X-1 remember! width() and height() are out of range!
+	//Serial.printf("VirtualMatrixPanel::getCoords(): Invalid virtual display coordinate. x,y: %d, %d\r\n", x, y);
+		return coords;
+	}
 
-  if (x < 0 || x >= width() || y < 0 || y >= height() ) { // Co-ordinates go from 0 to X-1 remember! width() and height() are out of range!
-    //Serial.printf("VirtualMatrixPanel::getCoords(): Invalid virtual display coordinate. x,y: %d, %d\r\n", x, y);
-    return coords;
-  }
-  
 	// We want to rotate?
 	if (_rotate){
 		uint16_t temp_x=x;
 		x=y;
 		y=virtualResY-1-temp_x;
-   }  
+    }  
+
+    // Stupidity check
+	if ( vmodule_rows == vmodule_cols == 1) // single panel...
+	{
+		coords.x = x;
+		coords.y = y;			
+		return coords;
+	}
 
     uint8_t row = (y / panelResY) + 1; //a non indexed 0 row number
     if(   ( _s_chain_party && !_chain_top_down && (row % 2 == 0) )  // serpentine vertically stacked chain starting from bottom row (i.e. ESP closest to ground), upwards
@@ -157,34 +163,29 @@ inline VirtualCoords VirtualMatrixPanel::getCoords(int16_t x, int16_t y) {
     // Reverse co-ordinates if panel chain from ESP starts from the TOP RIGHT
     if (_chain_top_down)
     {
-      const HUB75_I2S_CFG _cfg = this->display->getCfg();
-      coords.x = (_cfg.mx_width * _cfg.chain_length - 1) - coords.x;
-      coords.y = (_cfg.mx_height-1) - coords.y;
-	  
+		/*
+		const HUB75_I2S_CFG _cfg = this->display->getCfg();
+		coords.x = (_cfg.mx_width * _cfg.chain_length - 1) - coords.x;
+		coords.y = (_cfg.mx_height-1) - coords.y;
+		*/
+		coords.x = (dmaResX - 1) - coords.x;
+		coords.y = (panelResY-1) - coords.y;	  
     }
-	  
 
     //Serial.print("Mapping to x: "); Serial.print(coords.x, DEC);  Serial.print(", y: "); Serial.println(coords.y, DEC);  
-	return coords;  
-
+	return coords; 
 }
 
-inline void VirtualMatrixPanel::drawPixel(int16_t x, int16_t y, uint16_t color)
-{
-  //VirtualCoords coords = getCoords(x, y);	
+inline void VirtualMatrixPanel::drawPixel(int16_t x, int16_t y, uint16_t color) { // adafruit virtual void override
   getCoords(x, y);
   this->display->drawPixel(coords.x, coords.y, color);
 }
 
-inline void VirtualMatrixPanel::fillScreen(uint16_t color)  // adafruit virtual void override
-{
-  // No need to map this.
+inline void VirtualMatrixPanel::fillScreen(uint16_t color) { // adafruit virtual void override
   this->display->fillScreen(color);
 }
 
-inline void VirtualMatrixPanel::drawPixelRGB888(int16_t x, int16_t y, uint8_t r, uint8_t g, uint8_t b)
-{
-  //VirtualCoords coords = getCoords(x, y);	
+inline void VirtualMatrixPanel::drawPixelRGB888(int16_t x, int16_t y, uint8_t r, uint8_t g, uint8_t b) {
   getCoords(x, y);
   this->display->drawPixelRGB888( coords.x, coords.y, r, g, b);
 }
@@ -213,7 +214,7 @@ inline void VirtualMatrixPanel::drawDisplayTest()
 
 }
 #endif
-
+/*
 // need to recreate this one, as it wouldn't work to just map where it starts.
 inline void VirtualMatrixPanel::drawIcon (int *ico, int16_t x, int16_t y, int16_t icon_cols, int16_t icon_rows) {
   int i, j;
@@ -226,5 +227,6 @@ inline void VirtualMatrixPanel::drawIcon (int *ico, int16_t x, int16_t y, int16_
     }
   }
 }
+*/
 
 #endif
