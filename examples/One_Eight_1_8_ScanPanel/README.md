@@ -8,6 +8,6 @@ It is possible to connect 1/8 scan panels to this library and 'trick' the output
 
 Creation of a '1_8_ScanPanel.h' class which sends an adjusted drawPixel() x,y co-ordinates to the underlying ESP32-HUB75-MatrixPanel-I2S-DMA library's drawPixel routine, to trick the output to look pixel perfect. 
 
-Refer to the '1_8_ScanPanel.h' logic which builds upon the library's core Virtual Display'ESP32-VirtualMatrixPanel-I2S-DMA.h' to also support chaining of 1/8 Scan Panels as well. Refer to 'ChainedPanels' example on how to configure panel chaining to create bigger displays.
+Refer to the '1_8_ScanPanel.h' logic which builds upon the library's core Virtual Display 'ESP32-VirtualMatrixPanel-I2S-DMA.h' to also support chaining of 1/8 Scan Panels as well. Refer to 'ChainedPanels' example on how to configure panel chaining to create bigger displays.
 
 
