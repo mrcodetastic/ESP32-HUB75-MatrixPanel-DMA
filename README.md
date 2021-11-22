@@ -221,6 +221,7 @@ This project was inspired by:
 # Thank you
 * [Brian Lough](https://www.tindie.com/stores/brianlough/) for providing code contributions, hardware and suggestions
 * [Vortigont](https://github.com/vortigont) for his game changing code contributions and performance optimisations
-* [Galaxy Man](https://github.com/Galaxy-Man) for HUB75 panels to assist with the multi-panel (virtual display) testing
+* [Galaxy Man](https://github.com/Galaxy-Man) for donation of 1/16 scan panels to support the implemenation of led matrix panel chaining (virtual display) support
 * [Pipimaxi](https://github.com/Pipimaxi) for the donation of a ESP32-S2 to enable support for ESP32 S2/S3's to be implemented
+* [Mark Donners](https://github.com/donnersm) for the donation of a 1/8 scan panel to build and test working support of these led matrix panels! 
 * And lots of others, let me know if I've missed you.
