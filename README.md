@@ -1,5 +1,7 @@
 # HUB75 RGB LED matrix library utilizing ESP32 DMA Engine
 
+__[BUILD](/doc/BuildOptions.md) | [EXAMPLES](/examples/README.md)__ | [![PlatformIO CI](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/actions/workflows/pio_build.yml/badge.svg)](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/actions/workflows/pio_build.yml)
+
   **Table of Content**
 
 - [Introduction](#introduction)
