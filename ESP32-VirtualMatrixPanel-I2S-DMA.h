@@ -3,6 +3,14 @@
 
 /*******************************************************************
     Class contributed by Brian Lough, and expanded by Faptastic.
+    
+    Originally designed to allow CHAINING of panels together to create
+    a 'bigger' display of panels. i.e. Chaining 4 panels into a 2x2
+    grid.
+    
+    However, the function of this class has expanded now to also manage
+    the output for 1/16 scan panels, as the core DMA library is designed
+    ONLY FOR 1/16 scan matrix panels.
 
     YouTube: https://www.youtube.com/brianlough
     Tindie: https://www.tindie.com/stores/brianlough/
