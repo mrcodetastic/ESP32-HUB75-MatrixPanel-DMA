@@ -133,7 +133,7 @@ inline VirtualCoords VirtualMatrixPanel::getCoords(int16_t &x, int16_t &y) {
     }  
 
     // Stupidity check
-	if ( vmodule_rows == vmodule_cols == 1) // single panel...
+	if ( (vmodule_rows == 1) && (vmodule_cols == 1)) // single panel...
 	{
 		coords.x = x;
 		coords.y = y;			
