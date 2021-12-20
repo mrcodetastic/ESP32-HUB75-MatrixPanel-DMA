@@ -15,8 +15,10 @@
  **************************************************************************/
 #include "ESP32-HUB75-MatrixPanel-I2S-DMA.h"
 
-// Virtual Display to re-map co-ordinates such that they draw correctly on a 32x16 1/4 Scan panel
-#include "1_8_ScanPanel.h" 
+/* Use the Virtual Display class to re-map co-ordinates such that they draw 
+ * correctly on a 32x16 1/8 Scan panel (or chain of such panels).
+ */
+#include "ESP32-VirtualMatrixPanel-I2S-DMA.h" 
 
 
   // Panel configuration
@@ -37,7 +39,7 @@
   MatrixPanel_I2S_DMA *dma_display = nullptr;
 
   // placeholder for the virtual display object
-  OneEightScanPanel  *OneEightMatrixDisplay = nullptr;
+  VirtualMatrixPanel  *OneEightMatrixDisplay = nullptr;
   
   /******************************************************************************
    * Setup!
@@ -54,41 +56,43 @@
   
 /* 
      // 62x32 1/8 Scan Panels don't have a D and E pin!
-	 
-	 HUB75_I2S_CFG::i2s_pins _pins = {
+     
+     HUB75_I2S_CFG::i2s_pins _pins = {
       R1_PIN, G1_PIN, B1_PIN, R2_PIN, G2_PIN, B2_PIN, 
       A_PIN, B_PIN, C_PIN, D_PIN, E_PIN, 
       LAT_PIN, OE_PIN, CLK_PIN
-	 };
+     };
 */
-  	HUB75_I2S_CFG mxconfig(
-  				PANEL_RES_X*2,   	        // DO NOT CHANGE THIS
-  				PANEL_RES_Y/2,   	        // DO NOT CHANGE THIS
-  				NUM_ROWS*NUM_COLS     		// DO NOT CHANGE THIS
-  				//,_pins			// Uncomment to enable custom pins
-  	);
+    HUB75_I2S_CFG mxconfig(
+                PANEL_RES_X*2,              // DO NOT CHANGE THIS
+                PANEL_RES_Y/2,              // DO NOT CHANGE THIS
+                NUM_ROWS*NUM_COLS           // DO NOT CHANGE THIS
+                //,_pins            // Uncomment to enable custom pins
+    );
     
     mxconfig.clkphase = false; // Change this if you see pixels showing up shifted wrongly by one column the left or right.
     
-  	//mxconfig.driver   = HUB75_I2S_CFG::FM6126A;     // in case that we use panels based on FM6126A chip, we can set it here before creating MatrixPanel_I2S_DMA object
+    //mxconfig.driver   = HUB75_I2S_CFG::FM6126A;     // in case that we use panels based on FM6126A chip, we can set it here before creating MatrixPanel_I2S_DMA object
   
-  	// OK, now we can create our matrix object
-  	dma_display = new MatrixPanel_I2S_DMA(mxconfig);
+    // OK, now we can create our matrix object
+    dma_display = new MatrixPanel_I2S_DMA(mxconfig);
   
-  	// let's adjust default brightness to about 75%
-  	dma_display->setBrightness8(96);    // range is 0-255, 0 - 0%, 255 - 100%
+    // let's adjust default brightness to about 75%
+    dma_display->setBrightness8(96);    // range is 0-255, 0 - 0%, 255 - 100%
   
-  	// Allocate memory and start DMA display
-  	if( not dma_display->begin() )
-  	  Serial.println("****** !KABOOM! I2S memory allocation failed ***********");
+    // Allocate memory and start DMA display
+    if( not dma_display->begin() )
+      Serial.println("****** !KABOOM! I2S memory allocation failed ***********");
 
    
     dma_display->clearScreen();
     delay(500);
     
-  	// create OneEightMatrixDisplaylay object based on our newly created dma_display object
-  	OneEightMatrixDisplay = new OneEightScanPanel((*dma_display), NUM_ROWS, NUM_COLS, PANEL_RES_X, PANEL_RES_Y, SERPENT, TOPDOWN);
-
+    // create OneEightMatrixDisplaylay object based on our newly created dma_display object
+    OneEightMatrixDisplay = new VirtualMatrixPanel((*dma_display), NUM_ROWS, NUM_COLS, PANEL_RES_X, PANEL_RES_Y, SERPENT, TOPDOWN);
+    
+	// THE IMPORTANT BIT BELOW!
+    OneEightMatrixDisplay->setPhysicalPanelScanRate(ONE_EIGHT);
   }
 
   

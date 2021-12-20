@@ -34,7 +34,8 @@ struct VirtualCoords {
 	  
 };
 
- 
+enum PANEL_SCAN_RATE {NORMAL_ONE_SIXTEEN, ONE_EIGHT};
+
 #ifdef USE_GFX_ROOT
 class VirtualMatrixPanel : public GFX
 #elif !defined NO_GFX
@@ -107,6 +108,8 @@ class VirtualMatrixPanel
 	void flipDMABuffer() { display->flipDMABuffer(); }
 	void drawDisplayTest();
     void setRotate(bool rotate);	
+	
+	void setPhysicalPanelScanRate(PANEL_SCAN_RATE rate);
 
   protected:
   
@@ -116,6 +119,8 @@ class VirtualMatrixPanel
     bool _s_chain_party  = true; // Are we chained? Ain't no party like a... 
     bool _chain_top_down = false; // is the ESP at the top or bottom of the matrix of devices?
 	bool _rotate 		 = false;
+	
+	PANEL_SCAN_RATE _panelScanRate = NORMAL_ONE_SIXTEEN;
 
 }; // end Class header
 
@@ -179,6 +184,47 @@ inline VirtualCoords VirtualMatrixPanel::getCoords(int16_t &x, int16_t &y) {
 		coords.x = (dmaResX - 1) - coords.x;
 		coords.y = (panelResY-1) - coords.y;	  
     }
+	
+	
+	/* START: Pixel remapping AGAIN to convert 1/16 SCAN output that the
+	 *        the underlying hardware library is designed for (because 
+	 *        there's only 2 x RGB pins... and convert this to 1/8 or something
+	 */
+	if ( _panelScanRate == ONE_EIGHT)
+	{
+		/* Convert Real World 'VirtualMatrixPanel' co-ordinates (i.e. Real World pixel you're looking at
+		   on the panel or chain of panels, per the chaining configuration) to a 1/8 panels
+		   double 'stretched' and 'squished' coordinates which is what needs to be sent from the
+		   DMA buffer.
+
+		   Note: Look at the One_Eight_1_8_ScanPanel code and you'll see that the DMA buffer is setup
+		   as if the panel is 2 * W and 0.5 * H !
+		*/
+	
+		/*
+		  Serial.print("VirtualMatrixPanel Mapping ("); Serial.print(x, DEC); Serial.print(","); Serial.print(y, DEC); Serial.print(") ");
+		  // to
+		  Serial.print("to ("); Serial.print(coords.x, DEC);  Serial.print(",");  Serial.print(coords.y, DEC);   Serial.println(") ");  
+		 */
+		  if ( (y & 8) == 0) { 
+			coords.x += ((coords.x / panelResX)+1)*panelResX; // 1st, 3rd 'block' of 8 rows of pixels, offset by panel width in DMA buffer
+		  }
+		  else {
+			coords.x += (coords.x / panelResX)*panelResX; // 2nd, 4th 'block' of 8 rows of pixels, offset by panel width in DMA buffer
+		  }
+
+		  // http://cpp.sh/4ak5u
+		  // Real number of DMA y rows is half reality
+		  // coords.y = (y / 16)*8 + (y & 0b00000111);   
+		  coords.y = (y >> 4)*8 + (y & 0b00000111);   
+
+		 /*
+		  Serial.print("OneEightScanPanel Mapping ("); Serial.print(x, DEC); Serial.print(","); Serial.print(y, DEC); Serial.print(") ");
+		  // to
+		  Serial.print("to ("); Serial.print(coords.x, DEC);  Serial.print(",");  Serial.print(coords.y, DEC);   Serial.println(") ");
+		 */
+	}
+		
 
     //Serial.print("Mapping to x: "); Serial.print(coords.x, DEC);  Serial.print(", y: "); Serial.println(coords.y, DEC);  
 	return coords; 
@@ -204,6 +250,11 @@ inline void VirtualMatrixPanel::setRotate(bool rotate) {
 	// We don't support rotation by degrees.
 	if (rotate) { setRotation(1); } else { setRotation(0); }
 }
+
+inline void VirtualMatrixPanel::setPhysicalPanelScanRate(PANEL_SCAN_RATE rate) {
+	_panelScanRate=rate;
+}
+
 
 
 #ifndef NO_GFX
