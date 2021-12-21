@@ -132,7 +132,7 @@
 #define ESP32_I2S_DMA_MODE          I2S_PARALLEL_WIDTH_16   // From esp32_i2s_parallel_v2.h = 16 bits in parallel
 #define ESP32_I2S_DMA_STORAGE_TYPE  uint16_t                // DMA output of one uint16_t at a time.
 #define CLKS_DURING_LATCH           0                       // Not (yet) used. 
-#define ESP32_I2S_DEVICE            I2S_NUM_1
+#define ESP32_I2S_DEVICE            I2S_NUM_0
 
 // Panel Upper half RGB (numbering according to order in DMA gpio_bus configuration)
 #define BITS_RGB1_OFFSET 0 // Start point of RGB_X1 bits
