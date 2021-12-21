@@ -419,7 +419,7 @@ void MatrixPanel_I2S_DMA::configureDMA(const HUB75_I2S_CFG& _cfg)
     Serial.println(F("Performing I2S setup:"));
 #endif
 
-    i2s_parallel_config_t cfg = {
+    i2s_parallel_config_t dma_cfg = {
         .gpio_bus={_cfg.gpio.r1, _cfg.gpio.g1, _cfg.gpio.b1, _cfg.gpio.r2, _cfg.gpio.g2, _cfg.gpio.b2, _cfg.gpio.lat, _cfg.gpio.oe, _cfg.gpio.a, _cfg.gpio.b, _cfg.gpio.c, _cfg.gpio.d, _cfg.gpio.e, -1, -1, -1},
         .gpio_clk=_cfg.gpio.clk,
         .sample_rate=_cfg.i2sspeed,   
@@ -428,18 +428,16 @@ void MatrixPanel_I2S_DMA::configureDMA(const HUB75_I2S_CFG& _cfg)
         .lldesc_a=dmadesc_a,        
         .desccount_b=desccount,
         .lldesc_b=dmadesc_b,
-        .clkphase=_cfg.clkphase
+        .clkphase=_cfg.clkphase,
+		.int_ena_out_eof=_cfg.double_buff
     };
-
-    // Setup I2S 
-    i2s_parallel_driver_install(I2S_NUM_0, &cfg);
-    //i2s_parallel_setup_without_malloc(&I2S1, &cfg);
-
-    // Start DMA Output
-    i2s_parallel_send_dma(I2S_NUM_0, &dmadesc_a[0]);
+	
+    // Setup I2S
+    i2s_parallel_driver_install(ESP32_I2S_DEVICE, &dma_cfg);
+    i2s_parallel_send_dma(ESP32_I2S_DEVICE, &dmadesc_a[0]);
 
     #if SERIAL_DEBUG  
-      Serial.println(F("configureDMA(): DMA setup completed on I2S_NUM_0.")); 
+      Serial.println(F("configureDMA(): DMA setup completed on ESP32_I2S_DEVICE.")); 
     #endif       
 		
 } // end initMatrixDMABuff

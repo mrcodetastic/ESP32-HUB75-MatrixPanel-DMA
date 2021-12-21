@@ -8,7 +8,6 @@
 |BitmapIcons                |Simple example of how to display a bitmap image to the display.                                                        |
 |ChainedPanels              |Popular example on how to use the 'VirtualDisplay' class to chain multiple LED Matrix Panels to form a much bigger display! Refer to the README within this example's folder! |
 |ChainedPanelsAuroraDemo    |As above, but showing a large trippy plasma animation.                                                                 |
-|Smooth Double Buffer       |Example of using a back-buffer (double buffering). Not useful in 99.9% of use-cases of this library. Uses double the SRAM as well.          |
-|One_Quarter_1_4_ScanPanel     |Using this library with a 32w x 16h 1/4 Scan LED Matrix Panel. Custom co-ordinate remapping logic required.                               |
-|One_Eighth_1_8_ScanPanel     |Using this library with a 64w x 32h 1/8 Scan LED Matrix Panel. Custom co-ordinate remapping logic required.
+|One_Quarter_1_4_ScanPanel  |Using this library with a 32w x 16h 1/4 Scan LED Matrix Panel. Custom co-ordinate remapping logic required.                               |
+|One_Eighth_1_8_ScanPanel   |Using this library with a 64w x 32h 1/8 Scan LED Matrix Panel. Custom co-ordinate remapping logic required.
 |PIO_TestPatterns           |Non-Arduino example of how to display basic shapes.                                                                    |

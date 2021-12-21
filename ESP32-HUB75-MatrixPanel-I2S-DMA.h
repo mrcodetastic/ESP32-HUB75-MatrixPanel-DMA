@@ -129,9 +129,10 @@
 
 /***************************************************************************************/
 /* Definitions below should NOT be ever changed without rewriting library logic         */
-#define ESP32_I2S_DMA_MODE          I2S_PARALLEL_WIDTH_16    // From esp32_i2s_parallel_v2.h = 16 bits in parallel
+#define ESP32_I2S_DMA_MODE          I2S_PARALLEL_WIDTH_16   // From esp32_i2s_parallel_v2.h = 16 bits in parallel
 #define ESP32_I2S_DMA_STORAGE_TYPE  uint16_t                // DMA output of one uint16_t at a time.
-#define CLKS_DURING_LATCH            0                      // Not (yet) used. 
+#define CLKS_DURING_LATCH           0                       // Not (yet) used. 
+#define ESP32_I2S_DEVICE            I2S_NUM_1
 
 // Panel Upper half RGB (numbering according to order in DMA gpio_bus configuration)
 #define BITS_RGB1_OFFSET 0 // Start point of RGB_X1 bits
@@ -316,7 +317,7 @@ struct  HUB75_I2S_CFG {
       LAT_PIN_DEFAULT, OE_PIN_DEFAULT, CLK_PIN_DEFAULT },
     shift_driver _drv = SHIFTREG,
     bool _dbuff = false,
-    clk_speed _i2sspeed = HZ_20M,
+    clk_speed _i2sspeed = HZ_10M,
     uint8_t _latblk  = 1, // Anything > 1 seems to cause artefacts on ICS panels
     bool _clockphase = true,
     uint8_t _min_refresh_rate = 85
@@ -525,14 +526,22 @@ class MatrixPanel_I2S_DMA {
                 Serial.printf_P(PSTR("Set back buffer to: %d\n"), back_buffer_id);
         #endif      
 
-        i2s_parallel_flip_to_buffer(I2S_NUM_0, back_buffer_id);
-        
+        i2s_parallel_set_previous_buffer_not_free();       
         // Wait before we allow any writing to the buffer. Stop flicker.
         while(i2s_parallel_is_previous_buffer_free() == false) { }       
         
+        i2s_parallel_flip_to_buffer(ESP32_I2S_DEVICE, back_buffer_id);        
         // Flip to other buffer as the backbuffer. 
         // i.e. Graphic changes happen to this buffer, but aren't displayed until flipDMABuffer() is called again.
-        back_buffer_id ^= 1; 
+        back_buffer_id ^= 1;        
+        
+        i2s_parallel_set_previous_buffer_not_free();       
+        // Wait before we allow any writing to the buffer. Stop flicker.
+        while(i2s_parallel_is_previous_buffer_free() == false) { }          
+        
+        
+
+
         
     }
         
@@ -585,7 +594,7 @@ class MatrixPanel_I2S_DMA {
      */
     void stopDMAoutput() {  
         resetbuffers();
-        i2s_parallel_stop_dma(I2S_NUM_0);
+        i2s_parallel_stop_dma(ESP32_I2S_DEVICE);
     } 
     
 

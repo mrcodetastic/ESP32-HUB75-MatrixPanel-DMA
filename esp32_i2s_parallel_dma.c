@@ -13,6 +13,7 @@
 
 // Header
 #include "esp32_i2s_parallel_dma.h" 
+#include "esp32_i2s_parallel_mcu_def.h"
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -25,22 +26,28 @@
 #include <soc/gpio_sig_map.h>
 
 // For I2S state management.
-static i2s_parallel_state_t *i2s_state 	= NULL;
+static i2s_parallel_state_t *i2s_state  = NULL;
 
 // ESP32-S2,S3,C3 only has IS20
 // Original ESP32 has two I2S's, but we'll stick with the lowest common denominator.
-static i2s_dev_t* I2S 					= &I2S0; // Device to use for this library, change if you want.
+
+#ifdef ESP32_ORIG
+static i2s_dev_t* I2S[I2S_NUM_MAX] = {&I2S0, &I2S1};
+#else
+static i2s_dev_t* I2S[I2S_NUM_MAX] = {&I2S0};	
+#endif
 
 callback shiftCompleteCallback;
 void setShiftCompleteCallback(callback f) {
     shiftCompleteCallback = f;
 }
 
-volatile bool previousBufferFree = true;
+volatile int  previousBufferOutputLoopCount = 0;
+volatile bool previousBufferFree      = true;
 
 static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
 
-#ifdef ESP_ORIG
+#ifdef ESP32_ORIG
 
     if ( (*(i2s_port_t*)arg) == I2S_NUM_1 ) { // https://www.bogotobogo.com/cplusplus/pointers2_voidpointers_arrays.php
       //For I2S1
@@ -51,17 +58,25 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
     }
 
 #else
-	  // Other ESP32 MCU's only have one I2S 
+      // Other ESP32 MCU's only have one I2S 
       SET_PERI_REG_BITS(I2S_INT_CLR_REG(0), I2S_OUT_EOF_INT_CLR_V, 1, I2S_OUT_EOF_INT_CLR_S);    
 
-#endif	
-
-    // at this point, the previously active buffer is free, go ahead and write to it
-    previousBufferFree = true;
-
-    if(shiftCompleteCallback) // we've defined a callback function ?
-        shiftCompleteCallback();
-		
+#endif
+/*
+    if ( previousBufferOutputLoopCount == 1)
+	{
+		// at this point, the previously active buffer is free, go ahead and write to it
+		previousBufferFree 		= true;
+		////previousBufferOutputLoopCount = 0;
+		//i2s_parallel_set_previous_buffer_not_free();
+	}
+	else { previousBufferOutputLoopCount++; } 
+*/
+	previousBufferFree 		= true;
+	
+ //   if(shiftCompleteCallback) // we've defined a callback function ?
+ //       shiftCompleteCallback();
+        
 } // end irq_hndlr
 
 
@@ -155,7 +170,7 @@ void link_dma_desc(volatile lldesc_t *dmadesc, volatile lldesc_t *prevdmadesc, v
 
 esp_err_t i2s_parallel_driver_install(i2s_port_t port, i2s_parallel_config_t* conf) {
   
-  port = I2S_NUM_0; /// override.
+  //port = I2S_NUM_0; /// override.
   
   if(port < I2S_NUM_0 || port >= I2S_NUM_MAX) {
     return ESP_ERR_INVALID_ARG;
@@ -176,7 +191,7 @@ esp_err_t i2s_parallel_driver_install(i2s_port_t port, i2s_parallel_config_t* co
   int irq_source;
   
   // Initialize I2S0 peripheral
-  //if (port == I2S_NUM_0) {
+  if (port == I2S_NUM_0) {
       periph_module_reset(PERIPH_I2S0_MODULE);
       periph_module_enable(PERIPH_I2S0_MODULE);
       iomux_clock = I2S0O_WS_OUT_IDX;
@@ -193,8 +208,12 @@ esp_err_t i2s_parallel_driver_install(i2s_port_t port, i2s_parallel_config_t* co
         case I2S_PARALLEL_WIDTH_MAX:
           return ESP_ERR_INVALID_ARG;
       }
-  /*
-  } else {
+  } 
+#ifdef ESP32_ORIG    
+  // Can't compile if I2S1 if it doesn't exist with that hardware's IDF.... 
+  else {
+//	  I2S = &I2S1;
+	  
       periph_module_reset(PERIPH_I2S1_MODULE);
       periph_module_enable(PERIPH_I2S1_MODULE);
       iomux_clock = I2S1O_WS_OUT_IDX;
@@ -212,12 +231,14 @@ esp_err_t i2s_parallel_driver_install(i2s_port_t port, i2s_parallel_config_t* co
           return ESP_ERR_INVALID_ARG;
       }
   }
-  */
+#endif 
+
   // Setup GPIOs
   int bus_width = get_bus_width(conf->sample_width);
 
   // Setup I2S peripheral
-  i2s_dev_t* dev = I2S;
+  i2s_dev_t* dev =  I2S[port];
+  //dev_reset(dev);    
   
   
   // Setup GPIO's
@@ -245,7 +266,7 @@ esp_err_t i2s_parallel_driver_install(i2s_port_t port, i2s_parallel_config_t* co
   
 #ifdef ESP32_SXXX
   dev->clkm_conf.clk_sel = 2; // esp32-s2 only  
-  dev->clkm_conf.clk_en	 = 1;
+  dev->clkm_conf.clk_en  = 1;
 #endif
 
 #ifdef ESP32_ORIG
@@ -314,7 +335,7 @@ esp_err_t i2s_parallel_driver_install(i2s_port_t port, i2s_parallel_config_t* co
 
   
   // Device Reset
-  dev_reset(dev);  
+  dev_reset(dev);    
   dev->conf1.val = 0;
   dev->conf1.tx_stop_en = 0; 
   
@@ -329,25 +350,27 @@ esp_err_t i2s_parallel_driver_install(i2s_port_t port, i2s_parallel_config_t* co
   state->dmadesc_b      = conf->lldesc_b;  
   state->i2s_interrupt_port_arg  = port; // need to keep this somewhere in static memory for the ISR
 
-  // Get ISR setup 
-  esp_err_t err =  esp_intr_alloc(irq_source, 
-                                 (int)(ESP_INTR_FLAG_IRAM | ESP_INTR_FLAG_LEVEL1),
-                                 irq_hndlr, 
-                                 &state->i2s_interrupt_port_arg, NULL);
-  
-  if(err) {
-      return err;
-  }
-
-   
   dev->timing.val = 0;
-  
-  
-  // Setup interrupt handler which is focussed only on the (page 322 of Tech. Ref. Manual)
-  // "I2S_OUT_EOF_INT: Triggered when rxlink has finished sending a packet"
-  // ... whatever the hell that is supposed to mean... One massive linked list.
-  dev->int_ena.out_eof = 1;
 
+  // We using the double buffering switch logic?
+  if (conf->int_ena_out_eof)
+  {
+      // Get ISR setup 
+      esp_err_t err =  esp_intr_alloc(irq_source, 
+                                     (int)(ESP_INTR_FLAG_IRAM | ESP_INTR_FLAG_LEVEL1),
+                                     irq_hndlr, 
+                                     &state->i2s_interrupt_port_arg, NULL);
+      
+      if(err) {
+          return err;
+      }
+
+      
+      // Setup interrupt handler which is focussed only on the (page 322 of Tech. Ref. Manual)
+      // "I2S_OUT_EOF_INT: Triggered when rxlink has finished sending a packet"
+      // ... whatever the hell that is supposed to mean... One massive linked list? So all pixels in the chain?
+      dev->int_ena.out_eof = 1;
+  }
    
   return ESP_OK;
 }
@@ -357,7 +380,7 @@ esp_err_t i2s_parallel_driver_install(i2s_port_t port, i2s_parallel_config_t* co
     return ESP_ERR_INVALID_ARG;
   }
 
-  i2s_dev_t* dev = I2S;
+  i2s_dev_t* dev =  I2S[port];
   
   // Stop all ongoing DMA operations
   dev->out_link.stop = 1;
@@ -373,7 +396,7 @@ esp_err_t i2s_parallel_driver_install(i2s_port_t port, i2s_parallel_config_t* co
     return ESP_ERR_INVALID_ARG;
   }
 
-  i2s_dev_t* dev = I2S;
+  i2s_dev_t* dev =  I2S[port];
   
 
   // Configure DMA burst mode
@@ -390,16 +413,23 @@ esp_err_t i2s_parallel_driver_install(i2s_port_t port, i2s_parallel_config_t* co
 
   return ESP_OK;
 }
-
+/*
 i2s_dev_t* i2s_parallel_get_dev(i2s_port_t port) {
   if(port < I2S_NUM_0 || port >= I2S_NUM_MAX) {
     return NULL;
   }
-  return I2S; // HARCODE THIS TO RETURN &I2S0
-}
 
+#ifdef ESP32_ORIG
+if (port == I2S_NUM_1)
+	return &I2S1;
+#endif  
+  
+  return I2S0; // HARCODE THIS TO RETURN &I2S0
+}
+*/
 // Double buffering flipping
 // Flip to a buffer: 0 for bufa, 1 for bufb
+// dmadesc_a and dmadesc_b point to the same memory if double buffering isn't enabled.
 void i2s_parallel_flip_to_buffer(i2s_port_t port, int buffer_id) {
 
     if (i2s_state == NULL) {
@@ -418,9 +448,16 @@ void i2s_parallel_flip_to_buffer(i2s_port_t port, int buffer_id) {
     i2s_state->dmadesc_b[i2s_state->desccount_b-1].qe.stqe_next = active_dma_chain;
 
     // we're still shifting out the buffer, so it shouldn't be written to yet.
-    previousBufferFree = false;
+    //previousBufferFree = false;
+	i2s_parallel_set_previous_buffer_not_free();
 }
 
 bool i2s_parallel_is_previous_buffer_free() {
     return previousBufferFree;
+}
+
+
+void i2s_parallel_set_previous_buffer_not_free() {
+    previousBufferFree = false;
+	previousBufferOutputLoopCount = 0;
 }

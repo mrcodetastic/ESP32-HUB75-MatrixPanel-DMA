@@ -41,6 +41,7 @@ typedef struct {
     int desccount_b;      // only used with double buffering
     lldesc_t * lldesc_b;  // only used with double buffering
     bool clkphase;        // Clock signal phase
+	bool int_ena_out_eof; // Do we raise an interrupt every time the DMA output loops? Don't do this unless we're doing double buffering!
 } i2s_parallel_config_t;
 
 static inline int i2s_parallel_get_memory_width(i2s_port_t port, i2s_parallel_cfg_bits_t width) {
@@ -72,7 +73,7 @@ void link_dma_desc(volatile lldesc_t *dmadesc, volatile lldesc_t *prevdmadesc, v
 esp_err_t 	i2s_parallel_driver_install(i2s_port_t port, i2s_parallel_config_t* conf);
 esp_err_t 	i2s_parallel_send_dma(i2s_port_t port, lldesc_t* dma_descriptor);
 esp_err_t 	i2s_parallel_stop_dma(i2s_port_t port);
-i2s_dev_t* 	i2s_parallel_get_dev(i2s_port_t port);
+//i2s_dev_t* 	i2s_parallel_get_dev(i2s_port_t port);
 
 // For frame buffer flipping / double buffering
 typedef struct {
@@ -83,6 +84,7 @@ typedef struct {
 
 void i2s_parallel_flip_to_buffer(i2s_port_t port, int bufid);
 bool i2s_parallel_is_previous_buffer_free();
+void i2s_parallel_set_previous_buffer_not_free();
 
 // Callback function for when whole length of DMA chain has been sent out.
 typedef void (*callback)(void);

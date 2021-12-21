@@ -143,11 +143,11 @@ uint8_t wheelval = 0;
 void loop() {
 
     // animate by going through the colour wheel for the first two lines
-    //drawText(wheelval);
-    //wheelval +=1;
+    drawText(wheelval);
+    wheelval +=1;
 
-    //delay(20); 
-
+    delay(20); 
+/*
   drawText(0);
   delay(2000);
   dma_display->clearScreen();
@@ -161,5 +161,6 @@ void loop() {
   delay(2000);
   dma_display->fillScreen(myWHITE);
   dma_display->clearScreen();
+  */
   
 }
