@@ -143,6 +143,8 @@ void GIFDraw(GIFDRAW *pDraw)
 
 void * GIFOpenFile(const char *fname, int32_t *pSize)
 {
+  Serial.print("Playing gif: ");
+  Serial.println(fname);
   f = FILESYSTEM.open(fname);
   if (f)
   {
@@ -254,33 +256,39 @@ void setup() {
 
 }
 
-void loop() {
-char *szDir = "/gifs"; // play all GIFs in this directory on the SD card
-char fname[256];
-File root, temp;
+String gifDir = "/gifs"; // play all GIFs in this directory on the SD card
+char filePath[256] = { 0 };
+File root, gifFile;
 
+void loop() 
+{
    while (1) // run forever
    {
-      root = FILESYSTEM.open(szDir);
+      
+      root = FILESYSTEM.open(gifDir);
       if (root)
       {
-         temp = root.openNextFile();
-            while (temp)
+           gifFile = root.openNextFile();
+            while (gifFile)
             {
-              if (!temp.isDirectory()) // play it
+              if (!gifFile.isDirectory()) // play it
               {
-                strcpy(fname, temp.name());
-
-                Serial.printf("Playing %s\n", temp.name());
-                Serial.flush();
-                ShowGIF((char *)temp.name());
-             
+                
+                // C-strings... urghh...                
+                memset(filePath, 0x0, sizeof(filePath));                
+                strcpy(filePath, gifFile.path());
+                
+                // Show it.
+                ShowGIF(filePath);
+               
               }
-              temp.close();
-              temp = root.openNextFile();
+              gifFile.close();
+              gifFile = root.openNextFile();
             }
          root.close();
       } // root
-      delay(4000); // pause before restarting
+      
+      delay(1000); // pause before restarting
+      
    } // while
 }
