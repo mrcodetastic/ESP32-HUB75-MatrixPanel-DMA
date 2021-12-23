@@ -119,7 +119,7 @@
  
  /* A crap demonstration of using the pixel buffer.
   * 1) Draw text at an incrementing (going down) y coordinate
-  * 2) Move down a pixel rows
+  * 2) Move down a pixel row
   * 3) Draw the text again, fade the 'old' pixels. Using the pixel buffer to update all pixels on screen.
   * 4) 'show' (send) the pixel buffer to the DMA output.
   * 5) LOOP
@@ -130,12 +130,9 @@
   
   void loop() 
   {
-      
       // draw text with a rotating colour
       FastLED_Pixel_Buff->dimAll(200); // Dim all pixels by 250/255
-      
-      FastLED_Pixel_Buff->fillCircle(40, 21, 10, dma_display->color444(15, 0, 15));
-      
+	  
       FastLED_Pixel_Buff->setTextSize(1);     // size 1 == 8 pixels high
       FastLED_Pixel_Buff->setTextWrap(false); // Don't wrap at end of line - will do ourselves
       
