@@ -29,10 +29,9 @@
    
   #define NUM_ROWS 1 // Number of rows of chained INDIVIDUAL PANELS
   #define NUM_COLS 2 // Number of INDIVIDUAL PANELS per ROW
-  
-  // ^^^ NOTE: DEFAULT EXAMPLE SETUP IS FOR A CHAIN OF TWO x 1/8 SCAN PANELS
-    
-  // Change this to your needs, for details on VirtualPanel pls read the PDF!
+      
+  // Change this to your needs, for details please read the PDF in 
+  // the 'ChainedPanels'example folder!
   #define SERPENT true
   #define TOPDOWN false
   
@@ -89,18 +88,12 @@
     dma_display->clearScreen();
     delay(500);
     
-    // NOW, create the 'Virtual Matrix Panel' class with a FastLED Pixel Buffer!
-    
-    // create FastLED_Pixel_Bufflay object based on our newly created dma_display object
+    // NOW, create the 'Virtual Matrix Panel' class with a FastLED Pixel Buffer! Pass it a dma_display hardware library pointer to use.
     FastLED_Pixel_Buff = new VirtualMatrixPanel_FastLED_Pixel_Buffer((*dma_display), NUM_ROWS, NUM_COLS, PANEL_RES_X, PANEL_RES_Y, SERPENT, TOPDOWN);
 
    if( not FastLED_Pixel_Buff->allocateMemory() )
-      Serial.println("****** !KABOOM! Unable to find enough memory for pixel buffer! ***********");
-    
-    
-    dma_display->fillScreen(dma_display->color444(8, 0, 0));    
-    delay(2000);
-    //FastLED_Pixel_Buff->setPhysicalPanelScanRate(ONE_EIGHT); // If using with 1/8 Scan Panel Hardware
+      Serial.println("****** !KABOOM! Unable to find enough memory for the FastLED pixel buffer! ***********");
+	  
   }
   
    
