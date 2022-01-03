@@ -22,7 +22,6 @@
 
 #include <driver/gpio.h>
 #include <driver/periph_ctrl.h>
-#include <rom/gpio.h>
 #include <soc/gpio_sig_map.h>
 
 // For I2S state management.
@@ -47,41 +46,28 @@ volatile bool previousBufferFree      = true;
 
 static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
 
-#ifdef ESP32_ORIG
+//i2s_port_t port = *((i2s_port_t*) arg);
 
-    if ( (*(i2s_port_t*)arg) == I2S_NUM_1 ) { // https://www.bogotobogo.com/cplusplus/pointers2_voidpointers_arrays.php
-      //For I2S1
+/* Compiler pre-processor check. Saves a few cycles, no need to cast void ptr to i2s_port_t and then check 120 times second... */
+#if ESP32_I2S_DEVICE == I2S_NUM_0
       SET_PERI_REG_BITS(I2S_INT_CLR_REG(1), I2S_OUT_EOF_INT_CLR_V, 1, I2S_OUT_EOF_INT_CLR_S);
-    } else {
+#else
       // For I2S0
       SET_PERI_REG_BITS(I2S_INT_CLR_REG(0), I2S_OUT_EOF_INT_CLR_V, 1, I2S_OUT_EOF_INT_CLR_S);    
-    }
-
-#else
-      // Other ESP32 MCU's only have one I2S 
-      SET_PERI_REG_BITS(I2S_INT_CLR_REG(0), I2S_OUT_EOF_INT_CLR_V, 1, I2S_OUT_EOF_INT_CLR_S);    
-
 #endif
-/*
-    if ( previousBufferOutputLoopCount == 1)
-	{
-		// at this point, the previously active buffer is free, go ahead and write to it
-		previousBufferFree 		= true;
-		////previousBufferOutputLoopCount = 0;
-		//i2s_parallel_set_previous_buffer_not_free();
-	}
-	else { previousBufferOutputLoopCount++; } 
-*/
+
 	previousBufferFree 		= true;
-	
- //   if(shiftCompleteCallback) // we've defined a callback function ?
- //       shiftCompleteCallback();
+
+/*	
+    if(shiftCompleteCallback) { // we've defined a callback function ?
+        shiftCompleteCallback();
+ }
+*/
         
 } // end irq_hndlr
 
 
 // For peripheral setup and configuration
-
 static inline int get_bus_width(i2s_parallel_cfg_bits_t width) {
   switch(width) {
     case I2S_PARALLEL_WIDTH_8:

@@ -19,7 +19,8 @@ extern "C" {
 #include <freertos/FreeRTOS.h>
 #include <driver/i2s.h>
 #include <esp_err.h>
-#include <rom/lldesc.h>
+#include <esp32/rom/lldesc.h>
+#include <esp32/rom/gpio.h>
 
 // Get MCU Type and Max CLK Hz for MCU
 #include <esp32_i2s_parallel_mcu_def.h>
