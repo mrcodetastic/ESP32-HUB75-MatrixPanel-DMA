@@ -768,9 +768,10 @@ void MatrixPanel_I2S_DMA::brtCtrlOE(int brt, const bool _buff_id){
         if(coloridx && coloridx <= lsbMsbTransitionBit) {
           // divide brightness in half for each bit below lsbMsbTransitionBit
           int lsbBrightness = brt >> (lsbMsbTransitionBit - coloridx + 1);
-          if((x_coord) >= lsbBrightness)
+          if((x_coord) >= lsbBrightness) {
             row[x_coord] |= BIT_OE;  // Disable output after this point.
             continue;
+	  }
         }
 
         // clear OE bit for all other pixels
