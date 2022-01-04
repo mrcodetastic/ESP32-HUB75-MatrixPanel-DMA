@@ -53,10 +53,12 @@ static inline int i2s_parallel_get_memory_width(i2s_port_t port, i2s_parallel_cf
     case I2S_PARALLEL_WIDTH_8:
 
 #ifdef ESP32_ORIG	
-      // IS21 supports space saving single byte 8 bit parallel access
+      // Only I2S1 on the legacy ESP32 WROOM MCU supports space saving single byte 8 bit parallel access
       if(port == I2S_NUM_1) {
         return 1;
-      }
+      } else {
+        return 2;
+	  }
 #else 
 		return 1;
 #endif
