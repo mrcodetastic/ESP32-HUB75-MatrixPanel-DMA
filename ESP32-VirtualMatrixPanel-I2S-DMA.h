@@ -133,7 +133,7 @@ inline VirtualCoords VirtualMatrixPanel::getCoords(int16_t &x, int16_t &y) {
 	//Serial.println("Called Base.");
 	coords.x = coords.y = -1; // By defalt use an invalid co-ordinates that will be rejected by updateMatrixDMABuffer
 
-	if ( x < 0 || x >= width() || y < 0 || y >= height() ) { // Co-ordinates go from 0 to X-1 remember! width() and height() are out of range!
+	if ( x < 0 || x >= virtualResX || y < 0 || y >= virtualResY ) { // Co-ordinates go from 0 to X-1 remember! otherwise they are out of range!
 	//Serial.printf("VirtualMatrixPanel::getCoords(): Invalid virtual display coordinate. x,y: %d, %d\r\n", x, y);
 		return coords;
 	}
@@ -244,6 +244,11 @@ inline void VirtualMatrixPanel::drawPixelRGB888(int16_t x, int16_t y, uint8_t r,
   this->display->drawPixelRGB888( coords.x, coords.y, r, g, b);
 }
 
+inline void VirtualMatrixPanel::setPhysicalPanelScanRate(PANEL_SCAN_RATE rate) {
+	_panelScanRate=rate;
+}
+
+#ifndef NO_GFX
 inline void VirtualMatrixPanel::setRotate(bool rotate) {
 	_rotate=rotate;	
 	
@@ -251,13 +256,6 @@ inline void VirtualMatrixPanel::setRotate(bool rotate) {
 	if (rotate) { setRotation(1); } else { setRotation(0); }
 }
 
-inline void VirtualMatrixPanel::setPhysicalPanelScanRate(PANEL_SCAN_RATE rate) {
-	_panelScanRate=rate;
-}
-
-
-
-#ifndef NO_GFX
 inline void VirtualMatrixPanel::drawDisplayTest()
 {  
    this->display->setFont(&FreeSansBold12pt7b);
