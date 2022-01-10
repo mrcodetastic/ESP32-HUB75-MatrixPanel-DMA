@@ -34,7 +34,7 @@ struct VirtualCoords {
 	  
 };
 
-enum PANEL_SCAN_RATE {NORMAL_ONE_SIXTEEN, ONE_EIGHT};
+enum PANEL_SCAN_RATE {NORMAL_ONE_SIXTEEN, ONE_EIGHT_32, ONE_EIGHT_16};
 
 #ifdef USE_GFX_ROOT
 class VirtualMatrixPanel : public GFX
@@ -190,7 +190,7 @@ inline VirtualCoords VirtualMatrixPanel::getCoords(int16_t &x, int16_t &y) {
 	 *        the underlying hardware library is designed for (because 
 	 *        there's only 2 x RGB pins... and convert this to 1/8 or something
 	 */
-	if ( _panelScanRate == ONE_EIGHT)
+    if ( _panelScanRate == ONE_EIGHT_32)
 	{
 		/* Convert Real World 'VirtualMatrixPanel' co-ordinates (i.e. Real World pixel you're looking at
 		   on the panel or chain of panels, per the chaining configuration) to a 1/8 panels
@@ -224,6 +224,23 @@ inline VirtualCoords VirtualMatrixPanel::getCoords(int16_t &x, int16_t &y) {
 		  Serial.print("to ("); Serial.print(coords.x, DEC);  Serial.print(",");  Serial.print(coords.y, DEC);   Serial.println(") ");
 		 */
 	}
+	
+
+	if ( _panelScanRate == ONE_EIGHT_16)
+	{
+		 if ((y & 8) == 0) {
+			coords.x += (panelResX>>2) * (((coords.x & 0xFFF0)>>4)+1); // 1st, 3rd 'block' of 8 rows of pixels, offset by panel width in DMA buffer
+		} else {
+			coords.x += (panelResX>>2) * (((coords.x & 0xFFF0)>>4)); // 2nd, 4th 'block' of 8 rows of pixels, offset by panel width in DMA buffer
+		}
+
+		if (y < 32)
+			coords.y = (y >> 4) * 8 + (y & 0b00000111);
+		else{
+			coords.y = ((y-32) >> 4) * 8 + (y & 0b00000111);
+			coords.x += 256;
+		}
+	}	
 		
 
     //Serial.print("Mapping to x: "); Serial.print(coords.x, DEC);  Serial.print(", y: "); Serial.println(coords.y, DEC);  
