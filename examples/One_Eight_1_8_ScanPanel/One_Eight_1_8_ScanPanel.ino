@@ -92,7 +92,7 @@
     OneEightMatrixDisplay = new VirtualMatrixPanel((*dma_display), NUM_ROWS, NUM_COLS, PANEL_RES_X, PANEL_RES_Y, SERPENT, TOPDOWN);
     
 	// THE IMPORTANT BIT BELOW!
-    OneEightMatrixDisplay->setPhysicalPanelScanRate(ONE_EIGHT);
+    OneEightMatrixDisplay->setPhysicalPanelScanRate(ONE_EIGHT_32);
   }
 
   
