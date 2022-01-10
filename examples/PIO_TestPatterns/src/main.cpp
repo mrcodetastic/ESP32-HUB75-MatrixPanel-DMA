@@ -11,8 +11,11 @@
 */
 #include <Arduino.h>
 #include "xtensa/core-macros.h"
+#ifdef VIRTUAL_PANE
+#include <ESP32-VirtualMatrixPanel-I2S-DMA.h>
+#else
 #include <ESP32-HUB75-MatrixPanel-I2S-DMA.h>
-
+#endif
 #include "main.h"
 
 // HUB75E pinout
@@ -44,25 +47,38 @@
 */
 
 // Configure for your panel(s) as appropriate!
+#define PIN_E 32
 #define PANEL_WIDTH 64
 #define PANEL_HEIGHT 64         // Panel height of 64 will required PIN_E to be defined.
-#define PANELS_NUMBER 2         // Number of chained panels, if just a single panel, obviously set to 1
-#define PIN_E 32
+
+#ifdef VIRTUAL_PANE
+ #define PANELS_NUMBER 4         // Number of chained panels, if just a single panel, obviously set to 1
+#else
+ #define PANELS_NUMBER 2         // Number of chained panels, if just a single panel, obviously set to 1
+#endif
 
 #define PANE_WIDTH PANEL_WIDTH * PANELS_NUMBER
 #define PANE_HEIGHT PANEL_HEIGHT
-
-
-// patten change delay
-#define PATTERN_DELAY 2000
-
 #define NUM_LEDS PANE_WIDTH*PANE_HEIGHT
 
-// do tests using fast-line methods
-#define USE_FASTLINES
+#ifdef VIRTUAL_PANE
+ #define NUM_ROWS 2 // Number of rows of chained INDIVIDUAL PANELS
+ #define NUM_COLS 2 // Number of INDIVIDUAL PANELS per ROW
+ #define PANEL_CHAIN NUM_ROWS*NUM_COLS    // total number of panels chained one to another
+ // Change this to your needs, for details on VirtualPanel pls read the PDF!
+ #define SERPENT true
+ #define TOPDOWN false
+#endif
 
 
+#ifdef VIRTUAL_PANE
+VirtualMatrixPanel *matrix = nullptr;
+MatrixPanel_I2S_DMA *chain = nullptr;
+#else
 MatrixPanel_I2S_DMA *matrix = nullptr;
+#endif
+// patten change delay
+#define PATTERN_DELAY 2000
 
 uint16_t time_counter = 0, cycles = 0, fps = 0;
 unsigned long fps_timer;
@@ -77,6 +93,8 @@ uint32_t ccount1, ccount2;
 uint8_t color1 = 0, color2 = 0, color3 = 0;
 uint16_t x,y;
 
+const char *str = "* ESP32 I2S DMA *";
+
 void setup(){
 
   Serial.begin(BAUD_RATE);
@@ -89,22 +107,30 @@ void setup(){
   mxconfig.gpio.e = PIN_E;
   mxconfig.driver = HUB75_I2S_CFG::FM6126A;   // for panels using FM6126A chips
 
+#ifndef VIRTUAL_PANE
   matrix = new MatrixPanel_I2S_DMA(mxconfig);
-
   matrix->begin();
   matrix->setBrightness8(255);
-
-  // longer latch blanking could help to eliminate ghosting in some cases
-  //matrix->setLatBlanking(2);
+#else
+  chain = new MatrixPanel_I2S_DMA(mxconfig);
+  chain->begin();
+  chain->setBrightness8(255);
+  // create VirtualDisplay object based on our newly created dma_display object
+  matrix = new VirtualMatrixPanel((*chain), NUM_ROWS, NUM_COLS, PANEL_WIDTH, PANEL_HEIGHT, SERPENT, TOPDOWN);
+#endif
 
   ledbuff = (CRGB *)malloc(NUM_LEDS * sizeof(CRGB));  // allocate buffer for some tests
   buffclear(ledbuff);
 }
 
-
+uint8_t wheelval = 0;
 void loop(){
 
   Serial.printf("Cycle: %d\n", ++cycles);
+
+#ifndef NO_GFX
+  drawText(wheelval++);
+#endif
 
   Serial.print("Estimating clearScreen() - ");
   ccount1 = XTHAL_GET_CCOUNT();
@@ -126,7 +152,7 @@ void loop(){
   delay(5000);
 */
 
-
+#ifndef VIRTUAL_PANE
   // simple solid colors
   Serial.println("Fill screen: RED");
   matrix->fillScreenRGB888(255, 0, 0);
@@ -137,7 +163,7 @@ void loop(){
   Serial.println("Fill screen: BLUE");
   matrix->fillScreenRGB888(0, 0, 255);
   delay(PATTERN_DELAY);
-
+#endif
 
   for (uint8_t i=5; i; --i){
     Serial.print("Estimating single drawPixelRGB888(r, g, b) ticks: ");
@@ -157,6 +183,7 @@ void loop(){
   t2 = micros()-t1;
   Serial.printf("%lu us, %u ticks\n\n", t2, ccount1);
 
+#ifndef VIRTUAL_PANE
   // Bare fillscreen(r, g, b)
   Serial.print("Estimating fillscreenRGB888(r, g, b) time: ");
   t1 = micros();
@@ -167,7 +194,7 @@ void loop(){
   s1+=t2;
   Serial.printf("%lu us, avg: %lu, ccnt: %d\n", t2, s1/cycles, ccount2);
   delay(PATTERN_DELAY);
-
+#endif
 
   Serial.print("Estimating full-screen fillrate with looped drawPixelRGB888(): ");
   y = PANE_HEIGHT;
@@ -214,7 +241,7 @@ void loop(){
   delay(PATTERN_DELAY);
 //
 
-#ifdef USE_FASTLINES
+#ifdef TEST_FASTLINES
   // Fillrate for fillRect() function
   Serial.print("Estimating fullscreen fillrate with fillRect() time: ");
   t1 = micros();
@@ -266,7 +293,7 @@ void loop(){
   Serial.printf("%lu us, %u ticks\n", t2, ccount1);
   delay(PATTERN_DELAY);
 
-#ifdef USE_FASTLINES
+#ifdef TEST_FASTLINES
   Serial.println("Estimating V-lines with vlineDMA(): ");  //
   matrix->fillScreen(0);
   color2 = random8();
@@ -320,7 +347,7 @@ void loop(){
   Serial.printf("%lu us, %u ticks\n", t2, ccount1);
   delay(PATTERN_DELAY);
 
-#ifdef USE_FASTLINES
+#ifdef TEST_FASTLINES
   Serial.println("Estimating H-lines with hlineDMA(): ");
   matrix->fillScreen(0);
   color2 = random8();
@@ -394,5 +421,35 @@ uint16_t XY16( uint16_t x, uint16_t y)
     return (y * PANE_WIDTH) + x;
   } else {
     return 0;
+  }
+}
+
+#ifdef NO_GFX
+void drawText(int colorWheelOffset){}
+#else
+void drawText(int colorWheelOffset){
+  // draw some text
+  matrix->setTextSize(1);     // size 1 == 8 pixels high
+  matrix->setTextWrap(false); // Don't wrap at end of line - will do ourselves
+
+  matrix->setCursor(5, 5);    // start at top left, with 5,5 pixel of spacing
+  uint8_t w = 0;
+
+  for (w=0; w<strlen(str); w++) {
+    matrix->setTextColor(colorWheel((w*32)+colorWheelOffset));
+    matrix->print(str[w]);
+  }
+}
+#endif
+
+uint16_t colorWheel(uint8_t pos) {
+  if(pos < 85) {
+    return matrix->color565(pos * 3, 255 - pos * 3, 0);
+  } else if(pos < 170) {
+    pos -= 85;
+    return matrix->color565(255 - pos * 3, 0, pos * 3);
+  } else {
+    pos -= 170;
+    return matrix->color565(0, pos * 3, 255 - pos * 3);
   }
 }
