@@ -10,6 +10,7 @@
 #if CONFIG_IDF_TARGET_ESP32S2 || CONFIG_IDF_TARGET_ESP32S3
 
 	#define ESP32_SXXX 1
+	#define ESP32_I2S_DEVICE            I2S_NUM_0	
 		
 	#define I2S_PARALLEL_CLOCK_HZ 160000000L
 	#define DMA_MAX (4096-4)
@@ -18,6 +19,7 @@
 
 	// 2016 model that started it all, and this library. The best.
 	#define ESP32_ORIG 1	
+	#define ESP32_I2S_DEVICE            I2S_NUM_0	
 	
 	#define I2S_PARALLEL_CLOCK_HZ 80000000L
 	#define DMA_MAX (4096-4)
