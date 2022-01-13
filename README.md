@@ -17,7 +17,7 @@ __[BUILD](/doc/BuildOptions.md) | [EXAMPLES](/examples/README.md)__ | [![Platfor
   * [2. Wiring ESP32 with the LED Matrix Panel](#2-wiring-esp32-with-the-led-matrix-panel)
   * [3. Run a Test Sketch](#3-run-a-test-sketch)
 - [More Information](#more-information)
-  * [Build-time options](#build-time-options)
+  * [Build-time options](#doc/BuildOptions.md)
   * [Memory constraints](#memory-constraints)
   * [Can I use with a larger panel (i.e. 64x64px square panel)?](#can-i-use-with-a-larger-panel-ie-64x64px-square-panel)
   * [Can I chain panels?](#can-i-chain-panels)
