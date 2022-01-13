@@ -134,19 +134,19 @@ inline VirtualCoords VirtualMatrixPanel::getCoords(int16_t &x, int16_t &y) {
 	//Serial.println("Called Base.");
 	coords.x = coords.y = -1; // By defalt use an invalid co-ordinates that will be rejected by updateMatrixDMABuffer
 
+	// We want to rotate?
+	if (_rotate){
+		int16_t temp_x=x;
+		x=y;
+		y=virtualResY-1-temp_x;
+	}  
+
 	if ( x < 0 || x >= virtualResX || y < 0 || y >= virtualResY ) { // Co-ordinates go from 0 to X-1 remember! otherwise they are out of range!
 	//Serial.printf("VirtualMatrixPanel::getCoords(): Invalid virtual display coordinate. x,y: %d, %d\r\n", x, y);
 		return coords;
 	}
 
-	// We want to rotate?
-	if (_rotate){
-		uint16_t temp_x=x;
-		x=y;
-		y=virtualResY-1-temp_x;
-    }  
-
-    // Stupidity check
+	// Stupidity check
 	if ( (vmodule_rows == 1) && (vmodule_cols == 1)) // single panel...
 	{
 		coords.x = x;
