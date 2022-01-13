@@ -98,6 +98,7 @@ class VirtualMatrixPanel
     // equivalent methods of the matrix library so it can be just swapped out.
     virtual void drawPixel(int16_t x, int16_t y, uint16_t color);
     virtual void fillScreen(uint16_t color); // overwrite adafruit implementation
+    virtual void fillScreenRGB888(uint8_t r, uint8_t g,uint8_t b);
     void clearScreen() 	{  display->clearScreen(); }
     void drawPixelRGB888(int16_t x, int16_t y, uint8_t r, uint8_t g, uint8_t b);
 
@@ -254,6 +255,10 @@ inline void VirtualMatrixPanel::drawPixel(int16_t x, int16_t y, uint16_t color) 
 
 inline void VirtualMatrixPanel::fillScreen(uint16_t color) { // adafruit virtual void override
   this->display->fillScreen(color);
+}
+
+inline void VirtualMatrixPanel::fillScreenRGB888(uint8_t r, uint8_t g,uint8_t b) {
+  this->display->fillScreenRGB888(r, g, b);
 }
 
 inline void VirtualMatrixPanel::drawPixelRGB888(int16_t x, int16_t y, uint8_t r, uint8_t g, uint8_t b) {
