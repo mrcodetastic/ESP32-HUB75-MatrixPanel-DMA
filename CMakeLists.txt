@@ -6,11 +6,11 @@ cmake_minimum_required(VERSION 3.5)
 
 idf_component_register(SRCS "esp32_i2s_parallel_dma.c" "ESP32-HUB75-MatrixPanel-I2S-DMA.cpp" "ESP32-HUB75-MatrixPanel-leddrivers.cpp"
                        INCLUDE_DIRS "."
-                       REQUIRES arduino)
+                       REQUIRES arduino Adafruit-GFX-Library)
 
-# In case you are running into issues with "missing" header files from 3rd party libraries like "Adafruit_GFX.h"
-# you can add them to the REQUIRES section above (depending on how you added the library as component!) like
-# REQUIRES arduino Adafruit-GFX-Library)
+# In case you are running into issues with "missing" header files from 3rd party libraries
+# you can add them to the REQUIRES section above. If you use some of the build options below
+# you probably want to remove (NO_GFX) or replace Adafruit-GFX-Library (USE_GFX_ROOT)
 
 # Example to build with USE_GFX_ROOT or NO_GFX / just uncomment the appropriate line
 # target_compile_options(${COMPONENT_TARGET} PUBLIC -DUSE_GFX_ROOT)
