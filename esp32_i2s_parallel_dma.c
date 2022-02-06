@@ -48,13 +48,8 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
 
 //i2s_port_t port = *((i2s_port_t*) arg);
 
-/* Compiler pre-processor check. Saves a few cycles, no need to cast void ptr to i2s_port_t and then check 120 times second... */
-#if ESP32_I2S_DEVICE == I2S_NUM_0
-      SET_PERI_REG_BITS(I2S_INT_CLR_REG(1), I2S_OUT_EOF_INT_CLR_V, 1, I2S_OUT_EOF_INT_CLR_S);
-#else
-      // For I2S0
-      SET_PERI_REG_BITS(I2S_INT_CLR_REG(0), I2S_OUT_EOF_INT_CLR_V, 1, I2S_OUT_EOF_INT_CLR_S);    
-#endif
+/* Saves a few cycles, no need to cast void ptr to i2s_port_t and then check 120 times second... */
+        SET_PERI_REG_BITS(I2S_INT_CLR_REG(ESP32_I2S_DEVICE), I2S_OUT_EOF_INT_CLR_V, 1, I2S_OUT_EOF_INT_CLR_S);
 
 	previousBufferFree 		= true;
 
