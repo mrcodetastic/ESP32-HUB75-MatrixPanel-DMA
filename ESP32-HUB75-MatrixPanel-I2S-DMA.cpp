@@ -476,12 +476,8 @@ void IRAM_ATTR MatrixPanel_I2S_DMA::updateMatrixDMABuffer(int16_t x_coord, int16
     return;
   }
 
-  uint16_t color = color565(red, blue, green);
-  if(useBuff1)
-    buff1[x_coord + y_coord * 64] = color;
-  else
-    buff2[x_coord + y_coord * 64] = color;
-
+  uint16_t color = color565(red, green, blue);
+  buff[buffIndex][x_coord + y_coord * 64] = color;
   
 
   /* LED Brightness Compensation. Because if we do a basic "red & mask" for example, 

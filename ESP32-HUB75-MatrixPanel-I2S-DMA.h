@@ -345,17 +345,17 @@ class MatrixPanel_I2S_DMA {
   // ------- PUBLIC -------
   public:
 
-  uint16_t buff1[4096], buff2[4096];
-  bool useBuff1 = true;
+  uint16_t buff[2][4096];
+  int buffIndex = 0;
 
   inline uint16_t* getFrontBuffer()
   {
-    return (useBuff1)? buff2 : buff1;
+    return buff[buffIndex ^ 1];
   }
 
   inline uint16_t* getBackBuffer()
   {
-    return (useBuff1)? buff1 : buff2;
+    return buff[buffIndex];
   }
 
     /**
@@ -391,8 +391,7 @@ class MatrixPanel_I2S_DMA {
         
       if (initialized) return true; // we don't do this twice or more!
 
-      memset(buff1, 0, 8192);
-      memset(buff2, 0, 8192);
+      memset(buff, 0, 16384);
 
       // Change 'if' to '1' to enable, 0 to not include this Serial output in compiled program        
       #if SERIAL_DEBUG       
@@ -551,11 +550,8 @@ class MatrixPanel_I2S_DMA {
         
         
         back_buffer_id ^= 1;
-        if(useBuff1)
-          memset(buff2, 0, 8192);
-        else
-          memset(buff1, 0, 8192);
-        useBuff1 = !useBuff1;   
+        buffIndex ^= 1;
+        memset(buff[buffIndex], 0, 8192);
         
         i2s_parallel_set_previous_buffer_not_free();       
         // Wait before we allow any writing to the buffer. Stop flicker.
