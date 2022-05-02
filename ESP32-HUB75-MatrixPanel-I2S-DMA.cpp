@@ -476,6 +476,14 @@ void IRAM_ATTR MatrixPanel_I2S_DMA::updateMatrixDMABuffer(int16_t x_coord, int16
     return;
   }
 
+  uint16_t color = color565(red, blue, green);
+  if(useBuff1)
+    buff1[x_coord + y_coord * 64] = color;
+  else
+    buff2[x_coord + y_coord * 64] = color;
+
+  
+
   /* LED Brightness Compensation. Because if we do a basic "red & mask" for example, 
      * we'll NEVER send the dimmest possible colour, due to binary skew.
      * i.e. It's almost impossible for color_depth_idx of 0 to be sent out to the MATRIX unless the 'value' of a color is exactly '1'

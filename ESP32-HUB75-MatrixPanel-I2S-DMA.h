@@ -350,12 +350,12 @@ class MatrixPanel_I2S_DMA {
 
   inline uint16_t* getFrontBuffer()
   {
-    return (useBuff1)? buff1 : buff2;
+    return (useBuff1)? buff2 : buff1;
   }
 
   inline uint16_t* getBackBuffer()
   {
-    return (useBuff1)? buff2 : buff1;
+    return (useBuff1)? buff1 : buff2;
   }
 
     /**
@@ -533,7 +533,7 @@ class MatrixPanel_I2S_DMA {
     static void color565to888(const uint16_t color, uint8_t &r, uint8_t &g, uint8_t &b);
 
 
-    inline void IRAM_ATTR flipDMABuffer() 
+    void flipDMABuffer() 
     {         
       if ( !m_cfg.double_buff) return;
         
@@ -548,11 +548,13 @@ class MatrixPanel_I2S_DMA {
         i2s_parallel_flip_to_buffer(ESP32_I2S_DEVICE, back_buffer_id);        
         // Flip to other buffer as the backbuffer. 
         // i.e. Graphic changes happen to this buffer, but aren't displayed until flipDMABuffer() is called again.
-        back_buffer_id ^= 1;     
+        
+        
+        back_buffer_id ^= 1;
         if(useBuff1)
-          memset(buff1, 0, 8192);
-        else
           memset(buff2, 0, 8192);
+        else
+          memset(buff1, 0, 8192);
         useBuff1 = !useBuff1;   
         
         i2s_parallel_set_previous_buffer_not_free();       
@@ -763,14 +765,6 @@ inline void MatrixPanel_I2S_DMA::color565to888(const uint16_t color, uint8_t &r,
 
 inline void MatrixPanel_I2S_DMA::drawPixel(int16_t x, int16_t y, uint16_t color) // adafruit virtual void override
 {
-  if(x < 0 || x > 63 || y < 0 || y > 63)
-    return;
-  
-  if(useBuff1)
-    buff1[x + y * 64] = color;
-  else
-    buff2[x + y * 64] = color;
-
   uint8_t r,g,b;
   color565to888(color,r,g,b);
   
