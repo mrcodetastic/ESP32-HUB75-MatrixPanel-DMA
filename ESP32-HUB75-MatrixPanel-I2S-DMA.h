@@ -358,6 +358,11 @@ class MatrixPanel_I2S_DMA {
     return buff[buffIndex];
   }
 
+  inline uint16_t getTextColor()
+  {
+    return textcolor;
+  }
+
     /**
      * MatrixPanel_I2S_DMA
      *
