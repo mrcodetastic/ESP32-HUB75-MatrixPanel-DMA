@@ -566,7 +566,7 @@ class MatrixPanel_I2S_DMA {
         
         back_buffer_id ^= 1;
         buffIndex ^= 1;
-        memset(buff[buffIndex], 0, 8192);
+        memcpy(buff[buffIndex], buff[buffIndex ^ 1], 8192);
         
         i2s_parallel_set_previous_buffer_not_free();       
         // Wait before we allow any writing to the buffer. Stop flicker.
