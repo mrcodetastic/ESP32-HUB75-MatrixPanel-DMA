@@ -363,6 +363,16 @@ class MatrixPanel_I2S_DMA {
     return textcolor;
   }
 
+  inline uint16_t getTextSizeX()
+  {
+    return textsize_x;
+  }
+
+  inline uint16_t getTextSizeY()
+  {
+    return textsize_y;
+  }
+
     /**
      * MatrixPanel_I2S_DMA
      *
