@@ -558,6 +558,9 @@ void IRAM_ATTR MatrixPanel_I2S_DMA::updateMatrixDMABuffer(int16_t x_coord, int16
 void MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint8_t red, uint8_t green, uint8_t blue)
 {
   if ( !initialized ) return;
+
+  uint16_t color = color565(red, green, blue);
+  memset(buff[buffIndex], color, 8192);
   
     /* https://ledshield.wordpress.com/2012/11/13/led-brightness-to-your-eye-gamma-correction-no/ */     
 #ifndef NO_CIE1931
@@ -865,6 +868,9 @@ void MatrixPanel_I2S_DMA::hlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, 
   if ( x_coord < 0 || y_coord < 0 || l < 1 || x_coord >= PIXELS_PER_ROW || y_coord >= m_cfg.mx_height)
     return;
 
+  uint16_t color = color565(red, green, blue);
+  for(int i = 0; i < l; i++)
+    buff[buffIndex][x_coord + i + y_coord * 64] = color;
 
   l = ( (x_coord + l) >= PIXELS_PER_ROW ) ? (PIXELS_PER_ROW - x_coord):l; 
 
@@ -947,6 +953,10 @@ void MatrixPanel_I2S_DMA::vlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, 
 
   if ( x_coord < 0 || y_coord < 0 || l < 1 || x_coord >= PIXELS_PER_ROW || y_coord >= m_cfg.mx_height)
     return;
+
+  uint16_t color = color565(red, green, blue);
+  for(int i = 0; i < l; i++)
+    buff[buffIndex][x_coord + (y_coord + i) * 64] = color;
 
   // check for a length that goes beyond the height of the screen! Array out of bounds dma memory changes = screwed output #163
   l = ( (y_coord + l) >= m_cfg.mx_height ) ? (m_cfg.mx_height - y_coord):l; 
