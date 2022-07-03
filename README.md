@@ -83,6 +83,7 @@ There are a number of great looking LED graphical display projects which leverag
 * [Clock, GIF Animator and Audio Visualiser](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/discussions/153)
 * [Aurora Audio Visualiser](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/discussions/188)
 * [Big Visualisation](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/discussions/155)
+* [Clockwise](https://jnthas.github.io/clockwise/)
 
 # Getting Started
 ## 1. Library Installation
