@@ -101,7 +101,11 @@ class VirtualMatrixPanel
     virtual void fillScreenRGB888(uint8_t r, uint8_t g,uint8_t b);
     void clearScreen() 	{  display->clearScreen(); }
     void drawPixelRGB888(int16_t x, int16_t y, uint8_t r, uint8_t g, uint8_t b);
-
+#ifdef USE_GFX_ROOT
+    // 24bpp FASTLED CRGB colour struct support
+    void fillScreen(CRGB color);
+    void drawPixel(int16_t x, int16_t y, CRGB color);
+#endif
     uint16_t color444(uint8_t r, uint8_t g, uint8_t b) { return display->color444(r, g, b); }
     uint16_t color565(uint8_t r, uint8_t g, uint8_t b) { return display->color565(r, g, b); }
     uint16_t color333(uint8_t r, uint8_t g, uint8_t b) { return display->color333(r, g, b); }
@@ -265,6 +269,20 @@ inline void VirtualMatrixPanel::drawPixelRGB888(int16_t x, int16_t y, uint8_t r,
   getCoords(x, y);
   this->display->drawPixelRGB888( coords.x, coords.y, r, g, b);
 }
+
+#ifdef USE_GFX_ROOT
+// Support for CRGB values provided via FastLED
+inline void VirtualMatrixPanel::drawPixel(int16_t x, int16_t y, CRGB color)
+{
+    getCoords(x, y);
+    this->display->drawPixel(coords.x, coords.y, color);
+}
+
+inline void VirtualMatrixPanel::fillScreen(CRGB color)
+{
+    this->display->fillScreen(color);
+}
+#endif
 
 inline void VirtualMatrixPanel::setRotate(bool rotate) {
 	_rotate=rotate;	
