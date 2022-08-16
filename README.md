@@ -45,7 +45,9 @@ Espressif have kept the 'ESP32' name for all their chips for brand recognition, 
 
 This library supports the *original* ESP32. That being the ESP-WROOM-32 module with ESP32‑D0WDQ6 chip from 2017. This MCU has 520kB of SRAM which is much more than all the recent 'reboots' of the ESP32 such as the S2, S3, C3 etc. If you want to use this library, use with an original ESP32 as it has the most SRAM for DMA.
 
-Support also exists for the ESP32-S2 and ESP32-S3. 
+Support also exists for the ESP32-S2.
+
+ESP32-S3 is currently not supported (as of August 2022), but @mrfaptastic is working on this.
 
 RISC-V ESP32's (like the C3) are not, and will never be supported  as they do not have parallel DMA output required for this library.
 
