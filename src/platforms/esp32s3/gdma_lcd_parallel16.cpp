@@ -7,10 +7,12 @@
   and register poking. Probably more robust ways of doing this still TBD.
 
 
- FULL CREDIT goes to AdaFruit
+ FULL CREDIT goes to AdaFruit and  https://github.com/PaintYourDragon
  
  https://blog.adafruit.com/2022/06/21/esp32uesday-more-s3-lcd-peripheral-hacking-with-code/
  
+ https://github.com/adafruit/Adafruit_Protomatter/blob/master/src/arch/esp32-s3.h
+
  PLEASE SUPPORT THEM!
 
  */
@@ -71,7 +73,7 @@
     LCD_CAM.lcd_user.lcd_reset = 1;
     esp_rom_delay_us(100);
 
-    auto lcd_clkm_div_num = 160000000 / _cfg.bus_freq / 2;
+    auto lcd_clkm_div_num = 160000000 / _cfg.bus_freq;
 
      ESP_LOGI(TAG, "Clock divider is %d", lcd_clkm_div_num);
 
@@ -185,11 +187,19 @@
     };
     gdma_apply_strategy(dma_chan, &strategy_config);
 
+    gdma_transfer_ability_t ability = {
+        .sram_trans_align = 0,
+        .psram_trans_align = 0,
+    };
+    gdma_set_transfer_ability(dma_chan, &ability);    
+
     // Enable DMA transfer callback
+    /*
     static gdma_tx_event_callbacks_t tx_cbs = {
       .on_trans_eof = dma_callback
     };
     gdma_register_tx_event_callbacks(dma_chan, &tx_cbs, NULL);
+    */
 
     // As mentioned earlier, the slowest clock we can get to the LCD
     // peripheral is 40 MHz / 250 / 64 = 2500 Hz. To make an even slower
