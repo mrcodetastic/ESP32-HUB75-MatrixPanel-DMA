@@ -269,7 +269,7 @@
 
   void Bus_Parallel16::enable_double_dma_desc(void)
   {
-    //_double_dma_buffer = true;
+    _double_dma_buffer = true;
   }
 
   // Need this to work for double buffers etc.
@@ -288,8 +288,20 @@
       return false;
     }
 
+    if (_double_dma_buffer)
+    {
+      _dmadesc_b= (HUB75_DMA_DESCRIPTOR_T*)heap_caps_malloc(sizeof(HUB75_DMA_DESCRIPTOR_T) * len, MALLOC_CAP_DMA);
+    
+      if (_dmadesc_b == nullptr)
+      {
+        ESP_LOGE(TAG, "ERROR: Couldn't malloc _dmadesc_b. Not enough memory.");
+        _double_dma_buffer = false;
+      }
+    }
+
+
     _dmadesc_a_idx  = 0;
-   // _dmadesc_b_idx  = 0;
+    _dmadesc_b_idx  = 0;
 
     return true;
 
@@ -311,6 +323,29 @@
       return;
     }
 
+    if (_double_dma_buffer == true && dmadesc_b == true)
+    {
+
+      _dmadesc_b[_dmadesc_b_idx].dw0.owner = DMA_DESCRIPTOR_BUFFER_OWNER_DMA;
+      _dmadesc_b[_dmadesc_b_idx].dw0.suc_eof = 0;
+      _dmadesc_b[_dmadesc_b_idx].dw0.size = _dmadesc_b[_dmadesc_b_idx].dw0.length = size; //sizeof(data);
+      _dmadesc_b[_dmadesc_b_idx].buffer = data; //data;
+
+      if (_dmadesc_b_idx == _dmadesc_count-1) {
+          _dmadesc_b[_dmadesc_b_idx].next =  (dma_descriptor_t *) &_dmadesc_b[0]; 
+      }
+      else {
+          _dmadesc_b[_dmadesc_b_idx].next =  (dma_descriptor_t *) &_dmadesc_b[_dmadesc_b_idx+1]; 
+      }
+
+      _dmadesc_b_idx++;
+
+
+
+    }
+    else
+    {
+
       _dmadesc_a[_dmadesc_a_idx].dw0.owner = DMA_DESCRIPTOR_BUFFER_OWNER_DMA;
       _dmadesc_a[_dmadesc_a_idx].dw0.suc_eof = 0;
       _dmadesc_a[_dmadesc_a_idx].dw0.size = _dmadesc_a[_dmadesc_a_idx].dw0.length = size; //sizeof(data);
@@ -325,6 +360,8 @@
 
       _dmadesc_a_idx++;
 
+
+    }
 
   } // end create_dma_desc_link
 
@@ -349,7 +386,23 @@
 
   void Bus_Parallel16::flip_dma_output_buffer()
   {
-   
+
+    if ( _double_dma_buffer == false) return;
+
+    if ( _dmadesc_a_active == true) // change across to everything 'b''
+    {
+       _dmadesc_a[_dmadesc_count-1].next =  (dma_descriptor_t *) &_dmadesc_b[0];       
+       _dmadesc_b[_dmadesc_count-1].next =  (dma_descriptor_t *) &_dmadesc_b[0];       
+    }
+    else
+    {
+       _dmadesc_a[_dmadesc_count-1].next =  (dma_descriptor_t *) &_dmadesc_a[0];       
+       _dmadesc_b[_dmadesc_count-1].next =  (dma_descriptor_t *) &_dmadesc_a[0];   
+    }
+
+    _dmadesc_a_active ^= _dmadesc_a_active;
+
+
     
   } // end flip
 

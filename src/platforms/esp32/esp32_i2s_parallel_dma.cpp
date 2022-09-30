@@ -564,6 +564,9 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
         _dmadesc_a[_dmadesc_count-1].qe.stqe_next = &_dmadesc_a[0]; 
         _dmadesc_b[_dmadesc_count-1].qe.stqe_next = &_dmadesc_a[0]; 
     }
+
+    _dmadesc_a_active ^= _dmadesc_a_active;
+    
   } // end flip
 
 

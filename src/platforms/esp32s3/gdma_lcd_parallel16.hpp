@@ -157,15 +157,11 @@
 
     HUB75_DMA_DESCRIPTOR_T* _dmadesc_a = nullptr;
 
-    // uint32_t _clock_reg_value;
-    // uint32_t _fast_wait = 0;
-
-    //bool    _double_dma_buffer = false;
-    //bool    _dmadesc_a_active   = true;    
-
-    //uint32_t _dmadesc_b_idx  = 0;
+    bool    _double_dma_buffer = false;
+    bool    _dmadesc_a_active   = true;    
+    uint32_t _dmadesc_b_idx  = 0;
   
-    //HUB75_DMA_DESCRIPTOR_T* _dmadesc_b = nullptr;    
+    HUB75_DMA_DESCRIPTOR_T* _dmadesc_b = nullptr;    
 
     esp_lcd_i80_bus_handle_t _i80_bus;
 

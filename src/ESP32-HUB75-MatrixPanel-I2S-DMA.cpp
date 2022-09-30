@@ -98,6 +98,9 @@ bool MatrixPanel_I2S_DMA::allocateDMAmemory()
     // malloc the DMA linked list descriptors that i2s_parallel will need
     desccount = numDMAdescriptorsPerRow * ROWS_PER_FRAME;
 
+    if (m_cfg.double_buff)
+      dma_bus.enable_double_dma_desc();
+      
     dma_bus.allocate_dma_desc_memory(desccount);
 
 /*
