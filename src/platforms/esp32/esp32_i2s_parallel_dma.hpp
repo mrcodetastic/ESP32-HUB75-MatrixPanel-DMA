@@ -112,7 +112,7 @@ Contributors:
     void dma_transfer_start();
     void dma_transfer_stop();
 
-    void flip_dma_output_buffer();
+    void set_dma_output_buffer(bool dmadesc_b = false);
   
   private:
 
@@ -121,7 +121,7 @@ Contributors:
     config_t _cfg;
 
     bool    _double_dma_buffer  = false;
-    bool    _dmadesc_a_active   = true;
+    //bool    _dmadesc_a_active   = true;
 
     uint32_t _dmadesc_count  = 0;   // number of dma decriptors
 

@@ -39,7 +39,7 @@ Modified heavily for the ESP32 HUB75 DMA library by:
   #include "esp32s3/gdma_lcd_parallel16.hpp"
   #include "esp32s3/esp32s3-default-pins.hpp"    
 
- #else
+ #elif defined (CONFIG_IDF_TARGET_ESP32)
 
   // Assume an ESP32 (the original 2015 version)
   // Same include as ESP32S3  

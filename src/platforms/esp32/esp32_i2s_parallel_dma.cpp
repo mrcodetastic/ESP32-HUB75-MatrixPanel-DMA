@@ -465,9 +465,12 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
       ESP_LOGW(TAG, "Creating DMA descriptor which links to payload with size greater than MAX_DMA_LEN!");            
     }
 
-    if ( (_dmadesc_a_idx+1) > _dmadesc_count) {
-      ESP_LOGE(TAG, "Attempted to create more DMA descriptors than allocated memory for. Expecting a maximum of %d DMA descriptors", _dmadesc_count);          
-      return;
+    if ( !dmadesc_b )
+    {
+      if ( (_dmadesc_a_idx+1) > _dmadesc_count) {
+        ESP_LOGE(TAG, "Attempted to create more DMA descriptors than allocated memory for. Expecting a maximum of %d DMA descriptors", _dmadesc_count);          
+        return;
+      }
     }
 
     volatile lldesc_t *dmadesc;
@@ -550,11 +553,11 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
   } // end   
 
 
-  void Bus_Parallel16::flip_dma_output_buffer()
+  void Bus_Parallel16::set_dma_output_buffer(bool dmadesc_b)
   {
     if ( _double_dma_buffer == false) return;
 
-    if ( _dmadesc_a_active == true) // change across to everything 'b''
+    if ( dmadesc_b == true) // change across to everything 'b''
     {
         _dmadesc_a[_dmadesc_count-1].qe.stqe_next = &_dmadesc_b[0]; 
         _dmadesc_b[_dmadesc_count-1].qe.stqe_next = &_dmadesc_b[0]; 
@@ -565,7 +568,7 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
         _dmadesc_b[_dmadesc_count-1].qe.stqe_next = &_dmadesc_a[0]; 
     }
 
-    _dmadesc_a_active ^= _dmadesc_a_active;
+    //_dmadesc_a_active ^= _dmadesc_a_active;
     
   } // end flip
 

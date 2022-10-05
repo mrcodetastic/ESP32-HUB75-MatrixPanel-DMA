@@ -25,7 +25,7 @@
 
 #pragma once
 
-#if __has_include (<esp_lcd_panel_io.h>)
+#if __has_include (<hal/lcd_ll.h>)
 
 #include <sdkconfig.h>
 #include <esp_lcd_panel_io.h>
@@ -55,13 +55,16 @@
 #else
 #include <driver/periph_ctrl.h>
 #endif
+
 #include <esp_private/gdma.h>
 #include <esp_rom_gpio.h>
 #include <hal/dma_types.h>
 #include <hal/gpio_hal.h>
+
 #include <hal/lcd_ll.h>
 #include <soc/lcd_cam_reg.h>
 #include <soc/lcd_cam_struct.h>
+
 #include <esp_heap_caps.h>
 #include <esp_heap_caps_init.h>
 
@@ -143,7 +146,7 @@
     void dma_transfer_start();
     void dma_transfer_stop();
 
-    void flip_dma_output_buffer();    
+    void set_dma_output_buffer(bool dmadesc_b = false);    
 
   private:
 
@@ -153,15 +156,14 @@
     gdma_channel_handle_t dma_chan; 
 
     uint32_t _dmadesc_count  = 0;   // number of dma decriptors
-    uint32_t _dmadesc_a_idx  = 0;
+   // uint32_t _dmadesc_a_idx  = 0;
+    //uint32_t _dmadesc_b_idx  = 0;
 
     HUB75_DMA_DESCRIPTOR_T* _dmadesc_a = nullptr;
+    HUB75_DMA_DESCRIPTOR_T* _dmadesc_b = nullptr;    
 
     bool    _double_dma_buffer = false;
-    bool    _dmadesc_a_active   = true;    
-    uint32_t _dmadesc_b_idx  = 0;
-  
-    HUB75_DMA_DESCRIPTOR_T* _dmadesc_b = nullptr;    
+    //bool    _dmadesc_a_active   = true;    
 
     esp_lcd_i80_bus_handle_t _i80_bus;
 

@@ -16,10 +16,16 @@
  PLEASE SUPPORT THEM!
 
  */
+#if __has_include (<hal/lcd_ll.h>)
+// Stop compile errors: /src/platforms/esp32s3/gdma_lcd_parallel16.hpp:64:10: fatal error: hal/lcd_ll.h: No such file or directory
+
   #include <Arduino.h>
   #include "gdma_lcd_parallel16.hpp"
 
   static const char* TAG = "gdma_lcd_parallel16";
+
+  static int _dmadesc_a_idx = 0;
+  static int _dmadesc_b_idx = 0;  
 
 
   dma_descriptor_t desc;          // DMA descriptor for testing
@@ -73,7 +79,7 @@
     LCD_CAM.lcd_user.lcd_reset = 1;
     esp_rom_delay_us(100);
 
-    auto lcd_clkm_div_num = 160000000 / _cfg.bus_freq;
+    uint32_t lcd_clkm_div_num = ((160000000 + 1) / _cfg.bus_freq) / 2;
 
      ESP_LOGI(TAG, "Clock divider is %d", lcd_clkm_div_num);
 
@@ -279,7 +285,8 @@
 
   void Bus_Parallel16::enable_double_dma_desc(void)
   {
-    _double_dma_buffer = true;
+        ESP_LOGI(TAG, "Enabled support for secondary DMA buffer.");    
+       _double_dma_buffer = true;
   }
 
   // Need this to work for double buffers etc.
@@ -309,9 +316,9 @@
       }
     }
 
-
-    _dmadesc_a_idx  = 0;
-    _dmadesc_b_idx  = 0;
+    /// override static 
+    _dmadesc_a_idx = 0;
+    _dmadesc_b_idx = 0;
 
     return true;
 
@@ -321,20 +328,15 @@
   {
     static constexpr size_t MAX_DMA_LEN = (4096-4);
 
-    if (size > MAX_DMA_LEN)
-    {
+    if (size > MAX_DMA_LEN) {
       size = MAX_DMA_LEN;
       ESP_LOGW(TAG, "Creating DMA descriptor which links to payload with size greater than MAX_DMA_LEN!");            
     }
 
-    if ( _dmadesc_a_idx >= _dmadesc_count)
+    if ( dmadesc_b == true)
     {
-      ESP_LOGE(TAG, "Attempted to create more DMA descriptors than allocated memory for. Expecting a maximum of %d DMA descriptors", _dmadesc_count);          
-      return;
-    }
 
-    if (_double_dma_buffer == true && dmadesc_b == true)
-    {
+      // ESP_LOGI(TAG, "Creating dma desc B %d", _dmadesc_b_idx);      
 
       _dmadesc_b[_dmadesc_b_idx].dw0.owner = DMA_DESCRIPTOR_BUFFER_OWNER_DMA;
       _dmadesc_b[_dmadesc_b_idx].dw0.suc_eof = 0;
@@ -351,10 +353,16 @@
       _dmadesc_b_idx++;
 
 
-
     }
     else
     {
+     // ESP_LOGI(TAG, "Creating dma desc A %d", _dmadesc_a_idx);      
+
+      if ( _dmadesc_a_idx >= _dmadesc_count)
+      {
+        ESP_LOGE(TAG, "Attempted to create more DMA descriptors than allocated. Expecting max %d descriptors.", _dmadesc_count);          
+        return;
+      }
 
       _dmadesc_a[_dmadesc_a_idx].dw0.owner = DMA_DESCRIPTOR_BUFFER_OWNER_DMA;
       _dmadesc_a[_dmadesc_a_idx].dw0.suc_eof = 0;
@@ -394,12 +402,12 @@
   } // end   
 
 
-  void Bus_Parallel16::flip_dma_output_buffer()
+  void Bus_Parallel16::set_dma_output_buffer(bool dmadesc_b)
   {
 
     if ( _double_dma_buffer == false) return;
 
-    if ( _dmadesc_a_active == true) // change across to everything 'b''
+    if ( dmadesc_b == true) // change across to everything 'b''
     {
        _dmadesc_a[_dmadesc_count-1].next =  (dma_descriptor_t *) &_dmadesc_b[0];       
        _dmadesc_b[_dmadesc_count-1].next =  (dma_descriptor_t *) &_dmadesc_b[0];       
@@ -410,10 +418,8 @@
        _dmadesc_b[_dmadesc_count-1].next =  (dma_descriptor_t *) &_dmadesc_a[0];   
     }
 
-    _dmadesc_a_active ^= _dmadesc_a_active;
-
-
     
   } // end flip
 
 
+#endif

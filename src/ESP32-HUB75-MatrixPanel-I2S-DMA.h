@@ -71,15 +71,14 @@
 
 // 8bit per RGB color = 24 bit/per pixel,
 // might be reduced to save DMA RAM
-#ifndef PIXEL_COLOR_DEPTH_BITS
- #define PIXEL_COLOR_DEPTH_BITS      8
+#ifndef PIXEL_COLOUR_DEPTH_BITS
+ #define PIXEL_COLOUR_DEPTH_BITS      8
 #endif
 
-#define COLOR_CHANNELS_PER_PIXEL     3
+#define COLOUR_CHANNELS_PER_PIXEL     3
 
 /***************************************************************************************/
 /* Definitions below should NOT be ever changed without rewriting library logic         */
-#define ESP32_I2S_DMA_MODE          16                      // From esp32_i2s_parallel_v2.h = 16 bits in parallel
 #define ESP32_I2S_DMA_STORAGE_TYPE  uint16_t                // DMA output of one uint16_t at a time.
 #define CLKS_DURING_LATCH           0                       // Not (yet) used. 
 
@@ -116,24 +115,25 @@
 
 // How many clock cycles to blank OE before/after LAT signal change, default is 1 clock
 #define DEFAULT_LAT_BLANKING  1
+
 // Max clock cycles to blank OE before/after LAT signal change
 #define MAX_LAT_BLANKING  4
 
 /***************************************************************************************/
 // Check compile-time only options
-#if PIXEL_COLOR_DEPTH_BITS > 8
+#if PIXEL_COLOUR_DEPTH_BITS > 8
     #error "Pixel color depth bits cannot be greater than 8."
-#elif PIXEL_COLOR_DEPTH_BITS < 2 
+#elif PIXEL_COLOUR_DEPTH_BITS < 2 
     #error "Pixel color depth bits cannot be less than 2."
 #endif
 
 /* This library is designed to take an 8 bit / 1 byte value (0-255) for each R G B colour sub-pixel. 
- * The PIXEL_COLOR_DEPTH_BITS should always be '8' as a result.
+ * The PIXEL_COLOUR_DEPTH_BITS should always be '8' as a result.
  * However, if the library is to be used with lower colour depth (i.e. 6 bit colour), then we need to ensure the 8-bit value passed to the colour masking
  * is adjusted accordingly to ensure the LSB's are shifted left to MSB, by the difference. Otherwise the colours will be all screwed up.
  */
-#if PIXEL_COLOR_DEPTH_BITS != 8
-static constexpr uint8_t const MASK_OFFSET = 8-PIXEL_COLOR_DEPTH_BITS;
+#if PIXEL_COLOUR_DEPTH_BITS != 8
+static constexpr uint8_t const MASK_OFFSET = 8-PIXEL_COLOUR_DEPTH_BITS;
 #endif
 
 /***************************************************************************************/
@@ -143,7 +143,7 @@ static constexpr uint8_t const MASK_OFFSET = 8-PIXEL_COLOR_DEPTH_BITS;
  */
 struct rowBitStruct {
     const size_t width;
-    const uint8_t color_depth;
+    const uint8_t colour_depth;
     const bool double_buff;
     ESP32_I2S_DMA_STORAGE_TYPE *data;
 
@@ -155,17 +155,17 @@ struct rowBitStruct {
      * default - returns full data vector size for a SINGLE buff
      *
      */
-    size_t size(uint8_t _dpth=0 ) { if (!_dpth) _dpth = color_depth; return width * _dpth * sizeof(ESP32_I2S_DMA_STORAGE_TYPE); };
+    size_t size(uint8_t _dpth=0 ) { if (!_dpth) _dpth = colour_depth; return width * _dpth * sizeof(ESP32_I2S_DMA_STORAGE_TYPE); };
 
     /** @brief - returns pointer to the row's data vector beginning at pixel[0] for _dpth color bit
      * default - returns pointer to the data vector's head
      * NOTE: this call might be very slow in loops. Due to poor instruction caching in esp32 it might be required a reread from flash 
      * every loop cycle, better use inlined #define instead in such cases
      */
-    inline ESP32_I2S_DMA_STORAGE_TYPE* getDataPtr(const uint8_t _dpth=0, const bool buff_id=0) { return &(data[_dpth*width + buff_id*(width*color_depth)]); };
+    inline ESP32_I2S_DMA_STORAGE_TYPE* getDataPtr(const uint8_t _dpth=0, const bool buff_id=0) { return &(data[_dpth*width + buff_id*(width*colour_depth)]); };
 
     // constructor - allocates DMA-capable memory to hold the struct data
-    rowBitStruct(const size_t _width, const uint8_t _depth, const bool _dbuff) : width(_width), color_depth(_depth), double_buff(_dbuff) {
+    rowBitStruct(const size_t _width, const uint8_t _depth, const bool _dbuff) : width(_width), colour_depth(_depth), double_buff(_dbuff) {
 
 #if defined(SPIRAM_FRAMEBUFFER)       
       #pragma message "Enabling PSRAM / SPIRAM for frame buffer."
@@ -335,23 +335,22 @@ class MatrixPanel_I2S_DMA {
         
       if (initialized) return true; // we don't do this twice or more!
 
-      // Change 'if' to '1' to enable, 0 to not include this Serial output in compiled program        
-      #if SERIAL_DEBUG       
-            Serial.printf_P(PSTR("Using pin %d for the R1_PIN\n"), m_cfg.gpio.r1);
-            Serial.printf_P(PSTR("Using pin %d for the G1_PIN\n"), m_cfg.gpio.g1);
-            Serial.printf_P(PSTR("Using pin %d for the B1_PIN\n"), m_cfg.gpio.b1);
-            Serial.printf_P(PSTR("Using pin %d for the R2_PIN\n"), m_cfg.gpio.r2);
-            Serial.printf_P(PSTR("Using pin %d for the G2_PIN\n"), m_cfg.gpio.g2);
-            Serial.printf_P(PSTR("Using pin %d for the B2_PIN\n"), m_cfg.gpio.b2);
-            Serial.printf_P(PSTR("Using pin %d for the A_PIN\n"), m_cfg.gpio.a);
-            Serial.printf_P(PSTR("Using pin %d for the B_PIN\n"), m_cfg.gpio.b);
-            Serial.printf_P(PSTR("Using pin %d for the C_PIN\n"), m_cfg.gpio.c);
-            Serial.printf_P(PSTR("Using pin %d for the D_PIN\n"), m_cfg.gpio.d);
-            Serial.printf_P(PSTR("Using pin %d for the E_PIN\n"), m_cfg.gpio.e);
-            Serial.printf_P(PSTR("Using pin %d for the LAT_PIN\n"), m_cfg.gpio.lat);
-            Serial.printf_P(PSTR("Using pin %d for the OE_PIN\n"),  m_cfg.gpio.oe);
-            Serial.printf_P(PSTR("Using pin %d for the CLK_PIN\n"), m_cfg.gpio.clk);
-      #endif   
+
+      ESP_LOGI("begin()", "Using GPIO %d for R1_PIN", m_cfg.gpio.r1);
+      ESP_LOGI("begin()", "Using GPIO %d for G1_PIN", m_cfg.gpio.g1);
+      ESP_LOGI("begin()", "Using GPIO %d for B1_PIN", m_cfg.gpio.b1);
+      ESP_LOGI("begin()", "Using GPIO %d for R2_PIN", m_cfg.gpio.r2);
+      ESP_LOGI("begin()", "Using GPIO %d for G2_PIN", m_cfg.gpio.g2);
+      ESP_LOGI("begin()", "Using GPIO %d for B2_PIN", m_cfg.gpio.b2);
+      ESP_LOGI("begin()", "Using GPIO %d for A_PIN", m_cfg.gpio.a);
+      ESP_LOGI("begin()", "Using GPIO %d for B_PIN", m_cfg.gpio.b);
+      ESP_LOGI("begin()", "Using GPIO %d for C_PIN", m_cfg.gpio.c);
+      ESP_LOGI("begin()", "Using GPIO %d for D_PIN", m_cfg.gpio.d);
+      ESP_LOGI("begin()", "Using GPIO %d for E_PIN", m_cfg.gpio.e);
+      ESP_LOGI("begin()", "Using GPIO %d for LAT_PIN", m_cfg.gpio.lat);
+      ESP_LOGI("begin()", "Using GPIO %d for OE_PIN",  m_cfg.gpio.oe);
+      ESP_LOGI("begin()", "Using GPIO %d for CLK_PIN", m_cfg.gpio.clk);
+ 
 
       // initialize some specific panel drivers
       if (m_cfg.driver)
@@ -372,10 +371,9 @@ class MatrixPanel_I2S_DMA {
 
       //showDMABuffer(); // show backbuf_id of 0
 
-      #if SERIAL_DEBUG 
-        if (!initialized)    
-              Serial.println(F("MatrixPanel_I2S_DMA::begin() failed."));
-      #endif      
+      if (!initialized) {
+        ESP_LOGE("being()", "MatrixPanel_I2S_DMA::begin() failed!");
+      }
 
       return initialized;
 
@@ -473,12 +471,17 @@ class MatrixPanel_I2S_DMA {
     inline void IRAM_ATTR flipDMABuffer() 
     {         
       if ( !m_cfg.double_buff) return;
-        
-        #if SERIAL_DEBUG     
-                Serial.printf_P(PSTR("Set back buffer to: %d\n"), back_buffer_id);
-        #endif      
 
-        dma_bus.flip_dma_output_buffer();
+        //ESP_LOGI("flipDMABuffer()", "Set back buffer to: %d", back_buffer_id);
+
+        if (back_buffer_id == 0)
+        {
+            dma_bus.set_dma_output_buffer( false );      
+        }
+        else
+        {
+            dma_bus.set_dma_output_buffer( true );      
+        }
 
         /*
         i2s_parallel_set_previous_buffer_not_free();       
@@ -495,11 +498,8 @@ class MatrixPanel_I2S_DMA {
         while(i2s_parallel_is_previous_buffer_free() == false) { }          
         */
 
-        back_buffer_id ^= 1;               
-        
+        back_buffer_id ^= 1;   
 
-
-        
     }
         
     inline void setPanelBrightness(int b)
