@@ -34,6 +34,8 @@ bool MatrixPanel_I2S_DMA::allocateDMAmemory()
     }
    
     // calculate the lowest LSBMSB_TRANSITION_BIT value that will fit in memory that will meet or exceed the configured refresh rate
+#if !defined(FORCE_COLOUR_DEPTH)    
+
     while(1) {           
         int psPerClock = 1000000000000UL/m_cfg.i2sspeed;
         int nsPerLatch = ((PIXELS_PER_ROW + CLKS_DURING_LATCH) * psPerClock) / 1000;
@@ -59,7 +61,7 @@ bool MatrixPanel_I2S_DMA::allocateDMAmemory()
         else
             break;
     }
-
+#endif
  
 
   /***
