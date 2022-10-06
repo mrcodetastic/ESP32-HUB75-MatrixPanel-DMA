@@ -28,7 +28,7 @@ __[BUILD](/doc/BuildOptions.md) | [EXAMPLES](/examples/README.md)__ | [![Platfor
  - [Thank you!](#thank-you)
 
 ## Introduction
-This ESP32 Arduino/IDF library for HUB75 / HUB75E connector type 64x32 RGB LED 1/16 Scan OR 64x64 RGB LED 1/32 Scan LED Matrix Panel, utilities the DMA functionality provided by the ESP32's I2S 'LCD Mode'.
+This ESP32 Arduino/IDF library for HUB75 / HUB75E connector type 64x32 RGB LED 1/16 Scan OR 64x64 RGB LED 1/32 Scan LED Matrix Panel, utilities the DMA functionality provided by the ESP32's 'LCD Mode'.
 
 ### Features
 -  **Low CPU overhead** - once initialized pixel data is pumped to the matrix inputs via DMA engine directly from memory
@@ -41,13 +41,10 @@ This ESP32 Arduino/IDF library for HUB75 / HUB75E connector type 64x32 RGB LED 1
 If you wanna ask "*...OK, OK, than what's the price for those features?*" I'll tell you - "[memory](/doc/i2s_memcalc.md), you pay it all by precious MCU's memory for DMA buffer".
 
 ## ESP32 Supported
-Espressif have kept the 'ESP32' name for all their chips for brand recognition, but their new variant MCU's are different to the ESP32 this library was built for.
-
-This library supports the *original* ESP32. That being the ESP-WROOM-32 module with ESP32‑D0WDQ6 chip from 2017. This MCU has 520kB of SRAM which is much more than all the recent 'reboots' of the ESP32 such as the S2, S3, C3 etc. If you want to use this library, use with an original ESP32 as it has the most SRAM for DMA.
-
-Support also exists for the ESP32-S2.
-
-ESP32-S3 is currently not supported (as of August 2022), but @mrfaptastic is working on this.
+This library supports the:
+* Original ESP32 - That being the ESP-WROOM-32 module with ESP32‑D0WDQ6 chip from 2017. This MCU has 520kB of SRAM which is much more than all the recent 'reboots' of the ESP32 such as the S2, S3 etc.
+* ESP32-S2; and
+* ESP32-S3
 
 RISC-V ESP32's (like the C3) are not, and will never be supported  as they do not have parallel DMA output required for this library.
 
@@ -71,12 +68,10 @@ Due to the high-speed optimized nature of this library, only specific panels are
 ## Panels Not Supported
 * 1/8 Scan LED Matrix Panels are not supported.
 * RUL5358 / SHIFTREG_ABC_BIN_DE based panels are not supported.
+* ICN2053 / FM6353 based panels - Refer to [this discussion](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-DMA/discussions/324) for a fork of this library that works with these panels.
 * Any other panel not listed above.
 
 Please use an [alternative library](https://github.com/2dom/PxMatrix) if you bought one of these.
-
-## Update for 16x32 Panels
-* There is a virtual panel class available to work with 16x32 panels (see: [examples/16x32 Panel](/examples/P6_32x16_1_4_ScanPanel). This Panel includes drawing lines and rectangles, text and scrolling text
 
 ## Cool uses of this library
 There are a number of great looking LED graphical display projects which leverage this library, these include:
@@ -94,26 +89,13 @@ There are a number of great looking LED graphical display projects which leverag
 * Download and unzip this repository into your Arduino/libraries folder (or better still, use the Arduino 'add library from .zip' option.
 * Library also tested to work fine with PlatformIO, install into your PlatformIO projects' lib/ folder as appropriate. Or just add it into [platformio.ini](/doc/BuildOptions.md) [lib_depth](https://docs.platformio.org/en/latest/projectconf/section_env_library.html#lib-deps) section.
 
-## 2. Wiring ESP32 with the LED Matrix Panel
-By default the pin mapping is as follows (defaults defined in ESP32-HUB75-MatrixPanel-I2S-DMA.h).
+## 2. Wiring the ESP32/ESP32-S2/ESP32-S3 to an LED Matrix Panel
+
+Refer to the '*default-pins.hpp' file within the [applicable platforms folder](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-DMA/tree/master/src/platforms).
 
 ```
-HUB 75 PANEL         ESP 32 PIN
-+----------+
-|  R1  G1  |    R1  -> IO25    G1 -> IO26
-|  B1  GND |    B1  -> IO27
-|  R2  G2  |    R2  -> IO14    G2 -> IO12
-|  B2  E   |    B2  -> IO13     E -> N/A (required for 1/32 scan panels, like 64x64. Any available pin would do, i.e. IO32 )
-|   A  B   |    A   -> IO23     B -> IO19
-|   C  D   |    C   -> IO05     D -> IO17
-| CLK  LAT |    CLK -> IO16   LAT -> IO 4
-|  OE  GND |    OE  -> IO15   GND -> ESP32 GND
-+----------+
-```
+If you want to change the GPIO mapping at runtime, simply provide the wanted pin mapping as part of the class initialization structure. For example, in your sketch have something like the following:
 
-However, if you want to change this, simply provide the wanted pin mapping as part of the class initialization structure. For example, in your sketch have something like the following:
-
-```
 // Change these to whatever suits
 #define R1_PIN 25
 #define G1_PIN 26
@@ -227,6 +209,7 @@ This project was inspired by:
 * [Brian Lough](https://www.tindie.com/stores/brianlough/) ([youtube link](https://www.youtube.com/c/brianlough)) for providing code contributions, hardware and suggestions
 * [Vortigont](https://github.com/vortigont) for his game changing code contributions and performance optimisations
 * [Galaxy Man](https://github.com/Galaxy-Man) for donation of 1/16 scan panels to support the implemenation of led matrix panel chaining (virtual display) support
-* [Pipimaxi](https://github.com/Pipimaxi) for the donation of a ESP32-S2 to enable support for ESP32 S2/S3's to be implemented
+* [Pipimaxi](https://github.com/Pipimaxi) for the donation of a ESP32-S2 and [Radu](https://github.com/juniorradu) for the donation of an ESP32-S3 to enable support for ESP32 S2/S3's to be tested and implemented.
 * [Mark Donners](https://github.com/donnersm) ('The Electronic Engineer' on [youtube](https://www.youtube.com/watch?v=bQ7c9Vlhyp0&t=118s)) for the donation of a 1/8 scan panel to build and test working support of these led matrix panels! 
+* [PaintYourDragon](https://github.com/PaintYourDragon) for the DMA logic for the ESP32-S3.
 * And lots of others, let me know if I've missed you.
