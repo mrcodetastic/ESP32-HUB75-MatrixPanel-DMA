@@ -14,3 +14,11 @@ External RAM uses the same cache region as the external flash. This means that f
 
 In general, external RAM will not be used as task stack memory. xTaskCreate() and similar functions will always allocate internal memory for stack and task TCBs.
 
+Reserved Pins on ESP32-S3:
+
+![Reserved Pins](ReservedPinsForPSRAM.PNG)
+
+Devkit Layout:
+
+![ESP32-S3 DevKit layout](ESP32-S3-DevKitC-1-pin-layout.png)
+
