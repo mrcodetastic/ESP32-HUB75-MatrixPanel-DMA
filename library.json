@@ -1,16 +1,16 @@
 {
   "name": "ESP32 HUB75 LED MATRIX PANEL DMA Display",
-  "keywords": "hub75, esp32, display, dma, rgb matrix",
-  "description": "An experimental Adafruit GFX compatible library for 64x32 or 64x64 LED matrix modules using the ESP32 DMA Engine for ultra-fast refresh rates, no-interrupts and therefore very low CPU usage.",
+  "keywords": "hub75, esp32, esp32s2, esp32s3, display, dma, rgb matrix",
+  "description": "An Adafruit GFX compatible library for LED matrix modules which uses DMA for ultra-fast refresh rates and therefore very low CPU usage.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA.git"
+    "url": "https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-DMA.git"
   },
   "authors": {
     "name": "Faptastic",
     "url": "https://github.com/mrfaptastic/"
   },
-  "version": "2.0.7",
+  "version": "3.0.0",
   "frameworks": "arduino",
   "platforms": "esp32",
   "examples": [

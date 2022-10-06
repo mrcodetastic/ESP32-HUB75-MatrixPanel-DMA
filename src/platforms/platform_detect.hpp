@@ -1,0 +1,57 @@
+/*----------------------------------------------------------------------------/
+Original Source:
+ https://github.com/lovyan03/LovyanGFX/
+
+Licence:
+ [FreeBSD](https://github.com/lovyan03/LovyanGFX/blob/master/license.txt)
+
+Author:
+ [lovyan03](https://twitter.com/lovyan03)
+
+Contributors:
+ [ciniml](https://github.com/ciniml)
+ [mongonta0716](https://github.com/mongonta0716)
+ [tobozo](https://github.com/tobozo)
+ 
+Modified heavily for the ESP32 HUB75 DMA library by:
+ [mrfaptastic](https://github.com/mrfaptastic)
+/----------------------------------------------------------------------------*/
+#pragma once
+
+#if defined (ESP_PLATFORM)
+
+ #include <sdkconfig.h>
+
+ #if defined (CONFIG_IDF_TARGET_ESP32C3)
+
+  #error "ERROR: ESP32C3 not supported."
+
+ #elif defined (CONFIG_IDF_TARGET_ESP32S2)
+
+  #pragma message "Compiling for ESP32-S2"
+  #include "esp32/esp32_i2s_parallel_dma.hpp"
+  #include "esp32s2/esp32s2-default-pins.hpp"  
+
+
+ #elif defined (CONFIG_IDF_TARGET_ESP32S3)
+  
+  #pragma message "Compiling for ESP32-S3"
+  #include "esp32s3/gdma_lcd_parallel16.hpp"
+  #include "esp32s3/esp32s3-default-pins.hpp"    
+
+ #elif defined (CONFIG_IDF_TARGET_ESP32)
+
+  // Assume an ESP32 (the original 2015 version)
+  // Same include as ESP32S3  
+  #pragma message "Compiling for original ESP32 (2015 release)"  
+  #define ESP32_THE_ORIG 1	
+  //#include "esp32/esp32_i2s_parallel_dma.hpp"
+  //#include "esp32/esp32_i2s_parallel_dma.h"
+  #include "esp32/esp32_i2s_parallel_dma.hpp"  
+  #include "esp32/esp32-default-pins.hpp"
+  
+ #endif
+
+
+#endif
+

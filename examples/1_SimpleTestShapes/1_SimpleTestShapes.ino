@@ -100,9 +100,9 @@ void setup() {
     PANEL_CHAIN    // Chain length
   );
 
-  mxconfig.gpio.e = 18;
-  mxconfig.clkphase = false;
-  mxconfig.driver = HUB75_I2S_CFG::FM6126A;
+  //mxconfig.gpio.e = 18;
+  //mxconfig.clkphase = false;
+  //mxconfig.driver = HUB75_I2S_CFG::FM6126A;
 
   // Display Setup
   dma_display = new MatrixPanel_I2S_DMA(mxconfig);
