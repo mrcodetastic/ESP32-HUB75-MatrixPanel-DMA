@@ -4,7 +4,7 @@
 
 cmake_minimum_required(VERSION 3.5)
 
-idf_component_register(SRCS "esp32_i2s_parallel_dma.c" "ESP32-HUB75-MatrixPanel-I2S-DMA.cpp" "ESP32-HUB75-MatrixPanel-leddrivers.cpp"
+idf_component_register(SRCS "src/platforms/esp32/esp32_i2s_parallel_dma.cpp" "src/ESP32-HUB75-MatrixPanel-I2S-DMA.cpp" "src/ESP32-HUB75-MatrixPanel-leddrivers.cpp"
                        INCLUDE_DIRS "."
                        REQUIRES arduino Adafruit-GFX-Library)
 
