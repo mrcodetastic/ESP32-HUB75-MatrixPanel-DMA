@@ -177,7 +177,7 @@ void MatrixPanel_I2S_DMA::configureDMA(const HUB75_I2S_CFG& _cfg)
 
     } // end frame rows
 
-    ESP_LOGI(TAG, "%d DMA descriptors linked to buffer data.");
+    ESP_LOGI(TAG, "%d DMA descriptors linked to buffer data.", current_dmadescriptor_offset);
 
 //  
 //    Setup DMA and Output to GPIO
