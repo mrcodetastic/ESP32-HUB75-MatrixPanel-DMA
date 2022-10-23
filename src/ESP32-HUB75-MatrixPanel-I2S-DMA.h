@@ -4,15 +4,14 @@
 /* Core ESP32 hardware / idf includes!                                                 */
 #include <vector>
 #include <memory>
-#include <Arduino.h>
+//#include <Arduino.h>
 
+//#include "freertos/FreeRTOS.h"
+//#include "freertos/task.h"
+//#include "freertos/semphr.h"
+//#include "freertos/queue.h"
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/semphr.h"
-#include "freertos/queue.h"
-
-#include "esp_heap_caps.h"
+//#include "esp_heap_caps.h"
 #include "platforms/platform_detect.hpp"
 
 

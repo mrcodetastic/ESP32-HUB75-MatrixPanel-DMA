@@ -49,6 +49,9 @@ Modified heavily for the ESP32 HUB75 DMA library by:
   //#include "esp32/esp32_i2s_parallel_dma.h"
   #include "esp32/esp32_i2s_parallel_dma.hpp"  
   #include "esp32/esp32-default-pins.hpp"
+
+ #else
+    #error "Unknown ESP32 platform."
   
  #endif
 
