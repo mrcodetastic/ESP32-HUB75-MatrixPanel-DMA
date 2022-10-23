@@ -167,11 +167,17 @@ struct rowBitStruct {
     // constructor - allocates DMA-capable memory to hold the struct data
     rowBitStruct(const size_t _width, const uint8_t _depth, const bool _dbuff) : width(_width), colour_depth(_depth), double_buff(_dbuff) {
 
-#if defined(SPIRAM_FRAMEBUFFER)       
+#if defined(SPIRAM_FRAMEBUFFER) && defined (CONFIG_IDF_TARGET_ESP32S3)     
       #pragma message "Enabling PSRAM / SPIRAM for frame buffer."
-      data = (ESP32_I2S_DMA_STORAGE_TYPE *)heap_caps_malloc( size()+size()*double_buff, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+      data = (ESP32_I2S_DMA_STORAGE_TYPE *)heap_caps_malloc( size()+size()*double_buff, MALLOC_CAP_SPIRAM);
+/*
+      if (!psramFound())      
+      {
+        ESP_LOGE("rowBitStruct", "Requested to use PSRAM / SPIRAM for framebuffer, but it was not detected.");
+      }
+*/
 #else
-      data = (ESP32_I2S_DMA_STORAGE_TYPE *)heap_caps_malloc( size()+size()*double_buff, MALLOC_CAP_DMA);
+      data = (ESP32_I2S_DMA_STORAGE_TYPE *)heap_caps_malloc( size()+size()*double_buff, MALLOC_CAP_INTERNAL | MALLOC_CAP_DMA);
 #endif
 
     }

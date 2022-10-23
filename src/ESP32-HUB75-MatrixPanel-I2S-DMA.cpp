@@ -12,12 +12,17 @@ static const char* TAG = "MatrixPanel";
 
 bool MatrixPanel_I2S_DMA::allocateDMAmemory()
 {
-    
+
+  ESP_LOGI(TAG, "Free heap: %d",   ESP.getFreeHeap());
+  ESP_LOGI(TAG, "Free SPIRAM: %d", ESP.getFreePsram());  
+
+
   // Alright, theoretically we should be OK, so let us do this, so
   // lets allocate a chunk of memory for each row (a row could span multiple panels if chaining is in place)
   dma_buff.rowBits.reserve(ROWS_PER_FRAME);
 
-  // iterate through number of rows
+    // iterate through number of rows, allocate memory for each
+    size_t allocated_fb_memory = 0;
     for (int malloc_num =0; malloc_num < ROWS_PER_FRAME; ++malloc_num)
     {
         auto ptr = std::make_shared<rowBitStruct>(PIXELS_PER_ROW, PIXEL_COLOUR_DEPTH_BITS, m_cfg.double_buff);
@@ -29,9 +34,11 @@ bool MatrixPanel_I2S_DMA::allocateDMAmemory()
               // TODO: should we release all previous rowBitStructs here???
         }
 
+        allocated_fb_memory += ptr->size();
         dma_buff.rowBits.emplace_back(ptr);     // save new rowBitStruct into rows vector
         ++dma_buff.rows;
     }
+    ESP_LOGI(TAG, "Allocating %d bytes memory for DMA BCM framebuffer(s).", allocated_fb_memory);        
    
     // calculate the lowest LSBMSB_TRANSITION_BIT value that will fit in memory that will meet or exceed the configured refresh rate
 #if !defined(FORCE_COLOUR_DEPTH)    
