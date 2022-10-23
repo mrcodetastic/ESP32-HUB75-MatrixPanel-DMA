@@ -24,7 +24,7 @@ bool MatrixPanel_I2S_DMA::allocateDMAmemory()
 
         if (ptr->data == nullptr)
         {
-          ESP_LOGE(TAG, "ERROR: Couldn't malloc rowBitStruct %d! Not enough memory for requested PIXEL_COLOUR_DEPTH_BITS. Please reduce colour depth. Critical fail.\r\n", malloc_num);
+          ESP_LOGE(TAG, "CRITICAL ERROR: Can't allocate rowBitStruct %d! Not enough memory for requested PIXEL_COLOUR_DEPTH_BITS. Please reduce PIXEL_COLOUR_DEPTH_BITS value.\r\n", malloc_num);
                     return false;
               // TODO: should we release all previous rowBitStructs here???
         }

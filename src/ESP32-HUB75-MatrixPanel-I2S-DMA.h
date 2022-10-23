@@ -74,8 +74,6 @@
  #define PIXEL_COLOUR_DEPTH_BITS      8
 #endif
 
-#define COLOUR_CHANNELS_PER_PIXEL     3
-
 /***************************************************************************************/
 /* Definitions below should NOT be ever changed without rewriting library logic         */
 #define ESP32_I2S_DMA_STORAGE_TYPE  uint16_t                // DMA output of one uint16_t at a time.
