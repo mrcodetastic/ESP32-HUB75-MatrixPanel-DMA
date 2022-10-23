@@ -4,6 +4,9 @@
 /* Core ESP32 hardware / idf includes!                                                 */
 #include <vector>
 #include <memory>
+#include <esp_err.h>
+#include <esp_log.h>
+
 //#include <Arduino.h>
 
 //#include "freertos/FreeRTOS.h"
