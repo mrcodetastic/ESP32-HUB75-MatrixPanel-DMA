@@ -1,6 +1,7 @@
 ### Build Options and flags
 
-This library supports build-time defines used to modify its features or enable greater debugging capabilities. Please use the enhanced debugging output before raising any issues. 
+This library supports build-time defines to modify its features or enable greater debugging information. Please use the debugging capabilities before raising any issues. 
+
 For example build flags could be set using PlatformIO's  .ini file like this
 
 ```
