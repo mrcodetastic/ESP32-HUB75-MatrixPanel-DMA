@@ -13,8 +13,8 @@ static const char* TAG = "MatrixPanel";
 bool MatrixPanel_I2S_DMA::allocateDMAmemory()
 {
 
-  ESP_LOGI(TAG, "Free heap: %d",   ESP.getFreeHeap());
-  ESP_LOGI(TAG, "Free SPIRAM: %d", ESP.getFreePsram());  
+  ESP_LOGI(TAG, "Free heap: %d",   heap_caps_get_free_size(MALLOC_CAP_INTERNAL));
+  ESP_LOGI(TAG, "Free SPIRAM: %d", heap_caps_get_free_size(MALLOC_CAP_SPIRAM));  
 
 
   // Alright, theoretically we should be OK, so let us do this, so
