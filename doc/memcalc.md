@@ -1,6 +1,6 @@
-### I2S HUB75 Calculator
+### Memory Calculator
 
-I've made this [spreadsheet](i2s_memcalc.xlsm) to estimate all of the main parameters for ESP32-HUB75-MatrixPanel-I2S-DMA lib driving any combination of matrices/chains so that I do not need to reflash it hundreds of times just to check for the debug info about memory.
+I've made this [spreadsheet](memcalc.xlsm) to estimate all of the main parameters for ESP32-HUB75-MatrixPanel-DMA lib driving any combination of matrices/chains so that I do not need to reflash it hundreds of times just to check for the debug info about memory.
 Be sure to enable embedded macro's to allow refresh rate calculations.
 
 ![](i2scalc.png)
@@ -8,7 +8,7 @@ Just fill-in all of the INPUT fields and get the OUTPUTs.
 
 So there are  two main resources used to drive LED matrix
  - Memory
- - I2S clock speed (resulting in available bandwidth to pump pixel color data)
+ - Bus clock speed (resulting in available bandwidth to pump pixel color data)
 
 And there are lot's of hogs for those:
  - matrix resolution (number of pixels)

@@ -38,7 +38,13 @@ This ESP32 Arduino/IDF library for HUB75 / HUB75E connector type 64x32 RGB LED 1
 -  **CIE 1931** luminance [correction](https://ledshield.wordpress.com/2012/11/13/led-brightness-to-your-eye-gamma-correction-no/) (aka natural LED dimming)
 -  **Adafruit GFX API** - library could be build with AdafruitGFX, simplified GFX or without GFX API at all
 
-If you wanna ask "*...OK, OK, than what's the price for those features?*" I'll tell you - "[memory](/doc/i2s_memcalc.md), you pay it all by precious MCU's memory for DMA buffer".
+If you wanna ask "*...OK, OK, than what's the price for those features?*" I'll tell you - "[memory](/doc/i2s_memcalc.md), you pay it all by precious MCU's memory for DMA buffer". 
+
+Please use the 'Memory Calculator' to see what is actually achievable with a typical ESP32.
+
+![Memory Calculator](doc/memcalc.jpg)
+
+
 
 ## ESP32 Supported
 This library supports the:
