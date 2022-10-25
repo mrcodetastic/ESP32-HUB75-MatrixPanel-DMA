@@ -2,13 +2,12 @@
 
 static const char* TAG = "MatrixPanel";
 
-/* this replicates same function in rowBitStruct, but due to induced inlining it might be MUCH faster when used in tight loops
- * while method from struct could be flushed out of instruction cache between loop cycles
- * do NOT forget about buff_id param if using this
- * 
- * faptastic note oct22: struct call is not inlined... commenting out this additional compile declaration
+/* This replicates same function in rowBitStruct, but due to induced inlining it might be MUCH faster 
+ * when used in tight loops while method from struct could be flushed out of instruction cache between 
+ * loop cycles do NOT forget about buff_id param if using this.
  */
-//#define getRowDataPtr(row, _dpth, buff_id) &(dma_buff.rowBits[row]->data[_dpth * dma_buff.rowBits[row]->width + buff_id*(dma_buff.rowBits[row]->width * dma_buff.rowBits[row]->color_depth)])
+#define getRowDataPtr(row, _dpth, buff_id) &(dma_buff.rowBits[row]->data[_dpth * dma_buff.rowBits[row]->width + buff_id*(dma_buff.rowBits[row]->width * dma_buff.rowBits[row]->colour_depth)])
+
 
 bool MatrixPanel_I2S_DMA::allocateDMAmemory()
 {
@@ -316,8 +315,7 @@ void IRAM_ATTR MatrixPanel_I2S_DMA::updateMatrixDMABuffer(int16_t x_coord, int16
 
         // Get the contents at this address,
         // it would represent a vector pointing to the full row of pixels for the specified color depth bit at Y coordinate
-        //ESP32_I2S_DMA_STORAGE_TYPE *p = getRowDataPtr(y_coord, colour_depth_idx, back_buffer_id);
-          ESP32_I2S_DMA_STORAGE_TYPE *p = dma_buff.rowBits[y_coord]->getDataPtr(colour_depth_idx, back_buffer_id);        
+        ESP32_I2S_DMA_STORAGE_TYPE *p = getRowDataPtr(y_coord, colour_depth_idx, back_buffer_id);
 
 
         // We need to update the correct uint16_t word in the rowBitStruct array pointing to a specific pixel at X - coordinate
@@ -370,8 +368,7 @@ void MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint8_t red, uint8_t green, uint
       --matrix_frame_parallel_row;
 
       // The destination for the pixel row bitstream
-      //ESP32_I2S_DMA_STORAGE_TYPE *p = getRowDataPtr(matrix_frame_parallel_row, colour_depth_idx, back_buffer_id);
-      ESP32_I2S_DMA_STORAGE_TYPE *p = dma_buff.rowBits[matrix_frame_parallel_row]->getDataPtr(colour_depth_idx, back_buffer_id);
+      ESP32_I2S_DMA_STORAGE_TYPE *p = getRowDataPtr(matrix_frame_parallel_row, colour_depth_idx, back_buffer_id);
 
       // iterate pixels in a row
       int x_coord=dma_buff.rowBits[matrix_frame_parallel_row]->width;
@@ -422,8 +419,8 @@ void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id){
       } else {        
         row[x_pixel] = abcde;
       }
-      
-    } while(x_pixel!=dma_buff.rowBits[row_idx]->width);
+   //   ESP_LOGI(TAG, "x pixel 1: %d", x_pixel);
+    } while(x_pixel!=dma_buff.rowBits[row_idx]->width && x_pixel);
 
     // colour_index[0] (LSB) x_pixels must be "marked" with a previous's row address, 'cause  it is used to display
     //  previous row while we pump in LSB's for a new row
@@ -439,6 +436,7 @@ void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id){
         row[x_pixel] = abcde;
       }   
       //row[x_pixel] = abcde;
+  //    ESP_LOGI(TAG, "x pixel 2: %d", x_pixel);
     } while(x_pixel);
     
     

@@ -31,6 +31,7 @@ static const char* TAG = "esp32_i2s_parallel_dma";
 #include <driver/periph_ctrl.h>
 #include <soc/gpio_sig_map.h>
 
+#include <Arduino.h> // Need to uncomment this to get ESP_LOG output on the Arduino Serial!!!!
 #include <esp_err.h>
 #include <esp_log.h>
 
@@ -55,7 +56,7 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
 } // end irq_hndlr
 */
 
-
+  // Static
   static i2s_dev_t* getDev(int port)
   {
       #if defined (CONFIG_IDF_TARGET_ESP32S2)
@@ -64,18 +65,8 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
           return (port == 0) ? &I2S0 : &I2S1;
       #endif
   }
-
-  void Bus_Parallel16::config(const config_t& cfg)
-  {
-      ESP_LOGI(TAG, "Performing config for ESP32 or ESP32-S2");
-      _cfg = cfg;
-      auto port = cfg.port;
-      _dev = getDev(port);
-  }
-
-
-//#if defined (CONFIG_IDF_TARGET_ESP32S2)  
-
+  
+  // Static
   static void _gpio_pin_init(int pin)
   {
     if (pin >= 0)
@@ -87,62 +78,26 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
     }
   }
 
+
+  void Bus_Parallel16::config(const config_t& cfg)
+  {
+      ESP_LOGI(TAG, "Performing config for ESP32 or ESP32-S2");
+      _cfg = cfg;
+      auto port = cfg.port;
+      _dev = getDev(port);
+  }
  
  bool Bus_Parallel16::init(void) // The big one that gets everything setup.
  {
     ESP_LOGI(TAG, "Performing DMA bus init() for ESP32 or ESP32-S2");
 
     if(_cfg.port < I2S_NUM_0 || _cfg.port >= I2S_NUM_MAX) {
-      //return ESP_ERR_INVALID_ARG;
       return false;
     }
 
     if(_cfg.parallel_width < 8 || _cfg.parallel_width >= 24) {
       return false;
     }
-
-    //auto freq = (_cfg.freq_write, 50000000u); // ?
-    auto freq = (_cfg.bus_freq);
-    
-    uint32_t _clkdiv_write = 0;
-    size_t _div_num        = 10;
-
-    // Calculate clock divider for ESP32-S2
-    #if defined (CONFIG_IDF_TARGET_ESP32S2)      
-
-    static constexpr uint32_t pll_160M_clock_d2 = 160 * 1000 * 1000 >> 1;
-
-    // I2S_CLKM_DIV_NUM 2=40MHz  /  3=27MHz  /  4=20MHz  /  5=16MHz  /  8=10MHz  /  10=8MHz
-    _div_num = std::min(255u, 1 + ((pll_160M_clock_d2) / (1 + _cfg.freq_write)));
-
-    _clkdiv_write = I2S_CLK_160M_PLL << I2S_CLK_SEL_S
-                  |             I2S_CLK_EN
-                  |        1 << I2S_CLKM_DIV_A_S
-                  |        0 << I2S_CLKM_DIV_B_S
-                  | _div_num << I2S_CLKM_DIV_NUM_S
-                  ;
-
-    #else 
-
-
-    // clock = 80MHz(PLL_D2_CLK)
-    static constexpr uint32_t pll_d2_clock = 80 * 1000 * 1000;
-
-    // I2S_CLKM_DIV_NUM 4=20MHz  /  5=16MHz  /  8=10MHz  /  10=8MHz
-    _div_num = std::min(255u, std::max(3u, 1 + (pll_d2_clock / (1 + freq))));
-
-    _clkdiv_write =             I2S_CLK_EN
-                  |        1 << I2S_CLKM_DIV_A_S
-                  |        0 << I2S_CLKM_DIV_B_S
-                  | _div_num << I2S_CLKM_DIV_NUM_S
-                  ;
-    #endif
- 
-    if(_div_num < 2 || _div_num > 16) {
-      return false;
-    }
-
-    //ESP_LOGI(TAG, "i2s pll clk_div_main is: %d", _div_num);    
 
     auto dev = _dev;
     volatile int iomux_signal_base;
@@ -152,7 +107,6 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
     // Initialize I2S0 peripheral
     if (_cfg.port == 0) 
     {
-      
         periph_module_reset(PERIPH_I2S0_MODULE);
         periph_module_enable(PERIPH_I2S0_MODULE);
 
@@ -217,21 +171,71 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
         gpio_matrix_out(pins[i], iomux_signal_base + i, false, false);
       }
     }
-        
+
+    ////////////////////////////// Clock configuration //////////////////////////////
+
+    //auto freq = (_cfg.freq_write, 50000000u); // ?
+    auto freq = (_cfg.bus_freq);
+    
+    uint32_t _clkdiv_write = 0;
+    size_t _div_num        = 10;
+
+    // Calculate clock divider for ESP32-S2
+    #if defined (CONFIG_IDF_TARGET_ESP32S2)      
+
+    static constexpr uint32_t pll_160M_clock_d2 = 160 * 1000 * 1000 >> 1;
+
+    // I2S_CLKM_DIV_NUM 2=40MHz  /  3=27MHz  /  4=20MHz  /  5=16MHz  /  8=10MHz  /  10=8MHz
+    _div_num = std::min(255u, 1 + ((pll_160M_clock_d2) / (1 + _cfg.freq_write)));
+/*
+    _clkdiv_write = I2S_CLK_160M_PLL << I2S_CLK_SEL_S
+                  |             I2S_CLK_EN
+                  |        1 << I2S_CLKM_DIV_A_S
+                  |        0 << I2S_CLKM_DIV_B_S
+                  | _div_num << I2S_CLKM_DIV_NUM_S
+                  ;
+*/
+    #else 
+
+
+    // clock = 80MHz(PLL_D2_CLK)
+    static constexpr uint32_t pll_d2_clock = 80 * 1000 * 1000;
+
+    // I2S_CLKM_DIV_NUM 4=20MHz  /  5=16MHz  /  8=10MHz  /  10=8MHz
+    _div_num = std::min(255u, std::max(3u, 1 + (pll_d2_clock / (1 + freq))));
+/*
+    _clkdiv_write =             I2S_CLK_EN
+                  |        1 << I2S_CLKM_DIV_A_S
+                  |        0 << I2S_CLKM_DIV_B_S
+                  | _div_num << I2S_CLKM_DIV_NUM_S
+                  ;
+*/                  
+    #endif
  
-    // Setup i2s clock
-    dev->sample_rate_conf.val = 0;
+    if(_div_num < 2 || _div_num > 16) {
+      return false;
+    }
+
+    ESP_LOGI(TAG, "i2s pll clk_div_main is: %d", _div_num);    
+
+
+    dev->clkm_conf.clkm_div_b = 0;      // Clock numerator
+    dev->clkm_conf.clkm_div_a = 1;      // Clock denominator 
+
+  #if defined (CONFIG_IDF_TARGET_ESP32S2)  
+    dev->clkm_conf.clk_sel = 2; // I2S_CLK_SEL Set this bit to select I2S module clock source. 0: No clock. 1: APLL_CLK. 2: PLL_160M_CLK. 3: No clock. (R/W)
+    dev->clkm_conf.clk_en  = 1;
+    dev->clkm_conf.clkm_div_num = _div_num;
+
+  #endif
+
+  // Must be ESP32 original
+  #if !defined (CONFIG_IDF_TARGET_ESP32S2)  
+    dev->clkm_conf.clka_en=0;         // Use the 80mhz system clock (PLL_D2_CLK) when '0'
+    dev->clkm_conf.clkm_div_num = 3;  // Hard code to whatever frequency this is. 26Mhz?
+  #endif
     
-    // Third stage config, width of data to be written to IO (I think this should always be the actual data width?)
-    dev->sample_rate_conf.rx_bits_mod = bus_width;
-    dev->sample_rate_conf.tx_bits_mod = bus_width;
-    
-    dev->sample_rate_conf.rx_bck_div_num = 2;
-    dev->sample_rate_conf.tx_bck_div_num = 2;
-    
-    // Clock configuration
-   // dev->clkm_conf.val=0;             // Clear the clkm_conf struct  
-    /*
+/*
   #if defined (CONFIG_IDF_TARGET_ESP32S2)  
     dev->clkm_conf.clk_sel = 2; // esp32-s2 only  
     dev->clkm_conf.clk_en  = 1;
@@ -243,12 +247,27 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
     
     dev->clkm_conf.clkm_div_b=0;      // Clock numerator
     dev->clkm_conf.clkm_div_a=1;      // Clock denominator  
-    */
-
+ 
     // Note: clkm_div_num must only be set here AFTER clkm_div_b, clkm_div_a, etc. Or weird things happen!
     // On original ESP32, max I2S DMA parallel speed is 20Mhz.  
-    //dev->clkm_conf.clkm_div_num = 32;
-    dev->clkm_conf.val = _clkdiv_write;
+    dev->clkm_conf.clkm_div_num = 2;
+*/
+
+    //dev->clkm_conf.val = _clkdiv_write;
+        
+
+    // Setup i2s clock
+    dev->sample_rate_conf.val = 0;
+    
+    // Third stage config, width of data to be written to IO (I think this should always be the actual data width?)
+    dev->sample_rate_conf.rx_bits_mod = bus_width;
+    dev->sample_rate_conf.tx_bits_mod = bus_width;
+    
+    // Serial clock 
+    dev->sample_rate_conf.rx_bck_div_num = 1;
+    dev->sample_rate_conf.tx_bck_div_num = 1;
+    
+    ////////////////////////////// END CLOCK CONFIGURATION /////////////////////////////////
 
     // I2S conf2 reg
     dev->conf2.val = 0;
@@ -352,6 +371,15 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
 */
 
     dev->timing.val = 0;
+
+    //dev->int_ena.out_eof = 1
+
+/*
+  12.6.2 DMA Interrupts
+  • I2S_OUT_TOTAL_EOF_INT: Triggered when all transmitting linked lists are used up.
+  • I2S_OUT_EOF_INT: Triggered when rxlink has finished sending a packet
+
+*/    
 /*
     // We using the double buffering switch logic?
     if (conf->int_ena_out_eof)
@@ -455,10 +483,10 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
   void Bus_Parallel16::create_dma_desc_link(void *data, size_t size, bool dmadesc_b)
   {
     static constexpr size_t MAX_DMA_LEN = (4096-4);
-
+/*
     if (dmadesc_b)
       ESP_LOGI(TAG, "   * Double buffer descriptor.");            
-
+*/
     if (size > MAX_DMA_LEN)
     {
       size = MAX_DMA_LEN;
@@ -507,7 +535,7 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
     dmadesc->size     = size;
     dmadesc->length   = size;
     dmadesc->buf      = (uint8_t*) data; 
-    dmadesc->eof      = 0;         
+    dmadesc->eof      = eof;         
     dmadesc->sosf     = 0;         
     dmadesc->owner    = 1;         
     dmadesc->qe.stqe_next = (lldesc_t*) next;         
