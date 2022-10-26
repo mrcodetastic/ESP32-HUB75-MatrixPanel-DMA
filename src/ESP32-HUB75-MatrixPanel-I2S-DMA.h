@@ -480,13 +480,15 @@ class MatrixPanel_I2S_DMA {
 
         //ESP_LOGI("flipDMABuffer()", "Set back buffer to: %d", back_buffer_id);
 
-        if (back_buffer_id == 0)
+        if (back_buffer_id)
         {
-            dma_bus.set_dma_output_buffer( false );      
+            dma_bus.set_dma_output_buffer( true ); 
+            back_buffer_id = 0;    
         }
         else
         {
-            dma_bus.set_dma_output_buffer( true );      
+            dma_bus.set_dma_output_buffer( false );      
+            back_buffer_id = 1;                               
         }
 
         /*
@@ -504,7 +506,7 @@ class MatrixPanel_I2S_DMA {
         while(i2s_parallel_is_previous_buffer_free() == false) { }          
         */
 
-        back_buffer_id ^= 1;   
+   
 
     }
         
