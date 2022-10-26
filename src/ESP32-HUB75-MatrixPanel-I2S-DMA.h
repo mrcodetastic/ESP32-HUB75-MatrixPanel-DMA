@@ -113,8 +113,8 @@
 #define BITMASK_CTRL_CLEAR   (0b1110000000111111)    // inverted bitmask for control bits ABCDE,LAT,OE in pixel vector
 #define BITMASK_OE_CLEAR     (0b1111111101111111)    // inverted bitmask for control bit OE in pixel vector
 
-// How many clock cycles to blank OE before/after LAT signal change, default is 1 clock
-#define DEFAULT_LAT_BLANKING  1
+// How many clock cycles to blank OE before/after LAT signal change, default is 2 clocks
+#define DEFAULT_LAT_BLANKING  2
 
 // Max clock cycles to blank OE before/after LAT signal change
 #define MAX_LAT_BLANKING  4
@@ -280,7 +280,7 @@ struct  HUB75_I2S_CFG {
     shift_driver _drv = SHIFTREG,
     bool _dbuff = false,
     clk_speed _i2sspeed = HZ_10M,
-    uint8_t _latblk  = 1, // Anything > 1 seems to cause artefacts on ICS panels
+    uint8_t _latblk  = DEFAULT_LAT_BLANKING, // Anything > 1 seems to cause artefacts on ICS panels
     bool _clockphase = true,
     uint8_t _min_refresh_rate = 85
   ) : mx_width(_w),
@@ -406,7 +406,7 @@ class MatrixPanel_I2S_DMA {
     /**
      * A wrapper to fill whatever selected DMA buffer / screen with black
      */
-    inline void clearScreen(){ updateMatrixDMABuffer(0,0,0); };
+    inline void clearScreen(){ clearFrameBuffer(back_buffer_id); /*updateMatrixDMABuffer(0,0,0);*/ };
 
 #ifndef NO_FAST_FUNCTIONS
     /**
@@ -582,7 +582,7 @@ class MatrixPanel_I2S_DMA {
     void clearFrameBuffer(bool _buff_id = 0);
 
     /* Update a specific pixel in the DMA buffer to a colour */
-    void updateMatrixDMABuffer(int16_t x, int16_t y, uint8_t red, uint8_t green, uint8_t blue);
+    void updateMatrixDMABuffer(uint16_t x, uint16_t y, uint8_t red, uint8_t green, uint8_t blue);
    
     /* Update the entire DMA buffer (aka. The RGB Panel) a certain colour (wipe the screen basically) */
     void updateMatrixDMABuffer(uint8_t red, uint8_t green, uint8_t blue);       

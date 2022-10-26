@@ -8,6 +8,16 @@ static const char* TAG = "MatrixPanel";
  */
 #define getRowDataPtr(row, _dpth, buff_id) &(dma_buff.rowBits[row]->data[_dpth * dma_buff.rowBits[row]->width + buff_id*(dma_buff.rowBits[row]->width * dma_buff.rowBits[row]->colour_depth)])
 
+// We need to update the correct uint16_t in the rowBitStruct array, that gets sent out in parallel
+// 16 bit parallel mode - Save the calculated value to the bitplane memory in reverse order to account for I2S Tx FIFO mode1 ordering
+// Irrelevant for ESP32-S2 the way the FIFO ordering works is different - refer to page 679 of S2 technical reference manual
+#if defined (ESP32_THE_ORIG)
+    #define ESP32_TX_FIFO_POSITION_ADJUST(x_coord)  (x_coord & 1U ? (x_coord-1):(x_coord+1))
+#else 
+    #define ESP32_TX_FIFO_POSITION_ADJUST(x_coord)  x_coord
+#endif 
+
+
 
 bool MatrixPanel_I2S_DMA::allocateDMAmemory()
 {
@@ -240,15 +250,17 @@ void MatrixPanel_I2S_DMA::configureDMA(const HUB75_I2S_CFG& _cfg)
  *  Let's put it into IRAM to avoid situations when it could be flushed out of instruction cache
  *  and had to be read from spi-flash over and over again.
  *  Yes, it is always a tradeoff between memory/speed/size, but compared to DMA-buffer size is not a big deal
+ * 
+ *  Note: Cannot pass a negative co-ord as it makes no sense in the DMA bit array lookup.
  */
-void IRAM_ATTR MatrixPanel_I2S_DMA::updateMatrixDMABuffer(int16_t x_coord, int16_t y_coord, uint8_t red, uint8_t green, uint8_t blue)
+void IRAM_ATTR MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint16_t x_coord, uint16_t y_coord, uint8_t red, uint8_t green, uint8_t blue)
 {
     if ( !initialized ) return;
 
   /* 1) Check that the co-ordinates are within range, or it'll break everything big time.
   * Valid co-ordinates are from 0 to (MATRIX_XXXX-1)
   */
-  if ( x_coord < 0 || y_coord < 0 || x_coord >= PIXELS_PER_ROW || y_coord >= m_cfg.mx_height) {
+  if ( x_coord >= PIXELS_PER_ROW || y_coord >= m_cfg.mx_height) {
     return;
   }
 
@@ -274,14 +286,16 @@ void IRAM_ATTR MatrixPanel_I2S_DMA::updateMatrixDMABuffer(int16_t x_coord, int16
      * so we have to check for this and check the correct position of the MATRIX_DATA_STORAGE_TYPE
      * data.
      */
-
+/*
 #if defined (ESP32_THE_ORIG)
     // We need to update the correct uint16_t in the rowBitStruct array, that gets sent out in parallel
     // 16 bit parallel mode - Save the calculated value to the bitplane memory in reverse order to account for I2S Tx FIFO mode1 ordering
     // Irrelevant for ESP32-S2 the way the FIFO ordering works is different - refer to page 679 of S2 technical reference manual
     x_coord & 1U ? --x_coord : ++x_coord;
 #endif 
-
+*/
+    x_coord = ESP32_TX_FIFO_POSITION_ADJUST(x_coord);
+    
     
     uint16_t _colourbitclear = BITMASK_RGB1_CLEAR, _colourbitoffset = 0;
 
@@ -417,7 +431,7 @@ void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id){
         // https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/issues/164
         row[x_pixel] = abcde & (0x18 << BITS_ADDR_OFFSET); // mask out the bottom 3 bits which are the clk di bk inputs  
       } else {        
-        row[x_pixel] = abcde;
+        row[ESP32_TX_FIFO_POSITION_ADJUST(x_pixel)] = abcde;
       }
    //   ESP_LOGI(TAG, "x pixel 1: %d", x_pixel);
     } while(x_pixel!=dma_buff.rowBits[row_idx]->width && x_pixel);
@@ -433,7 +447,7 @@ void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id){
         // https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/issues/164
         row[x_pixel] = abcde & (0x18 << BITS_ADDR_OFFSET); // mask out the bottom 3 bits which are the clk di bk inputs  
       } else {        
-        row[x_pixel] = abcde;
+        row[ESP32_TX_FIFO_POSITION_ADJUST(x_pixel)] = abcde;
       }   
       //row[x_pixel] = abcde;
   //    ESP_LOGI(TAG, "x pixel 2: %d", x_pixel);
@@ -465,6 +479,7 @@ void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id){
       // switch pointer to a row for a specific color index
       row = dma_buff.rowBits[row_idx]->getDataPtr(colouridx, _buff_id);
 
+      /*
       #if defined(ESP32_THE_ORIG)
         // We need to update the correct uint16_t in the rowBitStruct array, that gets sent out in parallel
         // 16 bit parallel mode - Save the calculated value to the bitplane memory in reverse order to account for I2S Tx FIFO mode1 ordering
@@ -474,13 +489,17 @@ void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id){
         // -1 works better on ESP32-S2 ? Because bytes get sent out in order...
         row[dma_buff.rowBits[row_idx]->width - 1] |= BIT_LAT;   // -1 pixel to compensate array index starting at 0                 
       #endif
+      */
+      row[ESP32_TX_FIFO_POSITION_ADJUST(dma_buff.rowBits[row_idx]->width - 1)] |= BIT_LAT;   // -1 pixel to compensate array index starting at 0     
+
+      //ESP32_TX_FIFO_POSITION_ADJUST(dma_buff.rowBits[row_idx]->width - 1)
 
       // need to disable OE before/after latch to hide row transition
       // Should be one clock or more before latch, otherwise can get ghosting
       uint8_t _blank = m_cfg.latch_blanking;
       do {
         --_blank;
-        
+      /*
       #if defined(ESP32_THE_ORIG)  
             // Original ESP32 WROOM FIFO Ordering Sucks
             uint8_t _blank_row_tx_fifo_tmp = 0 + _blank;
@@ -494,6 +513,11 @@ void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id){
             row[0 + _blank] |= BIT_OE;
             row[dma_buff.rowBits[row_idx]->width - _blank - 1 ] |= BIT_OE;    // (LAT pulse is (width-2) -1 pixel to compensate array index starting at 0
       #endif
+      */
+
+      row[ESP32_TX_FIFO_POSITION_ADJUST(0 + _blank)] |= BIT_OE;
+      row[ESP32_TX_FIFO_POSITION_ADJUST(dma_buff.rowBits[row_idx]->width - _blank - 1)] |= BIT_OE;    // (LAT pulse is (width-2) -1 pixel to compensate array index starting at 0
+
 
       } while (_blank);
 
@@ -535,11 +559,11 @@ void MatrixPanel_I2S_DMA::brtCtrlOE(int brt, const bool _buff_id){
         --x_coord;
         
        // clear OE bit for all other pixels
-        row[x_coord] &= BITMASK_OE_CLEAR;       
+        row[ESP32_TX_FIFO_POSITION_ADJUST(x_coord)] &= BITMASK_OE_CLEAR;       
 
         // Brightness control via OE toggle - disable matrix output at specified x_coord
         if((colouridx > lsbMsbTransitionBit || !colouridx) && ((x_coord) >= brt)){
-          row[x_coord] |= BIT_OE; // Disable output after this point.
+          row[ESP32_TX_FIFO_POSITION_ADJUST(x_coord)] |= BIT_OE; // Disable output after this point.
           continue;  
         }
         // special case for the bits *after* LSB through (lsbMsbTransitionBit) - OE is output after data is shifted, so need to set OE to fractional brightness
@@ -547,7 +571,7 @@ void MatrixPanel_I2S_DMA::brtCtrlOE(int brt, const bool _buff_id){
             // divide brightness in half for each bit below lsbMsbTransitionBit
             int lsbBrightness = brt >> (lsbMsbTransitionBit - colouridx + 1);
             if((x_coord) >= lsbBrightness) {
-                row[x_coord] |= BIT_OE;  // Disable output after this point.
+                row[ESP32_TX_FIFO_POSITION_ADJUST(x_coord)] |= BIT_OE;  // Disable output after this point.
                 continue;
             }
         }
@@ -560,7 +584,7 @@ void MatrixPanel_I2S_DMA::brtCtrlOE(int brt, const bool _buff_id){
       uint8_t _blank = m_cfg.latch_blanking;
       do {
         --_blank;
-
+/*
       #if defined(ESP32_THE_ORIG)
             // Original ESP32 WROOM FIFO Ordering Sucks
             uint8_t _blank_row_tx_fifo_tmp = 0 + _blank;
@@ -569,6 +593,10 @@ void MatrixPanel_I2S_DMA::brtCtrlOE(int brt, const bool _buff_id){
       #else
             row[0 + _blank] |= BIT_OE;      
       #endif
+*/
+
+      row[ESP32_TX_FIFO_POSITION_ADJUST(0 + _blank)] |= BIT_OE;    
+
 
         //row[0 + _blank] |= BIT_OE;
         // no need, has been done already
