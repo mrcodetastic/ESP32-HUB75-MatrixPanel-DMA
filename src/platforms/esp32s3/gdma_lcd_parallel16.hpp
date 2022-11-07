@@ -98,7 +98,7 @@
     struct config_t
     {
       // LCD_CAM peripheral number. No need to change (only 0 for ESP32-S3.)
-      int port = 0;
+      //int port = 0;
 
       // max 40MHz (when in 16 bit / 2 byte mode)
       uint32_t bus_freq = 20000000;
@@ -146,7 +146,7 @@
     void dma_transfer_start();
     void dma_transfer_stop();
 
-    void set_dma_output_buffer(bool dmadesc_b = false);    
+     void flip_dma_output_buffer(int &current_back_buffer_id);
 
   private:
 

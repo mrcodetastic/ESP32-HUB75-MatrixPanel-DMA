@@ -8,15 +8,42 @@ static const char* TAG = "MatrixPanel";
  */
 #define getRowDataPtr(row, _dpth, buff_id) &(dma_buff.rowBits[row]->data[_dpth * dma_buff.rowBits[row]->width + buff_id*(dma_buff.rowBits[row]->width * dma_buff.rowBits[row]->colour_depth)])
 
-// We need to update the correct uint16_t in the rowBitStruct array, that gets sent out in parallel
-// 16 bit parallel mode - Save the calculated value to the bitplane memory in reverse order to account for I2S Tx FIFO mode1 ordering
-// Irrelevant for ESP32-S2 the way the FIFO ordering works is different - refer to page 679 of S2 technical reference manual
+/* We need to update the correct uint16_t in the rowBitStruct array, that gets sent out in parallel
+ * 16 bit parallel mode - Save the calculated value to the bitplane memory in reverse order to account for I2S Tx FIFO mode1 ordering
+ * Irrelevant for ESP32-S2 the way the FIFO ordering works is different - refer to page 679 of S2 technical reference manual
+ */
 #if defined (ESP32_THE_ORIG)
-    #define ESP32_TX_FIFO_POSITION_ADJUST(x_coord)  (x_coord & 1U ? (x_coord-1):(x_coord+1))
+    #define ESP32_TX_FIFO_POSITION_ADJUST(x_coord)  ((x_coord & 1U) ? (x_coord-1):(x_coord+1))
 #else 
     #define ESP32_TX_FIFO_POSITION_ADJUST(x_coord)  x_coord
 #endif 
 
+/* This library is designed to take an 8 bit / 1 byte value (0-255) for each R G B colour sub-pixel. 
+ * The PIXEL_COLOUR_DEPTH_BITS should always be '8' as a result.
+ * However, if the library is to be used with lower colour depth (i.e. 6 bit colour), then we need to ensure the 8-bit value passed to the colour masking
+ * is adjusted accordingly to ensure the LSB's are shifted left to MSB, by the difference. Otherwise the colours will be all screwed up.
+ */
+#if PIXEL_COLOUR_DEPTH_BITS > 8
+    #error "Color depth bits cannot be greater than 8."
+#elif PIXEL_COLOUR_DEPTH_BITS < 2 
+    #error "Colour depth bits cannot be less than 2."
+#endif
+
+#if PIXEL_COLOUR_DEPTH_BITS != 8
+  #define MASK_OFFSET (8 - PIXEL_COLOUR_DEPTH_BITS)
+  #define PIXEL_COLOUR_MASK_BIT(colour_depth_index)   (1 << (colour_depth_index + MASK_OFFSET))
+  //static constexpr uint8_t const MASK_OFFSET = 8-PIXEL_COLOUR_DEPTH_BITS;
+#else
+  #define PIXEL_COLOUR_MASK_BIT(colour_depth_index)   (1 << (colour_depth_index))
+#endif
+
+/*
+    #if PIXEL_COLOUR_DEPTH_BITS < 8
+        uint8_t mask = (1 << (colour_depth_idx+MASK_OFFSET)); // expect 24 bit colour (8 bits per RGB subpixel)
+    #else
+        uint8_t mask = (1 << (colour_depth_idx)); // expect 24 bit color (8 bits per RGB subpixel)
+    #endif 
+*/
 
 
 bool MatrixPanel_I2S_DMA::allocateDMAmemory()
@@ -38,9 +65,11 @@ bool MatrixPanel_I2S_DMA::allocateDMAmemory()
 
         if (ptr->data == nullptr)
         {
-          ESP_LOGE(TAG, "CRITICAL ERROR: Can't allocate rowBitStruct %d! Not enough memory for requested PIXEL_COLOUR_DEPTH_BITS. Please reduce PIXEL_COLOUR_DEPTH_BITS value.\r\n", malloc_num);
-                    return false;
-              // TODO: should we release all previous rowBitStructs here???
+            ESP_LOGE(TAG, "CRITICAL ERROR: Not enough memory for requested colour depth! Please reduce PIXEL_COLOUR_DEPTH_BITS value.\r\n");
+            ESP_LOGE(TAG, "Could not allocate rowBitStruct %d!.\r\n", malloc_num);
+
+            return false;
+            // TODO: should we release all previous rowBitStructs here???
         }
 
         allocated_fb_memory += ptr->size();
@@ -199,8 +228,7 @@ void MatrixPanel_I2S_DMA::configureDMA(const HUB75_I2S_CFG& _cfg)
 //    Setup DMA and Output to GPIO
 //
       auto bus_cfg = dma_bus.config();         // バス設定用の構造体を取得します。
-
-      //bus_cfg.i2s_port = I2S_NUM_0;          // 使用するI2Sポートを選択 (I2S_NUM_0 or I2S_NUM_1) (ESP32のI2S LCDモードを使用します)
+      
       bus_cfg.bus_freq = _cfg.i2sspeed; 
       bus_cfg.pin_wr   = m_cfg.gpio.clk;      // WR を接続しているピン番号
       
@@ -227,6 +255,7 @@ void MatrixPanel_I2S_DMA::configureDMA(const HUB75_I2S_CFG& _cfg)
 
       dma_bus.dma_transfer_start();
 
+      flipDMABuffer(); // display back buffer 0, draw to 1, ignored if double buffering isn't enabled.
 
     //i2s_parallel_send_dma(ESP32_I2S_DEVICE, &dmadesc_a[0]);
     ESP_LOGI(TAG, "DMA setup completed");
@@ -309,12 +338,15 @@ void IRAM_ATTR MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint16_t x_coord, uint
     uint8_t colour_depth_idx = PIXEL_COLOUR_DEPTH_BITS;
     do {
         --colour_depth_idx;
+/*        
 //        uint8_t mask = (1 << (colour_depth_idx COLOR_DEPTH_LESS_THAN_8BIT_ADJUST)); // expect 24 bit colour (8 bits per RGB subpixel)
     #if PIXEL_COLOUR_DEPTH_BITS < 8
         uint8_t mask = (1 << (colour_depth_idx+MASK_OFFSET)); // expect 24 bit colour (8 bits per RGB subpixel)
     #else
         uint8_t mask = (1 << (colour_depth_idx)); // expect 24 bit color (8 bits per RGB subpixel)
     #endif      
+*/
+        uint8_t mask = PIXEL_COLOUR_MASK_BIT(colour_depth_idx);
         uint16_t RGB_output_bits = 0;
 
         /* Per the .h file, the order of the output RGB bits is:
@@ -357,11 +389,13 @@ void MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint8_t red, uint8_t green, uint
     // let's precalculate RGB1 and RGB2 bits than flood it over the entire DMA buffer
     uint16_t RGB_output_bits = 0;
 //    uint8_t mask = (1 << colour_depth_idx COLOR_DEPTH_LESS_THAN_8BIT_ADJUST); // 24 bit colour
-    #if PIXEL_COLOUR_DEPTH_BITS < 8
-        uint8_t mask = (1 << (colour_depth_idx+MASK_OFFSET)); // expect 24 bit color (8 bits per RGB subpixel)
-    #else
-        uint8_t mask = (1 << (colour_depth_idx)); // expect 24 bit colour (8 bits per RGB subpixel)
-    #endif      
+    // #if PIXEL_COLOUR_DEPTH_BITS < 8
+    //     uint8_t mask = (1 << (colour_depth_idx+MASK_OFFSET)); // expect 24 bit color (8 bits per RGB subpixel)
+    // #else
+    //     uint8_t mask = (1 << (colour_depth_idx)); // expect 24 bit colour (8 bits per RGB subpixel)
+    // #endif      
+
+    uint8_t mask = PIXEL_COLOUR_MASK_BIT(colour_depth_idx);
 
     /* Per the .h file, the order of the output RGB bits is:
      * BIT_B2, BIT_G2, BIT_R2,    BIT_B1, BIT_G1, BIT_R1      */
@@ -693,11 +727,12 @@ void MatrixPanel_I2S_DMA::hlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, 
     // let's precalculate RGB1 and RGB2 bits than flood it over the entire DMA buffer
     uint16_t RGB_output_bits = 0;
 //    uint8_t mask = (1 << colour_depth_idx COLOR_DEPTH_LESS_THAN_8BIT_ADJUST);
-    #if PIXEL_COLOUR_DEPTH_BITS < 8
-        uint8_t mask = (1 << (colour_depth_idx+MASK_OFFSET)); // expect 24 bit color (8 bits per RGB subpixel)
-    #else
-        uint8_t mask = (1 << (colour_depth_idx)); // expect 24 bit color (8 bits per RGB subpixel)
-    #endif      
+    // #if PIXEL_COLOUR_DEPTH_BITS < 8
+    //     uint8_t mask = (1 << (colour_depth_idx+MASK_OFFSET)); // expect 24 bit color (8 bits per RGB subpixel)
+    // #else
+    //     uint8_t mask = (1 << (colour_depth_idx)); // expect 24 bit color (8 bits per RGB subpixel)
+    // #endif      
+    uint8_t mask = PIXEL_COLOUR_MASK_BIT(colour_depth_idx);
 
     /* Per the .h file, the order of the output RGB bits is:
       * BIT_B2, BIT_G2, BIT_R2,    BIT_B1, BIT_G1, BIT_R1     */
@@ -717,14 +752,17 @@ void MatrixPanel_I2S_DMA::hlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, 
     int16_t _l = l;
     do {                 // iterate pixels in a row
         int16_t _x = x_coord + --_l;
-        
-#if defined(ESP32_THE_ORIG)
-        // Save the calculated value to the bitplane memory in reverse order to account for I2S Tx FIFO mode1 ordering
-        uint16_t &v = p[_x & 1U ? --_x : ++_x];
-#else
-        // ESP 32 doesn't need byte flipping for TX FIFO.
-        uint16_t &v = p[_x];        
-#endif      
+
+  /*        
+    #if defined(ESP32_THE_ORIG)
+            // Save the calculated value to the bitplane memory in reverse order to account for I2S Tx FIFO mode1 ordering
+            uint16_t &v = p[_x & 1U ? --_x : ++_x];
+    #else
+            // ESP 32 doesn't need byte flipping for TX FIFO.
+            uint16_t &v = p[_x];        
+    #endif      
+  */
+        uint16_t &v = p[ESP32_TX_FIFO_POSITION_ADJUST(_x)];
 
         v &= _colourbitclear;      // reset color bits
         v |= RGB_output_bits;    // set new color bits
@@ -759,10 +797,13 @@ void MatrixPanel_I2S_DMA::vlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, 
     blue  = lumConvTab[blue];   
 #endif
 
+/*
 #if defined(ESP32_THE_ORIG)
   // Save the calculated value to the bitplane memory in reverse order to account for I2S Tx FIFO mode1 ordering 
   x_coord & 1U ? --x_coord : ++x_coord;
 #endif  
+*/
+  x_coord = ESP32_TX_FIFO_POSITION_ADJUST(x_coord);
 
   uint8_t colour_depth_idx = PIXEL_COLOUR_DEPTH_BITS;
   do {    // Iterating through color depth bits (8 iterations)
@@ -770,11 +811,13 @@ void MatrixPanel_I2S_DMA::vlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, 
 
     // let's precalculate RGB1 and RGB2 bits than flood it over the entire DMA buffer
 //    uint8_t mask = (1 << colour_depth_idx COLOR_DEPTH_LESS_THAN_8BIT_ADJUST);
-    #if PIXEL_COLOUR_DEPTH_BITS < 8
-        uint8_t mask = (1 << (colour_depth_idx+MASK_OFFSET)); // expect 24 bit color (8 bits per RGB subpixel)
-    #else
-        uint8_t mask = (1 << (colour_depth_idx)); // expect 24 bit color (8 bits per RGB subpixel)
-    #endif      
+    // #if PIXEL_COLOUR_DEPTH_BITS < 8
+    //     uint8_t mask = (1 << (colour_depth_idx+MASK_OFFSET)); // expect 24 bit color (8 bits per RGB subpixel)
+    // #else
+    //     uint8_t mask = (1 << (colour_depth_idx)); // expect 24 bit color (8 bits per RGB subpixel)
+    // #endif      
+
+    uint8_t mask = PIXEL_COLOUR_MASK_BIT(colour_depth_idx);
     uint16_t RGB_output_bits = 0;
 
     /* Per the .h file, the order of the output RGB bits is:

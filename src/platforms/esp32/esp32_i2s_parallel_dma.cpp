@@ -56,14 +56,36 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
 } // end irq_hndlr
 */
 
+  volatile int active_dma_buffer_output_count = 0;
+
+  static void IRAM_ATTR irq_hndlr(void* arg) { 
+
+        // Clear flag so we can get retriggered
+        SET_PERI_REG_BITS(I2S_INT_CLR_REG(ESP32_I2S_DEVICE), I2S_OUT_EOF_INT_CLR_V, 1, I2S_OUT_EOF_INT_CLR_S);                      
+
+        active_dma_buffer_output_count++;
+
+/*        
+          if ( active_dma_buffer_output_count++ ) 
+          {
+              // Disable DMA chain EOF interrupt until next requested flipbuffer.
+              // Otherwise we're needlessly generating interrupts we don't care about.
+              //SET_PERI_REG_BITS(I2S_INT_ENA_REG(ESP32_I2S_DEVICE), I2S_OUT_EOF_INT_ENA_V, 0, I2S_OUT_EOF_INT_ENA_S);  
+              active_dma_buffer_output_count = 0;
+          }
+ */
+
+  } // end irq_hndlr
+
   // Static
-  static i2s_dev_t* getDev(int port)
+  static i2s_dev_t* getDev()
   {
       #if defined (CONFIG_IDF_TARGET_ESP32S2)
           return &I2S0;
       #else
-          return (port == 0) ? &I2S0 : &I2S1;
+          return (ESP32_I2S_DEVICE == 0) ? &I2S0 : &I2S1;
       #endif
+
   }
   
   // Static
@@ -78,22 +100,17 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
     }
   }
 
-
   void Bus_Parallel16::config(const config_t& cfg)
   {
       ESP_LOGI(TAG, "Performing config for ESP32 or ESP32-S2");
       _cfg = cfg;
-      auto port = cfg.port;
-      _dev = getDev(port);
+       auto port = ESP32_I2S_DEVICE; //cfg.port;
+      _dev = getDev();
   }
  
  bool Bus_Parallel16::init(void) // The big one that gets everything setup.
  {
     ESP_LOGI(TAG, "Performing DMA bus init() for ESP32 or ESP32-S2");
-
-    if(_cfg.port < I2S_NUM_0 || _cfg.port >= I2S_NUM_MAX) {
-      return false;
-    }
 
     if(_cfg.parallel_width < 8 || _cfg.parallel_width >= 24) {
       return false;
@@ -105,7 +122,7 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
     int irq_source;
 
     // Initialize I2S0 peripheral
-    if (_cfg.port == 0) 
+    if (ESP32_I2S_DEVICE == I2S_NUM_0) 
     {
         periph_module_reset(PERIPH_I2S0_MODULE);
         periph_module_enable(PERIPH_I2S0_MODULE);
@@ -232,7 +249,7 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
   // Must be ESP32 original
   #if !defined (CONFIG_IDF_TARGET_ESP32S2)  
     dev->clkm_conf.clka_en=0;         // Use the 80mhz system clock (PLL_D2_CLK) when '0'
-    dev->clkm_conf.clkm_div_num = 3;  // Hard code to whatever frequency this is. 26Mhz?
+    dev->clkm_conf.clkm_div_num = 3;  // Hard code to 3 whatever frequency this is. 26Mhz?
   #endif
     
 /*
@@ -357,50 +374,27 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
 
     dev->conf1.val = 0;
     dev->conf1.tx_stop_en = 0; 
-/*    
-    // Allocate I2S status structure for buffer swapping stuff
-    i2s_state = (i2s_parallel_state_t*) malloc(sizeof(i2s_parallel_state_t));
-    assert(i2s_state != NULL);
-    i2s_parallel_state_t *state = i2s_state;
-      
-    state->desccount_a    = conf->desccount_a;
-    state->desccount_b    = conf->desccount_b;
-    state->dmadesc_a      = conf->lldesc_a;
-    state->dmadesc_b      = conf->lldesc_b;  
-    state->i2s_interrupt_port_arg  = port; // need to keep this somewhere in static memory for the ISR
-*/
-
     dev->timing.val = 0;
 
-    //dev->int_ena.out_eof = 1
+ 
+    /* If we have double buffering, then allocate an interrupt service routine function
+     * that can be used for I2S0/I2S1 created interrupts.
+     */
+    if (_double_dma_buffer) {
 
-/*
-  12.6.2 DMA Interrupts
-  • I2S_OUT_TOTAL_EOF_INT: Triggered when all transmitting linked lists are used up.
-  • I2S_OUT_EOF_INT: Triggered when rxlink has finished sending a packet
-
-*/    
-/*
-    // We using the double buffering switch logic?
-    if (conf->int_ena_out_eof)
-    {
         // Get ISR setup 
         esp_err_t err =  esp_intr_alloc(irq_source, 
                                       (int)(ESP_INTR_FLAG_IRAM | ESP_INTR_FLAG_LEVEL1),
-                                      irq_hndlr, 
-                                      &state->i2s_interrupt_port_arg, NULL);
+                                      irq_hndlr, NULL, NULL);
         
         if(err) {
-            return err;
+            ESP_LOGE(TAG, "init() Failed to setup interrupt request handeler.");    
+            return false;
         }
 
-        
-        // Setup interrupt handler which is focussed only on the (page 322 of Tech. Ref. Manual)
-        // "I2S_OUT_EOF_INT: Triggered when rxlink has finished sending a packet"
-        // ... whatever the hell that is supposed to mean... One massive linked list? So all pixels in the chain?
-        dev->int_ena.out_eof = 1;
+        // Don't do this here. Don't enable just yet.        
+        // dev->int_ena.out_eof = 1;
     }
-*/
 
       
   #if defined (CONFIG_IDF_TARGET_ESP32S2)
@@ -442,6 +436,7 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
     if (_dmadesc_a) heap_caps_free(_dmadesc_a); // free all dma descrptios previously
     
     _dmadesc_count = len; 
+    _dmadesc_last  = len-1; 
 
     ESP_LOGI(TAG, "Allocating memory for %d DMA descriptors.", len);    
 
@@ -474,7 +469,17 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
     _dmadesc_b_idx  = 0;
 
     ESP_LOGD(TAG, "Allocating %d bytes of memory for DMA descriptors.", sizeof(HUB75_DMA_DESCRIPTOR_T) * len);       
-   
+
+    // New - Temporary blank descriptor for transitions between DMA buffer
+    _dmadesc_blank = (HUB75_DMA_DESCRIPTOR_T*)heap_caps_malloc(sizeof(HUB75_DMA_DESCRIPTOR_T) * 1, MALLOC_CAP_DMA);
+    _dmadesc_blank->size     = 1024*2;
+    _dmadesc_blank->length   = 1024*2;
+    _dmadesc_blank->buf      = (uint8_t*) _blank_data; 
+    _dmadesc_blank->eof      = 1;         
+    _dmadesc_blank->sosf     = 0;         
+    _dmadesc_blank->owner    = 1;         
+    _dmadesc_blank->qe.stqe_next = (lldesc_t*) _dmadesc_blank;         
+    _dmadesc_blank->offset   = 0;         
 
     return true;
 
@@ -516,19 +521,19 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
     {
         dmadesc      = &_dmadesc_b[_dmadesc_b_idx];
 
-        next = (_dmadesc_b_idx < (_dmadesc_count-1) ) ? &_dmadesc_b[_dmadesc_b_idx+1]:_dmadesc_b;       
-        eof  = (_dmadesc_b_idx == (_dmadesc_count-1));
+        next = (_dmadesc_b_idx < (_dmadesc_last) ) ? &_dmadesc_b[_dmadesc_b_idx+1]:_dmadesc_b;       
+        eof  = (_dmadesc_b_idx == (_dmadesc_last));
     }
     else
     {
         dmadesc      = &_dmadesc_a[_dmadesc_a_idx];
 
         // https://stackoverflow.com/questions/47170740/c-negative-array-index
-        next = (_dmadesc_a_idx < (_dmadesc_count-1) ) ? _dmadesc_a + _dmadesc_a_idx+1:_dmadesc_a;       
-        eof  = (_dmadesc_a_idx == (_dmadesc_count-1));
+        next = (_dmadesc_a_idx < (_dmadesc_last) ) ? _dmadesc_a + _dmadesc_a_idx+1:_dmadesc_a;       
+        eof  = (_dmadesc_a_idx == (_dmadesc_last));
     }
 
-    if ( _dmadesc_a_idx == (_dmadesc_count-1) ) {
+    if ( _dmadesc_a_idx == (_dmadesc_last) ) {
       ESP_LOGW(TAG, "Creating final DMA descriptor and linking back to 0.");             
     } 
 
@@ -556,7 +561,7 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
     // Configure DMA burst mode
     dev->lc_conf.val = I2S_OUT_DATA_BURST_EN | I2S_OUTDSCR_BURST_EN;
 
-    // Set address of DMA descriptor
+    // Set address of DMA descriptor, start with buffer 0 / 'a'
     dev->out_link.addr = (uint32_t) _dmadesc_a;
   
   // Start DMA operation
@@ -581,23 +586,57 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
   } // end   
 
 
-  void Bus_Parallel16::set_dma_output_buffer(bool dmadesc_b)
+  void Bus_Parallel16::flip_dma_output_buffer(int &current_back_buffer_id) // pass by reference so we can change in main matrixpanel class
   {
-    if ( _double_dma_buffer == false) return;
+      // Setup interrupt handler which is focussed only on the (page 322 of Tech. Ref. Manual)
+      // "I2S_OUT_EOF_INT: Triggered when rxlink has finished sending a packet" (when dma linked list with eof = 1 is hit)
+      //_dev->int_ena.out_eof = 1;     
+ 
+      // MISALIGNMENT ON TOP/2 THE PANEL BETWEEN FAST MOVING GRAPHICS IS CAUSED 
+      // DUE TO THE CHANGE OF BACK BUFFER ID AND THE FRIGGIN DMA BUFFER!!!
 
-    if ( dmadesc_b == true) // change across to everything 'b''
-    {
-        _dmadesc_a[_dmadesc_count-1].qe.stqe_next = &_dmadesc_b[0]; 
-        _dmadesc_b[_dmadesc_count-1].qe.stqe_next = &_dmadesc_b[0]; 
-    }
-    else
-    {
-        _dmadesc_a[_dmadesc_count-1].qe.stqe_next = &_dmadesc_a[0]; 
-        _dmadesc_b[_dmadesc_count-1].qe.stqe_next = &_dmadesc_a[0]; 
-    }
+/*
+      if ( current_back_buffer_id == 1) {                 
+          _dmadesc_a[_dmadesc_last].qe.stqe_next = _dmadesc_blank;
+      } 
+      else {
+          _dmadesc_b[_dmadesc_last].qe.stqe_next = _dmadesc_blank;
+      }
+*/
 
-    //_dmadesc_a_active ^= _dmadesc_a_active;
-    
+  // THIS WORKS SMOOTHLY EXCEPT FOR THE OFFSET ON MOVING GRAPHICS
+  _dev->int_ena.out_eof = 1;   
+
+      // Wait until we're now stuck in a _dmadesc_a loop;
+      active_dma_buffer_output_count = 0;  
+      while (!active_dma_buffer_output_count) {}      
+
+    if ( current_back_buffer_id == 1) {     
+
+      _dmadesc_a[_dmadesc_last].qe.stqe_next = &_dmadesc_b[0]; 
+
+      // Wait until we're now stuck in a _dmadesc_a loop;
+      active_dma_buffer_output_count = 0;  
+      while (!active_dma_buffer_output_count) {}      
+                                      
+      _dmadesc_a[_dmadesc_last].qe.stqe_next = &_dmadesc_a[0]; // get this preped for the next flip buffer
+
+    } else {
+      _dmadesc_b[_dmadesc_last].qe.stqe_next = &_dmadesc_a[0]; 
+
+      // Wait until we're now stuck in a _dmadesc_a loop;
+      active_dma_buffer_output_count = 0;  
+      while (!active_dma_buffer_output_count) {}      
+
+      _dmadesc_b[_dmadesc_last].qe.stqe_next = &_dmadesc_b[0];
+    }
+      current_back_buffer_id ^= 1;  
+
+
+
+  // Disable intterupt
+  _dev->int_ena.out_eof = 0;      
+
   } // end flip
 
 

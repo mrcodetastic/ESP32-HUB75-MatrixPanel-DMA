@@ -51,7 +51,7 @@
     return true;
   }  
 
-  static lcd_cam_dev_t* getDev(int port)
+  static lcd_cam_dev_t* getDev()
   {
     return &LCD_CAM;
   }
@@ -61,8 +61,8 @@
   void Bus_Parallel16::config(const config_t& cfg)
   {
     _cfg = cfg;
-    auto port = cfg.port;
-    _dev = getDev(port);
+    //auto port = cfg.port;
+    _dev = getDev();
   }
 
 
@@ -402,12 +402,12 @@
   } // end   
 
 
-  void Bus_Parallel16::set_dma_output_buffer(bool dmadesc_b)
+  void Bus_Parallel16::flip_dma_output_buffer(int &current_back_buffer_id)
   {
 
-    if ( _double_dma_buffer == false) return;
+   // if ( _double_dma_buffer == false) return;
 
-    if ( dmadesc_b == true) // change across to everything 'b''
+    if ( current_back_buffer_id == 1) // change across to everything 'b''
     {
        _dmadesc_a[_dmadesc_count-1].next =  (dma_descriptor_t *) &_dmadesc_b[0];       
        _dmadesc_b[_dmadesc_count-1].next =  (dma_descriptor_t *) &_dmadesc_b[0];       
@@ -417,6 +417,8 @@
        _dmadesc_a[_dmadesc_count-1].next =  (dma_descriptor_t *) &_dmadesc_a[0];       
        _dmadesc_b[_dmadesc_count-1].next =  (dma_descriptor_t *) &_dmadesc_a[0];   
     }
+
+    current_back_buffer_id ^= 1;
 
     
   } // end flip

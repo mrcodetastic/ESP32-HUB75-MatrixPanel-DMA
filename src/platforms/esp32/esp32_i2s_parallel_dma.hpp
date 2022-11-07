@@ -49,8 +49,15 @@ Contributors:
 
 #define DMA_MAX (4096-4)
 
+#define ESP32_I2S_DEVICE I2S_NUM_0	
+
 // The type used for this SoC
 #define HUB75_DMA_DESCRIPTOR_T lldesc_t
+
+//----------------------------------------------------------------------------
+
+static void IRAM_ATTR irq_hndlr(void* arg);
+static i2s_dev_t* getDev();
 
 //----------------------------------------------------------------------------
 
@@ -64,8 +71,6 @@ Contributors:
 
     struct config_t
     {
-      int port = 0;
-
       // max 20MHz (when in 16 bit / 2 byte mode)
       uint32_t bus_freq = 10000000;
       int8_t pin_wr = -1; // 
@@ -112,7 +117,7 @@ Contributors:
     void dma_transfer_start();
     void dma_transfer_stop();
 
-    void set_dma_output_buffer(bool dmadesc_b = false);
+    void flip_dma_output_buffer(int &current_back_buffer_id);
   
   private:
 
@@ -124,12 +129,16 @@ Contributors:
     //bool    _dmadesc_a_active   = true;
 
     uint32_t _dmadesc_count  = 0;   // number of dma decriptors
+    uint32_t _dmadesc_last   = 0;
 
     uint32_t _dmadesc_a_idx  = 0;
     uint32_t _dmadesc_b_idx  = 0;
 
     HUB75_DMA_DESCRIPTOR_T* _dmadesc_a = nullptr;
     HUB75_DMA_DESCRIPTOR_T* _dmadesc_b = nullptr; 
+
+    HUB75_DMA_DESCRIPTOR_T* _dmadesc_blank = nullptr;     
+    uint16_t                _blank_data[1024] = {0};
 
     volatile i2s_dev_t* _dev;
     

@@ -8,15 +8,7 @@
 #include <esp_log.h>
 
 //#include <Arduino.h>
-
-//#include "freertos/FreeRTOS.h"
-//#include "freertos/task.h"
-//#include "freertos/semphr.h"
-//#include "freertos/queue.h"
-
-//#include "esp_heap_caps.h"
 #include "platforms/platform_detect.hpp"
-
 
 #ifdef USE_GFX_ROOT
     #include <FastLED.h>    
@@ -118,23 +110,6 @@
 
 // Max clock cycles to blank OE before/after LAT signal change
 #define MAX_LAT_BLANKING  4
-
-/***************************************************************************************/
-// Check compile-time only options
-#if PIXEL_COLOUR_DEPTH_BITS > 8
-    #error "Pixel color depth bits cannot be greater than 8."
-#elif PIXEL_COLOUR_DEPTH_BITS < 2 
-    #error "Pixel color depth bits cannot be less than 2."
-#endif
-
-/* This library is designed to take an 8 bit / 1 byte value (0-255) for each R G B colour sub-pixel. 
- * The PIXEL_COLOUR_DEPTH_BITS should always be '8' as a result.
- * However, if the library is to be used with lower colour depth (i.e. 6 bit colour), then we need to ensure the 8-bit value passed to the colour masking
- * is adjusted accordingly to ensure the LSB's are shifted left to MSB, by the difference. Otherwise the colours will be all screwed up.
- */
-#if PIXEL_COLOUR_DEPTH_BITS != 8
-static constexpr uint8_t const MASK_OFFSET = 8-PIXEL_COLOUR_DEPTH_BITS;
-#endif
 
 /***************************************************************************************/
 
@@ -406,7 +381,7 @@ class MatrixPanel_I2S_DMA {
     /**
      * A wrapper to fill whatever selected DMA buffer / screen with black
      */
-    inline void clearScreen(){ clearFrameBuffer(back_buffer_id); /*updateMatrixDMABuffer(0,0,0);*/ };
+    inline void clearScreen(){ startWrite(); clearFrameBuffer(back_buffer_id); endWrite(); /*updateMatrixDMABuffer(0,0,0);*/ };
 
 #ifndef NO_FAST_FUNCTIONS
     /**
@@ -416,7 +391,9 @@ class MatrixPanel_I2S_DMA {
     virtual void drawFastVLine(int16_t x, int16_t y, int16_t h, uint16_t color){
       uint8_t r, g, b;
       color565to888(color, r, g, b);
+      startWrite();
       vlineDMA(x, y, h, r, g, b);
+      endWrite();
     }
     // rgb888 overload
     virtual inline void drawFastVLine(int16_t x, int16_t y, int16_t h, uint8_t r, uint8_t g, uint8_t b){ vlineDMA(x, y, h, r, g, b); };
@@ -428,7 +405,9 @@ class MatrixPanel_I2S_DMA {
     virtual void drawFastHLine(int16_t x, int16_t y, int16_t w, uint16_t color){
       uint8_t r, g, b;
       color565to888(color, r, g, b);
+      startWrite();      
       hlineDMA(x, y, w, r, g, b);
+      endWrite();
     }
     // rgb888 overload
     virtual inline void drawFastHLine(int16_t x, int16_t y, int16_t w, uint8_t r, uint8_t g, uint8_t b){ hlineDMA(x, y, w, r, g, b); };
@@ -440,10 +419,16 @@ class MatrixPanel_I2S_DMA {
     virtual void fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color){
       uint8_t r, g, b;
       color565to888(color, r, g, b);
+      startWrite();        
       fillRectDMA(x, y, w, h, r, g, b);
+      endWrite();
     }
     // rgb888 overload
-    virtual inline void fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint8_t r, uint8_t g, uint8_t b){fillRectDMA(x, y, w, h, r, g, b);}
+    virtual inline void fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint8_t r, uint8_t g, uint8_t b){
+      startWrite();     
+      fillRectDMA(x, y, w, h, r, g, b);
+      endWrite();
+    }
 #endif
 
     void fillScreenRGB888(uint8_t r, uint8_t g, uint8_t b);
@@ -474,22 +459,14 @@ class MatrixPanel_I2S_DMA {
     static void color565to888(const uint16_t color, uint8_t &r, uint8_t &g, uint8_t &b);
 
 
-    inline void IRAM_ATTR flipDMABuffer() 
+    inline void flipDMABuffer() 
     {         
-      if ( !m_cfg.double_buff) return;
+        if ( !m_cfg.double_buff) { return; }
 
-        //ESP_LOGI("flipDMABuffer()", "Set back buffer to: %d", back_buffer_id);
-
-        if (back_buffer_id)
-        {
-            dma_bus.set_dma_output_buffer( true ); 
-            back_buffer_id = 0;    
-        }
-        else
-        {
-            dma_bus.set_dma_output_buffer( false );      
-            back_buffer_id = 1;                               
-        }
+        // while (active_gfx_writes) { } // wait a bit ?
+      //  initialized = false;
+          dma_bus.flip_dma_output_buffer( back_buffer_id ); 
+    //    initialized = true;
 
         /*
         i2s_parallel_set_previous_buffer_not_free();       
@@ -505,8 +482,6 @@ class MatrixPanel_I2S_DMA {
         // Wait before we allow any writing to the buffer. Stop flicker.
         while(i2s_parallel_is_previous_buffer_free() == false) { }          
         */
-
-   
 
     }
         
@@ -562,8 +537,16 @@ class MatrixPanel_I2S_DMA {
         //i2s_parallel_stop_dma(ESP32_I2S_DEVICE);
         dma_bus.dma_transfer_stop();
     } 
+
+    void startWrite() {
+      //ESP_LOGI("TAG", "startWrite() called");
+      active_gfx_writes++;
+    }
     
 
+    void endWrite() {
+      active_gfx_writes--;
+    }    
 
   // ------- PROTECTED -------
   // those might be useful for child classes, like VirtualMatrixPanel
@@ -645,6 +628,7 @@ class MatrixPanel_I2S_DMA {
 
     // Other private variables
     bool initialized          = false;
+    int  active_gfx_writes    = 0;                  // How many async routines are 'drawing' (writing) to the DMA bit buffer. Function called from Adafruit_GFX draw routines like drawCircle etc.
     int  back_buffer_id       = 0;                       // If using double buffer, which one is NOT active (ie. being displayed) to write too?
     int  brightness           = 32;                      // If you get ghosting... reduce brightness level. 60 seems to be the limit before ghosting on a 64 pixel wide physical panel for some panels.
     int  lsbMsbTransitionBit  = 0;                       // For colour depth calculations
@@ -690,6 +674,8 @@ class MatrixPanel_I2S_DMA {
      * @param _buff_id - buffer id to control
      */
     void brtCtrlOE(int brt, const bool _buff_id=0);
+
+
 
 
 }; // end Class header
