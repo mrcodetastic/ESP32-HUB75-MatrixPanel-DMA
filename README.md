@@ -74,7 +74,7 @@ Due to the high-speed optimized nature of this library, only specific panels are
 ## Panels Not Supported
 * 1/8 Scan LED Matrix Panels are not supported.
 * RUL5358 / SHIFTREG_ABC_BIN_DE based panels are not supported.
-* ICN2053 / FM6353 based panels - Refer to [this discussion](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-DMA/discussions/324) for a fork of this library that works with these panels.
+* ICN2053 / FM6353 based panels - Refer to [this library](https://github.com/LAutour/ESP32-HUB75-MatrixPanel-DMA-ICN2053), which is a fork of this library ( [discussion link](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-DMA/discussions/324)).
 * Any other panel not listed above.
 
 Please use an [alternative library](https://github.com/2dom/PxMatrix) if you bought one of these.
