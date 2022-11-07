@@ -603,39 +603,35 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
           _dmadesc_b[_dmadesc_last].qe.stqe_next = _dmadesc_blank;
       }
 */
+         
 
   // THIS WORKS SMOOTHLY EXCEPT FOR THE OFFSET ON MOVING GRAPHICS
-  _dev->int_ena.out_eof = 1;   
+            _dev->int_ena.out_eof = 1;   
+      if ( current_back_buffer_id == 1) {     
 
-      // Wait until we're now stuck in a _dmadesc_a loop;
-      active_dma_buffer_output_count = 0;  
-      while (!active_dma_buffer_output_count) {}      
+        _dmadesc_a[_dmadesc_last].qe.stqe_next = &_dmadesc_b[0]; 
 
-    if ( current_back_buffer_id == 1) {     
+        // Wait until we're now stuck in a _dmadesc_a loop;
+        active_dma_buffer_output_count = 0;  
+        while (!active_dma_buffer_output_count) {}      
+                                        
+        _dmadesc_a[_dmadesc_last].qe.stqe_next = &_dmadesc_a[0]; // get this preped for the next flip buffer
+      
+      } else {
+        _dmadesc_b[_dmadesc_last].qe.stqe_next = &_dmadesc_a[0]; 
 
-      _dmadesc_a[_dmadesc_last].qe.stqe_next = &_dmadesc_b[0]; 
-
-      // Wait until we're now stuck in a _dmadesc_a loop;
-      active_dma_buffer_output_count = 0;  
-      while (!active_dma_buffer_output_count) {}      
-                                      
-      _dmadesc_a[_dmadesc_last].qe.stqe_next = &_dmadesc_a[0]; // get this preped for the next flip buffer
-
-    } else {
-      _dmadesc_b[_dmadesc_last].qe.stqe_next = &_dmadesc_a[0]; 
-
-      // Wait until we're now stuck in a _dmadesc_a loop;
-      active_dma_buffer_output_count = 0;  
-      while (!active_dma_buffer_output_count) {}      
-
-      _dmadesc_b[_dmadesc_last].qe.stqe_next = &_dmadesc_b[0];
-    }
-      current_back_buffer_id ^= 1;  
+        // Wait until we're now stuck in a _dmadesc_a loop;
+        active_dma_buffer_output_count = 0;  
+        while (!active_dma_buffer_output_count) {}      
+  
+        _dmadesc_b[_dmadesc_last].qe.stqe_next = &_dmadesc_b[0];
+      }
+        current_back_buffer_id ^= 1;            
 
 
 
-  // Disable intterupt
-  _dev->int_ena.out_eof = 0;      
+      // Disable intterupt
+      _dev->int_ena.out_eof = 0;      
 
   } // end flip
 
