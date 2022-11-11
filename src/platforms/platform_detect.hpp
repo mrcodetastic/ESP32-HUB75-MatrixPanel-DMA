@@ -39,7 +39,11 @@ Modified heavily for the ESP32 HUB75 DMA library by:
   #include "esp32s3/gdma_lcd_parallel16.hpp"
   #include "esp32s3/esp32s3-default-pins.hpp"    
 
- #elif defined (CONFIG_IDF_TARGET_ESP32)
+ #elif defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32H2)
+
+	#error "ESP32 RISC-V devices do not have an LCD interface and are therefore not supported by this library."
+
+ #elif defined (CONFIG_IDF_TARGET_ESP32) || defined(ESP32)
 
   // Assume an ESP32 (the original 2015 version)
   // Same include as ESP32S3  
@@ -51,7 +55,7 @@ Modified heavily for the ESP32 HUB75 DMA library by:
   #include "esp32/esp32-default-pins.hpp"
 
  #else
-    #error "Unknown ESP32 platform."
+    #error "Unknown platform."
   
  #endif
 
