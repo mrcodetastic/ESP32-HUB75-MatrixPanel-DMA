@@ -101,11 +101,12 @@
       //int port = 0;
 
       // max 40MHz (when in 16 bit / 2 byte mode)
-      uint32_t bus_freq = 20000000;
+      uint32_t bus_freq = 10000000;
       int8_t pin_wr = -1;
       int8_t pin_rd = -1;
       int8_t pin_rs = -1;  // D/C
       bool   invert_pclk = false;
+      bool   psram_clk_hack = false;
       union
       {
         int8_t pin_data[16];

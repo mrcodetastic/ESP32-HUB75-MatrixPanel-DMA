@@ -39,6 +39,14 @@ Modified heavily for the ESP32 HUB75 DMA library by:
   #include "esp32s3/gdma_lcd_parallel16.hpp"
   #include "esp32s3/esp32s3-default-pins.hpp"    
 
+  #if defined(SPIRAM_FRAMEBUFFER) && defined (CONFIG_IDF_TARGET_ESP32S3)       
+   #pragma message "Enabling use of PSRAM/SPIRAM based DMA Buffer"
+   #define SPIRAM_DMA_BUFFER 1
+   
+   // Disable fast functions because I don't understand the interaction with DMA PSRAM and the CPU->DMA->SPIRAM Cache implications..
+   #define NO_FAST_FUNCTIONS 1
+  #endif
+
  #elif defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32H2)
 
 	#error "ESP32 RISC-V devices do not have an LCD interface and are therefore not supported by this library."

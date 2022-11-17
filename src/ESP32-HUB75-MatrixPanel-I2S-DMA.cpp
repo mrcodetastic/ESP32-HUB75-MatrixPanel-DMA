@@ -1,5 +1,11 @@
 #include "ESP32-HUB75-MatrixPanel-I2S-DMA.h"
 
+#if defined(SPIRAM_DMA_BUFFER)
+  // Sprite_TM saves the day again...
+  // https://www.esp32.com/viewtopic.php?f=2&t=30584
+  #include "rom/cache.h"
+#endif 
+
 static const char* TAG = "MatrixPanel";
 
 /* This replicates same function in rowBitStruct, but due to induced inlining it might be MUCH faster 
@@ -249,6 +255,10 @@ void MatrixPanel_I2S_DMA::configureDMA(const HUB75_I2S_CFG& _cfg)
       bus_cfg.pin_d14  = -1;
       bus_cfg.pin_d15  = -1;
 
+      #if defined(SPIRAM_DMA_BUFFER)      
+        bus_cfg.psram_clk_hack = true;
+      #endif
+
       dma_bus.config(bus_cfg);   
 
       dma_bus.init();      
@@ -368,6 +378,10 @@ void IRAM_ATTR MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint16_t x_coord, uint
         p[x_coord] &= _colourbitclear;   // reset RGB bits
         p[x_coord] |= RGB_output_bits;  // set new RGB bits
 
+        #if defined(SPIRAM_DMA_BUFFER)          
+            Cache_WriteBack_Addr((uint32_t)&p[x_coord], sizeof(ESP32_I2S_DMA_STORAGE_TYPE)) ;
+        #endif 
+
     } while(colour_depth_idx);  // end of colour depth loop (8)
 } // updateMatrixDMABuffer (specific co-ords change)
 
@@ -424,6 +438,12 @@ void MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint8_t red, uint8_t green, uint
         --x_coord;
         p[x_coord] &= BITMASK_RGB12_CLEAR;  // reset colour bits
         p[x_coord] |= RGB_output_bits;      // set new colour bits
+
+
+        #if defined(SPIRAM_DMA_BUFFER)          
+            Cache_WriteBack_Addr((uint32_t)&p[x_coord], sizeof(ESP32_I2S_DMA_STORAGE_TYPE)) ;
+        #endif 
+
       } while(x_coord);
 
     } while(matrix_frame_parallel_row); // end row iteration
@@ -557,6 +577,13 @@ void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id){
 
     } while(colouridx);
 
+
+
+    #if defined(SPIRAM_DMA_BUFFER)          
+        Cache_WriteBack_Addr((uint32_t)row, sizeof(ESP32_I2S_DMA_STORAGE_TYPE) * ((dma_buff.rowBits[row_idx]->width * dma_buff.rowBits[row_idx]->colour_depth)-1)) ;
+    #endif 
+    
+
   } while(row_idx);
 }
 
@@ -630,6 +657,7 @@ void MatrixPanel_I2S_DMA::brtCtrlOE(int brt, const bool _buff_id){
 */
 
       row[ESP32_TX_FIFO_POSITION_ADJUST(0 + _blank)] |= BIT_OE;    
+      
 
 
         //row[0 + _blank] |= BIT_OE;
@@ -638,6 +666,14 @@ void MatrixPanel_I2S_DMA::brtCtrlOE(int brt, const bool _buff_id){
       } while (_blank);
 
     } while(colouridx);
+
+    // switch pointer to a row for a specific color index
+    #if defined(SPIRAM_DMA_BUFFER)          
+        ESP32_I2S_DMA_STORAGE_TYPE* row_hack = dma_buff.rowBits[row_idx]->getDataPtr(colouridx, _buff_id);    
+        Cache_WriteBack_Addr((uint32_t)row_hack, sizeof(ESP32_I2S_DMA_STORAGE_TYPE) * ((dma_buff.rowBits[row_idx]->width * dma_buff.rowBits[row_idx]->colour_depth)-1)) ;
+    #endif 
+
+
   } while(row_idx);
 }
 

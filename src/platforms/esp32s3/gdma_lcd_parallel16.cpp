@@ -79,9 +79,12 @@
     LCD_CAM.lcd_user.lcd_reset = 1;
     esp_rom_delay_us(100);
 
-    uint32_t lcd_clkm_div_num = ((160000000 + 1) / _cfg.bus_freq) / 2;
+//    uint32_t lcd_clkm_div_num = ((160000000 + 1) / _cfg.bus_freq);
+     ESP_LOGI(TAG, "Cpu frequecny is %d", getCpuFrequencyMhz());
 
-     ESP_LOGI(TAG, "Clock divider is %d", lcd_clkm_div_num);
+     uint32_t lcd_clkm_div_num = (  ((getCpuFrequencyMhz()*1000000)+1) /  _cfg.bus_freq  ) / 4;
+
+     //ESP_LOGI(TAG, "Clock divider is %d", lcd_clkm_div_num);     
 
     // Configure LCD clock. Since this program generates human-perceptible
     // output and not data for LED matrices or NeoPixels, use almost the
@@ -90,12 +93,27 @@
     // is applied (250*64), yielding 2,500 Hz. Still much too fast for
     // human eyes, so later we set up the data to repeat each output byte
     // many times over.
-    LCD_CAM.lcd_clock.clk_en = 1;             // Enable peripheral clock
-    LCD_CAM.lcd_clock.lcd_clk_sel = 2;        // 160mhz source
+    //LCD_CAM.lcd_clock.clk_en = 0;             // Enable peripheral clock
+
+    // LCD_CAM_LCD_CLK_SEL Select LCD module source clock. 0: clock source is disabled. 1: XTAL_CLK. 2: PLL_D2_CLK. 3: PLL_F160M_CLK. (R/W)
+    LCD_CAM.lcd_clock.lcd_clk_sel = 2;        
     LCD_CAM.lcd_clock.lcd_ck_out_edge = 0;    // PCLK low in 1st half cycle
     LCD_CAM.lcd_clock.lcd_ck_idle_edge = 0;   // PCLK low idle
     LCD_CAM.lcd_clock.lcd_clk_equ_sysclk = 0; // PCLK = CLK / (CLKCNT_N+1)
-    LCD_CAM.lcd_clock.lcd_clkm_div_num = lcd_clkm_div_num; // 1st stage 1:250 divide
+
+
+    if (_cfg.psram_clk_hack) // fastest speed I can get PSRAM to work before nothing shows
+    {
+      LCD_CAM.lcd_clock.lcd_clkm_div_num = 4; 
+    }
+    else
+    {
+      //LCD_CAM.lcd_clock.lcd_clkm_div_num = lcd_clkm_div_num;      
+      LCD_CAM.lcd_clock.lcd_clkm_div_num = 3;      
+    }
+     ESP_LOGI(TAG, "Clock divider is %d", LCD_CAM.lcd_clock.lcd_clkm_div_num);     
+
+    
     LCD_CAM.lcd_clock.lcd_clkm_div_a = 1;     // 0/1 fractional divide
     LCD_CAM.lcd_clock.lcd_clkm_div_b = 0;
     
@@ -194,8 +212,8 @@
     gdma_apply_strategy(dma_chan, &strategy_config);
 
     gdma_transfer_ability_t ability = {
-        .sram_trans_align = 0,
-        .psram_trans_align = 0,
+        .sram_trans_align = 4,
+        .psram_trans_align = 64,
     };
     gdma_set_transfer_ability(dma_chan, &ability);    
 
