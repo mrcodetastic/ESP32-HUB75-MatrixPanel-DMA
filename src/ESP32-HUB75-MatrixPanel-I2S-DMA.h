@@ -6,6 +6,7 @@
 #include <memory>
 #include <esp_err.h>
 #include <esp_log.h>
+#include "esp_attr.h"
 
 //#include <Arduino.h>
 #include "platforms/platform_detect.hpp"
