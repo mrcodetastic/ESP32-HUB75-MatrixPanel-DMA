@@ -19,8 +19,11 @@
 #if __has_include (<hal/lcd_ll.h>)
 // Stop compile errors: /src/platforms/esp32s3/gdma_lcd_parallel16.hpp:64:10: fatal error: hal/lcd_ll.h: No such file or directory
 
+#ifdef ARDUINO_ARCH_ESP32
   #include <Arduino.h>
+#endif
   #include "gdma_lcd_parallel16.hpp"
+  #include "esp_attr.h"
 
   static const char* TAG = "gdma_lcd_parallel16";
 
@@ -80,9 +83,9 @@
     esp_rom_delay_us(100);
 
 //    uint32_t lcd_clkm_div_num = ((160000000 + 1) / _cfg.bus_freq);
-     ESP_LOGI(TAG, "Cpu frequecny is %d", getCpuFrequencyMhz());
+     ESP_LOGI(TAG, "Cpu frequecny is %" PRIu16 "", CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ);
 
-     uint32_t lcd_clkm_div_num = (  ((getCpuFrequencyMhz()*1000000)+1) /  _cfg.bus_freq  ) / 4;
+     uint32_t lcd_clkm_div_num = (  ((CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ*1000000)+1) /  _cfg.bus_freq  ) / 4;
 
      //ESP_LOGI(TAG, "Clock divider is %d", lcd_clkm_div_num);     
 
@@ -378,7 +381,7 @@
 
       if ( _dmadesc_a_idx >= _dmadesc_count)
       {
-        ESP_LOGE(TAG, "Attempted to create more DMA descriptors than allocated. Expecting max %d descriptors.", _dmadesc_count);          
+        ESP_LOGE(TAG, "Attempted to create more DMA descriptors than allocated. Expecting max %" PRIu32 " descriptors.", _dmadesc_count);          
         return;
       }
 
