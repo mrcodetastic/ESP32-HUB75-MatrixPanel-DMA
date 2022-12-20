@@ -13,7 +13,7 @@ endif()
 idf_component_register(SRCS "src/platforms/esp32/esp32_i2s_parallel_dma.cpp" "src/ESP32-HUB75-MatrixPanel-I2S-DMA.cpp" "src/ESP32-HUB75-MatrixPanel-leddrivers.cpp"
                        src/platforms/${target}/gdma_lcd_parallel16.cpp
                        INCLUDE_DIRS "./src" 
-                       PRIV_REQUIRES ${arduino_build} ${esp_idf_build}
+                       REQUIRES ${arduino_build} ${esp_idf_build}
                        )
 
 # In case you are running into issues with "missing" header files from 3rd party libraries
