@@ -19,7 +19,7 @@ static const char* TAG = "MatrixPanel";
  * Irrelevant for ESP32-S2 the way the FIFO ordering works is different - refer to page 679 of S2 technical reference manual
  */
 #if defined (ESP32_THE_ORIG)
-    #define ESP32_TX_FIFO_POSITION_ADJUST(x_coord)  ((x_coord & 1U) ? (x_coord-1):(x_coord+1))
+    #define ESP32_TX_FIFO_POSITION_ADJUST(x_coord)  (((x_coord) & 1U) ? (x_coord-1):(x_coord+1))
 #else 
     #define ESP32_TX_FIFO_POSITION_ADJUST(x_coord)  x_coord
 #endif 
