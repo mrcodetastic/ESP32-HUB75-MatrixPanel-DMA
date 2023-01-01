@@ -26,9 +26,9 @@
   #include "gdma_lcd_parallel16.hpp"
   #include "esp_attr.h"
 
-#if CORE_DEBUG_LEVEL > 0
-  static const char* TAG = "gdma_lcd_parallel16";
-#endif  
+//#if (CORE_DEBUG_LEVEL > ARDUHAL_LOG_LEVEL_NONE) || (ARDUHAL_LOG_LEVEL > ARDUHAL_LOG_LEVEL_NONE)  
+//  static const char* TAG = "gdma_lcd_parallel16";
+//#endif  
 
   static int _dmadesc_a_idx = 0;
   static int _dmadesc_b_idx = 0;  
@@ -86,7 +86,7 @@
     esp_rom_delay_us(100);
 
 //    uint32_t lcd_clkm_div_num = ((160000000 + 1) / _cfg.bus_freq);
-//    ESP_LOGI(TAG, "Clock divider is %d", lcd_clkm_div_num);     
+//    ESP_LOGI("", "Clock divider is %d", lcd_clkm_div_num);     
 
     // Configure LCD clock. Since this program generates human-perceptible
     // output and not data for LED matrices or NeoPixels, use almost the
@@ -113,7 +113,7 @@
       //LCD_CAM.lcd_clock.lcd_clkm_div_num = lcd_clkm_div_num;      
       LCD_CAM.lcd_clock.lcd_clkm_div_num = 3;      
     }
-     ESP_LOGI(TAG, "Clock divider is %d", LCD_CAM.lcd_clock.lcd_clkm_div_num);     
+     ESP_LOGI("S3", "Clock divider is %d", LCD_CAM.lcd_clock.lcd_clkm_div_num);     
 
     
     LCD_CAM.lcd_clock.lcd_clkm_div_a = 1;     // 0/1 fractional divide
@@ -305,7 +305,7 @@
 
   void Bus_Parallel16::enable_double_dma_desc(void)
   {
-        ESP_LOGI(TAG, "Enabled support for secondary DMA buffer.");    
+        ESP_LOGI("S3", "Enabled support for secondary DMA buffer.");    
        _double_dma_buffer = true;
   }
 
@@ -315,13 +315,13 @@
     if (_dmadesc_a) heap_caps_free(_dmadesc_a); // free all dma descrptios previously
     _dmadesc_count = len;
 
-    ESP_LOGD(TAG, "Allocating %d bytes memory for DMA descriptors.", sizeof(HUB75_DMA_DESCRIPTOR_T) * len);        
+    ESP_LOGD("S3", "Allocating %d bytes memory for DMA descriptors.", sizeof(HUB75_DMA_DESCRIPTOR_T) * len);        
 
     _dmadesc_a= (HUB75_DMA_DESCRIPTOR_T*)heap_caps_malloc(sizeof(HUB75_DMA_DESCRIPTOR_T) * len, MALLOC_CAP_DMA);
   
     if (_dmadesc_a == nullptr)
     {
-      ESP_LOGE(TAG, "ERROR: Couldn't malloc _dmadesc_a. Not enough memory.");
+      ESP_LOGE("S3", "ERROR: Couldn't malloc _dmadesc_a. Not enough memory.");
       return false;
     }
 
@@ -331,7 +331,7 @@
     
       if (_dmadesc_b == nullptr)
       {
-        ESP_LOGE(TAG, "ERROR: Couldn't malloc _dmadesc_b. Not enough memory.");
+        ESP_LOGE("S3", "ERROR: Couldn't malloc _dmadesc_b. Not enough memory.");
         _double_dma_buffer = false;
       }
     }
@@ -350,13 +350,11 @@
 
     if (size > MAX_DMA_LEN) {
       size = MAX_DMA_LEN;
-      ESP_LOGW(TAG, "Creating DMA descriptor which links to payload with size greater than MAX_DMA_LEN!");            
+      ESP_LOGW("S3", "Creating DMA descriptor which links to payload with size greater than MAX_DMA_LEN!");            
     }
 
     if ( dmadesc_b == true)
     {
-
-      // ESP_LOGI(TAG, "Creating dma desc B %d", _dmadesc_b_idx);      
 
       _dmadesc_b[_dmadesc_b_idx].dw0.owner = DMA_DESCRIPTOR_BUFFER_OWNER_DMA;
       _dmadesc_b[_dmadesc_b_idx].dw0.suc_eof = 0;
@@ -376,11 +374,10 @@
     }
     else
     {
-     // ESP_LOGI(TAG, "Creating dma desc A %d", _dmadesc_a_idx);      
-
+		
       if ( _dmadesc_a_idx >= _dmadesc_count)
       {
-        ESP_LOGE(TAG, "Attempted to create more DMA descriptors than allocated. Expecting max %" PRIu32 " descriptors.", _dmadesc_count);          
+        ESP_LOGE("S3", "Attempted to create more DMA descriptors than allocated. Expecting max %" PRIu32 " descriptors.", _dmadesc_count);          
         return;
       }
 

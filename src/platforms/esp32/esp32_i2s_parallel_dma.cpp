@@ -22,10 +22,6 @@ Modified heavily for the ESP32 HUB75 DMA library by:
 #include <sdkconfig.h>
 #if defined (CONFIG_IDF_TARGET_ESP32) || defined (CONFIG_IDF_TARGET_ESP32S2)
 
-#if CORE_DEBUG_LEVEL > 0
-	static const char* TAG = "esp32_i2s_parallel_dma";
-#endif
-
 #include "esp32_i2s_parallel_dma.hpp"
 
 #include <driver/gpio.h>
@@ -103,14 +99,14 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
 
   void Bus_Parallel16::config(const config_t& cfg)
   {
-      ESP_LOGI(TAG, "Performing config for ESP32 or ESP32-S2");
+      ESP_LOGI("ESP32/S2", "Performing config for ESP32 or ESP32-S2");
       _cfg = cfg;
       _dev = getDev();
   }
  
  bool Bus_Parallel16::init(void) // The big one that gets everything setup.
  {
-    ESP_LOGI(TAG, "Performing DMA bus init() for ESP32 or ESP32-S2");
+    ESP_LOGI("ESP32/S2", "Performing DMA bus init() for ESP32 or ESP32-S2");
 
     if(_cfg.parallel_width < 8 || _cfg.parallel_width >= 24) {
       return false;
@@ -234,7 +230,7 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
       return false;
     }
 
-    ESP_LOGI(TAG, "i2s pll clk_div_main is: %d", _div_num);    
+    ESP_LOGI("ESP32/S2", "i2s pll clk_div_main is: %d", _div_num);    
 
 
     dev->clkm_conf.clkm_div_b = 0;      // Clock numerator
@@ -389,7 +385,7 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
                                       irq_hndlr, NULL, NULL);
         
         if(err) {
-            ESP_LOGE(TAG, "init() Failed to setup interrupt request handeler.");    
+            ESP_LOGE("ESP32/S2", "init() Failed to setup interrupt request handeler.");    
             return false;
         }
 
@@ -399,9 +395,9 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
 
       
   #if defined (CONFIG_IDF_TARGET_ESP32S2)
-      ESP_LOGD(TAG, "init() GPIO and clock configuration set for ESP32-S2");    
+      ESP_LOGD("ESP32-S2", "init() GPIO and clock configuration set for ESP32-S2");    
   #else
-      ESP_LOGD(TAG, "init() GPIO and clock configuration set for ESP32");    
+      ESP_LOGD("ESP32-ORIG", "init() GPIO and clock configuration set for ESP32");    
   #endif
 
 
@@ -439,13 +435,13 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
     _dmadesc_count = len; 
     _dmadesc_last  = len-1; 
 
-    ESP_LOGI(TAG, "Allocating memory for %d DMA descriptors.", len);    
+    ESP_LOGI("ESP32/S2", "Allocating memory for %d DMA descriptors.", len);    
 
     _dmadesc_a= (HUB75_DMA_DESCRIPTOR_T*)heap_caps_malloc(sizeof(HUB75_DMA_DESCRIPTOR_T) * len, MALLOC_CAP_DMA);
 
     if (_dmadesc_a == nullptr)
     {
-      ESP_LOGE(TAG, "ERROR: Couldn't malloc _dmadesc_a. Not enough memory.");
+      ESP_LOGE("ESP32/S2", "ERROR: Couldn't malloc _dmadesc_a. Not enough memory.");
       return false;
     }
 
@@ -454,13 +450,13 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
     {
       if (_dmadesc_b) heap_caps_free(_dmadesc_b); // free all dma descrptios previously
 
-      ESP_LOGD(TAG, "Allocating the second buffer (double buffer enabled).");              
+      ESP_LOGD("ESP32/S2", "Allocating the second buffer (double buffer enabled).");              
 
       _dmadesc_b= (HUB75_DMA_DESCRIPTOR_T*)heap_caps_malloc(sizeof(HUB75_DMA_DESCRIPTOR_T) * len, MALLOC_CAP_DMA);
 
       if (_dmadesc_b == nullptr)
       {
-        ESP_LOGE(TAG, "ERROR: Couldn't malloc _dmadesc_b. Not enough memory.");
+        ESP_LOGE("ESP32/S2", "ERROR: Couldn't malloc _dmadesc_b. Not enough memory.");
         _double_dma_buffer = false;
         return false;
       }
@@ -469,7 +465,7 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
     _dmadesc_a_idx  = 0;
     _dmadesc_b_idx  = 0;
 
-    ESP_LOGD(TAG, "Allocating %d bytes of memory for DMA descriptors.", sizeof(HUB75_DMA_DESCRIPTOR_T) * len);       
+    ESP_LOGD("ESP32/S2", "Allocating %d bytes of memory for DMA descriptors.", sizeof(HUB75_DMA_DESCRIPTOR_T) * len);       
 
     // New - Temporary blank descriptor for transitions between DMA buffer
     _dmadesc_blank = (HUB75_DMA_DESCRIPTOR_T*)heap_caps_malloc(sizeof(HUB75_DMA_DESCRIPTOR_T) * 1, MALLOC_CAP_DMA);
@@ -489,20 +485,17 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
   void Bus_Parallel16::create_dma_desc_link(void *data, size_t size, bool dmadesc_b)
   {
     static constexpr size_t MAX_DMA_LEN = (4096-4);
-/*
-    if (dmadesc_b)
-      ESP_LOGI(TAG, "   * Double buffer descriptor.");            
-*/
+
     if (size > MAX_DMA_LEN)
     {
       size = MAX_DMA_LEN;
-      ESP_LOGW(TAG, "Creating DMA descriptor which links to payload with size greater than MAX_DMA_LEN!");            
+      ESP_LOGW("ESP32/S2", "Creating DMA descriptor which links to payload with size greater than MAX_DMA_LEN!");            
     }
 
     if ( !dmadesc_b )
     {
       if ( (_dmadesc_a_idx+1) > _dmadesc_count) {
-        ESP_LOGE(TAG, "Attempted to create more DMA descriptors than allocated memory for. Expecting a maximum of %d DMA descriptors", _dmadesc_count);          
+        ESP_LOGE("ESP32/S2", "Attempted to create more DMA descriptors than allocated memory for. Expecting a maximum of %d DMA descriptors", _dmadesc_count);          
         return;
       }
     }
@@ -510,14 +503,7 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
     volatile lldesc_t *dmadesc;
     volatile lldesc_t *next;
     bool eof = false;
-
-/*
-    dmadesc_a[desccount-1].eof = 1;
-    dmadesc_a[desccount-1].qe.stqe_next=(lldesc_t*)&dmadesc_a[0];
-*/
-
-
-    //  ESP_LOGI(TAG, "Creating descriptor %d\n", _dmadesc_a_idx);    
+    
     if ( (dmadesc_b == true) ) // for primary buffer
     {
         dmadesc      = &_dmadesc_b[_dmadesc_b_idx];
@@ -535,7 +521,7 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
     }
 
     if ( _dmadesc_a_idx == (_dmadesc_last) ) {
-      ESP_LOGW(TAG, "Creating final DMA descriptor and linking back to 0.");             
+      ESP_LOGW("ESP32/S2", "Creating final DMA descriptor and linking back to 0.");             
     } 
 
     dmadesc->size     = size;

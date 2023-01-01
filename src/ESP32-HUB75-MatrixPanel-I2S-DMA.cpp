@@ -6,12 +6,6 @@
   #include "rom/cache.h"
 #endif 
 
-extern Bus_Parallel16 dma_bus;
-
-#if CORE_DEBUG_LEVEL > 0
-	static const char* TAG = "MatrixPanel";
-#endif	
-
 /* This replicates same function in rowBitStruct, but due to induced inlining it might be MUCH faster 
  * when used in tight loops while method from struct could be flushed out of instruction cache between 
  * loop cycles do NOT forget about buff_id param if using this.
@@ -59,8 +53,8 @@ extern Bus_Parallel16 dma_bus;
 bool MatrixPanel_I2S_DMA::allocateDMAmemory()
 {
 
-  ESP_LOGI(TAG, "Free heap: %d",   heap_caps_get_free_size(MALLOC_CAP_INTERNAL));
-  ESP_LOGI(TAG, "Free SPIRAM: %d", heap_caps_get_free_size(MALLOC_CAP_SPIRAM));  
+  ESP_LOGI("I2S-DMA", "Free heap: %d",   heap_caps_get_free_size(MALLOC_CAP_INTERNAL));
+  ESP_LOGI("I2S-DMA", "Free SPIRAM: %d", heap_caps_get_free_size(MALLOC_CAP_SPIRAM));  
 
 
   // Alright, theoretically we should be OK, so let us do this, so
@@ -75,8 +69,8 @@ bool MatrixPanel_I2S_DMA::allocateDMAmemory()
 
         if (ptr->data == nullptr)
         {
-            ESP_LOGE(TAG, "CRITICAL ERROR: Not enough memory for requested colour depth! Please reduce PIXEL_COLOUR_DEPTH_BITS value.\r\n");
-            ESP_LOGE(TAG, "Could not allocate rowBitStruct %d!.\r\n", malloc_num);
+            ESP_LOGE("I2S-DMA", "CRITICAL ERROR: Not enough memory for requested colour depth! Please reduce PIXEL_COLOUR_DEPTH_BITS value.\r\n");
+            ESP_LOGE("I2S-DMA", "Could not allocate rowBitStruct %d!.\r\n", malloc_num);
 
             return false;
             // TODO: should we release all previous rowBitStructs here???
@@ -86,7 +80,7 @@ bool MatrixPanel_I2S_DMA::allocateDMAmemory()
         dma_buff.rowBits.emplace_back(ptr);     // save new rowBitStruct into rows vector
         ++dma_buff.rows;
     }
-    ESP_LOGI(TAG, "Allocating %d bytes memory for DMA BCM framebuffer(s).", allocated_fb_memory);        
+    ESP_LOGI("I2S-DMA", "Allocating %d bytes memory for DMA BCM framebuffer(s).", allocated_fb_memory);        
    
     // calculate the lowest LSBMSB_TRANSITION_BIT value that will fit in memory that will meet or exceed the configured refresh rate
 #if !defined(FORCE_COLOUR_DEPTH)    
@@ -106,7 +100,7 @@ bool MatrixPanel_I2S_DMA::allocateDMAmemory()
         int actualRefreshRate = 1000000000UL/(nsPerFrame);
         calculated_refresh_rate = actualRefreshRate;
 
-        ESP_LOGW(TAG, "lsbMsbTransitionBit of %d gives %d Hz refresh rate.", lsbMsbTransitionBit, actualRefreshRate);
+        ESP_LOGW("I2S-DMA", "lsbMsbTransitionBit of %d gives %d Hz refresh rate.", lsbMsbTransitionBit, actualRefreshRate);
 
         if (actualRefreshRate > m_cfg.min_refresh_rate) 
           break;
@@ -128,14 +122,14 @@ bool MatrixPanel_I2S_DMA::allocateDMAmemory()
         numDMAdescriptorsPerRow += (1<<(i - lsbMsbTransitionBit - 1));
     }
 
-    ESP_LOGI(TAG, "Recalculated number of DMA descriptors per row: %d", numDMAdescriptorsPerRow);
+    ESP_LOGI("I2S-DMA", "Recalculated number of DMA descriptors per row: %d", numDMAdescriptorsPerRow);
 
     // Refer to 'DMA_LL_PAYLOAD_SPLIT' code in configureDMA() below to understand why this exists.
     // numDMAdescriptorsPerRow is also used to calculate descount which is super important in i2s_parallel_config_t SoC DMA setup. 
     if ( dma_buff.rowBits[0]->size() > DMA_MAX ) 
     {
 
-        ESP_LOGW(TAG, "rowColorDepthStruct struct is too large, split DMA payload required. Adding %d DMA descriptors\n", PIXEL_COLOUR_DEPTH_BITS-1);
+        ESP_LOGW("I2S-DMA", "rowColorDepthStruct struct is too large, split DMA payload required. Adding %d DMA descriptors\n", PIXEL_COLOUR_DEPTH_BITS-1);
 
         numDMAdescriptorsPerRow += PIXEL_COLOUR_DEPTH_BITS-1; 
         // Note: If numDMAdescriptorsPerRow is even just one descriptor too large, DMA linked list will not correctly loop.
@@ -232,7 +226,7 @@ void MatrixPanel_I2S_DMA::configureDMA(const HUB75_I2S_CFG& _cfg)
 
     } // end frame rows
 
-    ESP_LOGI(TAG, "%d DMA descriptors linked to buffer data.", current_dmadescriptor_offset);
+    ESP_LOGI("I2S-DMA", "%d DMA descriptors linked to buffer data.", current_dmadescriptor_offset);
 
 //  
 //    Setup DMA and Output to GPIO
@@ -272,7 +266,7 @@ void MatrixPanel_I2S_DMA::configureDMA(const HUB75_I2S_CFG& _cfg)
       flipDMABuffer(); // display back buffer 0, draw to 1, ignored if double buffering isn't enabled.
 
     //i2s_parallel_send_dma(ESP32_I2S_DEVICE, &dmadesc_a[0]);
-    ESP_LOGI(TAG, "DMA setup completed");
+    ESP_LOGI("I2S-DMA", "DMA setup completed");
         
 } // end initMatrixDMABuff
 
@@ -491,7 +485,7 @@ void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id){
       } else {        
         row[ESP32_TX_FIFO_POSITION_ADJUST(x_pixel)] = abcde;
       }
-   //   ESP_LOGI(TAG, "x pixel 1: %d", x_pixel);
+   //   ESP_LOGI("", "x pixel 1: %d", x_pixel);
     } while(x_pixel!=dma_buff.rowBits[row_idx]->width && x_pixel);
 
     // colour_index[0] (LSB) x_pixels must be "marked" with a previous's row address, 'cause  it is used to display
@@ -508,7 +502,7 @@ void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id){
         row[ESP32_TX_FIFO_POSITION_ADJUST(x_pixel)] = abcde;
       }   
       //row[x_pixel] = abcde;
-  //    ESP_LOGI(TAG, "x pixel 2: %d", x_pixel);
+  //    ESP_LOGI("", "x pixel 2: %d", x_pixel);
     } while(x_pixel);
     
     
