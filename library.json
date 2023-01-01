@@ -1,30 +1,38 @@
 {
-  "name": "ESP32 HUB75 LED MATRIX PANEL DMA Display",
-  "keywords": "hub75, esp32, esp32s2, esp32s3, display, dma, rgb matrix",
-  "description": "An Adafruit GFX compatible library for LED matrix modules which uses DMA for ultra-fast refresh rates and therefore very low CPU usage.",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-DMA.git"
-  },
-  "authors": {
-    "name": "Faptastic",
-    "url": "https://github.com/mrfaptastic/"
-  },
-  "version": "3.0.2",
-  "frameworks": "arduino",
-  "platforms": "esp32",
-  "examples": [
-	"examples/1_SimpleTestShapes/*.ino",
-	"examples/1_SimpleTestShapes/*.cpp",
-	"examples/1_SimpleTestShapes/*.h",	
-	"examples/2_PatternPlasma/*.ino",
-	"examples/2_PatternPlasma/*.cpp",
-	"examples/2_PatternPlasma/*.h",	
-	"examples/3_FM6126Panel/*.ino",
-	"examples/3_FM6126Panel/*.cpp",
-	"examples/3_FM6126Panel/*.h",
-	"examples/ChainedPanels/*.ino",	
-	"examples/ChainedPanels/*.h",
-	"examples/ChainedPanels/*.cpp"
-  ]
+    "name": "ESP32 HUB75 LED MATRIX PANEL DMA Display",
+    "version": "3.0.2",
+    "description": "An Adafruit GFX compatible library for LED matrix modules which uses DMA for ultra-fast refresh rates and therefore very low CPU usage.",
+    "keywords": "hub75, esp32, esp32s2, esp32s3, display, dma, rgb matrix",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-DMA.git"
+    },
+    "authors": {
+        "name": "Faptastic",
+        "url": "https://github.com/mrfaptastic/"
+    },
+    "frameworks": [
+        "arduino",
+        "espidf"
+    ],
+    "platforms": [
+        "espressif32"
+    ],
+    "examples": [
+        {
+            "name": "SimpleTestShapes",
+            "base": "examples/1_SimpleTestShapes",
+            "files": [
+                "1_SimpleTestShapes.ino"
+            ]
+        },
+        {
+            "name": "Plasma Pattern",
+            "base": "examples/2_PatternPlasma",
+            "files": [
+                "2_PatternPlasma.ino",
+                "README.md"
+            ]
+        }
+    ]
 }
