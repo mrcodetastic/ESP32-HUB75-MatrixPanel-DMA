@@ -19,11 +19,12 @@ Modified heavily for the ESP32 HUB75 DMA library by:
  [mrfaptastic](https://github.com/mrfaptastic)
   
 /----------------------------------------------------------------------------*/
-
-static const char* TAG = "esp32_i2s_parallel_dma";
-
 #include <sdkconfig.h>
-#if defined (CONFIG_IDF_TARGET_ESP32)
+#if defined (CONFIG_IDF_TARGET_ESP32) || defined (CONFIG_IDF_TARGET_ESP32S2)
+
+#if CORE_DEBUG_LEVEL > 0
+	static const char* TAG = "esp32_i2s_parallel_dma";
+#endif
 
 #include "esp32_i2s_parallel_dma.hpp"
 
@@ -58,7 +59,7 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
 
   volatile int active_dma_buffer_output_count = 0;
 
-  static void IRAM_ATTR irq_hndlr(void* arg) { 
+  void IRAM_ATTR irq_hndlr(void* arg) { 
 
         // Clear flag so we can get retriggered
         SET_PERI_REG_BITS(I2S_INT_CLR_REG(ESP32_I2S_DEVICE), I2S_OUT_EOF_INT_CLR_V, 1, I2S_OUT_EOF_INT_CLR_S);                      
@@ -78,7 +79,7 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
   } // end irq_hndlr
 
   // Static
-  static i2s_dev_t* getDev()
+  i2s_dev_t* getDev()
   {
       #if defined (CONFIG_IDF_TARGET_ESP32S2)
           return &I2S0;
@@ -89,7 +90,7 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
   }
   
   // Static
-  static void _gpio_pin_init(int pin)
+  void _gpio_pin_init(int pin)
   {
     if (pin >= 0)
     {
@@ -104,7 +105,6 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
   {
       ESP_LOGI(TAG, "Performing config for ESP32 or ESP32-S2");
       _cfg = cfg;
-       auto port = ESP32_I2S_DEVICE; //cfg.port;
       _dev = getDev();
   }
  
@@ -191,42 +191,43 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
 
     ////////////////////////////// Clock configuration //////////////////////////////
 
-    //auto freq = (_cfg.freq_write, 50000000u); // ?
     auto freq = (_cfg.bus_freq);
-    
-    uint32_t _clkdiv_write = 0;
     size_t _div_num        = 10;
 
     // Calculate clock divider for ESP32-S2
     #if defined (CONFIG_IDF_TARGET_ESP32S2)      
 
-    static constexpr uint32_t pll_160M_clock_d2 = 160 * 1000 * 1000 >> 1;
+		static constexpr uint32_t pll_160M_clock_d2 = 160 * 1000 * 1000 >> 1;
 
-    // I2S_CLKM_DIV_NUM 2=40MHz  /  3=27MHz  /  4=20MHz  /  5=16MHz  /  8=10MHz  /  10=8MHz
-    _div_num = std::min(255u, 1 + ((pll_160M_clock_d2) / (1 + _cfg.freq_write)));
-/*
-    _clkdiv_write = I2S_CLK_160M_PLL << I2S_CLK_SEL_S
-                  |             I2S_CLK_EN
-                  |        1 << I2S_CLKM_DIV_A_S
-                  |        0 << I2S_CLKM_DIV_B_S
-                  | _div_num << I2S_CLKM_DIV_NUM_S
-                  ;
-*/
+		// I2S_CLKM_DIV_NUM 2=40MHz  /  3=27MHz  /  4=20MHz  /  5=16MHz  /  8=10MHz  /  10=8MHz
+		_div_num = std::min(255u, 1 + ((pll_160M_clock_d2) / (1 + freq)));
+		
+	/*
+		_clkdiv_write = I2S_CLK_160M_PLL << I2S_CLK_SEL_S
+					  |             I2S_CLK_EN
+					  |        1 << I2S_CLKM_DIV_A_S
+					  |        0 << I2S_CLKM_DIV_B_S
+					  | _div_num << I2S_CLKM_DIV_NUM_S
+					  ;
+	*/
+	
     #else 
 
 
-    // clock = 80MHz(PLL_D2_CLK)
-    static constexpr uint32_t pll_d2_clock = 80 * 1000 * 1000;
+		// clock = 80MHz(PLL_D2_CLK)
+		static constexpr uint32_t pll_d2_clock = 80 * 1000 * 1000;
 
-    // I2S_CLKM_DIV_NUM 4=20MHz  /  5=16MHz  /  8=10MHz  /  10=8MHz
-    _div_num = std::min(255u, std::max(3u, 1 + (pll_d2_clock / (1 + freq))));
-/*
-    _clkdiv_write =             I2S_CLK_EN
-                  |        1 << I2S_CLKM_DIV_A_S
-                  |        0 << I2S_CLKM_DIV_B_S
-                  | _div_num << I2S_CLKM_DIV_NUM_S
-                  ;
-*/                  
+		// I2S_CLKM_DIV_NUM 4=20MHz  /  5=16MHz  /  8=10MHz  /  10=8MHz
+		_div_num = std::min(255u, std::max(3u, 1 + (pll_d2_clock / (1 + freq))));
+		
+	/*
+		_clkdiv_write =             I2S_CLK_EN
+					  |        1 << I2S_CLKM_DIV_A_S
+					  |        0 << I2S_CLKM_DIV_B_S
+					  | _div_num << I2S_CLKM_DIV_NUM_S
+					  ;
+	*/                  
+	
     #endif
  
     if(_div_num < 2 || _div_num > 16) {

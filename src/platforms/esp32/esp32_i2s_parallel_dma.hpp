@@ -56,8 +56,8 @@ Contributors:
 
 //----------------------------------------------------------------------------
 
-static void IRAM_ATTR irq_hndlr(void* arg);
-static i2s_dev_t* getDev();
+void IRAM_ATTR irq_hndlr(void* arg);
+i2s_dev_t* getDev();
 
 //----------------------------------------------------------------------------
 

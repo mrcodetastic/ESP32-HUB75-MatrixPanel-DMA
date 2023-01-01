@@ -106,7 +106,7 @@
       int8_t pin_rd = -1;
       int8_t pin_rs = -1;  // D/C
       bool   invert_pclk = false;
-      bool   psram_clk_hack = false;
+      bool   psram_clk_override = false;
       union
       {
         int8_t pin_data[16];

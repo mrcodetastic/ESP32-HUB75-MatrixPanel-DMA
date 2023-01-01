@@ -22,10 +22,13 @@
 #ifdef ARDUINO_ARCH_ESP32
   #include <Arduino.h>
 #endif
+
   #include "gdma_lcd_parallel16.hpp"
   #include "esp_attr.h"
 
+#if CORE_DEBUG_LEVEL > 0
   static const char* TAG = "gdma_lcd_parallel16";
+#endif  
 
   static int _dmadesc_a_idx = 0;
   static int _dmadesc_b_idx = 0;  
@@ -37,7 +40,7 @@
   uint16_t* dmabuff2;
 */
   // End-of-DMA-transfer callback
-  static IRAM_ATTR bool dma_callback(gdma_channel_handle_t dma_chan,
+  IRAM_ATTR bool dma_callback(gdma_channel_handle_t dma_chan,
                                     gdma_event_data_t *event_data, void *user_data) {
   // This DMA callback seems to trigger a moment before the last data has
   // issued (buffering between DMA & LCD peripheral?), so pause a moment
@@ -54,7 +57,7 @@
     return true;
   }  
 
-  static lcd_cam_dev_t* getDev()
+  lcd_cam_dev_t* getDev()
   {
     return &LCD_CAM;
   }
@@ -83,11 +86,7 @@
     esp_rom_delay_us(100);
 
 //    uint32_t lcd_clkm_div_num = ((160000000 + 1) / _cfg.bus_freq);
-     ESP_LOGI(TAG, "Cpu frequecny is %" PRIu16 "", CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ);
-
-     uint32_t lcd_clkm_div_num = (  ((CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ*1000000)+1) /  _cfg.bus_freq  ) / 4;
-
-     //ESP_LOGI(TAG, "Clock divider is %d", lcd_clkm_div_num);     
+//    ESP_LOGI(TAG, "Clock divider is %d", lcd_clkm_div_num);     
 
     // Configure LCD clock. Since this program generates human-perceptible
     // output and not data for LED matrices or NeoPixels, use almost the
@@ -105,7 +104,7 @@
     LCD_CAM.lcd_clock.lcd_clk_equ_sysclk = 0; // PCLK = CLK / (CLKCNT_N+1)
 
 
-    if (_cfg.psram_clk_hack) // fastest speed I can get PSRAM to work before nothing shows
+    if (_cfg.psram_clk_override) // fastest speed I can get PSRAM to work before nothing shows
     {
       LCD_CAM.lcd_clock.lcd_clkm_div_num = 4; 
     }

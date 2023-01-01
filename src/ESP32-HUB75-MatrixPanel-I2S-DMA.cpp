@@ -6,7 +6,11 @@
   #include "rom/cache.h"
 #endif 
 
-static const char* TAG = "MatrixPanel";
+extern Bus_Parallel16 dma_bus;
+
+#if CORE_DEBUG_LEVEL > 0
+	static const char* TAG = "MatrixPanel";
+#endif	
 
 /* This replicates same function in rowBitStruct, but due to induced inlining it might be MUCH faster 
  * when used in tight loops while method from struct could be flushed out of instruction cache between 
@@ -256,7 +260,7 @@ void MatrixPanel_I2S_DMA::configureDMA(const HUB75_I2S_CFG& _cfg)
       bus_cfg.pin_d15  = -1;
 
       #if defined(SPIRAM_DMA_BUFFER)      
-        bus_cfg.psram_clk_hack = true;
+        bus_cfg.psram_clk_override = true;
       #endif
 
       dma_bus.config(bus_cfg);   
