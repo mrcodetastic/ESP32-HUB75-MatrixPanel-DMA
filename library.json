@@ -10,7 +10,7 @@
     "name": "Faptastic",
     "url": "https://github.com/mrfaptastic/"
   },
-  "version": "3.0.0",
+  "version": "3.0.1",
   "frameworks": "arduino",
   "platforms": "esp32",
   "examples": [
