@@ -8,7 +8,7 @@
         "url": "https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-DMA.git"
     },
     "authors": {
-        "name": "Faptastic",
+        "name": "Mr Faptastic",
         "url": "https://github.com/mrfaptastic/"
     },
     "frameworks": [
@@ -18,6 +18,9 @@
     "platforms": [
         "espressif32"
     ],
+    "headers": [
+        "ESP32-HUB75-MatrixPanel-I2S-DMA.h", "ESP32-VirtualMatrixPanel-I2S-DMA.h"
+    ],	
     "examples": [
         {
             "name": "SimpleTestShapes",
