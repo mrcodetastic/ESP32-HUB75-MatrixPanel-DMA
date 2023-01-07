@@ -567,7 +567,8 @@ void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id){
       #endif
       */
 
-      row[ESP32_TX_FIFO_POSITION_ADJUST(0 + _blank)] |= BIT_OE;
+      row[ESP32_TX_FIFO_POSITION_ADJUST(0 + _blank)] |= BIT_OE; // disable output
+	  row[ESP32_TX_FIFO_POSITION_ADJUST(dma_buff.rowBits[row_idx]->width - 1)] |= BIT_OE; // disable output
       row[ESP32_TX_FIFO_POSITION_ADJUST(dma_buff.rowBits[row_idx]->width - _blank - 1)] |= BIT_OE;    // (LAT pulse is (width-2) -1 pixel to compensate array index starting at 0
 
 
@@ -591,6 +592,7 @@ void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id){
  * @param _buff_id - buffer id to control
  */
 void MatrixPanel_I2S_DMA::brtCtrlOE(int brt, const bool _buff_id){
+	/*
   if (!initialized)
     return;
 
@@ -643,16 +645,7 @@ void MatrixPanel_I2S_DMA::brtCtrlOE(int brt, const bool _buff_id){
       uint8_t _blank = m_cfg.latch_blanking;
       do {
         --_blank;
-/*
-      #if defined(ESP32_THE_ORIG)
-            // Original ESP32 WROOM FIFO Ordering Sucks
-            uint8_t _blank_row_tx_fifo_tmp = 0 + _blank;
-            (_blank_row_tx_fifo_tmp & 1U) ? --_blank_row_tx_fifo_tmp : ++_blank_row_tx_fifo_tmp; 
-            row[_blank_row_tx_fifo_tmp] |= BIT_OE;                  
-      #else
-            row[0 + _blank] |= BIT_OE;      
-      #endif
-*/
+
 
       row[ESP32_TX_FIFO_POSITION_ADJUST(0 + _blank)] |= BIT_OE;    
       
@@ -673,6 +666,104 @@ void MatrixPanel_I2S_DMA::brtCtrlOE(int brt, const bool _buff_id){
 
 
   } while(row_idx);
+  */
+}
+
+
+
+
+/**
+ * @brief - reset OE bits in DMA buffer in a way to control brightness
+ * @param brt - brightness level from 0 to 255 - NOT MATRIX_WIDTH
+ * @param _buff_id - buffer id to control
+ */
+void MatrixPanel_I2S_DMA::brtCtrlOEv2(uint8_t brt, const int _buff_id) {
+	
+  if (!initialized)
+    return;
+
+/*
+  int x_coord_oe_adjust_stop_point = PIXELS_PER_ROW - 
+	
+  if (brt > PIXELS_PER_ROW - (MAX_LAT_BLANKING + 2))   // can't control values larger than (row_width - latch_blanking) to avoid ongoing issues being raised about brightness and ghosting.
+    brt = PIXELS_PER_ROW   - (MAX_LAT_BLANKING + 2);   // +2 for a bit of buffer...
+
+  if (brt < 0)
+    brt = 0;
+*/
+
+  int brightness_in_x_pixels = PIXELS_PER_ROW * ((float)brt/256);
+  
+  Serial.println(brightness_in_x_pixels, DEC);
+  uint8_t _blank 			 = m_cfg.latch_blanking; // don't want to inadvertantly blast over this
+
+
+  // start with iterating all rows in dma_buff structure
+  int row_idx = dma_buff.rowBits.size();
+  do {
+    --row_idx;
+
+    // let's set OE control bits for specific pixels in each color_index subrows
+    uint8_t colouridx = dma_buff.rowBits[row_idx]->colour_depth;
+    do {
+      --colouridx;
+
+      // switch pointer to a row for a specific color index
+      ESP32_I2S_DMA_STORAGE_TYPE* row = dma_buff.rowBits[row_idx]->getDataPtr(colouridx, _buff_id);
+
+      int x_coord = dma_buff.rowBits[row_idx]->width;
+      do {
+        --x_coord;
+		
+		if (x_coord <= _blank) // Can't touch blanking. They need to stay blank. 
+		{
+			row[ESP32_TX_FIFO_POSITION_ADJUST(x_coord)] |= BIT_OE;  // Disable output after this point.		
+		}
+		else if(x_coord >= (PIXELS_PER_ROW - _blank - 1) )  // Can't touch blanking. They need to stay blank.
+		{
+			row[ESP32_TX_FIFO_POSITION_ADJUST(x_coord)] |= BIT_OE;  // Disable output after this point.					
+		}
+		else if (x_coord < brightness_in_x_pixels) 
+		{
+			row[ESP32_TX_FIFO_POSITION_ADJUST(x_coord)] &= BITMASK_OE_CLEAR;						
+		}
+		else
+		{
+			row[ESP32_TX_FIFO_POSITION_ADJUST(x_coord)] |= BIT_OE;  // Disable output after this point.	
+		}
+
+        // clear OE bit for all other pixels (that is, turn on output)
+        //row[ESP32_TX_FIFO_POSITION_ADJUST(x_coord)] &= BITMASK_OE_CLEAR;       
+		
+		/*
+
+        // Brightness control via OE toggle - disable matrix output at specified x_coord
+        if((colouridx > lsbMsbTransitionBit || !colouridx) && ((x_coord) >= brt)){
+          row[ESP32_TX_FIFO_POSITION_ADJUST(x_coord)] |= BIT_OE; // Disable output after this point.
+          continue;  
+        }
+        // special case for the bits *after* LSB through (lsbMsbTransitionBit) - OE is output after data is shifted, so need to set OE to fractional brightness
+        if(colouridx && colouridx <= lsbMsbTransitionBit) {
+            // divide brightness in half for each bit below lsbMsbTransitionBit
+            int lsbBrightness = brt >> (lsbMsbTransitionBit - colouridx + 1);
+            if((x_coord) >= lsbBrightness) {
+                row[ESP32_TX_FIFO_POSITION_ADJUST(x_coord)] |= BIT_OE;  // Disable output after this point.
+                continue;
+            }
+        }
+		*/
+ 
+      } while(x_coord);
+	  
+    } while(colouridx);
+
+    // switch pointer to a row for a specific color index
+    #if defined(SPIRAM_DMA_BUFFER)          
+        ESP32_I2S_DMA_STORAGE_TYPE* row_hack = dma_buff.rowBits[row_idx]->getDataPtr(colouridx, _buff_id);    
+        Cache_WriteBack_Addr((uint32_t)row_hack, sizeof(ESP32_I2S_DMA_STORAGE_TYPE) * ((dma_buff.rowBits[row_idx]->width * dma_buff.rowBits[row_idx]->colour_depth)-1)) ;
+    #endif 
+  } while(row_idx);
+  
 }
 
 
@@ -712,7 +803,9 @@ uint8_t MatrixPanel_I2S_DMA::setLatBlanking(uint8_t pulses){
     pulses = DEFAULT_LAT_BLANKING;
 
   m_cfg.latch_blanking = pulses;
-  setPanelBrightness(brightness);    // set brightness to reset OE bits to the values matching new LAT blanking setting
+  
+  // remove brightness var for now.
+  //setPanelBrightness(brightness);    // set brightness to reset OE bits to the values matching new LAT blanking setting
   return m_cfg.latch_blanking;
 }
 
@@ -720,8 +813,8 @@ uint8_t MatrixPanel_I2S_DMA::setLatBlanking(uint8_t pulses){
 #ifndef NO_FAST_FUNCTIONS
 /**
  * @brief - update DMA buff drawing horizontal line at specified coordinates
- * @param x_ccord - line start coordinate x
- * @param y_ccord - line start coordinate y
+ * @param x_coord - line start coordinate x
+ * @param y_coord - line start coordinate y
  * @param l - line length
  * @param r,g,b, - RGB888 color
  */
@@ -807,8 +900,8 @@ void MatrixPanel_I2S_DMA::hlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, 
 
 /**
  * @brief - update DMA buff drawing vertical line at specified coordinates
- * @param x_ccord - line start coordinate x
- * @param y_ccord - line start coordinate y
+ * @param x_coord - line start coordinate x
+ * @param y_coord - line start coordinate y
  * @param l - line length
  * @param r,g,b, - RGB888 color
  */

@@ -489,18 +489,54 @@ class MatrixPanel_I2S_DMA {
         */
 
     }
-        
-    inline void setPanelBrightness(int b)
-    {
-      // Change to set the brightness of the display, range of 1 to matrixWidth (i.e. 1 - 64)
-        brightness = b;
+	
+    /**
+     * this is just a wrapper to control brightness
+     * with an 8-bit value (0-255), very popular in FastLED-based sketches :)
+     * @param uint8_t b - 8-bit brightness value
+     */	
+	void setBrightness(const uint8_t b)
+	{
         if (!initialized)
+		{
+		  ESP_LOGI("setBrightness()", "Tried to set output brightness before begin()");
           return;
+		}
+		
+        brightness = b;
+        brtCtrlOEv2(b, 0);
+		
+        if (m_cfg.double_buff) {
+                brtCtrlOEv2(b, 1);		
+		}
+		
+		
+	}
+        
+	// Takes a value that is between 0 and MATRIX_WIDTH-1
+	/*
+    void setPanelBrightness(int b)
+    {
+        if (!initialized)
+		{
+		  ESP_LOGI("setPanelBrightness()", "Tried to set output brightness before begin()");
+          return;
+		}
+		
+      // Change to set the brightness of the display, range of 1 to matrixWidth (i.e. 1 - 64)
+       // brightness = b * PIXELS_PER_ROW / 256;
 
         brtCtrlOE(b);
         if (m_cfg.double_buff)
                 brtCtrlOE(b, 1);
     }
+	*/
+	
+	// Takes a value between 0-255 now.
+    void setPanelBrightness(uint8_t b)
+    {
+	   setBrightness(b);
+    }	
 
     /**
      * this is just a wrapper to control brightness
@@ -509,7 +545,8 @@ class MatrixPanel_I2S_DMA {
      */
     void setBrightness8(const uint8_t b)
     {
-      setPanelBrightness(b * PIXELS_PER_ROW / 256);
+	  setBrightness(b);
+      //setPanelBrightness(b * PIXELS_PER_ROW / 256);
     }
 
     /**
@@ -580,11 +617,14 @@ class MatrixPanel_I2S_DMA {
      */
     inline void resetbuffers(){
       clearFrameBuffer();
-      brtCtrlOE(brightness);
-      if (m_cfg.double_buff){
+	  
+      brtCtrlOEv2(brightness, 0);
+      
+	  if (m_cfg.double_buff){
         clearFrameBuffer(1); 
-        brtCtrlOE(brightness, 1);
+        brtCtrlOEv2(brightness, 1);
       }
+	  
     }
 
 
@@ -635,7 +675,7 @@ class MatrixPanel_I2S_DMA {
     bool initialized          = false;
     int  active_gfx_writes    = 0;                  // How many async routines are 'drawing' (writing) to the DMA bit buffer. Function called from Adafruit_GFX draw routines like drawCircle etc.
     int  back_buffer_id       = 0;                       // If using double buffer, which one is NOT active (ie. being displayed) to write too?
-    int  brightness           = 32;                      // If you get ghosting... reduce brightness level. 60 seems to be the limit before ghosting on a 64 pixel wide physical panel for some panels.
+    int  brightness           = 128;                     // If you get ghosting... reduce brightness level. ((60/64)*255) seems to be the limit before ghosting on a 64 pixel wide physical panel for some panels.
     int  lsbMsbTransitionBit  = 0;                       // For colour depth calculations
     
 
@@ -679,6 +719,13 @@ class MatrixPanel_I2S_DMA {
      * @param _buff_id - buffer id to control
      */
     void brtCtrlOE(int brt, const bool _buff_id=0);
+	
+    /**
+     * @brief - reset OE bits in DMA buffer in a way to control brightness
+     * @param brt - brightness level from 0 to row_width
+     * @param _buff_id - buffer id to control
+     */
+    void brtCtrlOEv2(uint8_t brt, const int _buff_id=0);	
 
 
 
