@@ -694,7 +694,7 @@ void MatrixPanel_I2S_DMA::brtCtrlOEv2(uint8_t brt, const int _buff_id) {
 
   int brightness_in_x_pixels = PIXELS_PER_ROW * ((float)brt/256);
   
-  Serial.println(brightness_in_x_pixels, DEC);
+  //Serial.println(brightness_in_x_pixels, DEC);
   uint8_t _blank 			 = m_cfg.latch_blanking; // don't want to inadvertantly blast over this
 
 
