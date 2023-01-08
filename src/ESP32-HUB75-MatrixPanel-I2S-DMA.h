@@ -386,7 +386,7 @@ class MatrixPanel_I2S_DMA {
     /**
      * A wrapper to fill whatever selected DMA buffer / screen with black
      */
-    inline void clearScreen(){ startWrite(); clearFrameBuffer(back_buffer_id); endWrite(); /*updateMatrixDMABuffer(0,0,0);*/ };
+    inline void clearScreen() { updateMatrixDMABuffer(0,0,0); };
 
 #ifndef NO_FAST_FUNCTIONS
     /**
@@ -491,8 +491,6 @@ class MatrixPanel_I2S_DMA {
     }
 	
     /**
-     * this is just a wrapper to control brightness
-     * with an 8-bit value (0-255), very popular in FastLED-based sketches :)
      * @param uint8_t b - 8-bit brightness value
      */	
 	void setBrightness(const uint8_t b)
@@ -532,8 +530,10 @@ class MatrixPanel_I2S_DMA {
     }
 	*/
 	
-	// Takes a value between 0-255 now.
-    void setPanelBrightness(uint8_t b)
+    /**
+     * @param uint8_t b - 8-bit brightness value
+     */	
+    void setPanelBrightness(const uint8_t b)
     {
 	   setBrightness(b);
     }	
@@ -616,8 +616,8 @@ class MatrixPanel_I2S_DMA {
      * wipes DMA buffer(s) and reset all color/service bits
      */
     inline void resetbuffers(){
+		
       clearFrameBuffer();
-	  
       brtCtrlOEv2(brightness, 0);
       
 	  if (m_cfg.double_buff){

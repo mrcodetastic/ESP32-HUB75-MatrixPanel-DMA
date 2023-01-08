@@ -454,7 +454,7 @@ void MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint8_t red, uint8_t green, uint
  * Those control bits are constants during the entire DMA sweep and never changed when updating just pixel colour data
  * so we could set it once on DMA buffs initialization and forget. 
  * This effectively clears buffers to blank BLACK and makes it ready to display output.
- * (Brightness control via OE bit manipulation is another case)
+ * (Brightness control via OE bit manipulation is another case) - this must be done as well seperately!
  */
 void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id){
   if (!initialized)
