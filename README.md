@@ -170,25 +170,21 @@ Resolutions beyond 128x64 are more likely to result in crashes due to [memory](/
 
   ## Panel Brightness
 
-By default you should not need to change / set the brightness setting as the default value (16) is sufficient for most purposes. Brightness can be changed by calling `setPanelBrightness(int XX)` or `setBrightness8(uint8_t XX)`.  
+By default you should not need to change / set the brightness value (which is 128 or 50%) as it should be sufficient for most purposes. Brightness can be changed by calling `setPanelBrightness(xx)` or `setBrightness8(xx)`.  
 
-The value to pass `setPanelBrightness()` must be less than MATRIX_CHAIN_WIDTH in pixels. For example for a single 64x32 LED Matrix Module, a value must be less than 64. For 3 modules 64x32 it must be less than 192. However, if you set the brightness too high, you may experience ghosting. 
-
-Also you may use method `setBrightness8(x)`, where x is a uint8_t value between 0-255. Library will recalculate required brightness level depending on matrix width (mostly useful with FastLED-based sketches).
+The value to pass must be a number between 0 (for a black screen) and 255 (max brightness).
 
 Example:
 ```
 void setup() {
 Serial.begin(115200);
 	dma_display->begin(); // setup the LED matrix
-    dma_display->setBrightness8(90); //0-255
+    dma_display->setBrightness8(192); //0-255
     dma_display->clearScreen();	
 }
 ```
+![Brightness Samples](https://user-images.githubusercontent.com/55933003/211192894-f90311f5-b6fe-4665-bf26-2f363bb36047.png)
 
-Summary: setPanelBrightness(xx) value can be any number from 0 (display off) to MATRIX_WIDTH-1. So if you are chaining multiple 64x32 panels, then this value may actually be > 64 (or you will have a dim display). Changing the brightness will have a huge impact on power usage.
-
-![It's better in real life](image.jpg)
 
 
 ## Latch blanking
@@ -221,3 +217,5 @@ This project was inspired by:
 * [Mark Donners](https://github.com/donnersm) ('The Electronic Engineer' on [youtube](https://www.youtube.com/watch?v=bQ7c9Vlhyp0&t=118s)) for the donation of a 1/8 scan panel to build and test working support of these led matrix panels! 
 * [PaintYourDragon](https://github.com/PaintYourDragon) for the DMA logic for the ESP32-S3.
 * And lots of others, let me know if I've missed you.
+
+![It's better in real life](image.jpg)
