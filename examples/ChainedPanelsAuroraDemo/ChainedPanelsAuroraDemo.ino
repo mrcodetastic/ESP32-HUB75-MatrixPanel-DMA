@@ -109,12 +109,12 @@ void setup()
   // OK, now we can create our matrix object
   matrix = new MatrixPanel_I2S_DMA(mxconfig);
 
-  // let's adjust default brightness to about 75%
-  matrix->setBrightness8(96);    // range is 0-255, 0 - 0%, 255 - 100%
-
   // Allocate memory and start DMA display
   if( not matrix->begin() )
       Serial.println("****** !KABOOM! I2S memory allocation failed ***********");
+
+  // let's adjust default brightness to about 75%
+  matrix->setBrightness8(96);    // range is 0-255, 0 - 0%, 255 - 100%
 
   // create VirtualDisplay object based on our newly created dma_display object
   virtualDisp = new VirtualMatrixPanel((*matrix), NUM_ROWS, NUM_COLS, PANEL_RES_X, PANEL_RES_Y, SERPENT, TOPDOWN);
