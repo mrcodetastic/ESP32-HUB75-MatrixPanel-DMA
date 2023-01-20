@@ -692,7 +692,6 @@ void MatrixPanel_I2S_DMA::brtCtrlOEv2(uint8_t brt, const int _buff_id) {
     brt = 0;
 */
 
-  int brightness_in_x_pixels = PIXELS_PER_ROW * ((float)brt/256);
   
   //Serial.println(brightness_in_x_pixels, DEC);
   uint8_t _blank 			 = m_cfg.latch_blanking; // don't want to inadvertantly blast over this
@@ -706,6 +705,7 @@ void MatrixPanel_I2S_DMA::brtCtrlOEv2(uint8_t brt, const int _buff_id) {
     // let's set OE control bits for specific pixels in each color_index subrows
     uint8_t colouridx = dma_buff.rowBits[row_idx]->colour_depth;
     do {
+        int brightness_in_x_pixels = PIXELS_PER_ROW * brt >> 8 + max( ( dma_buff.rowBits[row_idx]->colour_depth - colouridx - 2 ), 0);
       --colouridx;
 
       // switch pointer to a row for a specific color index
