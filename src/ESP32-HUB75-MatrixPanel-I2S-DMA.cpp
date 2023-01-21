@@ -706,7 +706,7 @@ void MatrixPanel_I2S_DMA::brtCtrlOEv2(uint8_t brt, const int _buff_id) {
       // rightshift: ... 0 0 0 0 0 0 0 1 2 3 4 5 -\ 0 0 0 0 0 0 0 1 2 3 4 5 -\ 0 0 0 0 0 0 0 1 2 3 4 5 -\ ..
       char bitplane   = dma_buff.rowBits[row_idx]->colour_depth-colouridx;
       char rightshift = std::max(bitplane-2,0);
-      int brightness_in_x_pixels = PIXELS_PER_ROW * brt >> 8 + rightshift;
+      int brightness_in_x_pixels = (PIXELS_PER_ROW * brt) >> (8 + rightshift);
       --colouridx;
 
       // switch pointer to a row for a specific color index
