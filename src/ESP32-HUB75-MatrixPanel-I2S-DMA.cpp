@@ -705,7 +705,20 @@ void MatrixPanel_I2S_DMA::brtCtrlOEv2(uint8_t brt, const int _buff_id) {
     // let's set OE control bits for specific pixels in each color_index subrows
     uint8_t colouridx = dma_buff.rowBits[row_idx]->colour_depth;
     do {
-        int brightness_in_x_pixels = PIXELS_PER_ROW * brt >> 8 + max( ( dma_buff.rowBits[row_idx]->colour_depth - colouridx - 2 ), 0);
+      //   Multiply brightness according to index of bitplane (color index subrow)
+      // in respect of accumulating LED intensities with Binary-Coded Modulation:
+      // bitplane 0 is 1/1 of total brightness; bitplane 1 is 1/2; bitplane 2 is 1/4, etc
+      // accumulating all of them together means we will get only ~1/4 of the total brightness.
+
+      //   During the DMA, assume bitplane 0 shown for 4 subrows; bitplane 1 shown for 2 subrows;
+      // bitplane 2 and the rest shown for one subrow, would give us ~2/3 of the total brightness,
+      // which is good balance for the depth, brightness, while the flickers still less noticeable:
+      //                 row 0        (blanking)\   row 1        (blanking)\   row 2        (blanking)\   ..
+      // bitplane  : ... 0 0 0 0 1 1 2 3 4 5 6 7 \- 0 0 0 0 1 1 2 3 4 5 6 7 \- 0 0 0 0 1 1 2 3 4 5 6 7 \- ..
+      // rightshift: ... 0 0 0 0 0 0 0 1 2 3 4 5 -\ 0 0 0 0 0 0 0 1 2 3 4 5 -\ 0 0 0 0 0 0 0 1 2 3 4 5 -\ ..
+      char bitplane   = dma_buff.rowBits[row_idx]->colour_depth-colouridx;
+      char rightshift = std::max(bitplane-2,0);
+      int brightness_in_x_pixels = PIXELS_PER_ROW * brt >> 8 + rightshift;
       --colouridx;
 
       // switch pointer to a row for a specific color index
