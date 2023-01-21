@@ -718,7 +718,7 @@ class MatrixPanel_I2S_DMA {
      * @param brt - brightness level from 0 to row_width
      * @param _buff_id - buffer id to control
      */
-    void brtCtrlOE(int brt, const bool _buff_id=0);
+    //void brtCtrlOE(int brt, const bool _buff_id=0);
 	
     /**
      * @brief - reset OE bits in DMA buffer in a way to control brightness

@@ -591,8 +591,10 @@ void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id){
  * @param brt - brightness level from 0 to row_width
  * @param _buff_id - buffer id to control
  */
+/* 
+// Depreciated
 void MatrixPanel_I2S_DMA::brtCtrlOE(int brt, const bool _buff_id){
-	/*
+
   if (!initialized)
     return;
 
@@ -666,9 +668,8 @@ void MatrixPanel_I2S_DMA::brtCtrlOE(int brt, const bool _buff_id){
 
 
   } while(row_idx);
-  */
 }
-
+  */
 
 
 
@@ -682,20 +683,7 @@ void MatrixPanel_I2S_DMA::brtCtrlOEv2(uint8_t brt, const int _buff_id) {
   if (!initialized)
     return;
 
-/*
-  int x_coord_oe_adjust_stop_point = PIXELS_PER_ROW - 
-	
-  if (brt > PIXELS_PER_ROW - (MAX_LAT_BLANKING + 2))   // can't control values larger than (row_width - latch_blanking) to avoid ongoing issues being raised about brightness and ghosting.
-    brt = PIXELS_PER_ROW   - (MAX_LAT_BLANKING + 2);   // +2 for a bit of buffer...
-
-  if (brt < 0)
-    brt = 0;
-*/
-
-  
-  //Serial.println(brightness_in_x_pixels, DEC);
   uint8_t _blank 			 = m_cfg.latch_blanking; // don't want to inadvertantly blast over this
-
 
   // start with iterating all rows in dma_buff structure
   int row_idx = dma_buff.rowBits.size();
@@ -745,10 +733,13 @@ void MatrixPanel_I2S_DMA::brtCtrlOEv2(uint8_t brt, const int _buff_id) {
 			row[ESP32_TX_FIFO_POSITION_ADJUST(x_coord)] |= BIT_OE;  // Disable output after this point.	
 		}
 
-        // clear OE bit for all other pixels (that is, turn on output)
-        //row[ESP32_TX_FIFO_POSITION_ADJUST(x_coord)] &= BITMASK_OE_CLEAR;       
+
+		// Note: Old code below from 'brtCtrlOE'
 		
-		/*
+		/*		
+        // clear OE bit for all other pixels (that is, turn on output)
+        row[ESP32_TX_FIFO_POSITION_ADJUST(x_coord)] &= BITMASK_OE_CLEAR;       
+		
 
         // Brightness control via OE toggle - disable matrix output at specified x_coord
         if((colouridx > lsbMsbTransitionBit || !colouridx) && ((x_coord) >= brt)){
