@@ -202,7 +202,7 @@ struct  HUB75_I2S_CFG {
   /**
    * I2S clock speed selector
    */
-  enum clk_speed {HZ_8M=8000000, HZ_10M=10000000, HZ_20M=20000000};
+  enum clk_speed {HZ_8M=8000000, HZ_10M=10000000, HZ_16M=16000000, HZ_20M=20000000};
 
   // Structure Variables
 
@@ -259,7 +259,7 @@ struct  HUB75_I2S_CFG {
       LAT_PIN_DEFAULT, OE_PIN_DEFAULT, CLK_PIN_DEFAULT },
     shift_driver _drv = SHIFTREG,
     bool _dbuff = false,
-    clk_speed _i2sspeed = HZ_20M,
+    clk_speed _i2sspeed = HZ_16M,
     uint8_t _latblk  = DEFAULT_LAT_BLANKING, // Anything > 1 seems to cause artefacts on ICS panels
     bool _clockphase = true,
     uint8_t _min_refresh_rate = 85
