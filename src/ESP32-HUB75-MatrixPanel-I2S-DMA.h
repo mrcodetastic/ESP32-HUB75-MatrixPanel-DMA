@@ -259,7 +259,7 @@ struct  HUB75_I2S_CFG {
       LAT_PIN_DEFAULT, OE_PIN_DEFAULT, CLK_PIN_DEFAULT },
     shift_driver _drv = SHIFTREG,
     bool _dbuff = false,
-    clk_speed _i2sspeed = HZ_10M,
+    clk_speed _i2sspeed = HZ_20M,
     uint8_t _latblk  = DEFAULT_LAT_BLANKING, // Anything > 1 seems to cause artefacts on ICS panels
     bool _clockphase = true,
     uint8_t _min_refresh_rate = 85
