@@ -85,6 +85,8 @@ bool MatrixPanel_I2S_DMA::allocateDMAmemory()
     // calculate the lowest LSBMSB_TRANSITION_BIT value that will fit in memory that will meet or exceed the configured refresh rate
 #if !defined(FORCE_COLOUR_DEPTH)    
 
+    ESP_LOGI("I2S-DMA", "Minimum visual refresh rate (scan rate from panel top to bottom) requested: %d Hz", m_cfg.min_refresh_rate);	
+
     while(1) {           
         int psPerClock = 1000000000000UL/m_cfg.i2sspeed;
         int nsPerLatch = ((PIXELS_PER_ROW + CLKS_DURING_LATCH) * psPerClock) / 1000;
@@ -110,6 +112,12 @@ bool MatrixPanel_I2S_DMA::allocateDMAmemory()
         else
             break;
     }
+	
+	if ( lsbMsbTransitionBit > 0 )
+	{
+        ESP_LOGW("I2S-DMA", "lsbMsbTransitionBit of %d used to achieve refresh rate of %d Hz. Percieved colour depth to the eye may be reduced.", lsbMsbTransitionBit, m_cfg.min_refresh_rate);		
+	}
+	
 #endif
  
 

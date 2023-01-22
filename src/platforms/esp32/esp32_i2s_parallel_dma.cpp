@@ -28,9 +28,12 @@ Modified heavily for the ESP32 HUB75 DMA library by:
 #include <driver/periph_ctrl.h>
 #include <soc/gpio_sig_map.h>
 
-#include <Arduino.h> // Need to uncomment this to get ESP_LOG output on the Arduino Serial!!!!
+#include <Arduino.h> // Need to make sure thi is uncommented to get ESP_LOG output on (Arduino) Serial output!!!!
 #include <esp_err.h>
 #include <esp_log.h>
+
+// Get CPU freq function.
+#include <soc/rtc.h>
 
 /*
 
@@ -53,49 +56,76 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
 } // end irq_hndlr
 */
 
-  volatile int active_dma_buffer_output_count = 0;
+	volatile int active_dma_buffer_output_count = 0;
 
-  void IRAM_ATTR irq_hndlr(void* arg) { 
+	void IRAM_ATTR irq_hndlr(void* arg) { 
 
-        // Clear flag so we can get retriggered
-        SET_PERI_REG_BITS(I2S_INT_CLR_REG(ESP32_I2S_DEVICE), I2S_OUT_EOF_INT_CLR_V, 1, I2S_OUT_EOF_INT_CLR_S);                      
+		// Clear flag so we can get retriggered
+		SET_PERI_REG_BITS(I2S_INT_CLR_REG(ESP32_I2S_DEVICE), I2S_OUT_EOF_INT_CLR_V, 1, I2S_OUT_EOF_INT_CLR_S);                      
 
-        active_dma_buffer_output_count++;
+		active_dma_buffer_output_count++;
 
-/*        
-          if ( active_dma_buffer_output_count++ ) 
-          {
-              // Disable DMA chain EOF interrupt until next requested flipbuffer.
-              // Otherwise we're needlessly generating interrupts we don't care about.
-              //SET_PERI_REG_BITS(I2S_INT_ENA_REG(ESP32_I2S_DEVICE), I2S_OUT_EOF_INT_ENA_V, 0, I2S_OUT_EOF_INT_ENA_S);  
-              active_dma_buffer_output_count = 0;
-          }
- */
+	/*        
+		  if ( active_dma_buffer_output_count++ ) 
+		  {
+			  // Disable DMA chain EOF interrupt until next requested flipbuffer.
+			  // Otherwise we're needlessly generating interrupts we don't care about.
+			  //SET_PERI_REG_BITS(I2S_INT_ENA_REG(ESP32_I2S_DEVICE), I2S_OUT_EOF_INT_ENA_V, 0, I2S_OUT_EOF_INT_ENA_S);  
+			  active_dma_buffer_output_count = 0;
+		  }
+	*/
 
-  } // end irq_hndlr
+	} // end irq_hndlr
 
-  // Static
-  i2s_dev_t* getDev()
-  {
-      #if defined (CONFIG_IDF_TARGET_ESP32S2)
-          return &I2S0;
-      #else
-          return (ESP32_I2S_DEVICE == 0) ? &I2S0 : &I2S1;
-      #endif
+	// Static
+	i2s_dev_t* getDev()
+	{
+	  #if defined (CONFIG_IDF_TARGET_ESP32S2)
+		  return &I2S0;
+	  #else
+		  return (ESP32_I2S_DEVICE == 0) ? &I2S0 : &I2S1;
+	  #endif
 
-  }
+	}
+
+	// Static
+	void _gpio_pin_init(int pin)
+	{
+		if (pin >= 0)
+		{
+		  gpio_pad_select_gpio(pin);
+		  //gpio_hi(pin);
+		  gpio_set_direction((gpio_num_t)pin, GPIO_MODE_OUTPUT);
+		  gpio_set_drive_capability((gpio_num_t)pin, (gpio_drive_cap_t)3);      // esp32s3 as well?
+		}
+	}
   
-  // Static
-  void _gpio_pin_init(int pin)
-  {
-    if (pin >= 0)
-    {
-      gpio_pad_select_gpio(pin);
-      //gpio_hi(pin);
-      gpio_set_direction((gpio_num_t)pin, GPIO_MODE_OUTPUT);
-      gpio_set_drive_capability((gpio_num_t)pin, (gpio_drive_cap_t)3);      // esp32s3 as well?
-    }
-  }
+	inline int i2s_parallel_get_memory_width(int port, int width) {
+	  switch(width) {
+		case 8:
+		
+		#if !defined (CONFIG_IDF_TARGET_ESP32S2)   
+		
+			  // Only I2S1 on the legacy ESP32 WROOM MCU supports space saving single byte 8 bit parallel access
+			  if(port == 1)
+			  {
+				return 1;
+			  } else {
+				return 2;
+			  }
+		#else 
+				return 1;
+		#endif
+
+		case 16:
+		  return 2;
+		case 24:
+		  return 4;
+		default:
+		  return -ESP_ERR_INVALID_ARG;
+	  }
+	}
+  
 
   void Bus_Parallel16::config(const config_t& cfg)
   {
@@ -187,88 +217,95 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
 
     ////////////////////////////// Clock configuration //////////////////////////////
 
-    auto freq = (_cfg.bus_freq);
-    size_t _div_num        = 10;
+    auto freq 		= (_cfg.bus_freq);
+    ESP_LOGD("ESP32/S2", "Requested output clock frequency: %d Mhz",  (freq/1000000));   		
+	
+	// What is the current CPU frequency?
+/*	
+    rtc_cpu_freq_config_t conf;
+    rtc_clk_cpu_freq_get_config(&conf);
+	auto source_freq = conf.source_freq_mhz;		
+	
+	
+    ESP_LOGD("ESP32/S2", "PLL (source) frequency: %d",  source_freq);    
+    ESP_LOGD("ESP32/S2", "CPU frequency: %d",  conf.freq_mhz);    
+*/	
+
+	/*
+    if(_div_num < 2 || _div_num > 16) {
+	
+      return false;
+    }
+	*/	
 
     // Calculate clock divider for ESP32-S2
     #if defined (CONFIG_IDF_TARGET_ESP32S2)      
+	
+		// Right shift (>> 1) and divide 160mhz in half to 80Mhz for the calc due to the fact 
+		// that later we must have tx_bck_div_num = 2  for both esp32 and esp32-s2
 
-		static constexpr uint32_t pll_160M_clock_d2 = 160 * 1000 * 1000 >> 1;
+		//static uint32_t pll_160M_clock_d2 = 160 * 1000 * 1000 >> 1;
 
 		// I2S_CLKM_DIV_NUM 2=40MHz  /  3=27MHz  /  4=20MHz  /  5=16MHz  /  8=10MHz  /  10=8MHz
-		_div_num = std::min(255u, 1 + ((pll_160M_clock_d2) / (1 + freq)));
+		//auto _div_num = std::min(255u, 1 + ((pll_160M_clock_d2) / (1 + freq)));
+		auto _div_num = 160000000L / freq / i2s_parallel_get_memory_width(ESP32_I2S_DEVICE, 16); // 16 bits in parallel
 		
-	/*
-		_clkdiv_write = I2S_CLK_160M_PLL << I2S_CLK_SEL_S
-					  |             I2S_CLK_EN
-					  |        1 << I2S_CLKM_DIV_A_S
-					  |        0 << I2S_CLKM_DIV_B_S
-					  | _div_num << I2S_CLKM_DIV_NUM_S
-					  ;
-	*/
-	
-    #else 
-
-
-		// clock = 80MHz(PLL_D2_CLK)
-		static constexpr uint32_t pll_d2_clock = 80 * 1000 * 1000;
-
-		// I2S_CLKM_DIV_NUM 4=20MHz  /  5=16MHz  /  8=10MHz  /  10=8MHz
-		_div_num = std::min(255u, std::max(3u, 1 + (pll_d2_clock / (1 + freq))));
+		if(_div_num < 2 || _div_num > 0xFF) {
+		//	return ESP_ERR_INVALID_ARG;
+			_div_num = 8;
+		}
 		
-	/*
-		_clkdiv_write =             I2S_CLK_EN
-					  |        1 << I2S_CLKM_DIV_A_S
-					  |        0 << I2S_CLKM_DIV_B_S
-					  | _div_num << I2S_CLKM_DIV_NUM_S
-					  ;
-	*/                  
-	
+			
+		ESP_LOGD("ESP32", "i2s pll_160M_clock_d2 clkm_div_num is: %d", _div_num);    		
+
+		// I2S_CLK_SEL Set this bit to select I2S module clock source. 
+		// 0: No clock. 1: APLL_CLK. 2: PLL_160M_CLK. 3: No clock. (R/W)
+		dev->clkm_conf.clk_sel = 2; 
+		dev->clkm_conf.clkm_div_a = 1;      // Clock denominator 			
+		dev->clkm_conf.clkm_div_b = 0;      // Clock numerator
+		dev->clkm_conf.clkm_div_num = _div_num;				
+		dev->clkm_conf.clk_en  = 1;
+		
+		// Calc
+		auto output_freq = (160000000L/_div_num);		
+
+    // Calculate clock divider for Original ESP32
+    #else  
+
+		// Note: clkm_div_num must only be set here AFTER clkm_div_b, clkm_div_a, etc. Or weird things happen!
+		// On original ESP32, max I2S DMA parallel speed is 20Mhz.  
+		
+		// 160Mhz is only assured when the CPU clock is 240Mhz on the ESP32...	
+		// [esp32-hal-cpu.c:244] setCpuFrequencyMhz(): PLL: 480 / 2 = 240 Mhz, APB: 80000000 Hz		
+		
+		//static uint32_t pll_d2_clock = (source_freq/2) * 1000 * 1000 >> 1;
+		
+		// I2S_CLKM_DIV_NUM 2=40MHz  /  3=27MHz  /  4=20MHz  /  5=16MHz  /  8=10MHz  /  10=8MHz
+		//auto _div_num = std::min(255u, 1 + ((pll_d2_clock) / (1 + freq)));
+		
+		auto _div_num = 80000000L / freq / i2s_parallel_get_memory_width(ESP32_I2S_DEVICE, 16); // 16 bits in parallel
+		if(_div_num < 2 || _div_num > 0xFF) {
+		//	return ESP_ERR_INVALID_ARG;
+			_div_num = 4;
+		}
+
+		///auto _div_num = 80000000L/freq;
+
+		ESP_LOGD("ESP32", "i2s pll_d2_clock clkm_div_num is: %d", _div_num);    		
+
+		dev->clkm_conf.clka_en=1;         // Use the 80mhz system clock (PLL_D2_CLK) when '0'
+		dev->clkm_conf.clkm_div_a = 1;      // Clock denominator 
+		dev->clkm_conf.clkm_div_b = 0;      // Clock numerator
+		dev->clkm_conf.clkm_div_num = _div_num;  
+		
+		auto output_freq = (80000000L/_div_num);		
+		
     #endif
  
-    if(_div_num < 2 || _div_num > 16) {
-      return false;
-    }
 
-    ESP_LOGI("ESP32/S2", "i2s pll clk_div_main is: %d", _div_num);    
+	output_freq = output_freq + 0; // work around arudino 'unused var' issue if debug isn't enabled.
+    ESP_LOGI("ESP32/S2", "Output frequency is %d Mhz??", (output_freq/1000000/i2s_parallel_get_memory_width(ESP32_I2S_DEVICE, 16)));    	
 
-
-    dev->clkm_conf.clkm_div_b = 0;      // Clock numerator
-    dev->clkm_conf.clkm_div_a = 1;      // Clock denominator 
-
-  #if defined (CONFIG_IDF_TARGET_ESP32S2)  
-    dev->clkm_conf.clk_sel = 2; // I2S_CLK_SEL Set this bit to select I2S module clock source. 0: No clock. 1: APLL_CLK. 2: PLL_160M_CLK. 3: No clock. (R/W)
-    dev->clkm_conf.clk_en  = 1;
-    dev->clkm_conf.clkm_div_num = _div_num;
-
-  #endif
-
-  // Must be ESP32 original
-  #if !defined (CONFIG_IDF_TARGET_ESP32S2)  
-    dev->clkm_conf.clka_en=0;         // Use the 80mhz system clock (PLL_D2_CLK) when '0'
-    dev->clkm_conf.clkm_div_num = 3;  // Hard code to 3 whatever frequency this is. 26Mhz?
-  #endif
-    
-/*
-  #if defined (CONFIG_IDF_TARGET_ESP32S2)  
-    dev->clkm_conf.clk_sel = 2; // esp32-s2 only  
-    dev->clkm_conf.clk_en  = 1;
-  #endif
-
-  #if !defined (CONFIG_IDF_TARGET_ESP32S2)  
-    dev->clkm_conf.clka_en=0;         // Use the 80mhz system clock (PLL_D2_CLK) when '0'
-  #endif
-    
-    dev->clkm_conf.clkm_div_b=0;      // Clock numerator
-    dev->clkm_conf.clkm_div_a=1;      // Clock denominator  
- 
-    // Note: clkm_div_num must only be set here AFTER clkm_div_b, clkm_div_a, etc. Or weird things happen!
-    // On original ESP32, max I2S DMA parallel speed is 20Mhz.  
-    dev->clkm_conf.clkm_div_num = 2;
-*/
-
-    //dev->clkm_conf.val = _clkdiv_write;
-        
 
     // Setup i2s clock
     dev->sample_rate_conf.val = 0;
@@ -278,8 +315,9 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
     dev->sample_rate_conf.tx_bits_mod = bus_width;
     
     // Serial clock 
-    dev->sample_rate_conf.rx_bck_div_num = 1;
-    dev->sample_rate_conf.tx_bck_div_num = 1;
+	// ESP32 and ESP32-S2 TRM clearly say that "Note that I2S_TX_BCK_DIV_NUM[5:0] must not be configured as 1."
+    dev->sample_rate_conf.rx_bck_div_num = 2;
+    dev->sample_rate_conf.tx_bck_div_num = 2;
     
     ////////////////////////////// END CLOCK CONFIGURATION /////////////////////////////////
 
