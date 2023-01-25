@@ -30,8 +30,8 @@
 //  static const char* TAG = "gdma_lcd_parallel16";
 //#endif  
 
-  static int _dmadesc_a_idx = 0;
-  static int _dmadesc_b_idx = 0;  
+  //static int _dmadesc_a_idx = 0;
+  //static int _dmadesc_b_idx = 0;  
 
 
   dma_descriptor_t desc;          // DMA descriptor for testing
@@ -98,22 +98,44 @@
     //LCD_CAM.lcd_clock.clk_en = 0;             // Enable peripheral clock
 
     // LCD_CAM_LCD_CLK_SEL Select LCD module source clock. 0: clock source is disabled. 1: XTAL_CLK. 2: PLL_D2_CLK. 3: PLL_F160M_CLK. (R/W)
-    LCD_CAM.lcd_clock.lcd_clk_sel = 2;        
+    LCD_CAM.lcd_clock.lcd_clk_sel = 3;        // Use 160Mhz Clock Source
+	
     LCD_CAM.lcd_clock.lcd_ck_out_edge = 0;    // PCLK low in 1st half cycle
     LCD_CAM.lcd_clock.lcd_ck_idle_edge = 0;   // PCLK low idle
-    LCD_CAM.lcd_clock.lcd_clk_equ_sysclk = 0; // PCLK = CLK / (CLKCNT_N+1)
+	
+	LCD_CAM.lcd_clock.lcd_clkcnt_n = 1; // Should never be zero
+	
+    //LCD_CAM.lcd_clock.lcd_clk_equ_sysclk = 0; // PCLK = CLK / (CLKCNT_N+1)	
+	LCD_CAM.lcd_clock.lcd_clk_equ_sysclk = 1; // PCLK = CLK / 1 (... so 160Mhz still)
 
 
     if (_cfg.psram_clk_override) // fastest speed I can get PSRAM to work before nothing shows
     {
-      LCD_CAM.lcd_clock.lcd_clkm_div_num = 4; 
+        ESP_LOGI("S3", "DMA buffer is on PSRAM. Limiting clockspeed....");   
+        LCD_CAM.lcd_clock.lcd_clkm_div_num = 10; //16mhz is the fasted the Octal PSRAM can support it seems 
     }
     else
     {
+		
+	  auto freq 		= (_cfg.bus_freq);
+	  
+	  auto _div_num = 8; // 20Mhz 
+	  if (freq < 20000000L)
+	  {
+		  _div_num = 12; // 13Mhz
+	  }
+	  else if (freq > 20000000L)
+	  {
+		  _div_num = 6; // 26Mhz --- likely to have noise without a good connection		  
+	  }
+	    
       //LCD_CAM.lcd_clock.lcd_clkm_div_num = lcd_clkm_div_num;      
-      LCD_CAM.lcd_clock.lcd_clkm_div_num = 3;      
+      LCD_CAM.lcd_clock.lcd_clkm_div_num = _div_num; //3;      
+
     }
-     ESP_LOGI("S3", "Clock divider is %d", LCD_CAM.lcd_clock.lcd_clkm_div_num);     
+     ESP_LOGI("S3", "Clock divider is %d", LCD_CAM.lcd_clock.lcd_clkm_div_num);   
+
+	 ESP_LOGD("S3", "Resulting output clock frequency: %d Mhz",  (160000000L/LCD_CAM.lcd_clock.lcd_clkm_div_num)); 
 
     
     LCD_CAM.lcd_clock.lcd_clkm_div_a = 1;     // 0/1 fractional divide

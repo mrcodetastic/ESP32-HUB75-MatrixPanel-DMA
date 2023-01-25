@@ -157,8 +157,9 @@
     gdma_channel_handle_t dma_chan; 
 
     uint32_t _dmadesc_count  = 0;   // number of dma decriptors
-   // uint32_t _dmadesc_a_idx  = 0;
-    //uint32_t _dmadesc_b_idx  = 0;
+	
+    uint32_t _dmadesc_a_idx  = 0;
+    uint32_t _dmadesc_b_idx  = 0;
 
     HUB75_DMA_DESCRIPTOR_T* _dmadesc_a = nullptr;
     HUB75_DMA_DESCRIPTOR_T* _dmadesc_b = nullptr;    
