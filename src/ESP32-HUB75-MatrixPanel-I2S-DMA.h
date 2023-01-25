@@ -202,7 +202,7 @@ struct  HUB75_I2S_CFG {
   /**
    * I2S clock speed selector
    */
-  enum clk_speed {HZ_10M=10000000, HZ_15M=15000000, HZ_20M=20000000};
+  enum clk_speed {HZ_8M=8000000, HZ_10M=10000000, HZ_15M=15000000, HZ_20M=20000000};
 
   // Structure Variables
 
@@ -342,6 +342,11 @@ class MatrixPanel_I2S_DMA {
       if (m_cfg.driver)
         shiftDriver(m_cfg);
           
+        #if defined(SPIRAM_DMA_BUFFER)     
+		 // Trick library into dropping colour depth slightly when using PSRAM.
+		 // Actual output clockrate override occurs in configureDMA
+          m_cfg.i2sspeed = HUB75_I2S_CFG::HZ_8M;
+        #endif	           
 
      /* As DMA buffers are dynamically allocated, we must allocated in begin()
       * Ref: https://github.com/espressif/arduino-esp32/issues/831
