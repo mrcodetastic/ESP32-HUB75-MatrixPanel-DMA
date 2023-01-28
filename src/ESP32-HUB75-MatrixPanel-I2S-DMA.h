@@ -64,11 +64,16 @@
  #define MATRIX_ROWS_IN_PARALLEL     2
 #endif
 
-// 8bit per RGB color = 24 bit/per pixel,
+// 8bit per RGB colour = 24 bit/per pixel,
 // might be reduced to save DMA RAM
-#ifndef PIXEL_COLOUR_DEPTH_BITS
- #define PIXEL_COLOUR_DEPTH_BITS      8
+#ifdef PIXEL_COLOUR_DEPTH_BITS
+ #define PIXEL_COLOR_DEPTH_BITS      PIXEL_COLOUR_DEPTH_BITS
 #endif
+
+#ifndef PIXEL_COLOR_DEPTH_BITS
+ #define PIXEL_COLOR_DEPTH_BITS      8
+#endif
+
 
 /***************************************************************************************/
 /* Definitions below should NOT be ever changed without rewriting library logic         */
@@ -124,7 +129,7 @@ struct rowBitStruct {
     ESP32_I2S_DMA_STORAGE_TYPE *data;
 
     /** @brief - returns size of row of data vectorfor a SINGLE buff
-     * size (in bytes) of a vector holding full DMA data for a row of pixels with _dpth color bits
+     * size (in bytes) of a vector holding full DMA data for a row of pixels with _dpth colour bits
      * a SINGLE buffer only size is accounted, when using double buffers it actually takes twice as much space
      * but returned size is for a half of double-buffer
      * 
@@ -133,7 +138,7 @@ struct rowBitStruct {
      */
     size_t size(uint8_t _dpth=0 ) { if (!_dpth) _dpth = colour_depth; return width * _dpth * sizeof(ESP32_I2S_DMA_STORAGE_TYPE); };
 
-    /** @brief - returns pointer to the row's data vector beginning at pixel[0] for _dpth color bit
+    /** @brief - returns pointer to the row's data vector beginning at pixel[0] for _dpth colour bit
      * default - returns pointer to the data vector's head
      * NOTE: this call might be very slow in loops. Due to poor instruction caching in esp32 it might be required a reread from flash 
      * every loop cycle, better use inlined #define instead in such cases
@@ -170,7 +175,7 @@ struct rowBitStruct {
  *       are contained in parallel within the one uint16_t that is sent in parallel to the HUB75). 
  * 
  *       This structure isn't actually allocated in one memory block anymore, as the library now allocates
- *       memory per row (per rowColorDepthStruct) instead.
+ *       memory per row (per rowBits) instead.
  */
 struct frameStruct {
     uint8_t rows=0;    // number of rows held in current frame, not used actually, just to keep the idea of struct
@@ -267,7 +272,8 @@ struct  HUB75_I2S_CFG {
       mx_height(_h),
       chain_length(_chain),
       gpio(_pinmap),
-      driver(_drv), i2sspeed(_i2sspeed),
+      driver(_drv), 
+	  i2sspeed(_i2sspeed),
       double_buff(_dbuff),
       latch_blanking(_latblk),
       clkphase(_clockphase),
@@ -452,7 +458,7 @@ class MatrixPanel_I2S_DMA {
 
     void drawIcon (int *ico, int16_t x, int16_t y, int16_t cols, int16_t rows);
     
-    // Color 444 is a 4 bit scale, so 0 to 15, color 565 takes a 0-255 bit value, so scale up by 255/15 (i.e. 17)!
+    // Colour 444 is a 4 bit scale, so 0 to 15, colour 565 takes a 0-255 bit value, so scale up by 255/15 (i.e. 17)!
     static uint16_t color444(uint8_t r, uint8_t g, uint8_t b) { return color565(r*17,g*17,b*17); }
 
     // Converts RGB888 to RGB565
@@ -463,7 +469,7 @@ class MatrixPanel_I2S_DMA {
 
     /**
      * @brief - convert RGB565 to RGB888
-     * @param uint16_t color - RGB565 input color
+     * @param uint16_t colour - RGB565 input colour
      * @param uint8_t &r, &g, &b - refs to variables where converted colors would be emplaced
      */
     static void color565to888(const uint16_t color, uint8_t &r, uint8_t &g, uint8_t &b);
@@ -602,9 +608,9 @@ class MatrixPanel_I2S_DMA {
     Bus_Parallel16 dma_bus;
 
     /**
-     * @brief - clears and reinitializes color/control data in DMA buffs
+     * @brief - clears and reinitializes colour/control data in DMA buffs
      * When allocated, DMA buffs might be dirty, so we need to blank it and initialize ABCDE,LAT,OE control bits.
-     * Those control bits are constants during the entire DMA sweep and never changed when updating just pixel color data
+     * Those control bits are constants during the entire DMA sweep and never changed when updating just pixel colour data
      * so we could set it once on DMA buffs initialization and forget. 
      * This effectively clears buffers to blank BLACK and makes it ready to display output.
      * (Brightness control via OE bit manipulation is another case)
@@ -618,7 +624,7 @@ class MatrixPanel_I2S_DMA {
     void updateMatrixDMABuffer(uint8_t red, uint8_t green, uint8_t blue);       
 
     /**
-     * wipes DMA buffer(s) and reset all color/service bits
+     * wipes DMA buffer(s) and reset all colour/service bits
      */
     inline void resetbuffers(){
 		
@@ -639,7 +645,7 @@ class MatrixPanel_I2S_DMA {
      * @param x_ccord - line start coordinate x
      * @param y_ccord - line start coordinate y
      * @param l - line length
-     * @param r,g,b, - RGB888 color
+     * @param r,g,b, - RGB888 colour
      */
     void hlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, uint8_t red, uint8_t green, uint8_t blue);
 
@@ -648,7 +654,7 @@ class MatrixPanel_I2S_DMA {
      * @param x_ccord - line start coordinate x
      * @param y_ccord - line start coordinate y
      * @param l - line length
-     * @param r,g,b, - RGB888 color
+     * @param r,g,b, - RGB888 colour
      */
     void vlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, uint8_t red, uint8_t green, uint8_t blue);
 
@@ -657,9 +663,9 @@ class MatrixPanel_I2S_DMA {
      * uses Fast H/V line draw internally, works faster than multiple consecutive pixel by pixel calls to updateMatrixDMABuffer()
      * @param int16_t x, int16_t y - coordinates of a top-left corner
      * @param int16_t w, int16_t h - width and height of a rectangular, min is 1 px
-     * @param uint8_t r - RGB888 color
-     * @param uint8_t g - RGB888 color
-     * @param uint8_t b - RGB888 color
+     * @param uint8_t r - RGB888 colour
+     * @param uint8_t g - RGB888 colour
+     * @param uint8_t b - RGB888 colour
      */
     void fillRectDMA(int16_t x_coord, int16_t y_coord, int16_t w, int16_t h, uint8_t r, uint8_t g, uint8_t b);
 #endif
@@ -743,7 +749,7 @@ class MatrixPanel_I2S_DMA {
 
 /**
  * @brief - convert RGB565 to RGB888
- * @param uint16_t color - RGB565 input color
+ * @param uint16_t colour - RGB565 input colour
  * @param uint8_t &r, &g, &b - refs to variables where converted colours would be emplaced
  */
 inline void MatrixPanel_I2S_DMA::color565to888(const uint16_t color, uint8_t &r, uint8_t &g, uint8_t &b){
@@ -792,7 +798,7 @@ inline void MatrixPanel_I2S_DMA::fillScreen(CRGB color)
 #endif
 
 
-// Pass 8-bit (each) R,G,B, get back 16-bit packed color
+// Pass 8-bit (each) R,G,B, get back 16-bit packed colour
 //https://github.com/squix78/ILI9341Buffer/blob/master/ILI9341_SPI.cpp
 inline uint16_t MatrixPanel_I2S_DMA::color565(uint8_t r, uint8_t g, uint8_t b) {
   return ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3);
@@ -861,7 +867,7 @@ inline void MatrixPanel_I2S_DMA::drawIcon (int *ico, int16_t x, int16_t y, int16
     only one line is showed at a time, and the display looks like every pixel is driven at the same time.
 
     Now, the RGB inputs for these types of displays are digital, meaning each red, green and blue subpixel can only be on or off. This leads to a
-    color palette of 8 pixels, not enough to display nice pictures. To get around this, we use binary code modulation.
+    colour palette of 8 pixels, not enough to display nice pictures. To get around this, we use binary code modulation.
 
     Binary code modulation is somewhat like PWM, but easier to implement in our case. First, we define the time we would refresh the display without
     binary code modulation as the 'frame time'. For, say, a four-bit binary code modulation, the frame time is divided into 15 ticks of equal length.
