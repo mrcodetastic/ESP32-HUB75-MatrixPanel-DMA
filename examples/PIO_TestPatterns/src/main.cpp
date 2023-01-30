@@ -241,7 +241,7 @@ void loop(){
   delay(PATTERN_DELAY);
 //
 
-#ifdef TEST_FASTLINES
+#ifndef NO_FAST_FUNCTIONS
   // Fillrate for fillRect() function
   Serial.print("Estimating fullscreen fillrate with fillRect() time: ");
   t1 = micros();
@@ -293,7 +293,7 @@ void loop(){
   Serial.printf("%lu us, %u ticks\n", t2, ccount1);
   delay(PATTERN_DELAY);
 
-#ifdef TEST_FASTLINES
+#ifndef NO_FAST_FUNCTIONS
   Serial.println("Estimating V-lines with vlineDMA(): ");  //
   matrix->fillScreen(0);
   color2 = random8();
@@ -347,7 +347,7 @@ void loop(){
   Serial.printf("%lu us, %u ticks\n", t2, ccount1);
   delay(PATTERN_DELAY);
 
-#ifdef TEST_FASTLINES
+#ifndef NO_FAST_FUNCTIONS
   Serial.println("Estimating H-lines with hlineDMA(): ");
   matrix->fillScreen(0);
   color2 = random8();
