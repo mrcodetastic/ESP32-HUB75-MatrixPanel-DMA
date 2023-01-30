@@ -28,32 +28,23 @@ jobs:
             virtual_panel: -DVIRTUAL_PANE
 
     steps:
-    - name: Show Build Flags
-      run: echo $PLATFORMIO_BUILD_FLAGS
-    - uses: actions/checkout@v3
-    - name: Cache pip
+    - name: Checkout
+      uses: actions/checkout@v3
+    - name: Cache pip and platformio
       uses: actions/cache@v3
       with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-        restore-keys: ${{ runner.os }}-pip-
-    - name: Cache PlatformIO
-      uses: actions/cache@v3
-      with:
-        path: ~/.platformio
-        key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
+        path: |
+          ~/.cache/pip
+          ~/.platformio/.cache
+        key: ${{ runner.os }}-pio
     - name: Set up Python 3.x
       uses: actions/setup-python@v4
       with:
         python-version: '3.x'
     - name: Install Platformio
-      run: |
-        python -m pip install --upgrade pip
-        pip install --upgrade platformio
-        pio update
+      run: pip install --upgrade platformio
     - name: Run PlatformIO
       env: 
         PLATFORMIO_BUILD_FLAGS: ${{ matrix.no_gfx }} ${{ matrix.no_fast_functions }} ${{ matrix.no_cie1931 }} ${{ matrix.virtual_panel }}
         PLATFORMIO_CI_SRC: ${{ matrix.example }}
-      run: |
-        pio ci -c ${{ matrix.example }}/platformio.ini
+      run: pio ci -c ${{ matrix.example }}/platformio.ini
