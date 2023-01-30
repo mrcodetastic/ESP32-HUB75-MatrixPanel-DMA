@@ -24,7 +24,7 @@ jobs:
         virtual_panel: ["", -DVIRTUAL_PANEL]
 
     env:
-      PLATFORMIO_BUILD_FLAGS: ${{ matrix.no_gfx }} ${{ matrix.no_fast_functions }} ${{ matrix.no_cie1931 }} ${{ matrix.virtual_panel
+      PLATFORMIO_BUILD_FLAGS: ${{ matrix.no_gfx }} ${{ matrix.no_fast_functions }} ${{ matrix.no_cie1931 }} ${{ matrix.virtual_panel }}
     steps:
     - uses: actions/checkout@v2
     - name: Cache pip
