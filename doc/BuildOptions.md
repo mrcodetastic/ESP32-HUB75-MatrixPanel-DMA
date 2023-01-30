@@ -15,6 +15,9 @@ build_flags =
     -DNO_GFX=1
     (etc.....)
 ```
+Or if using Arduino: 'Tools' menu > 'Core Debug Level' > Select 'Debug'
+
+... and use the Serial output to see the debug information.
 
 ## Build flags
 
