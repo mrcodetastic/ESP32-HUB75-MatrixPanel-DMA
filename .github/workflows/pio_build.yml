@@ -14,16 +14,15 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
-    continue-on-error: true
     strategy:
       matrix:
-        example:
-          - "examples/PIO_TestPatterns"
+        framework: ["Arduino", "IDF"]
         no_gfx: ["", -DNO_GFX]
         no_fast_functions: ["", -DNO_FAST_FUNCTIONS]
         no_cie1931: ["", -DNO_CIE1931]
         virtual_panel: ["", -DVIRTUAL_PANE]
-        idf: [true, false]
+        example:
+          - "examples/PIO_TestPatterns"
         exclude:
           - no_fast_functions: ""
             virtual_panel: -DVIRTUAL_PANE
@@ -45,13 +44,13 @@ jobs:
     - name: Install Platformio
       run: pip install --upgrade platformio
     - name: Run PlatformIO CI (Arduino)
-      if: ${{ !matrix.idf}}
+      if: ${{ matrix.framework == 'Arduino'}}
       env: 
         PLATFORMIO_BUILD_FLAGS: ${{ matrix.no_gfx }} ${{ matrix.no_fast_functions }} ${{ matrix.no_cie1931 }} ${{ matrix.virtual_panel }}
         PLATFORMIO_CI_SRC: ${{ matrix.example }}
       run: pio ci -e esp32 -c ${{ matrix.example }}/platformio.ini
     - name: Run PlatformIO CI (ESP-IDF)
-      if: ${{ matrix.idf }}
+      if: ${{ matrix.framework == 'IDF'}}
       env: 
         PLATFORMIO_BUILD_FLAGS: -DIDF_BUILD ${{ matrix.no_gfx }} ${{ matrix.no_fast_functions }} ${{ matrix.no_cie1931 }} ${{ matrix.virtual_panel }}
       # pio ci doesn't use our sdkconfig, so we have to use pio run
