@@ -26,6 +26,8 @@ jobs:
     env:
       PLATFORMIO_BUILD_FLAGS: ${{ matrix.no_gfx }} ${{ matrix.no_fast_functions }} ${{ matrix.no_cie1931 }} ${{ matrix.virtual_panel }}
     steps:
+    - name: Show Build Flags
+      run: echo $PLATFORMIO_BUILD_FLAGS
     - uses: actions/checkout@v2
     - name: Cache pip
       uses: actions/cache@v2
