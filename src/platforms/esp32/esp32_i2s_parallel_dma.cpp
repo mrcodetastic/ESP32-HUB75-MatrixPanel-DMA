@@ -291,7 +291,7 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
 
 		///auto _div_num = 80000000L/freq;
 
-		ESP_LOGD("ESP32", "i2s pll_d2_clock clkm_div_num is: %d", _div_num);    		
+		ESP_LOGD("ESP32", "i2s pll_d2_clock clkm_div_num is: %ld", _div_num);    		
 
 		dev->clkm_conf.clka_en=1;         // Use the 80mhz system clock (PLL_D2_CLK) when '0'
 		dev->clkm_conf.clkm_div_a = 1;      // Clock denominator 
@@ -304,7 +304,7 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
  
 
 	output_freq = output_freq + 0; // work around arudino 'unused var' issue if debug isn't enabled.
-    ESP_LOGI("ESP32/S2", "Output frequency is %d Mhz??", (output_freq/1000000/i2s_parallel_get_memory_width(ESP32_I2S_DEVICE, 16)));    	
+    ESP_LOGI("ESP32/S2", "Output frequency is %ld Mhz??", (output_freq/1000000/i2s_parallel_get_memory_width(ESP32_I2S_DEVICE, 16)));    	
 
 
     // Setup i2s clock
