@@ -19,9 +19,9 @@ jobs:
         example:
           - "examples/PIO_TestPatterns"
         no_gfx: ["", -DNO_GFX]
-        no_fast_functions: ["", -DFAST_FUNCTIONS]
+        no_fast_functions: ["", -DNO_FAST_FUNCTIONS]
         no_cie1931: ["", -DNO_CIE1931]
-        virtual_panel: ["", -DVIRTUAL_PANEL]
+        virtual_panel: ["", -DVIRTUAL_PANE]
 
     env:
       PLATFORMIO_BUILD_FLAGS: ${{ matrix.no_gfx }} ${{ matrix.no_fast_functions }} ${{ matrix.no_cie1931 }} ${{ matrix.virtual_panel }}
