@@ -23,6 +23,7 @@ jobs:
         no_fast_functions: ["", -DNO_FAST_FUNCTIONS]
         no_cie1931: ["", -DNO_CIE1931]
         virtual_panel: ["", -DVIRTUAL_PANE]
+        idf: [true, false]
         exclude:
           - no_fast_functions: ""
             virtual_panel: -DVIRTUAL_PANE
@@ -43,10 +44,15 @@ jobs:
         python-version: '3.x'
     - name: Install Platformio
       run: pip install --upgrade platformio
-    - name: Run PlatformIO
+    - name: Run PlatformIO CI (Arduino)
+      if: ${{ !matrix.idf}}
       env: 
         PLATFORMIO_BUILD_FLAGS: ${{ matrix.no_gfx }} ${{ matrix.no_fast_functions }} ${{ matrix.no_cie1931 }} ${{ matrix.virtual_panel }}
         PLATFORMIO_CI_SRC: ${{ matrix.example }}
-#      run: pio ci -e esp32 -c ${{ matrix.example }}/platformio.ini
-      run: pio ci -v -e esp32idf -c ${{ matrix.example }}/platformio.ini
-#      run: pio run -d ${{ matrix.example }} -e esp32idf -c ${{ matrix.example }}/platformio.ini
+      run: pio ci -e esp32 -c ${{ matrix.example }}/platformio.ini
+    - name: Run PlatformIO CI (ESP-IDF)
+      if: ${{ matrix.idf }}
+      env: 
+        PLATFORMIO_BUILD_FLAGS: -DIDF_BUILD ${{ matrix.no_gfx }} ${{ matrix.no_fast_functions }} ${{ matrix.no_cie1931 }} ${{ matrix.virtual_panel }}
+      # pio ci doesn't use our sdkconfig, so we have to use pio run
+      run: pio run -d ${{ matrix.example }} -e esp32idf -c ${{ matrix.example }}/platformio.ini

@@ -1,13 +1,13 @@
 // How to use this library with a FM6126 panel, thanks goes to:
 // https://github.com/hzeller/rpi-rgb-led-matrix/issues/746
 
-//#ifdef IDF_BUILD
+#ifdef IDF_BUILD
 #include <stdio.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <driver/gpio.h>
 #include "sdkconfig.h"
-//#endif
+#endif
 
 #include <Arduino.h>
 #include "xtensa/core-macros.h"
