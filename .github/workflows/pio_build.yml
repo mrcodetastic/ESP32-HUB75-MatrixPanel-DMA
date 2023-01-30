@@ -16,33 +16,42 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
+        framework: ["Arduino", "IDF"]
+        no_gfx: ["", -DNO_GFX]
+        no_fast_functions: ["", -DNO_FAST_FUNCTIONS]
+        no_cie1931: ["", -DNO_CIE1931]
+        virtual_panel: ["", -DVIRTUAL_PANE]
         example:
           - "examples/PIO_TestPatterns"
+        exclude:
+          - no_fast_functions: ""
+            virtual_panel: -DVIRTUAL_PANE
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Cache pip
-      uses: actions/cache@v2
+    - name: Checkout
+      uses: actions/checkout@v3
+    - name: Cache pip and platformio
+      uses: actions/cache@v3
       with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-        restore-keys: ${{ runner.os }}-pip-
-    - name: Cache PlatformIO
-      uses: actions/cache@v2
-      with:
-        path: ~/.platformio
-        key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
+        path: |
+          ~/.cache/pip
+          ~/.platformio/.cache
+        key: ${{ runner.os }}-pio
     - name: Set up Python 3.x
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: '3.x'
     - name: Install Platformio
-      run: |
-        python -m pip install --upgrade pip
-        pip install --upgrade platformio
-        pio update
-    - name: Run PlatformIO
+      run: pip install --upgrade platformio
+    - name: Run PlatformIO CI (Arduino)
+      if: ${{ matrix.framework == 'Arduino'}}
       env: 
+        PLATFORMIO_BUILD_FLAGS: ${{ matrix.no_gfx }} ${{ matrix.no_fast_functions }} ${{ matrix.no_cie1931 }} ${{ matrix.virtual_panel }}
         PLATFORMIO_CI_SRC: ${{ matrix.example }}
-      run: |
-        pio ci -c ${{ matrix.example }}/platformio.ini
+      run: pio ci -e esp32 -c ${{ matrix.example }}/platformio.ini
+    - name: Run PlatformIO CI (ESP-IDF)
+      if: ${{ matrix.framework == 'IDF'}}
+      env: 
+        PLATFORMIO_BUILD_FLAGS: -DIDF_BUILD ${{ matrix.no_gfx }} ${{ matrix.no_fast_functions }} ${{ matrix.no_cie1931 }} ${{ matrix.virtual_panel }}
+      # pio ci doesn't use our sdkconfig, so we have to use pio run
+      run: pio run -d ${{ matrix.example }} -e esp32idf -c ${{ matrix.example }}/platformio.ini
