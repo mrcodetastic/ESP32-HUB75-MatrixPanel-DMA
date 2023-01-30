@@ -23,6 +23,9 @@ jobs:
         no_fast_functions: ["", -DNO_FAST_FUNCTIONS]
         no_cie1931: ["", -DNO_CIE1931]
         virtual_panel: ["", -DVIRTUAL_PANE]
+        exclude:
+          - no_fast_functions: ""
+            virtual_panel: -DVIRTUAL_PANE
 
     steps:
     - name: Show Build Flags
