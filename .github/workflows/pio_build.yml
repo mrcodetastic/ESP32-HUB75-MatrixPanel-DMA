@@ -29,7 +29,7 @@ jobs:
     steps:
     - name: Show Build Flags
       run: echo $PLATFORMIO_BUILD_FLAGS
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Cache pip
       uses: actions/cache@v2
       with:
