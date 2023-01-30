@@ -46,5 +46,6 @@ jobs:
     - name: Run PlatformIO
       env: 
         PLATFORMIO_BUILD_FLAGS: ${{ matrix.no_gfx }} ${{ matrix.no_fast_functions }} ${{ matrix.no_cie1931 }} ${{ matrix.virtual_panel }}
-        PLATFORMIO_CI_SRC: ${{ matrix.example }}
-      run: pio ci -e esp32 -c ${{ matrix.example }}/platformio.ini
+#        PLATFORMIO_CI_SRC: ${{ matrix.example }}
+#      run: pio ci -e esp32 -c ${{ matrix.example }}/platformio.ini
+      run: pio run -d ${{ matrix.example }} -e esp32idf -c ${{ matrix.example }}/platformio.ini
