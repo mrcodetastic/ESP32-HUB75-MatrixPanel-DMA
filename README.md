@@ -38,12 +38,12 @@ This ESP32 Arduino/IDF library for HUB75 / HUB75E connector type 64x32 RGB LED 1
 -  **CIE 1931** luminance [correction](https://ledshield.wordpress.com/2012/11/13/led-brightness-to-your-eye-gamma-correction-no/) (aka natural LED dimming)
 -  **Adafruit GFX API** - library could be build with AdafruitGFX, simplified GFX or without GFX API at all
 
-If you wanna ask "*...OK, OK, than what's the price for those features?*" I'll tell you - "[memory](/doc/memcalc.md), you pay it all by precious MCU's memory for DMA buffer". 
+If you wanna ask "*...OK, OK, than what's the price for those features?*" I'll tell you - "[memory](/doc/memcalc.md), you pay it all by precious MCU's internal memory (SRAM) for the DMA buffer". 
 
 Please use the ['Memory Calculator'](/doc/memcalc.md) to see what is actually achievable with a typical ESP32.
-
 ![Memory Calculator](doc/memcalc.jpg)
 
+Note: Things are better for more recent ESP32 variants, refer [below](#memory-constraints) on how to use external SPIRAM/PSRAM for the DMA buffer which drives the HUB75 panels.
 
 
 ## ESP32 Supported
@@ -148,9 +148,9 @@ Although Arduino IDE does not [seem](https://github.com/arduino/Arduino/issues/4
 ## Memory constraints
 If you are going to use large/combined panels make sure to check for [memory constraints](/doc/i2s_memcalc.md).
 
-NOTE: You can use PSRAM to expand the amount of memory available only on the ESP32-S3 and with Octal SPI-RAM (ESP32 S3 N8R8 variant). However, due to bandwidth limitations, the maximum output frequency is 10Mhz, which will limit the real world number of panels that can be chained without the refresh rate being impacted.
+NOTE: You can use SPIRAM/PSRAM to drive the HUB75 DMA buffer only on the ESP32-S3 and with Octal SPI-RAM (i.e. ESP32 S3 N8R8 variant). However, due to bandwidth limitations, the maximum output frequency is limited to approx. 16Mhz, which will limit the real world number of panels that can be chained without flicker being obvious. This is enabled at compile time, refer to [the build options](/doc/BuildOptions.md) to enable.
 
-For all other ESP32 variants (like the most popular ‘original’ ESP32), the hardware [only allows DMA transfer from *internal* SRAM](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/issues/55), so you will be limited to the 200KB or so of usable SRAM of the ESP32 regardless of how many megabytes of PSRAM you may have connected.
+For all other ESP32 variants (like the most popular ‘original’ ESP32), [only *internal* SRAM can be used](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/issues/55), so you will be limited to the ~200KB or so of 'free' SRAM regardless of how many megabytes of SPIRAM/PSRAM you may have connected.
 
 ## Can I use with a larger panel (i.e. 64x64px square panel)?
 If you want to use with a 64x64 pixel panel (typically a HUB75*E* panel) you MUST configure a valid *E_PIN* to your ESP32 and connect it to the E pin of the HUB75 panel! Hence the 'E' in 'HUB75E'
