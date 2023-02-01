@@ -49,7 +49,7 @@ __[BUILD OPTIONS](/doc/BuildOptions.md) | [EXAMPLES](/examples/README.md)__ | [!
 RISC-V ESP32's (like the C3) are not supported as they do not have the hardware 'LCD mode' required for this library.
 
 ## Memory is required!
-"*What's the price for those features?*" - It's [memory](/doc/memcalc.md), you pay it all by precious MCU's internal memory (SRAM) for the DMA buffer". 
+"*What's the price for those features?*" - It's [memory](/doc/memcalc.md), you pay it all by precious MCU's internal memory (SRAM) for the DMA buffer. 
 
 A typical 64x32px panel at 24bpp colour uses about 20kB of internal memory.
 
