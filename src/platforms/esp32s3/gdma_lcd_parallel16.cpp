@@ -135,7 +135,7 @@
     }
      ESP_LOGI("S3", "Clock divider is %d", LCD_CAM.lcd_clock.lcd_clkm_div_num);   
 
-	 ESP_LOGD("S3", "Resulting output clock frequency: %d Mhz",  (160000000L/LCD_CAM.lcd_clock.lcd_clkm_div_num)); 
+	 ESP_LOGD("S3", "Resulting output clock frequency: %ld Mhz",  (160000000L/LCD_CAM.lcd_clock.lcd_clkm_div_num)); 
 
     
     LCD_CAM.lcd_clock.lcd_clkm_div_a = 1;     // 0/1 fractional divide
