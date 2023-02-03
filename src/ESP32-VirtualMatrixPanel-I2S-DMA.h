@@ -206,7 +206,7 @@ inline VirtualCoords VirtualMatrixPanel::getCoords(int16_t &x, int16_t &y)
     coords.y = (panelResY - 1) - coords.y;
   }
 
-  /* START: Pixel remapping AGAIN to convert 1/2 SCAN output that the
+  /* START: Pixel remapping AGAIN to convert TWO parallel scanline output that the
    *        the underlying hardware library is designed for (because
    *        there's only 2 x RGB pins... and convert this to 1/4 or something
    */
