@@ -27,14 +27,14 @@
  * However, if the library is to be used with lower colour depth (i.e. 6 bit colour), then we need to ensure the 8-bit value passed to the colour masking
  * is adjusted accordingly to ensure the LSB's are shifted left to MSB, by the difference. Otherwise the colours will be all screwed up.
  */
-#if PIXEL_COLOUR_DEPTH_BITS > 12
+#if PIXEL_COLOR_DEPTH_BITS > 12
     #error "Color depth bits cannot be greater than 12."
-#elif PIXEL_COLOUR_DEPTH_BITS < 2 
-    #error "Colour depth bits cannot be less than 2."
+#elif PIXEL_COLOR_DEPTH_BITS < 2 
+    #error "Color depth bits cannot be less than 2."
 #endif
 
-  #define MASK_OFFSET (16 - PIXEL_COLOUR_DEPTH_BITS)
-  #define PIXEL_COLOUR_MASK_BIT(colour_depth_index)   (1 << (colour_depth_index + MASK_OFFSET))
+  #define MASK_OFFSET (16 - PIXEL_COLOR_DEPTH_BITS)
+  #define PIXEL_COLOR_MASK_BIT(color_depth_index)   (1 << (color_depth_index + MASK_OFFSET))
   //static constexpr uint8_t const MASK_OFFSET = 8-PIXEL_COLOUR_DEPTH_BITS;
 
 /*
@@ -363,7 +363,7 @@ uint16_t red16, green16, blue16;
         uint8_t mask = (1 << (colour_depth_idx)); // expect 24 bit color (8 bits per RGB subpixel)
     #endif      
 */
-        uint16_t mask = PIXEL_COLOUR_MASK_BIT(colour_depth_idx);
+        uint16_t mask = PIXEL_COLOR_MASK_BIT(colour_depth_idx);
         uint16_t RGB_output_bits = 0;
 
         /* Per the .h file, the order of the output RGB bits is:
@@ -421,7 +421,7 @@ uint16_t red16, green16, blue16;
     //     uint8_t mask = (1 << (colour_depth_idx)); // expect 24 bit colour (8 bits per RGB subpixel)
     // #endif      
 
-    uint16_t mask = PIXEL_COLOUR_MASK_BIT(colour_depth_idx);
+    uint16_t mask = PIXEL_COLOR_MASK_BIT(colour_depth_idx);
 
     /* Per the .h file, the order of the output RGB bits is:
      * BIT_B2, BIT_G2, BIT_R2,    BIT_B1, BIT_G1, BIT_R1      */
@@ -872,7 +872,7 @@ uint16_t red16, green16, blue16;
     // #else
     //     uint8_t mask = (1 << (colour_depth_idx)); // expect 24 bit colour (8 bits per RGB subpixel)
     // #endif      
-    uint16_t mask = PIXEL_COLOUR_MASK_BIT(colour_depth_idx);
+    uint16_t mask = PIXEL_COLOR_MASK_BIT(colour_depth_idx);
 
     /* Per the .h file, the order of the output RGB bits is:
       * BIT_B2, BIT_G2, BIT_R2,    BIT_B1, BIT_G1, BIT_R1     */
@@ -962,7 +962,7 @@ uint16_t red16, green16, blue16;
     //     uint8_t mask = (1 << (colour_depth_idx)); // expect 24 bit colour (8 bits per RGB subpixel)
     // #endif      
 
-    uint16_t mask = PIXEL_COLOUR_MASK_BIT(colour_depth_idx);
+    uint16_t mask = PIXEL_COLOR_MASK_BIT(colour_depth_idx);
     uint16_t RGB_output_bits = 0;
 
     /* Per the .h file, the order of the output RGB bits is:
