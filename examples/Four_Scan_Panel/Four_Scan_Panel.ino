@@ -2,12 +2,14 @@
  * Description: 
  * 
  * The underlying implementation of the ESP32-HUB75-MatrixPanel-I2S-DMA only
- * supports output to 1/16 or 1/32 scan panels - which means outputting 
- * two lines at the same time, 16 or 32 rows apart. This cannot be changed
- * at the DMA layer as it would require a messy and complex rebuild of the 
- * library's DMA internals.
+ * supports output to HALF scan panels - which means outputting 
+ * two lines at the same time, 16 or 32 rows apart if a 32px or 64px high panel
+ * respectively. 
+ * This cannot be changed at the DMA layer as it would require a messy and complex 
+ * rebuild of the library's internals.
  *
- * However, it is possible to connect 1/8 scan panels to this same library and
+ * However, it is possible to connect QUARTER (i.e. FOUR lines updated in parallel)
+ * scan panels to this same library and
  * 'trick' the output to work correctly on these panels by way of adjusting the
  * pixel co-ordinates that are 'sent' to the ESP32-HUB75-MatrixPanel-I2S-DMA
  * library.
@@ -39,7 +41,7 @@
   MatrixPanel_I2S_DMA *dma_display = nullptr;
 
   // placeholder for the virtual display object
-  VirtualMatrixPanel  *OneEightMatrixDisplay = nullptr;
+  VirtualMatrixPanel  *FourScanPanel = nullptr;
   
   /******************************************************************************
    * Setup!
@@ -88,11 +90,11 @@
     dma_display->clearScreen();
     delay(500);
     
-    // create OneEightMatrixDisplaylay object based on our newly created dma_display object
-    OneEightMatrixDisplay = new VirtualMatrixPanel((*dma_display), NUM_ROWS, NUM_COLS, PANEL_RES_X, PANEL_RES_Y, SERPENT, TOPDOWN);
+    // create FourScanPanellay object based on our newly created dma_display object
+    FourScanPanel = new VirtualMatrixPanel((*dma_display), NUM_ROWS, NUM_COLS, PANEL_RES_X, PANEL_RES_Y, SERPENT, TOPDOWN);
     
 	// THE IMPORTANT BIT BELOW!
-    OneEightMatrixDisplay->setPhysicalPanelScanRate(ONE_EIGHT_32);
+    FourScanPanel->setPhysicalPanelScanRate(FOUR_SCAN_32PX_HIGH);
   }
 
   
@@ -111,7 +113,7 @@
       // Try again using the pixel / dma memory remapper
       for (int i=PANEL_RES_X+5; i< (PANEL_RES_X*2)-1; i++)
       {
-        OneEightMatrixDisplay->drawLine(i, 0, i, 7, dma_display->color565(0, 0, 255)); // blue    
+        FourScanPanel->drawLine(i, 0, i, 7, dma_display->color565(0, 0, 255)); // blue    
         delay(10);
       } 
 */
@@ -120,10 +122,10 @@
       int offset = PANEL_RES_X*((NUM_ROWS*NUM_COLS)-1);
       for (int i=0; i< PANEL_RES_X; i++)
       {
-        OneEightMatrixDisplay->drawLine(i+offset, 0, i+offset, 7, dma_display->color565(0, 0, 255)); // blue
-        OneEightMatrixDisplay->drawLine(i+offset, 8, i+offset, 15, dma_display->color565(0, 128,0)); // g        
-        OneEightMatrixDisplay->drawLine(i+offset, 16, i+offset, 23, dma_display->color565(128, 0,0)); // red
-        OneEightMatrixDisplay->drawLine(i+offset, 24, i+offset, 31, dma_display->color565(0, 128, 128)); // blue        
+        FourScanPanel->drawLine(i+offset, 0, i+offset, 7, dma_display->color565(0, 0, 255)); // blue
+        FourScanPanel->drawLine(i+offset, 8, i+offset, 15, dma_display->color565(0, 128,0)); // g        
+        FourScanPanel->drawLine(i+offset, 16, i+offset, 23, dma_display->color565(128, 0,0)); // red
+        FourScanPanel->drawLine(i+offset, 24, i+offset, 31, dma_display->color565(0, 128, 128)); // blue        
         delay(10);
       } 
 
@@ -134,15 +136,15 @@
       // This only really works for a single horizontal chain
       for (int i = 0; i < NUM_ROWS*NUM_COLS; i++)
       {
-        OneEightMatrixDisplay->setTextColor(OneEightMatrixDisplay->color565(255, 255, 255));
-        OneEightMatrixDisplay->setCursor(i*PANEL_RES_X+7, OneEightMatrixDisplay->height()/3); 
+        FourScanPanel->setTextColor(FourScanPanel->color565(255, 255, 255));
+        FourScanPanel->setCursor(i*PANEL_RES_X+7, FourScanPanel->height()/3); 
       
         // Red text inside red rect (2 pix in from edge)
-        OneEightMatrixDisplay->print("Panel " + String(i+1));
-        OneEightMatrixDisplay->drawRect(1,1, OneEightMatrixDisplay->width()-2, OneEightMatrixDisplay->height()-2, OneEightMatrixDisplay->color565(255,0,0));
+        FourScanPanel->print("Panel " + String(i+1));
+        FourScanPanel->drawRect(1,1, FourScanPanel->width()-2, FourScanPanel->height()-2, FourScanPanel->color565(255,0,0));
       
         // White line from top left to bottom right
-        OneEightMatrixDisplay->drawLine(0,0, OneEightMatrixDisplay->width()-1, OneEightMatrixDisplay->height()-1, OneEightMatrixDisplay->color565(255,255,255));
+        FourScanPanel->drawLine(0,0, FourScanPanel->width()-1, FourScanPanel->height()-1, FourScanPanel->color565(255,255,255));
       }
 
       delay(2000);

@@ -9,9 +9,17 @@
     grid.
 
     However, the function of this class has expanded now to also manage
-    the output for 1/16 scan panels, as the core DMA library is designed
-    ONLY FOR 1/16 scan matrix panels.
-
+    the output for
+	
+	1) HALF scan panels = Two rows updated in parallel. 
+		* 64px high panel =  (incorrectly) referred to as 1/32 scan
+		* 32px high panel =  (incorrectly) referred to as 1/16 scan
+		* 16px high panel =  (incorrectly) referred to as 1/8 scan
+		
+	2) FOUR scan panels = Four rows updated in parallel
+		* 32px high panel = (incorrectly) referred to as 1/8 scan 
+		* 16px high panel = (incorrectly) referred to as 1/4 scan 
+		
     YouTube: https://www.youtube.com/brianlough
     Tindie: https://www.tindie.com/stores/brianlough/
     Twitter: https://twitter.com/witnessmenow
@@ -36,9 +44,9 @@ struct VirtualCoords
 
 enum PANEL_SCAN_RATE
 {
-  NORMAL_ONE_SIXTEEN,
-  ONE_EIGHT_32,
-  ONE_EIGHT_16
+  NORMAL_TWO_SCAN, NORMAL_ONE_SIXTEEN, // treated as the same
+  FOUR_SCAN_32PX_HIGH,
+  FOUR_SCAN_16PX_HIGH
 };
 
 #ifdef USE_GFX_ROOT
@@ -129,7 +137,7 @@ protected:
   bool _chain_top_down = false; // is the ESP at the top or bottom of the matrix of devices?
   bool _rotate = false;
 
-  PANEL_SCAN_RATE _panelScanRate = NORMAL_ONE_SIXTEEN;
+  PANEL_SCAN_RATE _panelScanRate = NORMAL_TWO_SCAN;
 
 }; // end Class header
 
@@ -198,18 +206,18 @@ inline VirtualCoords VirtualMatrixPanel::getCoords(int16_t &x, int16_t &y)
     coords.y = (panelResY - 1) - coords.y;
   }
 
-  /* START: Pixel remapping AGAIN to convert 1/16 SCAN output that the
+  /* START: Pixel remapping AGAIN to convert TWO parallel scanline output that the
    *        the underlying hardware library is designed for (because
-   *        there's only 2 x RGB pins... and convert this to 1/8 or something
+   *        there's only 2 x RGB pins... and convert this to 1/4 or something
    */
-  if (_panelScanRate == ONE_EIGHT_32)
+  if (_panelScanRate == FOUR_SCAN_32PX_HIGH)
   {
     /* Convert Real World 'VirtualMatrixPanel' co-ordinates (i.e. Real World pixel you're looking at
        on the panel or chain of panels, per the chaining configuration) to a 1/8 panels
        double 'stretched' and 'squished' coordinates which is what needs to be sent from the
        DMA buffer.
 
-       Note: Look at the One_Eight_1_8_ScanPanel code and you'll see that the DMA buffer is setup
+       Note: Look at the FourScanPanel example code and you'll see that the DMA buffer is setup
        as if the panel is 2 * W and 0.5 * H !
     */
 
@@ -238,7 +246,7 @@ inline VirtualCoords VirtualMatrixPanel::getCoords(int16_t &x, int16_t &y)
      Serial.print("to ("); Serial.print(coords.x, DEC);  Serial.print(",");  Serial.print(coords.y, DEC);   Serial.println(") ");
     */
   }
-  else if (_panelScanRate == ONE_EIGHT_16)
+  else if (_panelScanRate == FOUR_SCAN_16PX_HIGH)
   {
     if ((y & 8) == 0)
     {

@@ -1,4 +1,4 @@
-# HUB75 RGB LED matrix library utilizing ESP32 DMA Engine
+# HUB75 RGB LED matrix panel library utilizing ESP32 DMA
 
 __[BUILD OPTIONS](/doc/BuildOptions.md) | [EXAMPLES](/examples/README.md)__ | [![PlatformIO CI](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-DMA/actions/workflows/pio_build.yml/badge.svg)](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-DMA/actions/workflows/pio_build.yml)
 
@@ -28,43 +28,57 @@ __[BUILD OPTIONS](/doc/BuildOptions.md) | [EXAMPLES](/examples/README.md)__ | [!
  - [Thank you!](#thank-you)
 
 ## Introduction
-This ESP32 Arduino/IDF library for HUB75 / HUB75E connector type 64x32 RGB LED 1/16 Scan OR 64x64 RGB LED 1/32 Scan LED Matrix Panel, utilities the DMA functionality provided by the ESP32's 'LCD Mode'.
+* This is an ESP32 Arduino/IDF library for HUB75 / HUB75E RGB LED panels. 
+* This library 'out of the box' (mostly) supports HUB75 panels where TWO rows/lines are updated in parallel... referred to as 'two scan' panels within this library's documentation. 
+* 'Four scan' panels are also supported - but please refer to the Four Scan Panel example.
+* The library uses the DMA functionality provided by the ESP32's 'LCD Mode' for faster output.
 
 ### Features
--  **Low CPU overhead** - once initialized pixel data is pumped to the matrix inputs via DMA engine directly from memory
--  **Fast** - updating pixel data involves only bit-wise logic over DMA buffer memory, no pins manipulation or blocking IO
--  **Full screen BCM** - library utilizes [binary-code modulation](http://www.batsocks.co.uk/readme/art_bcm_5.htm) to render pixel color depth / brightness over the entire matrix
--  **Variable color depth** - up to TrueColor 24 bits output is possible depending on matrix size/refresh rate required
--  **CIE 1931** luminance [correction](https://ledshield.wordpress.com/2012/11/13/led-brightness-to-your-eye-gamma-correction-no/) (aka natural LED dimming)
--  **Adafruit GFX API** - library could be build with AdafruitGFX, simplified GFX or without GFX API at all
+-  **Low CPU overhead** - Pixel data is sent directly with the use of hardware-backed DMA, no CPU involvement
+-  **Fast** - Updating pixel data involves only bit-wise logic over DMA buffer memory, no pins manipulation or blocking IO
+-  **Full screen BCM** - Library utilizes [binary-code modulation](http://www.batsocks.co.uk/readme/art_bcm_5.htm) to render pixel color depth / brightness over the entire matrix to give reasonable colour depth
+-  **Variable color depth** - Up to TrueColor 24 bits output is possible depending on matrix size/refresh rate required
+-  **CIE 1931** luminance [correction](https://ledshield.wordpress.com/2012/11/13/led-brightness-to-your-eye-gamma-correction-no/) (aka natural LED dimming) implemented
+-  **Adafruit GFX API** - Library can be built with AdafruitGFX, simplified GFX or without a GFX API at all
 
-If you wanna ask "*...OK, OK, than what's the price for those features?*" I'll tell you - "[memory](/doc/memcalc.md), you pay it all by precious MCU's memory for DMA buffer". 
-
-Please use the ['Memory Calculator'](/doc/memcalc.md) to see what is actually achievable with a typical ESP32.
-
-![Memory Calculator](doc/memcalc.jpg)
-
-
-
-## ESP32 Supported
-This library supports the:
-* Original ESP32 - That being the ESP-WROOM-32 module with ESP32‑D0WDQ6 chip from 2017. This MCU has 520kB of SRAM which is much more than all the recent 'reboots' of the ESP32 such as the S2, S3 etc.
+## ESP32 variants supported
+* Original ESP32 - That being the ESP-WROOM-32 module with ESP32‑D0WDQ6 chip from ~2017.
 * ESP32-S2; and
 * ESP32-S3
 
-RISC-V ESP32's (like the C3) are not, and will never be supported  as they do not have parallel DMA output required for this library.
+RISC-V ESP32's (like the C3) are not supported as they do not have the hardware 'LCD mode' required for this library.
 
-## Panels Supported
-* 64x32 (width x height) pixel 1/16 Scan LED Matrix 'Indoor' Panel, such as this [typical RGB panel available for purchase](https://www.aliexpress.com/item/256-128mm-64-32-pixels-1-16-Scan-Indoor-3in1-SMD2121-RGB-full-color-P4-led/32810362851.html).
-* 64x64 pixel 1/32 Scan LED Matrix 'Indoor' Panel.
-* 32x16 pixel 1/4 Scan LED Matrix 'Indoor' Panel using an ingenious workaround as demonstrated in the 32x16_1_4_ScanPanel example.
-* 126x64 [SM5266P](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/issues/164) 1/32 Scan Panel 
+## Memory is required!
+"*What's the price for those features?*" - It's [memory](/doc/memcalc.md), you pay it all by precious MCU's internal memory (SRAM) for the DMA buffer. 
+
+A typical 64x32px panel at 24bpp colour uses about 20kB of internal memory.
+
+Please use the ['Memory Calculator'](/doc/memcalc.md) to see what is *typically* achievable with the typical ESP32. ![Memory Calculator](doc/memcalc.jpg)
+
+For the ESP32-S3 only, you can use SPIRAM/PSRAM to drive the HUB75 DMA buffer when using **Octal SPI-RAM** (i.e. ESP32 S3 N8R8 variant). However, due to bandwidth limitations, the maximum output frequency is limited to approx. 13Mhz, which will limit the real-world number of panels that can be chained without flicker. 
+
+To enable PSRAM support on the ESP32-S3, refer to [the build options](/doc/BuildOptions.md) to enable.
+
+For all other ESP32 variants (like the most popular ‘original’ ESP32), [only *internal* SRAM can be used](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/issues/55), so you will be limited to the ~200KB or so of 'free' SRAM (because of the memory used for your sketch amongst other things) regardless of how many megabytes of SPIRAM/PSRAM you may have connected.
+
+
+## Suported panels
+### Parallel scan lines
+* 'Two scan' panels where **two** rows/lines are updated in parallel. 
+    * 64x32 (width x height) 'Indoor' panels, such as this [typical RGB panel available for purchase](https://www.aliexpress.com/item/256-128mm-64-32-pixels-1-16-Scan-Indoor-3in1-SMD2121-RGB-full-color-P4-led/32810362851.html). Often also referred to as 1/16 'scan panel' as every 16th row is updated in parallel (hence why I refer to it as 'two scan')
+    * 64x64 pixel 1/32 Scan LED Matrix 'Indoor' Panel
+
+* 'Four scan' panels where **four** rows/lines are updated in parallel.
+    * 32x16 pixel 1/4 Scan LED Matrix 'Indoor' Panel using an ingenious workaround as demonstrated in the Four_Scan_Panel example.
+    * 126x64 [SM5266P](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/issues/164)
 
 Ones interested in internals of such matrices could find [this article](https://www.sparkfun.com/news/2650) useful.
 
 Due to the high-speed optimized nature of this library, only specific panels are supported. Please do not raise issues with respect to panels not supported on the list below.
 
-## Panel driver chips known to be working well
+![Panel Scan Types](doc/ScanRateGraphic.jpg)
+
+### Driver chips known to be working well
 
 * ICND2012
 * [RUC7258](http://www.ruichips.com/en/products.html?cateid=17496)
@@ -72,28 +86,19 @@ Due to the high-speed optimized nature of this library, only specific panels are
 * SM5266P 
 
 ## Panels Not Supported
-* 1/8 Scan LED Matrix Panels are not supported.
 * RUL5358 / SHIFTREG_ABC_BIN_DE based panels are not supported.
 * ICN2053 / FM6353 based panels - Refer to [this library](https://github.com/LAutour/ESP32-HUB75-MatrixPanel-DMA-ICN2053), which is a fork of this library ( [discussion link](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-DMA/discussions/324)).
 * Any other panel not listed above.
 
 Please use an [alternative library](https://github.com/2dom/PxMatrix) if you bought one of these.
 
-## Cool uses of this library
-There are a number of great looking LED graphical display projects which leverage this library, these include:
-* [128x64 Morph Clock](https://github.com/bogd/esp32-morphing-clock)
-* [FFT Audio Visualisation](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/discussions/149)
-* [Clock, GIF Animator and Audio Visualiser](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/discussions/153)
-* [Aurora Audio Visualiser](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/discussions/188)
-* [Big Visualisation](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/discussions/155)
-* [Clockwise](https://jnthas.github.io/clockwise/)
-
 # Getting Started
 ## 1. Library Installation
 
-* Dependency: You will need to install Adafruit_GFX from the "Library > Manage Libraries" menu.
-* Download and unzip this repository into your Arduino/libraries folder (or better still, use the Arduino 'add library from .zip' option.
-* Library also tested to work fine with PlatformIO, install into your PlatformIO projects' lib/ folder as appropriate. Or just add it into [platformio.ini](/doc/BuildOptions.md) [lib_depth](https://docs.platformio.org/en/latest/projectconf/section_env_library.html#lib-deps) section.
+* Dependancy: You will need to install Adafruit_GFX from the "Library > Manage Libraries" menu.
+* Install this library from the Arduino Library manager.
+
+Library also tested to work fine with PlatformIO, install into your PlatformIO projects' lib/ folder as appropriate. Or just add it into [platformio.ini](/doc/BuildOptions.md) [lib_depth](https://docs.platformio.org/en/latest/projectconf/section_env_library.html#lib-deps) section.
 
 ## 2. Wiring the ESP32/ESP32-S2/ESP32-S3 to an LED Matrix Panel
 
@@ -113,7 +118,7 @@ If you want to change the GPIO mapping at runtime, simply provide the wanted pin
 #define B_PIN 19
 #define C_PIN 5
 #define D_PIN 17
-#define E_PIN -1 // required for 1/32 scan panels, like 64x64. Any available pin would do, i.e. IO32
+#define E_PIN -1 // required for 1/32 scan panels, like 64x64px. Any available pin would do, i.e. IO32
 #define LAT_PIN 4
 #define OE_PIN 15
 #define CLK_PIN 16
@@ -136,25 +141,18 @@ Various people have created PCBs for which one can simply connect an ESP32 to a 
 
 Please contact or order these products from the respective authors.
 
+### Can I use with a larger panel (i.e. 64x64px square panel)?
+If you want to use with a 64x64 pixel panel (typically a HUB75*E* panel) you MUST configure a valid *E_PIN* to your ESP32 and connect it to the E pin of the HUB75 panel! Hence the 'E' in 'HUB75E'
+
+
 ## 3. Run a Test Sketch
 Below is a bare minimum sketch to draw a single white dot in the top left. You must call begin() before you call ANY pixel-drawing (fonts, lines, colours etc.) function of the MatrixPanel_I2S_DMA class.
 
 Once this is working, refer to the [PIO Test Patterns](/examples/PIO_TestPatterns) example. This sketch draws simple colors/lines/gradients over the entire matrix and it could help to troubleshoot various issues with ghosting, flickering, etc...
->Note: Requires the use of [PlatformIO](https://platformio.org/), which you should probably use if you aren't already. 
-# More Information
-## Build-time options
-Although Arduino IDE does not [seem](https://github.com/arduino/Arduino/issues/421) to offer any way of specifying compile-time options for external libs there are other IDE's (like [PlatformIO](https://platformio.org/)/[Eclipse](https://www.eclipse.org/ide/)) that could use that. Check [Build Options](doc/BuildOptions.md) document for reference.
 
-## Memory constraints
-If you are going to use large/combined panels make sure to check for [memory constraints](/doc/i2s_memcalc.md).
+Note: Requires the use of [PlatformIO](https://platformio.org/), which you should probably use if you aren't already. 
 
-NOTE: You can use PSRAM to expand the amount of memory available only on the ESP32-S3 and with Octal SPI-RAM (ESP32 S3 N8R8 variant). However, due to bandwidth limitations, the maximum output frequency is 10Mhz, which will limit the real world number of panels that can be chained without the refresh rate being impacted.
-
-For all other ESP32 variants (like the most popular ‘original’ ESP32), the hardware [only allows DMA transfer from *internal* SRAM](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/issues/55), so you will be limited to the 200KB or so of usable SRAM of the ESP32 regardless of how many megabytes of PSRAM you may have connected.
-
-## Can I use with a larger panel (i.e. 64x64px square panel)?
-If you want to use with a 64x64 pixel panel (typically a HUB75*E* panel) you MUST configure a valid *E_PIN* to your ESP32 and connect it to the E pin of the HUB75 panel! Hence the 'E' in 'HUB75E'
-
+# Further information
 ## Can I chain panels?
 Yes!
 
@@ -168,7 +166,7 @@ Resolutions beyond 128x64 are more likely to result in crashes due to [memory](/
 
 ![ezgif com-video-to-gif](https://user-images.githubusercontent.com/12006953/89837358-b64c0480-db60-11ea-870d-4b6482068a3b.gif)
 
-  ## Panel Brightness
+## Adjusting Panel Brightness
 
 By default you should not need to change / set the brightness value (which is 128 or 50%) as it should be sufficient for most purposes. Brightness can be changed by calling `setPanelBrightness(xx)` or `setBrightness8(xx)`.  
 
@@ -185,7 +183,8 @@ Serial.begin(115200);
 ```
 ![Brightness Samples](https://user-images.githubusercontent.com/55933003/211192894-f90311f5-b6fe-4665-bf26-2f363bb36047.png)
 
-
+## Build-time options
+Although Arduino IDE does not [seem](https://github.com/arduino/Arduino/issues/421) to offer any way of specifying compile-time options for external libs there are other IDE's (like [PlatformIO](https://platformio.org/)/[Eclipse](https://www.eclipse.org/ide/)) that could use that. Check [Build Options](doc/BuildOptions.md) document for reference.
 
 ## Latch blanking
 If you are facing issues with image ghosting when pixels has clones with horizontal offset, than you try to change Latch blanking value. Latch blanking controls for how many clock pulses matrix output is disabled via EO signal before/after toggling LAT signal. It hides row bits transitioning and different panels may require longer times for proper operation. Default value is 1 clock before/after LAT row transition. This could be controlled with `MatrixPanel_I2S_DMA::setLatBlanking(uint8_t v)`. v could be between 1 to 4, default is 1, larger values won't give any benefit other than reducing brightness.
@@ -208,6 +207,16 @@ Having a good power supply is CRITICAL, and it is highly recommended, for chains
 This project was inspired by:
 * 'SmartMatrix': https://github.com/pixelmatix/SmartMatrix/tree/teensylc
 * Sprite_TM's demo implementation here: https://www.esp32.com/viewtopic.php?f=17&t=3188
+
+
+## Cool uses of this library
+There are a number of great looking LED graphical display projects which leverage this library, these include:
+* [128x64 Morph Clock](https://github.com/bogd/esp32-morphing-clock)
+* [FFT Audio Visualisation](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/discussions/149)
+* [Clock, GIF Animator and Audio Visualiser](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/discussions/153)
+* [Aurora Audio Visualiser](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/discussions/188)
+* [Big Visualisation](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/discussions/155)
+* [Clockwise](https://jnthas.github.io/clockwise/)
 
 # Thank you!
 * [Brian Lough](https://www.tindie.com/stores/brianlough/) ([youtube link](https://www.youtube.com/c/brianlough)) for providing code contributions, hardware and suggestions
