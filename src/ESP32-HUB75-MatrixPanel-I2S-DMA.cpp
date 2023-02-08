@@ -27,19 +27,15 @@
  * However, if the library is to be used with lower colour depth (i.e. 6 bit colour), then we need to ensure the 8-bit value passed to the colour masking
  * is adjusted accordingly to ensure the LSB's are shifted left to MSB, by the difference. Otherwise the colours will be all screwed up.
  */
-#if PIXEL_COLOUR_DEPTH_BITS > 8
-    #error "Color depth bits cannot be greater than 8."
+#if PIXEL_COLOUR_DEPTH_BITS > 12
+    #error "Color depth bits cannot be greater than 12."
 #elif PIXEL_COLOUR_DEPTH_BITS < 2 
     #error "Colour depth bits cannot be less than 2."
 #endif
 
-#if PIXEL_COLOUR_DEPTH_BITS != 8
-  #define MASK_OFFSET (8 - PIXEL_COLOUR_DEPTH_BITS)
+  #define MASK_OFFSET (16 - PIXEL_COLOUR_DEPTH_BITS)
   #define PIXEL_COLOUR_MASK_BIT(colour_depth_index)   (1 << (colour_depth_index + MASK_OFFSET))
   //static constexpr uint8_t const MASK_OFFSET = 8-PIXEL_COLOUR_DEPTH_BITS;
-#else
-  #define PIXEL_COLOUR_MASK_BIT(colour_depth_index)   (1 << (colour_depth_index))
-#endif
 
 /*
     #if PIXEL_COLOUR_DEPTH_BITS < 8
@@ -314,10 +310,15 @@ void IRAM_ATTR MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint16_t x_coord, uint
      * i.e. It's almost impossible for colour_depth_idx of 0 to be sent out to the MATRIX unless the 'value' of a color is exactly '1'
    * https://ledshield.wordpress.com/2012/11/13/led-brightness-to-your-eye-gamma-correction-no/
      */
+uint16_t red16, green16, blue16;
 #ifndef NO_CIE1931
-    red   = lumConvTab[red];
-    green = lumConvTab[green];
-    blue  = lumConvTab[blue];   
+    red16   = lumConvTab[red];
+    green16 = lumConvTab[green];
+    blue16  = lumConvTab[blue];
+#else
+    red16   = red << 8;
+    green16 = green << 8;
+    blue16  = blue << 8;
 #endif
 
     /* When using the drawPixel, we are obviously only changing the value of one x,y position, 
@@ -362,16 +363,16 @@ void IRAM_ATTR MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint16_t x_coord, uint
         uint8_t mask = (1 << (colour_depth_idx)); // expect 24 bit color (8 bits per RGB subpixel)
     #endif      
 */
-        uint8_t mask = PIXEL_COLOUR_MASK_BIT(colour_depth_idx);
+        uint16_t mask = PIXEL_COLOUR_MASK_BIT(colour_depth_idx);
         uint16_t RGB_output_bits = 0;
 
         /* Per the .h file, the order of the output RGB bits is:
           * BIT_B2, BIT_G2, BIT_R2,    BIT_B1, BIT_G1, BIT_R1     */
-        RGB_output_bits |= (bool)(blue & mask);   // --B
+        RGB_output_bits |= (bool)(blue16 & mask);   // --B
         RGB_output_bits <<= 1;
-        RGB_output_bits |= (bool)(green & mask);  // -BG
+        RGB_output_bits |= (bool)(green16 & mask);  // -BG
         RGB_output_bits <<= 1;
-        RGB_output_bits |= (bool)(red & mask);    // BGR
+        RGB_output_bits |= (bool)(red16 & mask);    // BGR
         RGB_output_bits <<= _colourbitoffset;      // shift colour bits to the required position
 
 
@@ -398,10 +399,15 @@ void MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint8_t red, uint8_t green, uint
   if ( !initialized ) return;
   
     /* https://ledshield.wordpress.com/2012/11/13/led-brightness-to-your-eye-gamma-correction-no/ */     
+uint16_t red16, green16, blue16;
 #ifndef NO_CIE1931
-    red     = lumConvTab[red];
-    green   = lumConvTab[green];
-    blue    = lumConvTab[blue];     
+    red16   = lumConvTab[red];
+    green16 = lumConvTab[green];
+    blue16  = lumConvTab[blue];
+#else
+    red16   = red << 8;
+    green16 = green << 8;
+    blue16  = blue << 8;
 #endif
 
   for(uint8_t colour_depth_idx=0; colour_depth_idx<PIXEL_COLOUR_DEPTH_BITS; colour_depth_idx++)  // color depth - 8 iterations
@@ -415,15 +421,15 @@ void MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint8_t red, uint8_t green, uint
     //     uint8_t mask = (1 << (colour_depth_idx)); // expect 24 bit colour (8 bits per RGB subpixel)
     // #endif      
 
-    uint8_t mask = PIXEL_COLOUR_MASK_BIT(colour_depth_idx);
+    uint16_t mask = PIXEL_COLOUR_MASK_BIT(colour_depth_idx);
 
     /* Per the .h file, the order of the output RGB bits is:
      * BIT_B2, BIT_G2, BIT_R2,    BIT_B1, BIT_G1, BIT_R1      */
-    RGB_output_bits |= (bool)(blue & mask);   // --B
+    RGB_output_bits |= (bool)(blue16 & mask);   // --B
     RGB_output_bits <<= 1;
-    RGB_output_bits |= (bool)(green & mask);  // -BG
+    RGB_output_bits |= (bool)(green16 & mask);  // -BG
     RGB_output_bits <<= 1;
-    RGB_output_bits |= (bool)(red & mask);    // BGR
+    RGB_output_bits |= (bool)(red16 & mask);    // BGR
     
     // Duplicate and shift across so we have have 6 populated bits of RGB1 and RGB2 pin values suitable for DMA buffer
     RGB_output_bits |= RGB_output_bits << BITS_RGB2_OFFSET;  //BGRBGR
@@ -680,7 +686,6 @@ void MatrixPanel_I2S_DMA::brtCtrlOE(int brt, const bool _buff_id){
   */
 
 
-
 /**
  * @brief - reset OE bits in DMA buffer in a way to control brightness
  * @param brt - brightness level from 0 to 255 - NOT MATRIX_WIDTH
@@ -692,6 +697,8 @@ void MatrixPanel_I2S_DMA::brtCtrlOEv2(uint8_t brt, const int _buff_id) {
     return;
 
   uint8_t _blank 			 = m_cfg.latch_blanking; // don't want to inadvertantly blast over this
+  uint8_t _depth = dma_buff.rowBits[0]->colour_depth;
+  uint16_t _width = dma_buff.rowBits[0]->width;
 
   // start with iterating all rows in dma_buff structure
   int row_idx = dma_buff.rowBits.size();
@@ -699,40 +706,29 @@ void MatrixPanel_I2S_DMA::brtCtrlOEv2(uint8_t brt, const int _buff_id) {
     --row_idx;
 
     // let's set OE control bits for specific pixels in each color_index subrows
-    uint8_t colouridx = dma_buff.rowBits[row_idx]->colour_depth;
+    uint8_t colouridx = _depth;
     do {
-      //   Multiply brightness according to index of bitplane (color index subrow)
-      // in respect of accumulating LED intensities with Binary-Coded Modulation:
-      // bitplane 0 is 1/1 of total brightness; bitplane 1 is 1/2; bitplane 2 is 1/4, etc
-      // accumulating all of them together means we will get only ~1/4 of the total brightness.
-
-      //   During the DMA, assume bitplane 0 shown for 4 subrows; bitplane 1 shown for 2 subrows;
-      // bitplane 2 and the rest shown for one subrow, would give us ~2/3 of the total brightness,
-      // which is good balance for the depth, brightness, while the flickers still less noticeable:
-      //                 row 0        (blanking)\   row 1        (blanking)\   row 2        (blanking)\   ..
-      // bitplane  : ... 0 0 0 0 1 1 2 3 4 5 6 7 \- 0 0 0 0 1 1 2 3 4 5 6 7 \- 0 0 0 0 1 1 2 3 4 5 6 7 \- ..
-      // rightshift: ... 0 0 0 0 0 0 0 1 2 3 4 5 -\ 0 0 0 0 0 0 0 1 2 3 4 5 -\ 0 0 0 0 0 0 0 1 2 3 4 5 -\ ..
-      char bitplane   = dma_buff.rowBits[row_idx]->colour_depth-colouridx;
-      char rightshift = std::max(bitplane-2,0);
-      int brightness_in_x_pixels = (PIXELS_PER_ROW * brt) >> (8 + rightshift);
       --colouridx;
-
+      
+      char bitplane  = ( 2 * _depth - colouridx ) % _depth;
+      char bitshift  = _depth - lsbMsbTransitionBit - 1 >> 1;
+      
+      char rightshift = std::max( bitplane - bitshift - 2, 0 );
+      // calculate the OE disable period by brightness, and also blanking
+      int brightness_in_x_pixels = ( ( _width - _blank ) * brt) >> (8 + rightshift);
+      
       // switch pointer to a row for a specific color index
       ESP32_I2S_DMA_STORAGE_TYPE* row = dma_buff.rowBits[row_idx]->getDataPtr(colouridx, _buff_id);
 
-      int x_coord = dma_buff.rowBits[row_idx]->width;
+      // define range of Output Enable on the center of the row
+      int x_coord_max = ( _width + brightness_in_x_pixels + 1 ) >> 1;
+      int x_coord_min = ( _width - brightness_in_x_pixels + 0 ) >> 1;
+      int x_coord = _width;
       do {
         --x_coord;
 		
-		if (x_coord <= _blank) // Can't touch blanking. They need to stay blank. 
-		{
-			row[ESP32_TX_FIFO_POSITION_ADJUST(x_coord)] |= BIT_OE;  // Disable output after this point.		
-		}
-		else if(x_coord >= (PIXELS_PER_ROW - _blank - 1) )  // Can't touch blanking. They need to stay blank.
-		{
-			row[ESP32_TX_FIFO_POSITION_ADJUST(x_coord)] |= BIT_OE;  // Disable output after this point.					
-		}
-		else if (x_coord < brightness_in_x_pixels) 
+        // (the check is already including "blanking" )
+		if (x_coord >= x_coord_min && x_coord < x_coord_max) 
 		{
 			row[ESP32_TX_FIFO_POSITION_ADJUST(x_coord)] &= BITMASK_OE_CLEAR;						
 		}
@@ -844,10 +840,15 @@ void MatrixPanel_I2S_DMA::hlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, 
 //    l = PIXELS_PER_ROW - x_coord + 1;     // reset width to end of row
 
   /* LED Brightness Compensation */
+uint16_t red16, green16, blue16;
 #ifndef NO_CIE1931
-    red   = lumConvTab[red];
-    green = lumConvTab[green];
-    blue  = lumConvTab[blue];   
+    red16   = lumConvTab[red];
+    green16 = lumConvTab[green];
+    blue16  = lumConvTab[blue];
+#else
+    red16   = red << 8;
+    green16 = green << 8;
+    blue16  = blue << 8;
 #endif
 
   uint16_t _colourbitclear = BITMASK_RGB1_CLEAR, _colourbitoffset = 0;
@@ -871,15 +872,15 @@ void MatrixPanel_I2S_DMA::hlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, 
     // #else
     //     uint8_t mask = (1 << (colour_depth_idx)); // expect 24 bit color (8 bits per RGB subpixel)
     // #endif      
-    uint8_t mask = PIXEL_COLOUR_MASK_BIT(colour_depth_idx);
+    uint16_t mask = PIXEL_COLOUR_MASK_BIT(colour_depth_idx);
 
     /* Per the .h file, the order of the output RGB bits is:
       * BIT_B2, BIT_G2, BIT_R2,    BIT_B1, BIT_G1, BIT_R1     */
-    RGB_output_bits |= (bool)(blue & mask);   // --B
+    RGB_output_bits |= (bool)(blue16 & mask);   // --B
     RGB_output_bits <<= 1;
-    RGB_output_bits |= (bool)(green & mask);  // -BG
+    RGB_output_bits |= (bool)(green16 & mask);  // -BG
     RGB_output_bits <<= 1;
-    RGB_output_bits |= (bool)(red & mask);    // BGR
+    RGB_output_bits |= (bool)(red16 & mask);    // BGR
     RGB_output_bits <<= _colourbitoffset;      // shift color bits to the required position
 
     // Get the contents at this address,
@@ -930,10 +931,15 @@ void MatrixPanel_I2S_DMA::vlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, 
   ///    l = m_cfg.mx_height - y_coord + 1;     // reset width to end of col
 
   /* LED Brightness Compensation */
+uint16_t red16, green16, blue16;
 #ifndef NO_CIE1931
-    red   = lumConvTab[red];
-    green = lumConvTab[green];
-    blue  = lumConvTab[blue];   
+    red16   = lumConvTab[red];
+    green16 = lumConvTab[green];
+    blue16  = lumConvTab[blue];
+#else
+    red16   = red << 8;
+    green16 = green << 8;
+    blue16  = blue << 8;
 #endif
 
 /*
@@ -956,16 +962,16 @@ void MatrixPanel_I2S_DMA::vlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, 
     //     uint8_t mask = (1 << (colour_depth_idx)); // expect 24 bit color (8 bits per RGB subpixel)
     // #endif      
 
-    uint8_t mask = PIXEL_COLOUR_MASK_BIT(colour_depth_idx);
+    uint16_t mask = PIXEL_COLOUR_MASK_BIT(colour_depth_idx);
     uint16_t RGB_output_bits = 0;
 
     /* Per the .h file, the order of the output RGB bits is:
     * BIT_B2, BIT_G2, BIT_R2,    BIT_B1, BIT_G1, BIT_R1   */
-    RGB_output_bits |= (bool)(blue & mask);   // --B
+    RGB_output_bits |= (bool)(blue16 & mask);   // --B
     RGB_output_bits <<= 1;
-    RGB_output_bits |= (bool)(green & mask);  // -BG
+    RGB_output_bits |= (bool)(green16 & mask);  // -BG
     RGB_output_bits <<= 1;
-    RGB_output_bits |= (bool)(red & mask);    // BGR
+    RGB_output_bits |= (bool)(red16 & mask);    // BGR
 
     int16_t _l = 0, _y = y_coord;
     uint16_t _colourbitclear = BITMASK_RGB1_CLEAR;
