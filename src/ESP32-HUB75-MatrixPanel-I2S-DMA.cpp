@@ -711,7 +711,7 @@ void MatrixPanel_I2S_DMA::brtCtrlOEv2(uint8_t brt, const int _buff_id) {
       --colouridx;
       
       char bitplane  = ( 2 * _depth - colouridx ) % _depth;
-      char bitshift  = _depth - lsbMsbTransitionBit - 1 >> 1;
+      char bitshift  = (_depth - lsbMsbTransitionBit - 1) >> 1;
       
       char rightshift = std::max( bitplane - bitshift - 2, 0 );
       // calculate the OE disable period by brightness, and also blanking
