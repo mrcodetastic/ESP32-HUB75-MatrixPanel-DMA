@@ -431,11 +431,23 @@ class MatrixPanel_I2S_DMA {
       uint8_t r, g, b;
       color565to888(color, r, g, b);
       startWrite();
-      vlineDMA(x, y, h, r, g, b);
+      switch (rotation) {
+        case 0: vlineDMA( x, y, h, r, g, b); break;
+        case 1: hlineDMA( _height - 1 - y - ( h - 1 ), x, h, r, g, b); break;
+        case 2: vlineDMA( _width - 1 - x, _height - 1 - y - ( h - 1 ), h, r, g, b); break;
+        case 3: hlineDMA( y, _width - 1 - x, h, r, g, b); break;
+      }
       endWrite();
     }
     // rgb888 overload
-    virtual inline void drawFastVLine(int16_t x, int16_t y, int16_t h, uint8_t r, uint8_t g, uint8_t b){ vlineDMA(x, y, h, r, g, b); };
+    virtual inline void drawFastVLine(int16_t x, int16_t y, int16_t h, uint8_t r, uint8_t g, uint8_t b){ 
+      switch (rotation) {
+        case 0: vlineDMA( x, y, h, r, g, b); break;
+        case 1: hlineDMA( _height - 1 - y - ( h - 1 ), x, h, r, g, b); break;
+        case 2: vlineDMA( _width - 1 - x, _height - 1 - y - ( h - 1 ), h, r, g, b); break;
+        case 3: hlineDMA( y, _width - 1 - x, h, r, g, b); break;
+      }
+    };
 
     /**
      * @brief - override Adafruit's FastHLine
@@ -445,11 +457,23 @@ class MatrixPanel_I2S_DMA {
       uint8_t r, g, b;
       color565to888(color, r, g, b);
       startWrite();      
-      hlineDMA(x, y, w, r, g, b);
+      switch (rotation) {
+        case 0: hlineDMA( x, y, w, r, g, b); break;
+        case 1: vlineDMA( _height - 1 - y, x, w, r, g, b); break;
+        case 2: hlineDMA( _width - 1 - x - ( w - 1 ), _height - 1 - y, w, r, g, b); break;
+        case 3: vlineDMA( y, _width - 1 - x - ( w - 1 ), w, r, g, b); break;
+      }
       endWrite();
     }
     // rgb888 overload
-    virtual inline void drawFastHLine(int16_t x, int16_t y, int16_t w, uint8_t r, uint8_t g, uint8_t b){ hlineDMA(x, y, w, r, g, b); };
+    virtual inline void drawFastHLine(int16_t x, int16_t y, int16_t w, uint8_t r, uint8_t g, uint8_t b){     
+      switch (rotation) {
+        case 0: hlineDMA( x, y, w, r, g, b); break;
+        case 1: vlineDMA( _height - 1 - y, x, w, r, g, b); break;
+        case 2: hlineDMA( _width - 1 - x - ( w - 1 ), _height - 1 - y, w, r, g, b); break;
+        case 3: vlineDMA( y, _width - 1 - x - ( w - 1 ), w, r, g, b); break;
+      }
+    };
 
     /**
      * @brief - override Adafruit's fillRect
@@ -459,13 +483,23 @@ class MatrixPanel_I2S_DMA {
       uint8_t r, g, b;
       color565to888(color, r, g, b);
       startWrite();        
-      fillRectDMA(x, y, w, h, r, g, b);
+      switch (rotation) {
+        case 0: fillRectDMA( x, y, w, h, r, g, b); break;
+        case 1: fillRectDMA( _height - 1 - y - ( h - 1 ), x, h, w, r, g, b); break;
+        case 2: fillRectDMA( _width - 1 - x - ( w - 1 ), _height - 1 - y - ( h - 1 ), w, h, r, g, b); break;
+        case 3: fillRectDMA( y, _width - 1 - x - ( w - 1 ), h, w, r, g, b); break;
+      }
       endWrite();
     }
     // rgb888 overload
     virtual inline void fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint8_t r, uint8_t g, uint8_t b){
       startWrite();     
-      fillRectDMA(x, y, w, h, r, g, b);
+      switch (rotation) {
+        case 0: fillRectDMA( x, y, w, h, r, g, b); break;
+        case 1: fillRectDMA( _height - 1 - y - ( h - 1 ), x, h, w, r, g, b); break;
+        case 2: fillRectDMA( _width - 1 - x - ( w - 1 ), _height - 1 - y - ( h - 1 ), w, h, r, g, b); break;
+        case 3: fillRectDMA( y, _width - 1 - x - ( w - 1 ), h, w, r, g, b); break;
+      }
       endWrite();
     }
 #endif
@@ -785,8 +819,12 @@ inline void MatrixPanel_I2S_DMA::drawPixel(int16_t x, int16_t y, uint16_t color)
 {
   uint8_t r,g,b;
   color565to888(color,r,g,b);
-  
-  updateMatrixDMABuffer( x, y, r, g, b);
+  switch (rotation) {
+    case 0: updateMatrixDMABuffer( x, y, r, g, b); break;
+    case 1: updateMatrixDMABuffer( _height - 1 - y, x, r, g, b); break;
+    case 2: updateMatrixDMABuffer( _width - 1 - x, _height - 1 - y, r, g, b); break;
+    case 3: updateMatrixDMABuffer( y, _width - 1 - x, r, g, b); break;
+  }
 } 
 
 inline void MatrixPanel_I2S_DMA::fillScreen(uint16_t color)  // adafruit virtual void override
@@ -799,7 +837,13 @@ inline void MatrixPanel_I2S_DMA::fillScreen(uint16_t color)  // adafruit virtual
 
 inline void MatrixPanel_I2S_DMA::drawPixelRGB888(int16_t x, int16_t y, uint8_t r, uint8_t g,uint8_t b) 
 {
-  updateMatrixDMABuffer( x, y, r, g, b);
+  switch (rotation) {
+    case 0: updateMatrixDMABuffer( x, y, r, g, b); break;
+    case 1: updateMatrixDMABuffer( _height - 1 - y, x, r, g, b); break;
+    case 2: updateMatrixDMABuffer( _width - 1 - x, _height - 1 - y, r, g, b); break;
+    case 3: updateMatrixDMABuffer( y, _width - 1 - x, r, g, b); break;
+  }
+  
 }
 
 inline void MatrixPanel_I2S_DMA::fillScreenRGB888(uint8_t r, uint8_t g,uint8_t b)
