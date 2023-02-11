@@ -431,22 +431,24 @@ class MatrixPanel_I2S_DMA {
       uint8_t r, g, b;
       color565to888(color, r, g, b);
       startWrite();
-      switch (rotation) {
-        case 0: vlineDMA( x, y, h, r, g, b); break;
-        case 1: hlineDMA( _height - 1 - y - ( h - 1 ), x, h, r, g, b); break;
-        case 2: vlineDMA( _width - 1 - x, _height - 1 - y - ( h - 1 ), h, r, g, b); break;
-        case 3: hlineDMA( y, _width - 1 - x, h, r, g, b); break;
-      }
+      
+      int16_t w = 1;
+      transform( x, y, w, h);
+      if( h > w )
+        vlineDMA( x, y, h, r, g, b);
+      else
+        hlineDMA( x, y, w, r, g, b);
+    
       endWrite();
     }
     // rgb888 overload
     virtual inline void drawFastVLine(int16_t x, int16_t y, int16_t h, uint8_t r, uint8_t g, uint8_t b){ 
-      switch (rotation) {
-        case 0: vlineDMA( x, y, h, r, g, b); break;
-        case 1: hlineDMA( _height - 1 - y - ( h - 1 ), x, h, r, g, b); break;
-        case 2: vlineDMA( _width - 1 - x, _height - 1 - y - ( h - 1 ), h, r, g, b); break;
-        case 3: hlineDMA( y, _width - 1 - x, h, r, g, b); break;
-      }
+      int16_t w = 1;
+      transform( x, y, w, h);
+      if( h > w )
+        vlineDMA( x, y, h, r, g, b);
+      else
+        hlineDMA( x, y, w, r, g, b);
     };
 
     /**
@@ -456,23 +458,25 @@ class MatrixPanel_I2S_DMA {
     virtual void drawFastHLine(int16_t x, int16_t y, int16_t w, uint16_t color){
       uint8_t r, g, b;
       color565to888(color, r, g, b);
-      startWrite();      
-      switch (rotation) {
-        case 0: hlineDMA( x, y, w, r, g, b); break;
-        case 1: vlineDMA( _height - 1 - y, x, w, r, g, b); break;
-        case 2: hlineDMA( _width - 1 - x - ( w - 1 ), _height - 1 - y, w, r, g, b); break;
-        case 3: vlineDMA( y, _width - 1 - x - ( w - 1 ), w, r, g, b); break;
-      }
+      startWrite();
+      
+      int16_t h = 1;
+      transform( x, y, w, h);
+      if( h > w )
+        vlineDMA( x, y, h, r, g, b);
+      else
+        hlineDMA( x, y, w, r, g, b);
+    
       endWrite();
     }
     // rgb888 overload
-    virtual inline void drawFastHLine(int16_t x, int16_t y, int16_t w, uint8_t r, uint8_t g, uint8_t b){     
-      switch (rotation) {
-        case 0: hlineDMA( x, y, w, r, g, b); break;
-        case 1: vlineDMA( _height - 1 - y, x, w, r, g, b); break;
-        case 2: hlineDMA( _width - 1 - x - ( w - 1 ), _height - 1 - y, w, r, g, b); break;
-        case 3: vlineDMA( y, _width - 1 - x - ( w - 1 ), w, r, g, b); break;
-      }
+    virtual inline void drawFastHLine(int16_t x, int16_t y, int16_t w, uint8_t r, uint8_t g, uint8_t b){  
+      int16_t h = 1;
+      transform( x, y, w, h);
+      if( h > w )
+        vlineDMA( x, y, h, r, g, b);
+      else
+        hlineDMA( x, y, w, r, g, b);
     };
 
     /**
@@ -482,24 +486,16 @@ class MatrixPanel_I2S_DMA {
     virtual void fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color){
       uint8_t r, g, b;
       color565to888(color, r, g, b);
-      startWrite();        
-      switch (rotation) {
-        case 0: fillRectDMA( x, y, w, h, r, g, b); break;
-        case 1: fillRectDMA( _height - 1 - y - ( h - 1 ), x, h, w, r, g, b); break;
-        case 2: fillRectDMA( _width - 1 - x - ( w - 1 ), _height - 1 - y - ( h - 1 ), w, h, r, g, b); break;
-        case 3: fillRectDMA( y, _width - 1 - x - ( w - 1 ), h, w, r, g, b); break;
-      }
+      startWrite();
+      transform( x, y, w, h);
+      fillRectDMA( x, y, w, h, r, g, b);
       endWrite();
     }
     // rgb888 overload
     virtual inline void fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint8_t r, uint8_t g, uint8_t b){
-      startWrite();     
-      switch (rotation) {
-        case 0: fillRectDMA( x, y, w, h, r, g, b); break;
-        case 1: fillRectDMA( _height - 1 - y - ( h - 1 ), x, h, w, r, g, b); break;
-        case 2: fillRectDMA( _width - 1 - x - ( w - 1 ), _height - 1 - y - ( h - 1 ), w, h, r, g, b); break;
-        case 3: fillRectDMA( y, _width - 1 - x - ( w - 1 ), h, w, r, g, b); break;
-      }
+      startWrite();    
+      transform( x, y, w, h);
+      fillRectDMA( x, y, w, h, r, g, b);
       endWrite();
     }
 #endif
@@ -795,9 +791,23 @@ class MatrixPanel_I2S_DMA {
      */
     void brtCtrlOEv2(uint8_t brt, const int _buff_id=0);	
 
-
-
-
+    /**
+     * @brief - transforms coordinates according to orientation
+     * @param x - x position origin
+     * @param y - y position origin
+     * @param w - rectangular width
+     * @param h - rectangular height
+     */
+    void transform(int16_t &x, int16_t &y, int16_t &w, int16_t &h){
+    #ifndef NO_GFX
+      int16_t t;
+      switch (rotation) {
+        case 1: t = _height - 1 - y - ( h - 1 ); y = x; x = t; t = h; h = w; w = t; return;
+        case 2: x = _width  - 1 - x - ( w - 1 ); y = _height - 1 - y - ( h - 1 ); return;
+        case 3: t = y; y = _width - 1 - x - ( w - 1 ); x = t; t = h; h = w; w = t; return;
+      }
+    #endif
+    };
 }; // end Class header
 
 /***************************************************************************************/   
@@ -819,12 +829,10 @@ inline void MatrixPanel_I2S_DMA::drawPixel(int16_t x, int16_t y, uint16_t color)
 {
   uint8_t r,g,b;
   color565to888(color,r,g,b);
-  switch (rotation) {
-    case 0: updateMatrixDMABuffer( x, y, r, g, b); break;
-    case 1: updateMatrixDMABuffer( _height - 1 - y, x, r, g, b); break;
-    case 2: updateMatrixDMABuffer( _width - 1 - x, _height - 1 - y, r, g, b); break;
-    case 3: updateMatrixDMABuffer( y, _width - 1 - x, r, g, b); break;
-  }
+  
+  int16_t w = 1, h = 1;
+  transform( x, y, w, h);
+  updateMatrixDMABuffer( x, y, r, g, b);
 } 
 
 inline void MatrixPanel_I2S_DMA::fillScreen(uint16_t color)  // adafruit virtual void override
@@ -837,13 +845,9 @@ inline void MatrixPanel_I2S_DMA::fillScreen(uint16_t color)  // adafruit virtual
 
 inline void MatrixPanel_I2S_DMA::drawPixelRGB888(int16_t x, int16_t y, uint8_t r, uint8_t g,uint8_t b) 
 {
-  switch (rotation) {
-    case 0: updateMatrixDMABuffer( x, y, r, g, b); break;
-    case 1: updateMatrixDMABuffer( _height - 1 - y, x, r, g, b); break;
-    case 2: updateMatrixDMABuffer( _width - 1 - x, _height - 1 - y, r, g, b); break;
-    case 3: updateMatrixDMABuffer( y, _width - 1 - x, r, g, b); break;
-  }
-  
+  int16_t w = 1, h = 1;
+  transform( x, y, w, h);
+  updateMatrixDMABuffer( x, y, r, g, b);
 }
 
 inline void MatrixPanel_I2S_DMA::fillScreenRGB888(uint8_t r, uint8_t g,uint8_t b)
@@ -855,6 +859,8 @@ inline void MatrixPanel_I2S_DMA::fillScreenRGB888(uint8_t r, uint8_t g,uint8_t b
 // Support for CRGB values provided via FastLED
 inline void MatrixPanel_I2S_DMA::drawPixel(int16_t x, int16_t y, CRGB color) 
 {
+  int16_t w = 1, h = 1;
+  transform( x, y, w, h);
   updateMatrixDMABuffer( x, y, color.red, color.green, color.blue);
 }
 
