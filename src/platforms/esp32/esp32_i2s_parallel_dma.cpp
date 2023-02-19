@@ -633,29 +633,33 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
 	  
       _dev->int_ena.out_eof = 1; // enable interrupt
 	  
-      if ( current_back_buffer_id == 1) {  //  _dmadesc_b is not visable, make it visible. Currently looping around _dmadesc_a
-
+      if ( current_back_buffer_id == 1) { 
+	  //  _dmadesc_b is not visable, make it visible. Currently looping around _dmadesc_a
+	  //  GFX library is changing pixels of back buffer '1' 
+	  
 	    _dev->int_clr.out_eof = 1; // clear interrupt		
         active_dma_buffer_output_count = 0;  
         while (!active_dma_buffer_output_count) {}      
 		
-        _dmadesc_a[_dmadesc_last].qe.stqe_next = &_dmadesc_b[0]; 				
+        _dmadesc_a[_dmadesc_last].qe.stqe_next = &_dmadesc_b[0]; // Start sending out _dmadesc_b (or buffer 1)
+		current_back_buffer_id = 0;		// quickly update the library so it stops writing dirrectly to buffer 1!
 		
 	    _dev->int_clr.out_eof = 1; // clear interrupt		
         active_dma_buffer_output_count = 0;  
         while (!active_dma_buffer_output_count) {}      		
 		
         _dmadesc_a[_dmadesc_last].qe.stqe_next = &_dmadesc_a[0]; // get this preped for the next flip buffer
-		
-		current_back_buffer_id = 0;
-      
-      } else { // we are currently active on _dmadesc_a. we want to flip across and loop _dmadesc_
+		      
+      } else { 
+	  // current_back_buffer_id == 0
+	  // we are currently active on _dmadesc_a. we want to flip across and loop _dmadesc_
 	  
 	    _dev->int_clr.out_eof = 1; // clear interrupt		
         active_dma_buffer_output_count = 0;  
         while (!active_dma_buffer_output_count) {} 
 		
         _dmadesc_b[_dmadesc_last].qe.stqe_next = &_dmadesc_a[0]; 
+		current_back_buffer_id = 1;		
 
 	    _dev->int_clr.out_eof = 1; // clear interrupt		
         active_dma_buffer_output_count = 0;  
@@ -663,7 +667,6 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
   
         _dmadesc_b[_dmadesc_last].qe.stqe_next = &_dmadesc_b[0];
 		
-		current_back_buffer_id = 1;
 		
       }
        // current_back_buffer_id ^= 1;            
