@@ -11,14 +11,14 @@
     However, the function of this class has expanded now to also manage
     the output for
 	
-	1) HALF scan panels = Two rows updated in parallel. 
-		* 64px high panel =  (incorrectly) referred to as 1/32 scan
-		* 32px high panel =  (incorrectly) referred to as 1/16 scan
-		* 16px high panel =  (incorrectly) referred to as 1/8 scan
+	1) TWO scan panels = Two rows updated in parallel. 
+		* 64px high panel =  sometimes referred to as 1/32 scan
+		* 32px high panel =  sometimes referred to as 1/16 scan
+		* 16px high panel =  sometimes referred to as 1/8 scan
 		
 	2) FOUR scan panels = Four rows updated in parallel
-		* 32px high panel = (incorrectly) referred to as 1/8 scan 
-		* 16px high panel = (incorrectly) referred to as 1/4 scan 
+		* 32px high panel = sometimes referred to as 1/8 scan 
+		* 16px high panel = sometimes referred to as 1/4 scan 
 		
     YouTube: https://www.youtube.com/brianlough
     Tindie: https://www.tindie.com/stores/brianlough/
