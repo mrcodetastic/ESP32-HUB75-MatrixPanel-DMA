@@ -715,7 +715,8 @@ void MatrixPanel_I2S_DMA::brtCtrlOEv2(uint8_t brt, const int _buff_id) {
       
       char rightshift = std::max( bitplane - bitshift - 2, 0 );
       // calculate the OE disable period by brightness, and also blanking
-      int brightness_in_x_pixels = ( ( _width - _blank ) * brt) >> (8 + rightshift);
+      int brightness_in_x_pixels = ( ( _width - _blank ) * brt ) >> ( 7 + rightshift );
+      brightness_in_x_pixels = ( brightness_in_x_pixels >> 1 ) | ( brightness_in_x_pixels & 1 );
       
       // switch pointer to a row for a specific color index
       ESP32_I2S_DMA_STORAGE_TYPE* row = dma_buff.rowBits[row_idx]->getDataPtr(colouridx, _buff_id);
