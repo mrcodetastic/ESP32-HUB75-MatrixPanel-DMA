@@ -56,12 +56,12 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
 } // end irq_hndlr
 */
 
-	volatile int active_dma_buffer_output_count = 0;
+	volatile int DRAM_ATTR active_dma_buffer_output_count = 0;
 
 	void IRAM_ATTR irq_hndlr(void* arg) { 
 
 		// Clear flag so we can get retriggered
-		SET_PERI_REG_BITS(I2S_INT_CLR_REG(ESP32_I2S_DEVICE), I2S_OUT_EOF_INT_CLR_V, 1, I2S_OUT_EOF_INT_CLR_S);                      
+		//SET_PERI_REG_BITS(I2S_INT_CLR_REG(ESP32_I2S_DEVICE), I2S_OUT_EOF_INT_CLR_V, 1, I2S_OUT_EOF_INT_CLR_S);                      
 
 		active_dma_buffer_output_count++;
 
@@ -629,33 +629,46 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
       }
 */
          
+	  // THIS WORKS SMOOTHLY EXCEPT FOR THE OFFSET ON MOVING GRAPHICS
+	  
+      _dev->int_ena.out_eof = 1; // enable interrupt
+	  
+      if ( current_back_buffer_id == 1) {  //  _dmadesc_b is not visable, make it visible. Currently looping around _dmadesc_a
 
-  // THIS WORKS SMOOTHLY EXCEPT FOR THE OFFSET ON MOVING GRAPHICS
-            _dev->int_ena.out_eof = 1;   
-      if ( current_back_buffer_id == 1) {     
-
-        _dmadesc_a[_dmadesc_last].qe.stqe_next = &_dmadesc_b[0]; 
-
-        // Wait until we're now stuck in a _dmadesc_a loop;
+	    _dev->int_clr.out_eof = 1; // clear interrupt		
         active_dma_buffer_output_count = 0;  
         while (!active_dma_buffer_output_count) {}      
-                                        
+		
+        _dmadesc_a[_dmadesc_last].qe.stqe_next = &_dmadesc_b[0]; 				
+		
+	    _dev->int_clr.out_eof = 1; // clear interrupt		
+        active_dma_buffer_output_count = 0;  
+        while (!active_dma_buffer_output_count) {}      		
+		
         _dmadesc_a[_dmadesc_last].qe.stqe_next = &_dmadesc_a[0]; // get this preped for the next flip buffer
+		
+		current_back_buffer_id = 0;
       
-      } else {
+      } else { // we are currently active on _dmadesc_a. we want to flip across and loop _dmadesc_
+	  
+	    _dev->int_clr.out_eof = 1; // clear interrupt		
+        active_dma_buffer_output_count = 0;  
+        while (!active_dma_buffer_output_count) {} 
+		
         _dmadesc_b[_dmadesc_last].qe.stqe_next = &_dmadesc_a[0]; 
 
-        // Wait until we're now stuck in a _dmadesc_a loop;
+	    _dev->int_clr.out_eof = 1; // clear interrupt		
         active_dma_buffer_output_count = 0;  
-        while (!active_dma_buffer_output_count) {}      
+        while (!active_dma_buffer_output_count) {}    
   
         _dmadesc_b[_dmadesc_last].qe.stqe_next = &_dmadesc_b[0];
+		
+		current_back_buffer_id = 1;
+		
       }
-        current_back_buffer_id ^= 1;            
+       // current_back_buffer_id ^= 1;            
 
-
-
-      // Disable intterupt
+      // Disable intterupt  
       _dev->int_ena.out_eof = 0;      
 
   } // end flip
