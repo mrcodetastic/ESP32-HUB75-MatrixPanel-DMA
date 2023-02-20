@@ -433,7 +433,7 @@ void i2s_parallel_flip_to_buffer(i2s_port_t port, int buffer_id) {
 	i2s_parallel_set_previous_buffer_not_free();
 }
 
-bool i2s_parallel_is_previous_buffer_free() {
+bool IRAM_ATTR i2s_parallel_is_previous_buffer_free() {
     return previousBufferFree;
 }
 
