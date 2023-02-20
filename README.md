@@ -2,38 +2,37 @@
 
 __[BUILD OPTIONS](/doc/BuildOptions.md) | [EXAMPLES](/examples/README.md)__ | [![PlatformIO CI](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-DMA/actions/workflows/pio_build.yml/badge.svg)](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-DMA/actions/workflows/pio_build.yml)
 
-  **Table of Content**
+**Table of Content**
 
 - [Introduction](#introduction)
   * [Features](#features)
-  * [Supported ESP32](#esp32-supported)
-  * [Supported Panels](#panels-supported)
-  * [Panel driver chips known to be working well](#panel-driver-chips-known-to-be-working-well)
-  * [Panels Not Supported](#panels-not-supported)
-  * [Update for 16x32 Panels](#update-for-16x32-panels)
-  * [Cool uses of this library](#cool-uses-of-this-library)
+  * [ESP32 variants supported](#esp32-variants-supported)
+  * [Required memory](#required-memory)
+  * [Supported Panels](#supported-panels)
+  * [Panel driver chips known to be working well](#driver-chips-known-to-be-working-well)
+  * [Unsupported Panels](#unsupported-panels)
 - [Getting Started](#getting-started)
   * [1. Library Installation](#1-library-installation)
-  * [2. Wiring ESP32 with the LED Matrix Panel](#2-wiring-esp32-with-the-led-matrix-panel)
+  * [2. Wiring the ESP32 to an LED Matrix Panel](#2-wiring-the-esp32-to-an-led-matrix-panel)
   * [3. Run a Test Sketch](#3-run-a-test-sketch)
-- [More Information](#more-information)
-  * [Build-time options](#doc/BuildOptions.md)
-  * [Memory constraints](#memory-constraints)
-  * [Can I use with a larger panel (i.e. 64x64px square panel)?](#can-i-use-with-a-larger-panel-ie-64x64px-square-panel)
+- [Further Information](#further-information)
   * [Can I chain panels?](#can-i-chain-panels)
-  * [Panel Brightness](#panel-brightness)
+  * [Can I use with a larger panel (i.e. 64x64px square panel)?](#can-i-use-with-a-larger-panel-ie-64x64px-square-panel)
+  * [Adjusting Panel Brightness](#adjusting-panel-brightness)
+  * [Build-time options](#build-time-options)
   * [Latch blanking](#latch-blanking)
-  * [Power, Power and Power!](#power--power-and-power)
+  * [Power, Power and Power!](#power-power-and-power)
   * [Inspiration](#inspiration)
- - [Thank you!](#thank-you)
+  * [Cool uses of this library](#cool-uses-of-this-library)
+- [Thank you!](#thank-you)
 
-## Introduction
+# Introduction
 * This is an ESP32 Arduino/IDF library for HUB75 / HUB75E RGB LED panels. 
 * This library 'out of the box' (mostly) supports HUB75 panels where TWO rows/lines are updated in parallel... referred to as 'two scan' panels within this library's documentation. 
 * 'Four scan' panels are also supported - but please refer to the Four Scan Panel example.
 * The library uses the DMA functionality provided by the ESP32's 'LCD Mode' for faster output.
 
-### Features
+## Features
 -  **Low CPU overhead** - Pixel data is sent directly with the use of hardware-backed DMA, no CPU involvement
 -  **Fast** - Updating pixel data involves only bit-wise logic over DMA buffer memory, no pins manipulation or blocking IO
 -  **Full screen BCM** - Library utilizes [binary-code modulation](http://www.batsocks.co.uk/readme/art_bcm_5.htm) to render pixel color depth / brightness over the entire matrix to give reasonable colour depth
@@ -48,7 +47,7 @@ __[BUILD OPTIONS](/doc/BuildOptions.md) | [EXAMPLES](/examples/README.md)__ | [!
 
 RISC-V ESP32's (like the C3) are not supported as they do not have the hardware 'LCD mode' required for this library.
 
-## Memory is required!
+## Required memory
 "*What's the price for those features?*" - It's [memory](/doc/memcalc.md), you pay it all by precious MCU's internal memory (SRAM) for the DMA buffer. 
 
 A typical 64x32px panel at 24bpp colour uses about 20kB of internal memory.
@@ -62,7 +61,7 @@ To enable PSRAM support on the ESP32-S3, refer to [the build options](/doc/Build
 For all other ESP32 variants (like the most popular ‘original’ ESP32), [only *internal* SRAM can be used](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/issues/55), so you will be limited to the ~200KB or so of 'free' SRAM (because of the memory used for your sketch amongst other things) regardless of how many megabytes of SPIRAM/PSRAM you may have connected.
 
 
-## Suported panels
+## Supported panels
 ### Parallel scan lines
 * 'Two scan' panels where **two** rows/lines are updated in parallel. 
     * 64x32 (width x height) 'Indoor' panels, such as this [typical RGB panel available for purchase](https://www.aliexpress.com/item/256-128mm-64-32-pixels-1-16-Scan-Indoor-3in1-SMD2121-RGB-full-color-P4-led/32810362851.html). Often also referred to as 1/16 'scan panel' as every 16th row is updated in parallel (hence why I refer to it as 'two scan')
@@ -85,7 +84,7 @@ Due to the high-speed optimized nature of this library, only specific panels are
 * FM6126A AKA ICN2038S, [FM6124](https://datasheet4u.com/datasheet-pdf/FINEMADELECTRONICS/FM6124/pdf.php?id=1309677) (Refer to [PatternPlasma](/examples/2_PatternPlasma) example on how to use.)
 * SM5266P 
 
-## Panels Not Supported
+## Unsupported Panels
 * RUL5358 / SHIFTREG_ABC_BIN_DE based panels are not supported.
 * ICN2053 / FM6353 based panels - Refer to [this library](https://github.com/LAutour/ESP32-HUB75-MatrixPanel-DMA-ICN2053), which is a fork of this library ( [discussion link](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-DMA/discussions/324)).
 * Any other panel not listed above.
@@ -100,7 +99,7 @@ Please use an [alternative library](https://github.com/2dom/PxMatrix) if you bou
 
 Library also tested to work fine with PlatformIO, install into your PlatformIO projects' lib/ folder as appropriate. Or just add it into [platformio.ini](/doc/BuildOptions.md) [lib_depth](https://docs.platformio.org/en/latest/projectconf/section_env_library.html#lib-deps) section.
 
-## 2. Wiring the ESP32/ESP32-S2/ESP32-S3 to an LED Matrix Panel
+## 2. Wiring the ESP32 to an LED Matrix Panel
 
 Refer to the '*default-pins.hpp' file within the [applicable platforms folder](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-DMA/tree/master/src/platforms).
 
