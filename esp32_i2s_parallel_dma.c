@@ -41,8 +41,8 @@ void setShiftCompleteCallback(callback f) {
     shiftCompleteCallback = f;
 }
 
-volatile int  previousBufferOutputLoopCount = 0;
-volatile bool previousBufferFree      = true;
+volatile int DRAM_ATTR  previousBufferOutputLoopCount = 0;
+volatile bool DRAM_ATTR  previousBufferFree      = true;
 
 static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
 
