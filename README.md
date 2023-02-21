@@ -97,7 +97,7 @@ Please use an [alternative library](https://github.com/2dom/PxMatrix) if you bou
 * Dependancy: You will need to install Adafruit_GFX from the "Library > Manage Libraries" menu.
 * Install this library from the Arduino Library manager.
 
-Library also tested to work fine with PlatformIO, install into your PlatformIO projects' lib/ folder as appropriate. Or just add it into [platformio.ini](/doc/BuildOptions.md) [lib_depth](https://docs.platformio.org/en/latest/projectconf/section_env_library.html#lib-deps) section.
+Library also tested to work fine with PlatformIO, install into your PlatformIO projects' lib/ folder as appropriate. Or just add it into [platformio.ini](/doc/BuildOptions.md) [lib_deps](https://docs.platformio.org/en/latest/projectconf/section_env_library.html#lib-deps) section.
 
 ## 2. Wiring the ESP32 to an LED Matrix Panel
 
