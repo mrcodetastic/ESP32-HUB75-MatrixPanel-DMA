@@ -831,8 +831,11 @@ void MatrixPanel_I2S_DMA::hlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, 
   if ( !initialized )
     return;
 
-  if ( x_coord < 0 || y_coord < 0 || l < 1 || x_coord >= PIXELS_PER_ROW || y_coord >= m_cfg.mx_height)
+  if ( (x_coord + l) < 1 || y_coord < 0 || l < 1 || x_coord >= PIXELS_PER_ROW || y_coord >= m_cfg.mx_height)
     return;
+
+  l = x_coord < 0 ? l+x_coord : l;
+  x_coord = x_coord < 0 ? 0 : x_coord;
 
 
   l = ( (x_coord + l) >= PIXELS_PER_ROW ) ? (PIXELS_PER_ROW - x_coord):l; 
@@ -923,8 +926,11 @@ void MatrixPanel_I2S_DMA::vlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, 
   if ( !initialized )
     return;
 
-  if ( x_coord < 0 || y_coord < 0 || l < 1 || x_coord >= PIXELS_PER_ROW || y_coord >= m_cfg.mx_height)
+  if ( x_coord < 0 || (y_coord + l) < 1 || l < 1 || x_coord >= PIXELS_PER_ROW || y_coord >= m_cfg.mx_height)
     return;
+
+  l = y_coord < 0 ? l+y_coord : l;
+  y_coord = y_coord < 0 ? 0 : y_coord;
 
   // check for a length that goes beyond the height of the screen! Array out of bounds dma memory changes = screwed output #163
   l = ( (y_coord + l) >= m_cfg.mx_height ) ? (m_cfg.mx_height - y_coord):l; 
