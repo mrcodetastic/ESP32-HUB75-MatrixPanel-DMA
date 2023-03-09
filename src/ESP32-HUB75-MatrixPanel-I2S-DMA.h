@@ -274,7 +274,7 @@ struct  HUB75_I2S_CFG {
   bool clkphase;
 
   // Minimum refresh / scan rate needs to be configured on start due to LSBMSB_TRANSITION_BIT calculation in allocateDMAmemory()
-  uint8_t min_refresh_rate;
+  uint16_t min_refresh_rate;
 
   // struct constructor
   HUB75_I2S_CFG (
@@ -290,7 +290,7 @@ struct  HUB75_I2S_CFG {
     clk_speed _i2sspeed = HZ_15M,
     uint8_t _latblk  = DEFAULT_LAT_BLANKING, // Anything > 1 seems to cause artefacts on ICS panels
     bool _clockphase = true,
-    uint8_t _min_refresh_rate = 60
+    uint16_t _min_refresh_rate = 60
   ) : mx_width(_w),
       mx_height(_h),
       chain_length(_chain),
