@@ -613,7 +613,10 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
 
   void Bus_Parallel16::flip_dma_output_buffer(int &current_back_buffer_id) // pass by reference so we can change in main matrixpanel class
   {
-  
+	  
+      // Setup interrupt handler which is focussed only on the (page 322 of Tech. Ref. Manual)
+      // "I2S_OUT_EOF_INT: Triggered when rxlink has finished sending a packet" (when dma linked list with eof = 1 is hit)
+      //_dev->int_ena.out_eof = 1;      
       _dev->int_ena.out_eof = 1; // enable interrupt
 	  
       if ( current_back_buffer_id == 1) { 
