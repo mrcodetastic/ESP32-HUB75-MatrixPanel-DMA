@@ -453,8 +453,8 @@
     }
     else
     {
-       _dmadesc_a[_dmadesc_count-1].next =  (dma_descriptor_t *) &_dmadesc_a[0];       
-       _dmadesc_b[_dmadesc_count-1].next =  (dma_descriptor_t *) &_dmadesc_a[0];   
+       _dmadesc_b[_dmadesc_count-1].next =  (dma_descriptor_t *) &_dmadesc_a[0];       
+       _dmadesc_a[_dmadesc_count-1].next =  (dma_descriptor_t *) &_dmadesc_a[0];   
     }
 
     current_back_buffer_id ^= 1;
