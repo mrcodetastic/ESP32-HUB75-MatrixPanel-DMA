@@ -613,31 +613,15 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
 
   void Bus_Parallel16::flip_dma_output_buffer(int &current_back_buffer_id) // pass by reference so we can change in main matrixpanel class
   {
+	  
       // Setup interrupt handler which is focussed only on the (page 322 of Tech. Ref. Manual)
       // "I2S_OUT_EOF_INT: Triggered when rxlink has finished sending a packet" (when dma linked list with eof = 1 is hit)
-      //_dev->int_ena.out_eof = 1;     
- 
-      // MISALIGNMENT ON TOP/2 THE PANEL BETWEEN FAST MOVING GRAPHICS IS CAUSED 
-      // DUE TO THE CHANGE OF BACK BUFFER ID AND THE FRIGGIN DMA BUFFER!!!
-
-/*
-      if ( current_back_buffer_id == 1) {                 
-          _dmadesc_a[_dmadesc_last].qe.stqe_next = _dmadesc_blank;
-      } 
-      else {
-          _dmadesc_b[_dmadesc_last].qe.stqe_next = _dmadesc_blank;
-      }
-*/
-         
-	  // THIS WORKS SMOOTHLY EXCEPT FOR THE OFFSET ON MOVING GRAPHICS
-	  
+      //_dev->int_ena.out_eof = 1;      
       _dev->int_ena.out_eof = 1; // enable interrupt
 	  
       if ( current_back_buffer_id == 1) { 
-	  //  _dmadesc_b is not visable, make it visible. Currently looping around _dmadesc_a
-	  //  GFX library is changing pixels of back buffer '1' 
-	     
-        _dmadesc_a[_dmadesc_last].qe.stqe_next = &_dmadesc_b[0]; // Start sending out _dmadesc_b (or buffer 1)
+
+	_dmadesc_a[_dmadesc_last].qe.stqe_next = &_dmadesc_b[0]; // Start sending out _dmadesc_b (or buffer 1)
 				
         active_dma_buffer_output_count = 0;  
         while (!active_dma_buffer_output_count) {}      		
@@ -647,9 +631,7 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
         _dmadesc_b[_dmadesc_last].qe.stqe_next = &_dmadesc_b[0];
 		      
       } else { 
-	  // current_back_buffer_id == 0
-	  // we are currently active on _dmadesc_a. we want to flip across and loop _dmadesc_
-	  
+	      
         _dmadesc_b[_dmadesc_last].qe.stqe_next = &_dmadesc_a[0]; 
 
         active_dma_buffer_output_count = 0;  
