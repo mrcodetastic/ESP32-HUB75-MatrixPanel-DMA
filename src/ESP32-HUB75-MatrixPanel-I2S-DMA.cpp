@@ -27,14 +27,15 @@
  * However, if the library is to be used with lower colour depth (i.e. 6 bit colour), then we need to ensure the 8-bit value passed to the colour masking
  * is adjusted accordingly to ensure the LSB's are shifted left to MSB, by the difference. Otherwise the colours will be all screwed up.
  */
-#if PIXEL_COLOR_DEPTH_BITS > 12
-    #error "Color depth bits cannot be greater than 12."
-#elif PIXEL_COLOR_DEPTH_BITS < 2 
-    #error "Color depth bits cannot be less than 2."
-#endif
+//#if PIXEL_COLOR_DEPTH_BITS > 12
+//    #error "Color depth bits cannot be greater than 12."
+//#elif PIXEL_COLOR_DEPTH_BITS < 2 
+//    #error "Color depth bits cannot be less than 2."
+//#endif
 
-  #define MASK_OFFSET (16 - PIXEL_COLOR_DEPTH_BITS)
-  #define PIXEL_COLOR_MASK_BIT(color_depth_index)   (1 << (color_depth_index + MASK_OFFSET))
+  //#define MASK_OFFSET (16 - PIXEL_COLOR_DEPTH_BITS)
+  //#define PIXEL_COLOR_MASK_BIT(color_depth_index)   (1 << (color_depth_index + MASK_OFFSET))
+  #define PIXEL_COLOR_MASK_BIT(color_depth_index, mask_offset)   (1 << (color_depth_index + mask_offset))
   //static constexpr uint8_t const MASK_OFFSET = 8-PIXEL_COLOUR_DEPTH_BITS;
 
 /*
@@ -57,15 +58,16 @@ bool MatrixPanel_I2S_DMA::allocateDMAmemory()
   // lets allocate a chunk of memory for each row (a row could span multiple panels if chaining is in place)
   dma_buff.rowBits.reserve(ROWS_PER_FRAME);
 
+    ESP_LOGI("I2S-DMA", "allocating rowBitStructs with pixel_color_depth_bits of %d", m_cfg.getPixelColorDepthBits());
     // iterate through number of rows, allocate memory for each
     size_t allocated_fb_memory = 0;
     for (int malloc_num =0; malloc_num < ROWS_PER_FRAME; ++malloc_num)
     {
-        auto ptr = std::make_shared<rowBitStruct>(PIXELS_PER_ROW, PIXEL_COLOR_DEPTH_BITS, m_cfg.double_buff);
+        auto ptr = std::make_shared<rowBitStruct>(PIXELS_PER_ROW, m_cfg.getPixelColorDepthBits(), m_cfg.double_buff);
 
         if (ptr->data == nullptr)
         {
-            ESP_LOGE("I2S-DMA", "CRITICAL ERROR: Not enough memory for requested colour depth! Please reduce PIXEL_COLOR_DEPTH_BITS value.\r\n");
+            ESP_LOGE("I2S-DMA", "CRITICAL ERROR: Not enough memory for requested colour depth! Please reduce pixel_color_depth_bits value.\r\n");
             ESP_LOGE("I2S-DMA", "Could not allocate rowBitStruct %d!.\r\n", malloc_num);
 
             return false;
@@ -88,11 +90,11 @@ bool MatrixPanel_I2S_DMA::allocateDMAmemory()
         int nsPerLatch = ((PIXELS_PER_ROW + CLKS_DURING_LATCH) * psPerClock) / 1000;
 
         // add time to shift out LSBs + LSB-MSB transition bit - this ignores fractions...
-        int nsPerRow = PIXEL_COLOR_DEPTH_BITS * nsPerLatch;
+        int nsPerRow = m_cfg.getPixelColorDepthBits() * nsPerLatch;
 
         // add time to shift out MSBs
-        for(int i=lsbMsbTransitionBit + 1; i<PIXEL_COLOR_DEPTH_BITS; i++)
-            nsPerRow += (1<<(i - lsbMsbTransitionBit - 1)) * (PIXEL_COLOR_DEPTH_BITS - i) * nsPerLatch;
+        for(int i=lsbMsbTransitionBit + 1; i < m_cfg.getPixelColorDepthBits(); i++)
+            nsPerRow += (1<<(i - lsbMsbTransitionBit - 1)) * (m_cfg.getPixelColorDepthBits() - i) * nsPerLatch;
 
         int nsPerFrame = nsPerRow * ROWS_PER_FRAME;
         int actualRefreshRate = 1000000000UL/(nsPerFrame);
@@ -103,7 +105,7 @@ bool MatrixPanel_I2S_DMA::allocateDMAmemory()
         if (actualRefreshRate > m_cfg.min_refresh_rate) 
           break;
                   
-        if(lsbMsbTransitionBit < PIXEL_COLOR_DEPTH_BITS - 1)
+        if(lsbMsbTransitionBit < m_cfg.getPixelColorDepthBits() - 1)
             lsbMsbTransitionBit++;
         else
             break;
@@ -114,6 +116,8 @@ bool MatrixPanel_I2S_DMA::allocateDMAmemory()
         ESP_LOGW("I2S-DMA", "lsbMsbTransitionBit of %d used to achieve refresh rate of %d Hz. Percieved colour depth to the eye may be reduced.", lsbMsbTransitionBit, m_cfg.min_refresh_rate);		
 	}
 	
+  ESP_LOGI("I2S-DMA", "DMA has pixel_color_depth_bits of %d", m_cfg.getPixelColorDepthBits() - lsbMsbTransitionBit);
+
 #endif
  
 
@@ -122,7 +126,7 @@ bool MatrixPanel_I2S_DMA::allocateDMAmemory()
    *          memory allocation of the DMA linked list memory structure.
    */          
     int numDMAdescriptorsPerRow = 1;
-    for(int i=lsbMsbTransitionBit + 1; i<PIXEL_COLOR_DEPTH_BITS; i++) {
+    for(int i=lsbMsbTransitionBit + 1; i < m_cfg.getPixelColorDepthBits(); i++) {
         numDMAdescriptorsPerRow += (1<<(i - lsbMsbTransitionBit - 1));
     }
 
@@ -133,9 +137,9 @@ bool MatrixPanel_I2S_DMA::allocateDMAmemory()
     if ( dma_buff.rowBits[0]->size() > DMA_MAX ) 
     {
 
-        ESP_LOGW("I2S-DMA", "rowBits struct is too large to fit in one DMA transfer payload, splitting required. Adding %d DMA descriptors\n", PIXEL_COLOR_DEPTH_BITS-1);
+        ESP_LOGW("I2S-DMA", "rowBits struct is too large to fit in one DMA transfer payload, splitting required. Adding %d DMA descriptors\n", m_cfg.getPixelColorDepthBits()-1);
 
-        numDMAdescriptorsPerRow += PIXEL_COLOR_DEPTH_BITS-1; 
+        numDMAdescriptorsPerRow += m_cfg.getPixelColorDepthBits()-1; 
         // Note: If numDMAdescriptorsPerRow is even just one descriptor too large, DMA linked list will not correctly loop.
     }
 
@@ -169,7 +173,7 @@ void MatrixPanel_I2S_DMA::configureDMA(const HUB75_I2S_CFG& _cfg)
     int current_dmadescriptor_offset = 0;
 
     // HACK: If we need to split the payload in 1/2 so that it doesn't breach DMA_MAX, lets do it by the colour_depth.
-    int num_dma_payload_colour_depths = PIXEL_COLOR_DEPTH_BITS;
+    int num_dma_payload_colour_depths = m_cfg.getPixelColorDepthBits();
     if ( dma_buff.rowBits[0]->size() > DMA_MAX ) {
         num_dma_payload_colour_depths = 1;
     }
@@ -195,7 +199,7 @@ void MatrixPanel_I2S_DMA::configureDMA(const HUB75_I2S_CFG& _cfg)
         if ( dma_buff.rowBits[0]->size() > DMA_MAX )
         {
           
-          for (int cd = 1; cd < PIXEL_COLOR_DEPTH_BITS; cd++) 
+          for (int cd = 1; cd < m_cfg.getPixelColorDepthBits(); cd++) 
           {
             dma_bus.create_dma_desc_link(dma_buff.rowBits[row]->getDataPtr(cd, 0), dma_buff.rowBits[row]->size(num_dma_payload_colour_depths), false);            
 
@@ -209,7 +213,7 @@ void MatrixPanel_I2S_DMA::configureDMA(const HUB75_I2S_CFG& _cfg)
         }  // row depth struct
 
 
-        for(int i=lsbMsbTransitionBit + 1; i<PIXEL_COLOR_DEPTH_BITS; i++) 
+        for(int i=lsbMsbTransitionBit + 1; i < m_cfg.getPixelColorDepthBits(); i++) 
         {
             // binary time division setup: we need 2 of bit (LSBMSB_TRANSITION_BIT + 1) four of (LSBMSB_TRANSITION_BIT + 2), etc
             // because we sweep through to MSB each time, it divides the number of times we have to sweep in half (saving linked list RAM)
@@ -217,10 +221,10 @@ void MatrixPanel_I2S_DMA::configureDMA(const HUB75_I2S_CFG& _cfg)
 
             for(int k=0; k < (1<<(i - lsbMsbTransitionBit - 1)); k++) 
             {
-                dma_bus.create_dma_desc_link(dma_buff.rowBits[row]->getDataPtr(i, 0),  dma_buff.rowBits[row]->size(PIXEL_COLOR_DEPTH_BITS - i), false);
+                dma_bus.create_dma_desc_link(dma_buff.rowBits[row]->getDataPtr(i, 0),  dma_buff.rowBits[row]->size(m_cfg.getPixelColorDepthBits() - i), false);
 
                 if (m_cfg.double_buff) {
-                  dma_bus.create_dma_desc_link(dma_buff.rowBits[row]->getDataPtr(i, 1),  dma_buff.rowBits[row]->size(PIXEL_COLOR_DEPTH_BITS - i), true );
+                  dma_bus.create_dma_desc_link(dma_buff.rowBits[row]->getDataPtr(i, 1),  dma_buff.rowBits[row]->size(m_cfg.getPixelColorDepthBits() - i), true );
                 }
 
                 current_dmadescriptor_offset++;
@@ -237,7 +241,7 @@ void MatrixPanel_I2S_DMA::configureDMA(const HUB75_I2S_CFG& _cfg)
 //
       auto bus_cfg = dma_bus.config();         // バス設定用の構造体を取得します。
       
-      bus_cfg.bus_freq = _cfg.i2sspeed; 
+      bus_cfg.bus_freq = m_cfg.i2sspeed; 
       bus_cfg.pin_wr   = m_cfg.gpio.clk;      // WR を接続しているピン番号
       
       bus_cfg.pin_d0	 = m_cfg.gpio.r1;	
@@ -352,7 +356,7 @@ uint16_t red16, green16, blue16;
     }
 
     // Iterating through colour depth bits, which we assume are 8 bits per RGB subpixel (24bpp)
-    uint8_t colour_depth_idx = PIXEL_COLOR_DEPTH_BITS;
+    uint8_t colour_depth_idx = m_cfg.getPixelColorDepthBits();
     do {
         --colour_depth_idx;
 /*        
@@ -363,7 +367,7 @@ uint16_t red16, green16, blue16;
         uint8_t mask = (1 << (colour_depth_idx)); // expect 24 bit color (8 bits per RGB subpixel)
     #endif      
 */
-        uint16_t mask = PIXEL_COLOR_MASK_BIT(colour_depth_idx);
+        uint16_t mask = PIXEL_COLOR_MASK_BIT(colour_depth_idx, m_cfg.getMaskOffset());
         uint16_t RGB_output_bits = 0;
 
         /* Per the .h file, the order of the output RGB bits is:
@@ -410,7 +414,7 @@ uint16_t red16, green16, blue16;
     blue16  = blue << 8;
 #endif
 
-  for(uint8_t colour_depth_idx=0; colour_depth_idx<PIXEL_COLOR_DEPTH_BITS; colour_depth_idx++)  // colour depth - 8 iterations
+  for(uint8_t colour_depth_idx=0; colour_depth_idx < m_cfg.getPixelColorDepthBits(); colour_depth_idx++)  // colour depth - 8 iterations
   {
     // let's precalculate RGB1 and RGB2 bits than flood it over the entire DMA buffer
     uint16_t RGB_output_bits = 0;
@@ -421,7 +425,7 @@ uint16_t red16, green16, blue16;
     //     uint8_t mask = (1 << (colour_depth_idx)); // expect 24 bit colour (8 bits per RGB subpixel)
     // #endif      
 
-    uint16_t mask = PIXEL_COLOR_MASK_BIT(colour_depth_idx);
+    uint16_t mask = PIXEL_COLOR_MASK_BIT(colour_depth_idx, m_cfg.getMaskOffset());
 
     /* Per the .h file, the order of the output RGB bits is:
      * BIT_B2, BIT_G2, BIT_R2,    BIT_B1, BIT_G1, BIT_R1      */
@@ -864,7 +868,7 @@ uint16_t red16, green16, blue16;
   }
 
   // Iterating through colour depth bits (8 iterations)
-  uint8_t colour_depth_idx = PIXEL_COLOR_DEPTH_BITS;
+  uint8_t colour_depth_idx = m_cfg.getPixelColorDepthBits();
   do {
     --colour_depth_idx;
 
@@ -876,7 +880,7 @@ uint16_t red16, green16, blue16;
     // #else
     //     uint8_t mask = (1 << (colour_depth_idx)); // expect 24 bit colour (8 bits per RGB subpixel)
     // #endif      
-    uint16_t mask = PIXEL_COLOR_MASK_BIT(colour_depth_idx);
+    uint16_t mask = PIXEL_COLOR_MASK_BIT(colour_depth_idx, m_cfg.getMaskOffset());
 
     /* Per the .h file, the order of the output RGB bits is:
       * BIT_B2, BIT_G2, BIT_R2,    BIT_B1, BIT_G1, BIT_R1     */
@@ -957,7 +961,7 @@ uint16_t red16, green16, blue16;
 */
   x_coord = ESP32_TX_FIFO_POSITION_ADJUST(x_coord);
 
-  uint8_t colour_depth_idx = PIXEL_COLOR_DEPTH_BITS;
+  uint8_t colour_depth_idx = m_cfg.getPixelColorDepthBits();
   do {    // Iterating through colour depth bits (8 iterations)
     --colour_depth_idx;
 
@@ -969,7 +973,7 @@ uint16_t red16, green16, blue16;
     //     uint8_t mask = (1 << (colour_depth_idx)); // expect 24 bit colour (8 bits per RGB subpixel)
     // #endif      
 
-    uint16_t mask = PIXEL_COLOR_MASK_BIT(colour_depth_idx);
+    uint16_t mask = PIXEL_COLOR_MASK_BIT(colour_depth_idx, m_cfg.getMaskOffset());
     uint16_t RGB_output_bits = 0;
 
     /* Per the .h file, the order of the output RGB bits is:

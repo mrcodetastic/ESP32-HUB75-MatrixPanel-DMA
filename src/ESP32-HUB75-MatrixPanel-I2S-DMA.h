@@ -68,13 +68,17 @@
 // can be extended to offer deeper colors, or
 // might be reduced to save DMA RAM
 #ifdef PIXEL_COLOUR_DEPTH_BITS
- #define PIXEL_COLOR_DEPTH_BITS      PIXEL_COLOUR_DEPTH_BITS
+  #define PIXEL_COLOR_DEPTH_BITS      PIXEL_COLOUR_DEPTH_BITS
 #endif
 
-#ifndef PIXEL_COLOR_DEPTH_BITS
- #define PIXEL_COLOR_DEPTH_BITS      8
+//support backwarts compatibility
+#ifdef PIXEL_COLOR_DEPTH_BITS
+  #define PIXEL_COLOR_DEPTH_BITS_DEFAULT      PIXEL_COLOR_DEPTH_BITS
+#else 
+  #define PIXEL_COLOR_DEPTH_BITS_DEFAULT    8
 #endif
 
+#define PIXEL_COLOR_DEPTH_BITS_MAX 12
 
 /***************************************************************************************/
 /* Definitions below should NOT be ever changed without rewriting library logic         */
@@ -290,17 +294,51 @@ struct  HUB75_I2S_CFG {
     clk_speed _i2sspeed = HZ_15M,
     uint8_t _latblk  = DEFAULT_LAT_BLANKING, // Anything > 1 seems to cause artefacts on ICS panels
     bool _clockphase = true,
-    uint16_t _min_refresh_rate = 60
+    uint16_t _min_refresh_rate = 60,
+    uint8_t _pixel_color_depth_bits = PIXEL_COLOR_DEPTH_BITS_DEFAULT
   ) : mx_width(_w),
       mx_height(_h),
       chain_length(_chain),
       gpio(_pinmap),
       driver(_drv), 
-	  i2sspeed(_i2sspeed),
+	    i2sspeed(_i2sspeed),
       double_buff(_dbuff),
       latch_blanking(_latblk),
       clkphase(_clockphase),
-      min_refresh_rate (_min_refresh_rate) {}
+      min_refresh_rate(_min_refresh_rate)
+  {
+    setPixelColorDepthBits(_pixel_color_depth_bits);
+  }
+
+  //pixel_color_depth_bits must be between 12 and 2, and mask_offset needs to be calculated accordently
+  //so they have to be private with getter (and setter)
+  void setPixelColorDepthBits(uint8_t _pixel_color_depth_bits){
+    if(_pixel_color_depth_bits > PIXEL_COLOR_DEPTH_BITS_MAX || _pixel_color_depth_bits < 2){
+      
+      if(_pixel_color_depth_bits > PIXEL_COLOR_DEPTH_BITS_MAX){
+        pixel_color_depth_bits = PIXEL_COLOR_DEPTH_BITS_MAX;
+      }else{
+        pixel_color_depth_bits = 2;
+      }
+      ESP_LOGW("HUB75_I2S_CFG", "Invalid pixel_color_depth_bits (%d): 2 <= pixel_color_depth_bits <= %d, choosing nearest valid %d", _pixel_color_depth_bits, PIXEL_COLOR_DEPTH_BITS_MAX, pixel_color_depth_bits);
+    }else{
+      pixel_color_depth_bits = _pixel_color_depth_bits;
+    }
+    mask_offset = 16 - pixel_color_depth_bits;
+  }
+
+  uint8_t getPixelColorDepthBits(){
+    return pixel_color_depth_bits;
+  }
+  uint8_t getMaskOffset(){
+    return mask_offset;
+  }
+
+  private:
+    //these were priviously handeld as defines (PIXEL_COLOR_DEPTH_BITS, MASK_OFFSET)
+    //to make it changable after compilation, it is now part of the config
+    uint8_t pixel_color_depth_bits; 
+    uint8_t mask_offset;
 }; // end of structure HUB75_I2S_CFG
 
 
