@@ -367,7 +367,7 @@ uint16_t red16, green16, blue16;
         uint8_t mask = (1 << (colour_depth_idx)); // expect 24 bit color (8 bits per RGB subpixel)
     #endif      
 */
-        uint16_t mask = PIXEL_COLOR_MASK_BIT(colour_depth_idx, m_cfg.getMaskOffset());
+        uint16_t mask = PIXEL_COLOR_MASK_BIT(colour_depth_idx, MASK_OFFSET);
         uint16_t RGB_output_bits = 0;
 
         /* Per the .h file, the order of the output RGB bits is:
@@ -425,7 +425,7 @@ uint16_t red16, green16, blue16;
     //     uint8_t mask = (1 << (colour_depth_idx)); // expect 24 bit colour (8 bits per RGB subpixel)
     // #endif      
 
-    uint16_t mask = PIXEL_COLOR_MASK_BIT(colour_depth_idx, m_cfg.getMaskOffset());
+    uint16_t mask = PIXEL_COLOR_MASK_BIT(colour_depth_idx, MASK_OFFSET);
 
     /* Per the .h file, the order of the output RGB bits is:
      * BIT_B2, BIT_G2, BIT_R2,    BIT_B1, BIT_G1, BIT_R1      */
@@ -785,7 +785,7 @@ void MatrixPanel_I2S_DMA::brtCtrlOEv2(uint8_t brt, const int _buff_id) {
  */
  
 bool MatrixPanel_I2S_DMA::begin(int r1, int g1, int b1, int r2, int g2, int b2, int a, int b, int c, int d, int e, int lat, int oe, int clk) {
-
+  if(initialized) return true;
   // RGB
   m_cfg.gpio.r1 = r1; m_cfg.gpio.g1 = g1; m_cfg.gpio.b1 = b1;
   m_cfg.gpio.r2 = r2; m_cfg.gpio.g2 = g2; m_cfg.gpio.b2 = b2;
@@ -799,6 +799,15 @@ bool MatrixPanel_I2S_DMA::begin(int r1, int g1, int b1, int r2, int g2, int b2, 
 
   return begin();
 }
+
+bool MatrixPanel_I2S_DMA::begin(const HUB75_I2S_CFG& cfg){
+  if(initialized) return true;
+
+  if(!setCfg(cfg)) return false;
+
+  return begin();
+} 
+
 
 
 /**
@@ -880,7 +889,7 @@ uint16_t red16, green16, blue16;
     // #else
     //     uint8_t mask = (1 << (colour_depth_idx)); // expect 24 bit colour (8 bits per RGB subpixel)
     // #endif      
-    uint16_t mask = PIXEL_COLOR_MASK_BIT(colour_depth_idx, m_cfg.getMaskOffset());
+    uint16_t mask = PIXEL_COLOR_MASK_BIT(colour_depth_idx, MASK_OFFSET);
 
     /* Per the .h file, the order of the output RGB bits is:
       * BIT_B2, BIT_G2, BIT_R2,    BIT_B1, BIT_G1, BIT_R1     */
@@ -973,7 +982,7 @@ uint16_t red16, green16, blue16;
     //     uint8_t mask = (1 << (colour_depth_idx)); // expect 24 bit colour (8 bits per RGB subpixel)
     // #endif      
 
-    uint16_t mask = PIXEL_COLOR_MASK_BIT(colour_depth_idx, m_cfg.getMaskOffset());
+    uint16_t mask = PIXEL_COLOR_MASK_BIT(colour_depth_idx, MASK_OFFSET);
     uint16_t RGB_output_bits = 0;
 
     /* Per the .h file, the order of the output RGB bits is:

@@ -59,10 +59,12 @@
 /***************************************************************************************/
 /* Do not change definitions below unless you pretty sure you know what you are doing! */
 
-// RGB Panel Constants / Calculated Values
-#ifndef MATRIX_ROWS_IN_PARALLEL
- #define MATRIX_ROWS_IN_PARALLEL     2
+// keeping a check sine it was possibe to set it previously
+#ifdef MATRIX_ROWS_IN_PARALLEL
+  #pragma message "You are not supposed to set MATRIX_ROWS_IN_PARALLEL. Setting it back to default."
+  #undef MATRIX_ROWS_IN_PARALLEL
 #endif
+#define MATRIX_ROWS_IN_PARALLEL    2
 
 // 8bit per RGB color = 24 bit/per pixel,
 // can be extended to offer deeper colors, or
@@ -238,13 +240,6 @@ struct  HUB75_I2S_CFG {
 
   // Structure Variables
 
-  // physical width of a single matrix panel module (in pixels, usually it is 64 ;) )
-  uint16_t mx_width;
-  // physical height of a single matrix panel module (in pixels, usually almost always it is either 32 or 64)
-  uint16_t mx_height;
-  // number of chained panels regardless of the topology, default 1 - a single matrix module
-  uint16_t chain_length;
-  
   /**
    * GPIO pins mapping
    */
@@ -256,10 +251,23 @@ struct  HUB75_I2S_CFG {
   shift_driver driver;
   // I2S clock speed
   clk_speed i2sspeed;
-  // use DMA double buffer (twice as much RAM required)
-  bool double_buff;
+
+  // physical width of a single matrix panel module (in pixels, usually it is 64 ;) )
+  uint16_t mx_width;
+  // physical height of a single matrix panel module (in pixels, usually almost always it is either 32 or 64)
+  uint16_t mx_height;
+  // number of chained panels regardless of the topology, default 1 - a single matrix module
+  uint16_t chain_length;
+
+  // Minimum refresh / scan rate needs to be configured on start due to LSBMSB_TRANSITION_BIT calculation in allocateDMAmemory()
+  uint16_t min_refresh_rate;
+
   // How many clock cycles to blank OE before/after LAT signal change, default is 1 clock
   uint8_t latch_blanking;
+
+  // use DMA double buffer (twice as much RAM required)
+  bool double_buff;
+  
   
   /**
    *  I2S clock phase
@@ -276,9 +284,6 @@ struct  HUB75_I2S_CFG {
    *
    */
   bool clkphase;
-
-  // Minimum refresh / scan rate needs to be configured on start due to LSBMSB_TRANSITION_BIT calculation in allocateDMAmemory()
-  uint16_t min_refresh_rate;
 
   // struct constructor
   HUB75_I2S_CFG (
@@ -324,21 +329,16 @@ struct  HUB75_I2S_CFG {
     }else{
       pixel_color_depth_bits = _pixel_color_depth_bits;
     }
-    mask_offset = 16 - pixel_color_depth_bits;
   }
 
   uint8_t getPixelColorDepthBits(){
     return pixel_color_depth_bits;
-  }
-  uint8_t getMaskOffset(){
-    return mask_offset;
   }
 
   private:
     //these were priviously handeld as defines (PIXEL_COLOR_DEPTH_BITS, MASK_OFFSET)
     //to make it changable after compilation, it is now part of the config
     uint8_t pixel_color_depth_bits; 
-    uint8_t mask_offset;
 }; // end of structure HUB75_I2S_CFG
 
 
@@ -377,17 +377,19 @@ class MatrixPanel_I2S_DMA {
      */
     MatrixPanel_I2S_DMA(const HUB75_I2S_CFG& opts) :
 #ifdef USE_GFX_ROOT 
-      GFX(opts.mx_width*opts.chain_length, opts.mx_height),
+      GFX(opts.mx_width*opts.chain_length, opts.mx_height)
 #elif !defined NO_GFX
-      Adafruit_GFX(opts.mx_width*opts.chain_length, opts.mx_height),
+      Adafruit_GFX(opts.mx_width*opts.chain_length, opts.mx_height)
 #endif        
-      m_cfg(opts) {}
+      {
+        setCfg(opts);
+      }
 
     /* Propagate the DMA pin configuration, allocate DMA buffs and start data output, initially blank */
     bool begin(){
         
       if (initialized) return true; // we don't do this twice or more!
-
+      if(!config_set) return false;
 
       ESP_LOGI("begin()", "Using GPIO %d for R1_PIN", m_cfg.gpio.r1);
       ESP_LOGI("begin()", "Using GPIO %d for G1_PIN", m_cfg.gpio.g1);
@@ -449,7 +451,7 @@ class MatrixPanel_I2S_DMA {
      *  overload for compatibility
      */
     bool begin(int r1, int g1 = G1_PIN_DEFAULT, int b1 = B1_PIN_DEFAULT, int r2 = R2_PIN_DEFAULT, int g2 = G2_PIN_DEFAULT, int b2 = B2_PIN_DEFAULT, int a  = A_PIN_DEFAULT, int b = B_PIN_DEFAULT, int c = C_PIN_DEFAULT, int d = D_PIN_DEFAULT, int e = E_PIN_DEFAULT, int lat = LAT_PIN_DEFAULT, int oe = OE_PIN_DEFAULT, int clk = CLK_PIN_DEFAULT);
-
+    bool begin(const HUB75_I2S_CFG& cfg);
 
     // Adafruit's BASIC DRAW API (565 colour format)
     virtual void drawPixel(int16_t x, int16_t y, uint16_t color);   // overwrite adafruit implementation
@@ -650,12 +652,7 @@ class MatrixPanel_I2S_DMA {
 	  setBrightness(b);
       //setPanelBrightness(b * PIXELS_PER_ROW / 256);
     }
-
-    /**
-     * Contains the resulting refresh rate (scan rate) that will be achieved
-     * based on the i2sspeed, colour depth and min_refresh_rate requested.
-     */
-    int calculated_refresh_rate  = 0;         
+    
 
     /**
      * @brief - Sets how many clock cycles to blank OE before/after LAT signal change
@@ -672,6 +669,17 @@ class MatrixPanel_I2S_DMA {
      */
     const HUB75_I2S_CFG& getCfg() const {return m_cfg;};
     
+    inline bool setCfg(const HUB75_I2S_CFG& cfg){
+      if(initialized) return false;
+
+      m_cfg = cfg;
+      PIXELS_PER_ROW = m_cfg.mx_width * m_cfg.chain_length;
+      ROWS_PER_FRAME = m_cfg.mx_height / MATRIX_ROWS_IN_PARALLEL;
+      MASK_OFFSET = 16 - m_cfg.getPixelColorDepthBits();
+
+      config_set = true;
+      return true;
+    }
     
     /** 
      * Stop the ESP32 DMA Engine. Screen will forever be black until next ESP reboot.
@@ -695,8 +703,6 @@ class MatrixPanel_I2S_DMA {
   // ------- PROTECTED -------
   // those might be useful for child classes, like VirtualMatrixPanel
   protected:
-
-    Bus_Parallel16 dma_bus;
 
     /**
      * @brief - clears and reinitializes colour/control data in DMA buffs
@@ -764,40 +770,6 @@ class MatrixPanel_I2S_DMA {
    // ------- PRIVATE -------
   private:
 
-    // Matrix i2s settings
-    HUB75_I2S_CFG m_cfg;
-
-    /* ESP32-HUB75-MatrixPanel-I2S-DMA functioning constants
-     * we can't change those once object instance initialized it's DMA structs
-     */
-    const uint8_t   ROWS_PER_FRAME = m_cfg.mx_height / MATRIX_ROWS_IN_PARALLEL;   // RPF - rows per frame, either 16 or 32 depending on matrix module
-    const uint16_t  PIXELS_PER_ROW = m_cfg.mx_width * m_cfg.chain_length;   // number of pixels in a single row of all chained matrix modules (WIDTH of a combined matrix chain)
-
-    // Other private variables
-    bool initialized          = false;
-    int  active_gfx_writes    = 0;                  // How many async routines are 'drawing' (writing) to the DMA bit buffer. Function called from Adafruit_GFX draw routines like drawCircle etc.
-    int  back_buffer_id       = 0;                       // If using double buffer, which one is NOT active (ie. being displayed) to write too?
-    int  brightness           = 128;                     // If you get ghosting... reduce brightness level. ((60/64)*255) seems to be the limit before ghosting on a 64 pixel wide physical panel for some panels.
-    int  lsbMsbTransitionBit  = 0;                       // For colour depth calculations
-    
-
-    // *** DMA FRAMEBUFFER structures
-
-    // ESP 32 DMA Linked List descriptor
-    int desccount        = 0;
-   // lldesc_t * dmadesc_a = {0}; 
-   // lldesc_t * dmadesc_b = {0};
-
-    /* Pixel data is organized from LSB to MSB sequentially by row, from row 0 to row matrixHeight/matrixRowsInParallel 
-     * (two rows of pixels are refreshed in parallel) 
-     * Memory is allocated (malloc'd) by the row, and not in one massive chunk, for flexibility.
-     * The whole DMA framebuffer is just a vector of pointers to structs with ESP32_I2S_DMA_STORAGE_TYPE arrays
-     * Since it's dimensions is unknown prior to class initialization, we just declare it here as empty struct and will do all allocations later.
-     * Refer to rowBitStruct to get the idea of it's internal structure
-     */
-    frameStruct dma_buff;
-
-
     /* Calculate the memory available for DMA use, do some other stuff, and allocate accordingly */
     bool allocateDMAmemory();
 
@@ -846,6 +818,52 @@ class MatrixPanel_I2S_DMA {
       }
     #endif
     };
+
+
+    public:
+    /**
+     * Contains the resulting refresh rate (scan rate) that will be achieved
+     * based on the i2sspeed, colour depth and min_refresh_rate requested.
+     */
+    int calculated_refresh_rate  = 0;   
+    protected:
+      Bus_Parallel16 dma_bus;
+    private:
+
+    // Matrix i2s settings
+    HUB75_I2S_CFG m_cfg;
+
+    /* Pixel data is organized from LSB to MSB sequentially by row, from row 0 to row matrixHeight/matrixRowsInParallel 
+     * (two rows of pixels are refreshed in parallel) 
+     * Memory is allocated (malloc'd) by the row, and not in one massive chunk, for flexibility.
+     * The whole DMA framebuffer is just a vector of pointers to structs with ESP32_I2S_DMA_STORAGE_TYPE arrays
+     * Since it's dimensions is unknown prior to class initialization, we just declare it here as empty struct and will do all allocations later.
+     * Refer to rowBitStruct to get the idea of it's internal structure
+     */
+    frameStruct dma_buff;
+
+    // ESP 32 DMA Linked List descriptor
+    int desccount        = 0;
+    // lldesc_t * dmadesc_a = {0}; 
+    // lldesc_t * dmadesc_b = {0};
+
+    int  active_gfx_writes    = 0;                  // How many async routines are 'drawing' (writing) to the DMA bit buffer. Function called from Adafruit_GFX draw routines like drawCircle etc.
+    int  back_buffer_id       = 0;                       // If using double buffer, which one is NOT active (ie. being displayed) to write too?
+    int  brightness           = 128;                     // If you get ghosting... reduce brightness level. ((60/64)*255) seems to be the limit before ghosting on a 64 pixel wide physical panel for some panels.
+    int  lsbMsbTransitionBit  = 0;                       // For colour depth calculations
+
+    /* ESP32-HUB75-MatrixPanel-I2S-DMA functioning constants
+     * we should not those once object instance initialized it's DMA structs
+     * they weree const, but this lead to bugs, when the default constructor was called.
+     * So now they could be changed, but shouldn't. Maybe put a cpp lock around it, so it can't be changed after initialisation
+     */
+    uint16_t  PIXELS_PER_ROW = m_cfg.mx_width * m_cfg.chain_length;   // number of pixels in a single row of all chained matrix modules (WIDTH of a combined matrix chain)
+    uint8_t   ROWS_PER_FRAME = m_cfg.mx_height / MATRIX_ROWS_IN_PARALLEL;   // RPF - rows per frame, either 16 or 32 depending on matrix module
+    uint8_t   MASK_OFFSET    = 16 - m_cfg.getPixelColorDepthBits();
+    // Other private variables
+    bool initialized          = false;
+    bool config_set           = false;
+
 }; // end Class header
 
 /***************************************************************************************/   
