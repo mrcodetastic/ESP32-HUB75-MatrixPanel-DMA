@@ -59,12 +59,12 @@
 /***************************************************************************************/
 /* Do not change definitions below unless you pretty sure you know what you are doing! */
 
-// RGB Panel Constants / Calculated Values
+// keeping a check sine it was possibe to set it previously
 #ifdef MATRIX_ROWS_IN_PARALLEL
-  #define MATRIX_ROWS_IN_PARALLEL_DEFAULT MATRIX_ROWS_IN_PARALLEL
-#else
-  #define MATRIX_ROWS_IN_PARALLEL_DEFAULT     2
+  #pragma message "You are not supposed to set MATRIX_ROWS_IN_PARALLEL. Setting it back to default."
+  #undef MATRIX_ROWS_IN_PARALLEL
 #endif
+#define MATRIX_ROWS_IN_PARALLEL    2
 
 // 8bit per RGB color = 24 bit/per pixel,
 // can be extended to offer deeper colors, or
@@ -265,10 +265,6 @@ struct  HUB75_I2S_CFG {
   // How many clock cycles to blank OE before/after LAT signal change, default is 1 clock
   uint8_t latch_blanking;
 
-  // ROWS of each Panel which are controlled at the same time, usually 2, sometimes 4, (8 also possible)
-  // this is hardware property of your panel(s)
-  uint8_t matrix_rows_in_parallel;
-
   // use DMA double buffer (twice as much RAM required)
   bool double_buff;
   
@@ -304,8 +300,7 @@ struct  HUB75_I2S_CFG {
     uint8_t _latblk  = DEFAULT_LAT_BLANKING, // Anything > 1 seems to cause artefacts on ICS panels
     bool _clockphase = true,
     uint16_t _min_refresh_rate = 60,
-    uint8_t _pixel_color_depth_bits = PIXEL_COLOR_DEPTH_BITS_DEFAULT,
-    uint8_t _matrix_rows_in_parallel = MATRIX_ROWS_IN_PARALLEL_DEFAULT
+    uint8_t _pixel_color_depth_bits = PIXEL_COLOR_DEPTH_BITS_DEFAULT
   ) : mx_width(_w),
       mx_height(_h),
       chain_length(_chain),
@@ -315,8 +310,7 @@ struct  HUB75_I2S_CFG {
       double_buff(_dbuff),
       latch_blanking(_latblk),
       clkphase(_clockphase),
-      min_refresh_rate(_min_refresh_rate),
-      matrix_rows_in_parallel(_matrix_rows_in_parallel)
+      min_refresh_rate(_min_refresh_rate)
   {
     setPixelColorDepthBits(_pixel_color_depth_bits);
   }
@@ -680,7 +674,7 @@ class MatrixPanel_I2S_DMA {
 
       m_cfg = cfg;
       PIXELS_PER_ROW = m_cfg.mx_width * m_cfg.chain_length;
-      ROWS_PER_FRAME = m_cfg.mx_height / m_cfg.matrix_rows_in_parallel;
+      ROWS_PER_FRAME = m_cfg.mx_height / MATRIX_ROWS_IN_PARALLEL;
       MASK_OFFSET = 16 - m_cfg.getPixelColorDepthBits();
 
       config_set = true;
@@ -864,7 +858,7 @@ class MatrixPanel_I2S_DMA {
      * So now they could be changed, but shouldn't. Maybe put a cpp lock around it, so it can't be changed after initialisation
      */
     uint16_t  PIXELS_PER_ROW = m_cfg.mx_width * m_cfg.chain_length;   // number of pixels in a single row of all chained matrix modules (WIDTH of a combined matrix chain)
-    uint8_t   ROWS_PER_FRAME = m_cfg.mx_height / m_cfg.matrix_rows_in_parallel;   // RPF - rows per frame, either 16 or 32 depending on matrix module
+    uint8_t   ROWS_PER_FRAME = m_cfg.mx_height / MATRIX_ROWS_IN_PARALLEL;   // RPF - rows per frame, either 16 or 32 depending on matrix module
     uint8_t   MASK_OFFSET    = 16 - m_cfg.getPixelColorDepthBits();
     // Other private variables
     bool initialized          = false;
