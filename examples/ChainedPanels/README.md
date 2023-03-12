@@ -2,6 +2,8 @@
 
 This is the PatternPlasma Demo adopted for use with multiple LED Matrix Panel displays arranged in a non standard order (i.e. a grid) to make a bigger display.
 
+![334894846_975082690567510_1362796919784291270_n](https://user-images.githubusercontent.com/89576620/224304944-94fe3483-d3cc-4aba-be0a-40b33ff901dc.jpg)
+
 ### What do we mean by 'non standard order'? ###
 
 When you link / chain multiple panels together, the ESP32-HUB75-MatrixPanel-I2S-DMA library treats as one wide horizontal panel. This would be a 'standard' (default) order.
