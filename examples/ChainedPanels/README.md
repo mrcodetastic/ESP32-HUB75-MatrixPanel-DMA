@@ -32,6 +32,9 @@ For example: You bought four (4) 64x32px panels, and wanted to use them to creat
 #define VIRTUAL_MATRIX_CHAIN_TYPE <INSERT CHAINING TYPE HERE - Refer to documentation or example>
 	
 ```
+VIRTUAL_MATRIX_CHAIN_TYPE's:
+![image](https://user-images.githubusercontent.com/12006953/224537356-e3c8e87b-0bc0-4185-8f5d-d2d3b328d176.png)
+
 
 3. In your Arduino sketch, use the 'VirtualMatrixPanel' class instance (virtualDisp) to draw to the display (i.e. drawPixel), instead of the underling MatrixPanel_I2S_DMA class instance (dma_display).
 
