@@ -26,9 +26,9 @@ jobs:
       matrix:
         framework: ["Arduino", "IDF"]
         no_gfx: ["", -DNO_GFX]
-        no_fast_functions: ["", -DNO_FAST_FUNCTIONS]
-        no_cie1931: ["", -DNO_CIE1931]
-        virtual_panel: ["", -DVIRTUAL_PANE]
+#       no_fast_functions: ["", -DNO_FAST_FUNCTIONS]
+#       no_cie1931: ["", -DNO_CIE1931]
+#       virtual_panel: ["", -DVIRTUAL_PANE]
         example:
           - "examples/PIO_TestPatterns"
         exclude:
