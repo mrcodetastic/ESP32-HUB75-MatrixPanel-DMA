@@ -238,37 +238,35 @@ struct  HUB75_I2S_CFG {
    */
   enum clk_speed {HZ_8M=8000000, HZ_10M=10000000, HZ_15M=15000000, HZ_20M=20000000};
 
-  // Structure Variables
 
-  /**
-   * GPIO pins mapping
-   */
-  struct i2s_pins{
-    int8_t r1, g1, b1, r2, g2, b2, a, b, c, d, e, lat, oe, clk;
-  } gpio;
-
-  // Matrix driver chip type - default is a plain shift register
-  shift_driver driver;
-  // I2S clock speed
-  clk_speed i2sspeed;
+  //
+  // Members must be in order of declaration or it breaks Arduino compiling due to strict checking.
+  //
 
   // physical width of a single matrix panel module (in pixels, usually it is 64 ;) )
   uint16_t mx_width;
+
   // physical height of a single matrix panel module (in pixels, usually almost always it is either 32 or 64)
   uint16_t mx_height;
+
   // number of chained panels regardless of the topology, default 1 - a single matrix module
   uint16_t chain_length;
+   
+  // GPIO Mapping
+  struct i2s_pins{ int8_t r1, g1, b1, r2, g2, b2, a, b, c, d, e, lat, oe, clk; } gpio;  
 
-  // Minimum refresh / scan rate needs to be configured on start due to LSBMSB_TRANSITION_BIT calculation in allocateDMAmemory()
-  uint16_t min_refresh_rate;
-
-  // How many clock cycles to blank OE before/after LAT signal change, default is 1 clock
-  uint8_t latch_blanking;
+  // Matrix driver chip type - default is a plain shift register
+  shift_driver driver;
 
   // use DMA double buffer (twice as much RAM required)
   bool double_buff;
+
+  // I2S clock speed
+  clk_speed i2sspeed;
   
-  
+  // How many clock cycles to blank OE before/after LAT signal change, default is 1 clock
+  uint8_t latch_blanking;
+
   /**
    *  I2S clock phase
    *  0 - data lines are clocked with negative edge
@@ -284,6 +282,10 @@ struct  HUB75_I2S_CFG {
    *
    */
   bool clkphase;
+
+  // Minimum refresh / scan rate needs to be configured on start due to LSBMSB_TRANSITION_BIT calculation in allocateDMAmemory()
+  uint8_t min_refresh_rate;
+
 
   // struct constructor
   HUB75_I2S_CFG (
@@ -306,8 +308,8 @@ struct  HUB75_I2S_CFG {
       chain_length(_chain),
       gpio(_pinmap),
       driver(_drv), 
-	    i2sspeed(_i2sspeed),
       double_buff(_dbuff),
+	    i2sspeed(_i2sspeed),
       latch_blanking(_latblk),
       clkphase(_clockphase),
       min_refresh_rate(_min_refresh_rate)
