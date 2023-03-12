@@ -10,12 +10,12 @@ Non-standard order is essentially the creation of a non-horizontal-only display 
 
 For example: You bought four (4) 64x32px panels, and wanted to use them to create a 128x64pixel display. You would use the VirtualMatrixPanel class.
 
-[Refer to this document](../doc/VirtualMatrixPanel.pdf) for an explanation and refer to this example on how to use.
+[Refer to this document](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-DMA/blob/master/doc/VirtualMatrixPanel.pdf) for an explanation and refer to this example on how to use.
 
 
 ### Steps to Use ###
 
-1. [Refer to this document](../doc/VirtualMatrixPanel.pdf) for an explanation and refer to this example on how to use.
+1. [Refer to this document](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-DMA/blob/master/doc/VirtualMatrixPanel.pdf) for an explanation and refer to this example on how to use.
 
 2. In your Arduino sketch, configure these defines accordingly:
 ```
