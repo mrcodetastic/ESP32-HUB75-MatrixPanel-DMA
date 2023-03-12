@@ -377,11 +377,11 @@ class MatrixPanel_I2S_DMA {
      * @param  {HUB75_I2S_CFG} opts : structure with matrix configuration
      *        
      */
-    MatrixPanel_I2S_DMA(const HUB75_I2S_CFG& opts) :
+    MatrixPanel_I2S_DMA(const HUB75_I2S_CFG& opts) 
 #ifdef USE_GFX_ROOT 
-      GFX(opts.mx_width*opts.chain_length, opts.mx_height)
+      : GFX(opts.mx_width*opts.chain_length, opts.mx_height)
 #elif !defined NO_GFX
-      Adafruit_GFX(opts.mx_width*opts.chain_length, opts.mx_height)
+      : Adafruit_GFX(opts.mx_width*opts.chain_length, opts.mx_height)
 #endif        
       {
         setCfg(opts);
@@ -862,6 +862,7 @@ class MatrixPanel_I2S_DMA {
     uint16_t  PIXELS_PER_ROW = m_cfg.mx_width * m_cfg.chain_length;   // number of pixels in a single row of all chained matrix modules (WIDTH of a combined matrix chain)
     uint8_t   ROWS_PER_FRAME = m_cfg.mx_height / MATRIX_ROWS_IN_PARALLEL;   // RPF - rows per frame, either 16 or 32 depending on matrix module
     uint8_t   MASK_OFFSET    = 16 - m_cfg.getPixelColorDepthBits();
+
     // Other private variables
     bool initialized          = false;
     bool config_set           = false;
