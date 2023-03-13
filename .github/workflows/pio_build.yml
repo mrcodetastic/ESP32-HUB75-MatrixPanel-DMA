@@ -31,9 +31,9 @@ jobs:
 #       virtual_panel: ["", -DVIRTUAL_PANE]
         example:
           - "examples/PIO_TestPatterns"
-        exclude:
-          - no_fast_functions: ""
-            virtual_panel: -DVIRTUAL_PANE
+#        exclude:
+#          - no_fast_functions: ""
+#            virtual_panel: -DVIRTUAL_PANE
 
     steps:
     - name: Checkout
