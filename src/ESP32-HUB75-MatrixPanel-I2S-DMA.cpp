@@ -186,11 +186,11 @@ void MatrixPanel_I2S_DMA::configureDMA(const HUB75_I2S_CFG& _cfg)
         //link_dma_desc(&dmadesc_a[current_dmadescriptor_offset], previous_dmadesc_a, dma_buff.rowBits[row]->getDataPtr(), dma_buff.rowBits[row]->size(num_dma_payload_colour_depths));
        //   previous_dmadesc_a = &dmadesc_a[current_dmadescriptor_offset];
 
-        dma_bus.create_dma_desc_link(dma_buff.rowBits[row]->getDataPtr(0, 0), dma_buff.rowBits[row]->size(num_dma_payload_colour_depths), false);
+        dma_bus.create_dma_desc_link(	dma_buff.rowBits[row]->getDataPtr(0, 0), dma_buff.rowBits[row]->size(num_dma_payload_colour_depths), false);
 
         if (m_cfg.double_buff) 
         {
-          dma_bus.create_dma_desc_link(dma_buff.rowBits[row]->getDataPtr(0, 1), dma_buff.rowBits[row]->size(num_dma_payload_colour_depths), true);          
+          dma_bus.create_dma_desc_link(	dma_buff.rowBits[row]->getDataPtr(0, 1), dma_buff.rowBits[row]->size(num_dma_payload_colour_depths), true);          
         }
 
         current_dmadescriptor_offset++;
@@ -205,7 +205,7 @@ void MatrixPanel_I2S_DMA::configureDMA(const HUB75_I2S_CFG& _cfg)
 
             if (m_cfg.double_buff) {
               dma_bus.create_dma_desc_link(dma_buff.rowBits[row]->getDataPtr(cd, 1), dma_buff.rowBits[row]->size(num_dma_payload_colour_depths), true);            
-               }
+          }
 
             current_dmadescriptor_offset++;     
 
@@ -336,14 +336,6 @@ uint16_t red16, green16, blue16;
      * so we have to check for this and check the correct position of the MATRIX_DATA_STORAGE_TYPE
      * data.
      */
-/*
-#if defined (ESP32_THE_ORIG)
-    // We need to update the correct uint16_t in the rowBitStruct array, that gets sent out in parallel
-    // 16 bit parallel mode - Save the calculated value to the bitplane memory in reverse order to account for I2S Tx FIFO mode1 ordering
-    // Irrelevant for ESP32-S2 the way the FIFO ordering works is different - refer to page 679 of S2 technical reference manual
-    x_coord & 1U ? --x_coord : ++x_coord;
-#endif 
-*/
     x_coord = ESP32_TX_FIFO_POSITION_ADJUST(x_coord);
     
     
@@ -359,14 +351,7 @@ uint16_t red16, green16, blue16;
     uint8_t colour_depth_idx = m_cfg.getPixelColorDepthBits();
     do {
         --colour_depth_idx;
-/*        
-//        uint8_t mask = (1 << (colour_depth_idx COLOR_DEPTH_LESS_THAN_8BIT_ADJUST)); // expect 24 bit colour (8 bits per RGB subpixel)
-    #if PIXEL_COLOUR_DEPTH_BITS < 8
-        uint8_t mask = (1 << (colour_depth_idx+MASK_OFFSET)); // expect 24 bit colour (8 bits per RGB subpixel)
-    #else
-        uint8_t mask = (1 << (colour_depth_idx)); // expect 24 bit color (8 bits per RGB subpixel)
-    #endif      
-*/
+		
         uint16_t mask = PIXEL_COLOR_MASK_BIT(colour_depth_idx, MASK_OFFSET);
         uint16_t RGB_output_bits = 0;
 
@@ -417,13 +402,7 @@ uint16_t red16, green16, blue16;
   for(uint8_t colour_depth_idx=0; colour_depth_idx < m_cfg.getPixelColorDepthBits(); colour_depth_idx++)  // colour depth - 8 iterations
   {
     // let's precalculate RGB1 and RGB2 bits than flood it over the entire DMA buffer
-    uint16_t RGB_output_bits = 0;
-//    uint8_t mask = (1 << colour_depth_idx COLOR_DEPTH_LESS_THAN_8BIT_ADJUST); // 24 bit colour
-    // #if PIXEL_COLOR_DEPTH_BITS < 8
-    //     uint8_t mask = (1 << (colour_depth_idx+MASK_OFFSET)); // expect 24 bit colour (8 bits per RGB subpixel)
-    // #else
-    //     uint8_t mask = (1 << (colour_depth_idx)); // expect 24 bit colour (8 bits per RGB subpixel)
-    // #endif      
+    uint16_t RGB_output_bits = 0;  
 
     uint16_t mask = PIXEL_COLOR_MASK_BIT(colour_depth_idx, MASK_OFFSET);
 
@@ -503,7 +482,7 @@ void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id){
       } else {        
         row[ESP32_TX_FIFO_POSITION_ADJUST(x_pixel)] = abcde;
       }
-   //   ESP_LOGI("", "x pixel 1: %d", x_pixel);
+
     } while(x_pixel!=dma_buff.rowBits[row_idx]->width && x_pixel);
 
     // colour_index[0] (LSB) x_pixels must be "marked" with a previous's row address, 'cause  it is used to display
@@ -519,8 +498,7 @@ void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id){
       } else {        
         row[ESP32_TX_FIFO_POSITION_ADJUST(x_pixel)] = abcde;
       }   
-      //row[x_pixel] = abcde;
-  //    ESP_LOGI("", "x pixel 2: %d", x_pixel);
+
     } while(x_pixel);
     
     
@@ -548,18 +526,7 @@ void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id){
 
       // switch pointer to a row for a specific colour index
       row = dma_buff.rowBits[row_idx]->getDataPtr(colouridx, _buff_id);
-
-      /*
-      #if defined(ESP32_THE_ORIG)
-        // We need to update the correct uint16_t in the rowBitStruct array, that gets sent out in parallel
-        // 16 bit parallel mode - Save the calculated value to the bitplane memory in reverse order to account for I2S Tx FIFO mode1 ordering
-        // Irrelevant for ESP32-S2 the way the FIFO ordering works is different - refer to page 679 of S2 technical reference manual
-        row[dma_buff.rowBits[row_idx]->width - 2] |= BIT_LAT;   // -2 in the DMA array is actually -1 when it's reordered by TX FIFO                  
-      #else
-        // -1 works better on ESP32-S2 ? Because bytes get sent out in order...
-        row[dma_buff.rowBits[row_idx]->width - 1] |= BIT_LAT;   // -1 pixel to compensate array index starting at 0                 
-      #endif
-      */
+	  
       row[ESP32_TX_FIFO_POSITION_ADJUST(dma_buff.rowBits[row_idx]->width - 1)] |= BIT_LAT;   // -1 pixel to compensate array index starting at 0     
 
       //ESP32_TX_FIFO_POSITION_ADJUST(dma_buff.rowBits[row_idx]->width - 1)
@@ -569,21 +536,6 @@ void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id){
       uint8_t _blank = m_cfg.latch_blanking;
       do {
         --_blank;
-      /*
-      #if defined(ESP32_THE_ORIG)  
-            // Original ESP32 WROOM FIFO Ordering Sucks
-            uint8_t _blank_row_tx_fifo_tmp = 0 + _blank;
-            (_blank_row_tx_fifo_tmp & 1U) ? --_blank_row_tx_fifo_tmp : ++_blank_row_tx_fifo_tmp; 
-            row[_blank_row_tx_fifo_tmp] |= BIT_OE;
-            
-            _blank_row_tx_fifo_tmp = dma_buff.rowBits[row_idx]->width - _blank - 1; // (LAT pulse is (width-2) -1 pixel to compensate array index starting at 0
-            (_blank_row_tx_fifo_tmp & 1U) ? --_blank_row_tx_fifo_tmp : ++_blank_row_tx_fifo_tmp; 
-            row[_blank_row_tx_fifo_tmp] |= BIT_OE;
-      #else      
-            row[0 + _blank] |= BIT_OE;
-            row[dma_buff.rowBits[row_idx]->width - _blank - 1 ] |= BIT_OE;    // (LAT pulse is (width-2) -1 pixel to compensate array index starting at 0
-      #endif
-      */
 
       row[ESP32_TX_FIFO_POSITION_ADJUST(0 + _blank)] |= BIT_OE; // disable output
 	  row[ESP32_TX_FIFO_POSITION_ADJUST(dma_buff.rowBits[row_idx]->width - 1)] |= BIT_OE; // disable output
@@ -742,30 +694,6 @@ void MatrixPanel_I2S_DMA::brtCtrlOEv2(uint8_t brt, const int _buff_id) {
 			row[ESP32_TX_FIFO_POSITION_ADJUST(x_coord)] |= BIT_OE;  // Disable output after this point.	
 		}
 
-
-		// Note: Old code below from 'brtCtrlOE'
-		
-		/*		
-        // clear OE bit for all other pixels (that is, turn on output)
-        row[ESP32_TX_FIFO_POSITION_ADJUST(x_coord)] &= BITMASK_OE_CLEAR;       
-		
-
-        // Brightness control via OE toggle - disable matrix output at specified x_coord
-        if((colouridx > lsbMsbTransitionBit || !colouridx) && ((x_coord) >= brt)){
-          row[ESP32_TX_FIFO_POSITION_ADJUST(x_coord)] |= BIT_OE; // Disable output after this point.
-          continue;  
-        }
-        // special case for the bits *after* LSB through (lsbMsbTransitionBit) - OE is output after data is shifted, so need to set OE to fractional brightness
-        if(colouridx && colouridx <= lsbMsbTransitionBit) {
-            // divide brightness in half for each bit below lsbMsbTransitionBit
-            int lsbBrightness = brt >> (lsbMsbTransitionBit - colouridx + 1);
-            if((x_coord) >= lsbBrightness) {
-                row[ESP32_TX_FIFO_POSITION_ADJUST(x_coord)] |= BIT_OE;  // Disable output after this point.
-                continue;
-            }
-        }
-		*/
- 
       } while(x_coord);
 	  
     } while(colouridx);
