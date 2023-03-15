@@ -58,7 +58,8 @@ enum PANEL_CHAIN_TYPE
 	CHAIN_TOP_RIGHT_DOWN,
 	CHAIN_BOTTOM_LEFT_UP,
 	CHAIN_BOTTOM_RIGHT_UP,
-	CHAIN_TOP_RIGHT_DOWN_ZZ /// ZigZag chaining. Might need a big ass cable to do this, all panels right way up.
+	CHAIN_TOP_RIGHT_DOWN_ZZ, /// ZigZag chaining. Might need a big ass cable to do this, all panels right way up.
+	CHAIN_BOTTOM_RIGHT_UP_ZZ
 };
 
 #ifdef USE_GFX_ROOT
@@ -280,7 +281,7 @@ inline VirtualCoords VirtualMatrixPanel::getCoords(int16_t &virt_x, int16_t &vir
 			
 		case CHAIN_TOP_RIGHT_DOWN_ZZ:
 		{
-			//	Right side up. Starting from top left all the way down.
+			//	Right side up. Starting from top right all the way down.
 			//  Connected in a Zig Zag manner = some long ass cables being used potentially
 		
 			//Serial.printf("Condition 2, row %d ", row);
@@ -288,9 +289,18 @@ inline VirtualCoords VirtualMatrixPanel::getCoords(int16_t &virt_x, int16_t &vir
 			coords.y =  virt_y % panelResY;				
 			
 		}
-						
-								
-						
+
+		case CHAIN_BOTTOM_RIGHT_UP_ZZ:
+		{
+			//	Right side up. Starting bottom right all the way up.
+			//  Connected in a Zig Zag manner = some long ass cables being used potentially
+		
+			//Serial.printf("Condition 2, row %d ", row);
+			coords.x =  (row*virtualResX)+virt_x;
+			coords.y =  virt_y % panelResY;				
+			
+		}
+				
 
 		default:
 		    coords.x = coords.y = -1; // By defalt use an invalid co-ordinates that will be rejected by updateMatrixDMABuffer
