@@ -28,7 +28,9 @@ enum PANEL_CHAIN_TYPE
 	CHAIN_TOP_LEFT_DOWN,
 	CHAIN_TOP_RIGHT_DOWN,
 	CHAIN_BOTTOM_LEFT_UP,
-	CHAIN_BOTTOM_RIGHT_UP
+	CHAIN_BOTTOM_RIGHT_UP,
+	CHAIN_TOP_RIGHT_DOWN_ZZ, /// ZigZag chaining. Might need a big ass cable to do this, all panels right way up.
+	CHAIN_BOTTOM_RIGHT_UP_ZZ
 };
 
 
@@ -70,6 +72,10 @@ public:
 			chain_type_str = "CHAIN_TOP_RIGHT_DOWN";
 			break;
 			
+		case CHAIN_TOP_RIGHT_DOWN_ZZ:
+			chain_type_str = "CHAIN_TOP_RIGHT_DOWN_ZZ";
+			break;			
+			
 		case CHAIN_BOTTOM_RIGHT_UP:
 			chain_type_str = "CHAIN_BOTTOM_RIGHT_UP";
 			break;
@@ -95,9 +101,9 @@ public:
   std::string chain_type_str = "UNKNOWN";
   
   // Internal co-ord conversion function
-  VirtualCoords getCoords_Dev(int16_t &x, int16_t &y);
+  VirtualCoords getCoords_Dev(int16_t x, int16_t y);
   
-  VirtualCoords getCoords_WorkingBaslineMarch2023(int16_t &x, int16_t &y);
+  VirtualCoords getCoords_WorkingBaslineMarch2023(int16_t x, int16_t y);
   
   VirtualCoords coords;
   
@@ -127,7 +133,7 @@ private:
 /**
  * Development version for testing.
  */
-inline VirtualCoords VirtualMatrixPanelTest::getCoords_Dev(int16_t &virt_x, int16_t &virt_y)
+inline VirtualCoords VirtualMatrixPanelTest::getCoords_Dev(int16_t virt_x, int16_t virt_y)
 {
     coords.x = coords.y = -1; // By defalt use an invalid co-ordinates that will be rejected by updateMatrixDMABuffer
 
@@ -246,6 +252,30 @@ inline VirtualCoords VirtualMatrixPanelTest::getCoords_Dev(int16_t &virt_x, int1
 			
 		}
 			break;
+			
+		case CHAIN_TOP_RIGHT_DOWN_ZZ:
+		{
+			//	Right side up. Starting from top left all the way down.
+			//  Connected in a Zig Zag manner = some long ass cables being used potentially
+		
+			//Serial.printf("Condition 2, row %d ", row);
+			coords.x =  ((vmodule_rows - (row+1))*virtualResX)+virt_x;
+			coords.y =  virt_y % panelResY;				
+			
+		}
+		
+		case CHAIN_BOTTOM_RIGHT_UP_ZZ:
+		{
+			//	Right side up. Starting from top left all the way down.
+			//  Connected in a Zig Zag manner = some long ass cables being used potentially
+		
+			//Serial.printf("Condition 2, row %d ", row);
+			coords.x =  (row*virtualResX)+virt_x;
+			coords.y =  virt_y % panelResY;				
+			
+		}
+								
+						
 						
 
 		default:
@@ -309,6 +339,23 @@ inline VirtualCoords VirtualMatrixPanelTest::getCoords_Dev(int16_t &virt_x, int1
   return coords;
 }
 
+bool check(VirtualCoords expected, VirtualCoords result, int x = -1, int y = -1)
+{
+
+	  if ( result.x != expected.x || result.y != expected.y )
+	  {
+		  std::printf("Requested (%d, %d) -> expecting physical (%d, %d) got (%d, %d).", x, y, expected.x, expected.y, result.x, result.y);
+		  std::cout << "\t *** FAIL ***\n ";
+		  std::cout << "\n";
+
+		  return false;
+	  }
+	  else
+	  {
+		  return true;
+	  }	
+}
+
 
 main(int argc, char* argv[])
 {
@@ -343,13 +390,11 @@ main(int argc, char* argv[])
 				{
 					VirtualCoords expected = test.getCoords_WorkingBaslineMarch2023(x,y);
 					VirtualCoords result   = test.getCoords_Dev(x,y);
+					
+					bool chk_result = check(expected, result, x, y);
 
-					  if ( result.x != expected.x || result.y != expected.y )
-					  {
-						  std::printf("Requested (%d, %d) -> expecting physical (%d, %d) got (%d, %d).", x, y, expected.x, expected.y, result.x, result.y);
-						  std::cout << "\t *** FAIL ***\n ";
-						  std::cout << "\n";
-						  
+					  if ( chk_result )
+					  { 
 						  fail_counter++;
 					  }
 					  else
@@ -366,7 +411,49 @@ main(int argc, char* argv[])
 			}
 			
 	}	// end chain type test list
+	
+	
+	std::cout << "Performing NON-SERPENTINE (ZIG ZAG) TEST";
+	
+	rows = 3;
+	cols = 1;
+	panel_width_x 	= 64;
+	panel_height_y	= 64;	
+	
+	VirtualMatrixPanelTest test = VirtualMatrixPanelTest(rows,cols,panel_width_x,panel_height_y, CHAIN_TOP_RIGHT_DOWN_ZZ);
+	
+	// CHAIN_TOP_RIGHT_DOWN_ZZ test 1
+	// (x,y)
+	VirtualCoords result   = test.getCoords_Dev(0,0);	
+	VirtualCoords expected; expected.x = 64*2; expected.y = 0;
+    std::printf("Expected physical (%d, %d) got (%d, %d).\n", expected.x, expected.y, result.x, result.y);
+
+	// CHAIN_TOP_RIGHT_DOWN_ZZ test 2
+	result   = test.getCoords_Dev(10,64*3-1);	
+	expected.x = 10; expected.y = 63; 
+    std::printf("Expected physical (%d, %d) got (%d, %d).\n", expected.x, expected.y, result.x, result.y);
+		
+		
+	// CHAIN_TOP_RIGHT_DOWN_ZZ test 3
+	result   = test.getCoords_Dev(16,64*2-1);	
+	expected.x = 80; expected.y = 63; 
+    std::printf("Expected physical (%d, %d) got (%d, %d).\n", expected.x, expected.y, result.x, result.y);
+	
+		
+		
+	// CHAIN_BOTTOM_RIGHT_UP_ZZ test 4
+	result   = test.getCoords_Dev(0,0);	
+	expected.x = 0; expected.y = 0; 
+    std::printf("Expected physical (%d, %d) got (%d, %d).\n", expected.x, expected.y, result.x, result.y);	
 			
+	// CHAIN_BOTTOM_RIGHT_UP_ZZ test 4
+	result   = test.getCoords_Dev(63,64);	
+	expected.x = 64*2-1; expected.y = 0; 
+    std::printf("Expected physical (%d, %d) got (%d, %d).\n", expected.x, expected.y, result.x, result.y);	
+				
+				
+	
+	std::cout << "\n\n";
 
     return 0;
 }

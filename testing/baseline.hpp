@@ -5,7 +5,7 @@
  * Not thread safe, but not a concern for ESP32 sketch anyway... I think.
  */
 // DO NOT CHANGE
-inline VirtualCoords VirtualMatrixPanelTest::getCoords_WorkingBaslineMarch2023(int16_t &virt_x, int16_t &virt_y)
+inline VirtualCoords VirtualMatrixPanelTest::getCoords_WorkingBaslineMarch2023(int16_t virt_x, int16_t virt_y)
 {
     coords.x = coords.y = -1; // By defalt use an invalid co-ordinates that will be rejected by updateMatrixDMABuffer
 
