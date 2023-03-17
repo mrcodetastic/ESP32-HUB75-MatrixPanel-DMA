@@ -58,8 +58,10 @@ enum PANEL_CHAIN_TYPE
 	CHAIN_TOP_RIGHT_DOWN,
 	CHAIN_BOTTOM_LEFT_UP,
 	CHAIN_BOTTOM_RIGHT_UP,
-	CHAIN_TOP_RIGHT_DOWN_ZZ, /// ZigZag chaining. Might need a big ass cable to do this, all panels right way up.
-	CHAIN_BOTTOM_RIGHT_UP_ZZ
+	CHAIN_TOP_LEFT_DOWN_ZZ, /// ZigZag chaining. Might need a big ass cable to do this, all panels right way up.
+	CHAIN_TOP_RIGHT_DOWN_ZZ,
+	CHAIN_BOTTOM_RIGHT_UP_ZZ,
+    CHAIN_BOTTOM_LEFT_UP_ZZ
 };
 
 #ifdef USE_GFX_ROOT
@@ -177,7 +179,6 @@ inline VirtualCoords VirtualMatrixPanel::getCoords(int16_t &virt_x, int16_t &vir
 	int row  = (virt_y / panelResY); // 0 indexed
 	switch(panel_chain_type)
 	{
-			
 		case (CHAIN_TOP_RIGHT_DOWN): 
 		{
             if ( (row % 2) == 1 ) 
@@ -185,53 +186,62 @@ inline VirtualCoords VirtualMatrixPanel::getCoords(int16_t &virt_x, int16_t &vir
 
                 //Serial.printf("Condition 1, row %d ", row);
 
-                // refersed for the row
+                // reversed for the row
                 coords.x = dmaResX - virt_x - (row*virtualResX);			
 
                 // y co-ord inverted within the panel
-                coords.y = panelResY - 1 - (virt_y % panelResY);	
-            
-
+                coords.y = panelResY - 1 - (virt_y % panelResY);
             }
             else
             { 
                 //Serial.printf("Condition 2, row %d ", row);
-
                 coords.x =  ((vmodule_rows - (row+1))*virtualResX)+virt_x;
-                coords.y =  virt_y % panelResY;	
-                        
+                coords.y =  virt_y % panelResY;
             }
 
 		}
-			break;	
+	    break;
 
+		case (CHAIN_TOP_RIGHT_DOWN_ZZ):
+		{
+			//	Right side up. Starting from top right all the way down.
+			//  Connected in a Zig Zag manner = some long ass cables being used potentially
+		
+			//Serial.printf("Condition 2, row %d ", row);
+			coords.x =  ((vmodule_rows - (row+1))*virtualResX)+virt_x;
+			coords.y =  virt_y % panelResY;				
+		}
+        break;
 
 		case (CHAIN_TOP_LEFT_DOWN): // OK -> modulus opposite of CHAIN_TOP_RIGHT_DOWN
 		{
 			if ( (row % 2) == 0 ) 
-			{ 	// refersed panel 
+			{ 	// reversed panel 
 
                 //Serial.printf("Condition 1, row %d ", row);
 				coords.x = dmaResX - virt_x - (row*virtualResX);			
 
 				// y co-ord inverted within the panel
-				coords.y = panelResY - 1 - (virt_y % panelResY);	
-
+				coords.y = panelResY - 1 - (virt_y % panelResY);
 			}
 			else
 			{ 
                 //Serial.printf("Condition 2, row %d ", row);
 				coords.x =  ((vmodule_rows - (row+1))*virtualResX)+virt_x;
 			    coords.y =  virt_y % panelResY;	
-						
 			}
-
 		}
-			break;	            
+	    break;
+
+        case (CHAIN_TOP_LEFT_DOWN_ZZ):
+        {
+            //Serial.printf("Condition 2, row %d ", row);
+            coords.x =  ((vmodule_rows - (row+1))*virtualResX)+virt_x;
+            coords.y =  virt_y % panelResY;
+        }
+        break;	            
 			
 			
-
-
 		case (CHAIN_BOTTOM_LEFT_UP): 	// 
 		{
             row = vmodule_rows - row - 1;
@@ -241,7 +251,6 @@ inline VirtualCoords VirtualMatrixPanel::getCoords(int16_t &virt_x, int16_t &vir
                 // Serial.printf("Condition 1, row %d ", row);
 				coords.x =  ((vmodule_rows - (row+1))*virtualResX)+virt_x;
 				coords.y = virt_y % panelResY;	
- 
 			}
 			else
 			{  // inverted panel                     
@@ -252,7 +261,16 @@ inline VirtualCoords VirtualMatrixPanel::getCoords(int16_t &virt_x, int16_t &vir
 			}
 			
 		}
-			break;
+	    break;
+
+      case (CHAIN_BOTTOM_LEFT_UP_ZZ): 	// 
+		{
+            row = vmodule_rows - row - 1;
+            // Serial.printf("Condition 1, row %d ", row);
+		    coords.x =  ((vmodule_rows - (row+1))*virtualResX)+virt_x;
+			coords.y = virt_y % panelResY;
+		}
+		break;
 	
 		case (CHAIN_BOTTOM_RIGHT_UP): 	// OK -> modulus opposite of CHAIN_BOTTOM_LEFT_UP
 		{
@@ -265,7 +283,6 @@ inline VirtualCoords VirtualMatrixPanel::getCoords(int16_t &virt_x, int16_t &vir
 				// refersed for the row
 				coords.x =  ((vmodule_rows - (row+1))*virtualResX)+virt_x;
 				coords.y = virt_y % panelResY;	
- 
 			}
 			else
 			{  // inverted panel                     
@@ -276,36 +293,24 @@ inline VirtualCoords VirtualMatrixPanel::getCoords(int16_t &virt_x, int16_t &vir
 			}
 			
 		}
-			break;
+		break;
 			
-			
-		case CHAIN_TOP_RIGHT_DOWN_ZZ:
-		{
-			//	Right side up. Starting from top right all the way down.
-			//  Connected in a Zig Zag manner = some long ass cables being used potentially
-		
-			//Serial.printf("Condition 2, row %d ", row);
-			coords.x =  ((vmodule_rows - (row+1))*virtualResX)+virt_x;
-			coords.y =  virt_y % panelResY;				
-			
-		}
-
-		case CHAIN_BOTTOM_RIGHT_UP_ZZ:
+		case (CHAIN_BOTTOM_RIGHT_UP_ZZ):
 		{
 			//	Right side up. Starting bottom right all the way up.
 			//  Connected in a Zig Zag manner = some long ass cables being used potentially
 		
+            row = vmodule_rows - row - 1;
 			//Serial.printf("Condition 2, row %d ", row);
-			coords.x =  (row*virtualResX)+virt_x;
-			coords.y =  virt_y % panelResY;				
-			
+			coords.x =  ((vmodule_rows - (row+1))*virtualResX)+virt_x;
+			coords.y = virt_y % panelResY;	
 		}
+        break;
 				
-
 		default:
 		    coords.x = coords.y = -1; // By defalt use an invalid co-ordinates that will be rejected by updateMatrixDMABuffer
             return coords;
-			break;
+		break;
 			
 	} // end switch
 	
