@@ -441,12 +441,12 @@
   } // end   
 
 
-  void Bus_Parallel16::flip_dma_output_buffer(int &current_back_buffer_id)
+  void Bus_Parallel16::flip_dma_output_buffer(int back_buffer_id)
   {
 
    // if ( _double_dma_buffer == false) return;
 
-    if ( current_back_buffer_id == 1) // change across to everything 'b''
+    if ( back_buffer_id == 1) // change across to everything 'b''
     {
        _dmadesc_a[_dmadesc_count-1].next =  (dma_descriptor_t *) &_dmadesc_b[0];       
        _dmadesc_b[_dmadesc_count-1].next =  (dma_descriptor_t *) &_dmadesc_b[0];       
@@ -457,7 +457,7 @@
        _dmadesc_a[_dmadesc_count-1].next =  (dma_descriptor_t *) &_dmadesc_a[0];   
     }
 
-    current_back_buffer_id ^= 1;
+    //current_back_buffer_id ^= 1;
 
     
   } // end flip
