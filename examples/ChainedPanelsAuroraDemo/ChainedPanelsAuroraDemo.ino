@@ -117,7 +117,7 @@ void setup()
   matrix->setBrightness8(96);    // range is 0-255, 0 - 0%, 255 - 100%
 
   // create VirtualDisplay object based on our newly created dma_display object
-  virtualDisp = new VirtualMatrixPanel((*matrix), NUM_ROWS, NUM_COLS, PANEL_RES_X, PANEL_RES_Y, SERPENT, TOPDOWN);
+  virtualDisp = new VirtualMatrixPanel((*matrix), NUM_ROWS, NUM_COLS, PANEL_RES_X, PANEL_RES_Y, CHAIN_TOP_LEFT_DOWN);
 
   Serial.println("**************** Starting Aurora Effects Demo ****************");
 
