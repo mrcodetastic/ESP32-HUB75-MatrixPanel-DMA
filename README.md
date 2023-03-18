@@ -84,7 +84,8 @@ Due to the high-speed optimized nature of this library, only specific panels are
 * FM6126A AKA ICN2038S, [FM6124](https://datasheet4u.com/datasheet-pdf/FINEMADELECTRONICS/FM6124/pdf.php?id=1309677) (Refer to [PatternPlasma](/examples/2_PatternPlasma) example on how to use.)
 * SM5266P 
 
-## Unsupported Panels
+## Unsupported chips
+* [SM1620B](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-DMA/issues/416)
 * RUL5358 / SHIFTREG_ABC_BIN_DE based panels are not supported.
 * ICN2053 / FM6353 based panels - Refer to [this library](https://github.com/LAutour/ESP32-HUB75-MatrixPanel-DMA-ICN2053), which is a fork of this library ( [discussion link](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-DMA/discussions/324)).
 * Any other panel not listed above.
