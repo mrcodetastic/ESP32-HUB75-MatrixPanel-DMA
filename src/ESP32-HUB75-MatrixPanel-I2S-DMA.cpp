@@ -188,8 +188,21 @@ void MatrixPanel_I2S_DMA::configureDMA(const HUB75_I2S_CFG &_cfg)
     num_dma_payload_colour_depths = 1;
   }
 
+  // Create row vector for a row shuffle.
+  std::vector<int> v;
+  for (int i = 0; i < ROWS_PER_FRAME; i++) { v.push_back(i); }
+	for (int i = 1; i < ROWS_PER_FRAME-5; i++)
+	{
+		std::iter_swap(v.begin()+i,v.begin()+i+5);
+	}
+  for (int &row: v) 
+  {
+  //  Serial.println (row, DEC);
+  }
+
   // Fill DMA linked lists for both frames (as in, halves of the HUB75 panel) and if double buffering is enabled, link it up for both buffers.
-  for (int row = 0; row < ROWS_PER_FRAME; row++)
+  //for (int row = 0; row < ROWS_PER_FRAME; row++)
+  for (int &row: v) 
   {
     // first set of data is LSB through MSB, single pass (IF TOTAL SIZE < DMA_MAX) - all colour bits are displayed once, which takes care of everything below and including LSBMSB_TRANSITION_BIT
     // NOTE: size must be less than DMA_MAX - worst case for library: 16-bpp with 256 pixels per row would exceed this, need to break into two
