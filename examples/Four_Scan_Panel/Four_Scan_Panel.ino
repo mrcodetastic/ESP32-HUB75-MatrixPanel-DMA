@@ -91,7 +91,7 @@
     delay(500);
     
     // create FourScanPanellay object based on our newly created dma_display object
-    FourScanPanel = new VirtualMatrixPanel((*dma_display), NUM_ROWS, NUM_COLS, PANEL_RES_X, PANEL_RES_Y, SERPENT, TOPDOWN);
+    FourScanPanel = new VirtualMatrixPanel((*dma_display), NUM_ROWS, NUM_COLS, PANEL_RES_X, PANEL_RES_Y);
     
 	// THE IMPORTANT BIT BELOW!
     FourScanPanel->setPhysicalPanelScanRate(FOUR_SCAN_32PX_HIGH);
