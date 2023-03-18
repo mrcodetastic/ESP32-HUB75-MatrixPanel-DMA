@@ -200,7 +200,7 @@ inline VirtualCoords VirtualMatrixPanel::getCoords(int16_t &virt_x, int16_t &vir
             {
                 // Serial.printf("Condition 2, row %d ", row);
                 coords.x = ((vmodule_rows - (row + 1)) * virtualResX) + virt_x;
-                coords.y = virt_y % panelResY;
+                coords.y = (virt_y % panelResY);
             }
         }
         break;
@@ -212,7 +212,7 @@ inline VirtualCoords VirtualMatrixPanel::getCoords(int16_t &virt_x, int16_t &vir
 
             // Serial.printf("Condition 2, row %d ", row);
             coords.x = ((vmodule_rows - (row + 1)) * virtualResX) + virt_x;
-            coords.y = virt_y % panelResY;
+            coords.y = (virt_y % panelResY);
         }
         break;
 
@@ -231,7 +231,7 @@ inline VirtualCoords VirtualMatrixPanel::getCoords(int16_t &virt_x, int16_t &vir
             {
                 // Serial.printf("Condition 2, row %d ", row);
                 coords.x = ((vmodule_rows - (row + 1)) * virtualResX) + virt_x;
-                coords.y = virt_y % panelResY;
+                coords.y = (virt_y % panelResY);
             }
         }
         break;
@@ -240,7 +240,7 @@ inline VirtualCoords VirtualMatrixPanel::getCoords(int16_t &virt_x, int16_t &vir
         {
             // Serial.printf("Condition 2, row %d ", row);
             coords.x = ((vmodule_rows - (row + 1)) * virtualResX) + virt_x;
-            coords.y = virt_y % panelResY;
+            coords.y = (virt_y % panelResY);
         }
         break;
 
@@ -252,7 +252,7 @@ inline VirtualCoords VirtualMatrixPanel::getCoords(int16_t &virt_x, int16_t &vir
             {
                 // Serial.printf("Condition 1, row %d ", row);
                 coords.x = ((vmodule_rows - (row + 1)) * virtualResX) + virt_x;
-                coords.y = virt_y % panelResY;
+                coords.y = (virt_y % panelResY);
             }
             else
             { // inverted panel
@@ -269,7 +269,7 @@ inline VirtualCoords VirtualMatrixPanel::getCoords(int16_t &virt_x, int16_t &vir
             row = vmodule_rows - row - 1;
             // Serial.printf("Condition 1, row %d ", row);
             coords.x = ((vmodule_rows - (row + 1)) * virtualResX) + virt_x;
-            coords.y = virt_y % panelResY;
+            coords.y = (virt_y % panelResY);
         }
         break;
 
@@ -283,7 +283,7 @@ inline VirtualCoords VirtualMatrixPanel::getCoords(int16_t &virt_x, int16_t &vir
                 // Serial.printf("Condition 1, row %d ", row);
                 // refersed for the row
                 coords.x = ((vmodule_rows - (row + 1)) * virtualResX) + virt_x;
-                coords.y = virt_y % panelResY;
+                coords.y = (virt_y % panelResY);
             }
             else
             { // inverted panel
@@ -303,7 +303,7 @@ inline VirtualCoords VirtualMatrixPanel::getCoords(int16_t &virt_x, int16_t &vir
             row = vmodule_rows - row - 1;
             // Serial.printf("Condition 2, row %d ", row);
             coords.x = ((vmodule_rows - (row + 1)) * virtualResX) + virt_x;
-            coords.y = virt_y % panelResY;
+            coords.y = (virt_y % panelResY);
         }
         break;
 
