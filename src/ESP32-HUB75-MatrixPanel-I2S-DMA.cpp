@@ -30,24 +30,7 @@
  * However, if the library is to be used with lower colour depth (i.e. 6 bit colour), then we need to ensure the 8-bit value passed to the colour masking
  * is adjusted accordingly to ensure the LSB's are shifted left to MSB, by the difference. Otherwise the colours will be all screwed up.
  */
-// #if PIXEL_COLOR_DEPTH_BITS > 12
-//     #error "Color depth bits cannot be greater than 12."
-// #elif PIXEL_COLOR_DEPTH_BITS < 2
-//     #error "Color depth bits cannot be less than 2."
-// #endif
-
-// #define MASK_OFFSET (16 - PIXEL_COLOR_DEPTH_BITS)
-// #define PIXEL_COLOR_MASK_BIT(color_depth_index)   (1 << (color_depth_index + MASK_OFFSET))
 #define PIXEL_COLOR_MASK_BIT(color_depth_index, mask_offset) (1 << (color_depth_index + mask_offset))
-// static constexpr uint8_t const MASK_OFFSET = 8-PIXEL_COLOUR_DEPTH_BITS;
-
-/*
-    #if PIXEL_COLOR_DEPTH_BITS < 8
-        uint8_t mask = (1 << (colour_depth_idx+MASK_OFFSET)); // expect 24 bit colour (8 bits per RGB subpixel)
-    #else
-        uint8_t mask = (1 << (colour_depth_idx)); // expect 24 bit colour (8 bits per RGB subpixel)
-    #endif
-*/
 
 bool MatrixPanel_I2S_DMA::allocateDMAmemory()
 {
@@ -155,7 +138,7 @@ bool MatrixPanel_I2S_DMA::allocateDMAmemory()
    */
 
   // malloc the DMA linked list descriptors that i2s_parallel will need
-  desccount = numDMAdescriptorsPerRow * ROWS_PER_FRAME;
+  int desccount = numDMAdescriptorsPerRow * ROWS_PER_FRAME;
 
   if (m_cfg.double_buff)
   {
@@ -174,6 +157,33 @@ bool MatrixPanel_I2S_DMA::allocateDMAmemory()
 
 } // end allocateDMAmemory()
 
+
+
+/*
+// Version 2.0 March 2023 
+int MatrixPanel_I2S_DMA::create_descriptor_links(void *data, size_t size, bool dmadesc_b, bool countonly)
+{
+    int len = size;
+    uint8_t *data2 = (uint8_t *)data;
+
+    int n = 0;    
+    while (len)
+    {
+        int dmalen = len;
+        if (dmalen > DMA_MAX)
+            dmalen = DMA_MAX;
+
+          if (!countonly)
+            dma_bus.create_dma_desc_link(data2, dmalen, dmadesc_b);                
+
+        len -= dmalen;
+        data2 += dmalen;
+        n++;
+    }
+
+    return n;
+}
+*/
 void MatrixPanel_I2S_DMA::configureDMA(const HUB75_I2S_CFG &_cfg)
 {
 
@@ -188,32 +198,37 @@ void MatrixPanel_I2S_DMA::configureDMA(const HUB75_I2S_CFG &_cfg)
     num_dma_payload_colour_depths = 1;
   }
 
+
+ #ifdef NO_ROW_SCAN_SHUFFLE
+ // Fill DMA linked lists for both frames (as in, halves of the HUB75 panel) in sequence (top to bottom) 
+  for (int row = 0; row < ROWS_PER_FRAME; row++)
+#else
   // Create row vector for a row shuffle.
   std::vector<int> v;
-  for (int i = 0; i < ROWS_PER_FRAME; i++) { v.push_back(i); }
-	for (int i = 1; i < ROWS_PER_FRAME-5; i++)
-	{
-		std::iter_swap(v.begin()+i,v.begin()+i+5);
-	}
-  for (int &row: v) 
-  {
-  //  Serial.println (row, DEC);
+  
+  if (ROWS_PER_FRAME == 16) { //64wx32h pixel panel
+     // v = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
+     v = {6,2,4,0,8,10,12,15,14,13,11,9,1,5,3,7};
+  }
+ 
+  if (ROWS_PER_FRAME == 32) { //64wx64h panel
+     // v = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
+     v = {5,3,1,6,8,11,13,15,17,19,21,23,25,27,31,30,29,28,26,24,22,20,18,16,10,14,12,9,7,0,4,2};
   }
 
-  // Fill DMA linked lists for both frames (as in, halves of the HUB75 panel) and if double buffering is enabled, link it up for both buffers.
-  //for (int row = 0; row < ROWS_PER_FRAME; row++)
   for (int &row: v) 
+#endif
   {
     // first set of data is LSB through MSB, single pass (IF TOTAL SIZE < DMA_MAX) - all colour bits are displayed once, which takes care of everything below and including LSBMSB_TRANSITION_BIT
     // NOTE: size must be less than DMA_MAX - worst case for library: 16-bpp with 256 pixels per row would exceed this, need to break into two
     // link_dma_desc(&dmadesc_a[current_dmadescriptor_offset], previous_dmadesc_a, dma_buff.rowBits[row]->getDataPtr(), dma_buff.rowBits[row]->size(num_dma_payload_colour_depths));
     //   previous_dmadesc_a = &dmadesc_a[current_dmadescriptor_offset];
 
-    dma_bus.create_dma_desc_link(frame_buffer[0].rowBits[row]->getDataPtr(0, 0), frame_buffer[0].rowBits[row]->size(1), false);
+    dma_bus.create_dma_desc_link(frame_buffer[0].rowBits[row]->getDataPtr(0, 0), frame_buffer[0].rowBits[row]->size(), false);
 
     if (m_cfg.double_buff)
     {
-      dma_bus.create_dma_desc_link(frame_buffer[1].rowBits[row]->getDataPtr(0, 1), frame_buffer[1].rowBits[row]->size(1), true);
+      dma_bus.create_dma_desc_link(frame_buffer[1].rowBits[row]->getDataPtr(0, 1), frame_buffer[1].rowBits[row]->size(), true);
     }
 
     current_dmadescriptor_offset++;
@@ -478,7 +493,7 @@ void MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint8_t red, uint8_t green, uint
  * This effectively clears buffers to blank BLACK and makes it ready to display output.
  * (Brightness control via OE bit manipulation is another case) - this must be done as well seperately!
  */
-void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id)
+void MatrixPanel_I2S_DMA::clearFrameBuffer()
 {
   if (!initialized)
     return;
@@ -489,7 +504,7 @@ void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id)
   {
     --row_idx;
 
-    ESP32_I2S_DMA_STORAGE_TYPE *row = fb->rowBits[row_idx]->getDataPtr(0, _buff_id); // set pointer to the HEAD of a buffer holding data for the entire matrix row
+    ESP32_I2S_DMA_STORAGE_TYPE *row = fb->rowBits[row_idx]->getDataPtr(0, -1); // set pointer to the HEAD of a buffer holding data for the entire matrix row
 
     ESP32_I2S_DMA_STORAGE_TYPE abcde = (ESP32_I2S_DMA_STORAGE_TYPE)row_idx;
     abcde <<= BITS_ADDR_OFFSET; // shift row y-coord to match ABCDE bits in vector from 8 to 12
@@ -561,7 +576,7 @@ void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id)
       --colouridx;
 
       // switch pointer to a row for a specific colour index
-      row = fb->rowBits[row_idx]->getDataPtr(colouridx, _buff_id);
+      row = fb->rowBits[row_idx]->getDataPtr(colouridx, -1);
 
       row[ESP32_TX_FIFO_POSITION_ADJUST(fb->rowBits[row_idx]->width - 1)] |= BIT_LAT; // -1 pixel to compensate array index starting at 0
 

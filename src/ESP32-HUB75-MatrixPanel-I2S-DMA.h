@@ -29,6 +29,8 @@
 
 // #define NO_CIE1931
 
+// #define NO_ROW_SCAN_SHUFFLE
+
 /* Physical / Chained HUB75(s) RGB pixel WIDTH and HEIGHT.
  *
  * This library has been tested with a 64x32 and 64x64 RGB panels.
@@ -135,11 +137,9 @@ struct rowBitStruct
   const bool double_buff;
   ESP32_I2S_DMA_STORAGE_TYPE *data;
 
-  /** @brief - returns size of row of data vectorfor a SINGLE buff
-   * size (in bytes) of a vector holding full DMA data for a row of pixels with _dpth colour bits
-   * a SINGLE buffer only size is accounted, when using double buffers it actually takes twice as much space
-   * but returned size is for a half of double-buffer
-   *
+  /** @brief 
+   * Returns size of row of data vectorfor a SINGLE buff for the number of colour depths rquested
+   * 
    * default - returns full data vector size for a SINGLE buff
    *
    */
@@ -150,8 +150,9 @@ struct rowBitStruct
     return width * _dpth * sizeof(ESP32_I2S_DMA_STORAGE_TYPE);
   };
 
-  /** @brief - returns pointer to the row's data vector beginning at pixel[0] for _dpth colour bit
-   * default - returns pointer to the data vector's head
+  /** @brief
+   * Returns pointer to the row's data vector beginning at pixel[0] for _dpth colour bit
+   * 
    * NOTE: this call might be very slow in loops. Due to poor instruction caching in esp32 it might be required a reread from flash
    * every loop cycle, better use inlined #define instead in such cases
    */
@@ -168,21 +169,14 @@ struct rowBitStruct
 #if defined(SPIRAM_DMA_BUFFER)
 
     // data = (ESP32_I2S_DMA_STORAGE_TYPE *)heap_caps_aligned_alloc(64, size()+size()*double_buff, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
-
     // No longer have double buffer in the same struct - have a different struct
     data = (ESP32_I2S_DMA_STORAGE_TYPE *)heap_caps_aligned_alloc(64, size(), MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
-/*
-      if (!psramFound())
-      {
-        ESP_LOGE("rowBitStruct", "Requested to use PSRAM / SPIRAM for framebuffer, but it was not detected.");
-      }
-*/
 #else
     // data = (ESP32_I2S_DMA_STORAGE_TYPE *)heap_caps_malloc( size()+size()*double_buff, MALLOC_CAP_INTERNAL | MALLOC_CAP_DMA);
 
     // No longer have double buffer in the same struct - have a different struct
     data = (ESP32_I2S_DMA_STORAGE_TYPE *)heap_caps_malloc(size(), MALLOC_CAP_INTERNAL | MALLOC_CAP_DMA);
-    //   ESP_LOGI("rowBitStruct", "Allocated DMA BitBuffer from regular (and limited) SRAM");
+
 #endif
   }
   ~rowBitStruct() { delete data; }
@@ -498,8 +492,7 @@ public:
   {
     uint8_t r, g, b;
     color565to888(color, r, g, b);
-    startWrite();
-
+    
     int16_t w = 1;
     transform(x, y, w, h);
     if (h > w)
@@ -507,7 +500,6 @@ public:
     else
       hlineDMA(x, y, w, r, g, b);
 
-    endWrite();
   }
   // rgb888 overload
   virtual inline void drawFastVLine(int16_t x, int16_t y, int16_t h, uint8_t r, uint8_t g, uint8_t b)
@@ -528,7 +520,6 @@ public:
   {
     uint8_t r, g, b;
     color565to888(color, r, g, b);
-    startWrite();
 
     int16_t h = 1;
     transform(x, y, w, h);
@@ -537,7 +528,6 @@ public:
     else
       hlineDMA(x, y, w, r, g, b);
 
-    endWrite();
   }
   // rgb888 overload
   virtual inline void drawFastHLine(int16_t x, int16_t y, int16_t w, uint8_t r, uint8_t g, uint8_t b)
@@ -558,18 +548,18 @@ public:
   {
     uint8_t r, g, b;
     color565to888(color, r, g, b);
-    startWrite();
+    
     transform(x, y, w, h);
     fillRectDMA(x, y, w, h, r, g, b);
-    endWrite();
+    
   }
   // rgb888 overload
   virtual inline void fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint8_t r, uint8_t g, uint8_t b)
   {
-    startWrite();
+    
     transform(x, y, w, h);
     fillRectDMA(x, y, w, h, r, g, b);
-    endWrite();
+    
   }
 #endif
 
@@ -620,22 +610,6 @@ public:
 
     back_buffer_id ^= 1;
 
-    //    initialized = true;
-
-    /*
-    i2s_parallel_set_previous_buffer_not_free();
-    // Wait before we allow any writing to the buffer. Stop flicker.
-    while(i2s_parallel_is_previous_buffer_free() == false) { }
-
-    i2s_parallel_flip_to_buffer(ESP32_I2S_DEVICE, back_buffer_id);
-    // Flip to other buffer as the backbuffer.
-    // i.e. Graphic changes happen to this buffer, but aren't displayed until flipDMABuffer() is called again.
-    back_buffer_id ^= 1;
-
-    i2s_parallel_set_previous_buffer_not_free();
-    // Wait before we allow any writing to the buffer. Stop flicker.
-    while(i2s_parallel_is_previous_buffer_free() == false) { }
-    */
   }
 
   /**
@@ -649,33 +623,16 @@ public:
       return;
     }
 
+    fb = &frame_buffer[0];
     brightness = b;
     brtCtrlOEv2(b, 0);
 
     if (m_cfg.double_buff)
     {
+      fb = &frame_buffer[1];
       brtCtrlOEv2(b, 1);
     }
   }
-
-  // Takes a value that is between 0 and MATRIX_WIDTH-1
-  /*
-    void setPanelBrightness(int b)
-    {
-        if (!initialized)
-    {
-      ESP_LOGI("setPanelBrightness()", "Tried to set output brightness before begin()");
-          return;
-    }
-
-      // Change to set the brightness of the display, range of 1 to matrixWidth (i.e. 1 - 64)
-       // brightness = b * PIXELS_PER_ROW / 256;
-
-        brtCtrlOE(b);
-        if (m_cfg.double_buff)
-                brtCtrlOE(b, 1);
-    }
-  */
 
   /**
    * @param uint8_t b - 8-bit brightness value
@@ -735,17 +692,6 @@ public:
     dma_bus.dma_transfer_stop();
   }
 
-  void startWrite()
-  {
-    // ESP_LOGI("TAG", "startWrite() called");
-    active_gfx_writes++;
-  }
-
-  void endWrite()
-  {
-    active_gfx_writes--;
-  }
-
   // ------- PROTECTED -------
   // those might be useful for child classes, like VirtualMatrixPanel
 protected:
@@ -757,7 +703,7 @@ protected:
    * This effectively clears buffers to blank BLACK and makes it ready to display output.
    * (Brightness control via OE bit manipulation is another case)
    */
-  void clearFrameBuffer(bool _buff_id = 0);
+  void clearFrameBuffer();
 
   /* Update a specific pixel in the DMA buffer to a colour */
   void updateMatrixDMABuffer(uint16_t x, uint16_t y, uint8_t red, uint8_t green, uint8_t blue);
@@ -770,16 +716,17 @@ protected:
    */
   inline void resetbuffers()
   {
-
-    // flipDMABuffer();
     fb = &frame_buffer[0];
+    clearFrameBuffer();        
+    brtCtrlOEv2(brightness, 0); 
 
-    clearFrameBuffer(0);        // buffer ID is not used
-    brtCtrlOEv2(brightness, 0); // buffer ID is not used
+    if (m_cfg.double_buff) {
 
-    fb = &frame_buffer[1];
-    clearFrameBuffer(1);        // buffer ID is not used
-    brtCtrlOEv2(brightness, 1); // buffer ID is not used
+      fb = &frame_buffer[1];
+      clearFrameBuffer();        
+      brtCtrlOEv2(brightness, 1);
+
+    }
   }
 
 #ifndef NO_FAST_FUNCTIONS
@@ -894,6 +841,7 @@ protected:
   Bus_Parallel16 dma_bus;
 
 private:
+
   // Matrix i2s settings
   HUB75_I2S_CFG m_cfg;
 
@@ -904,17 +852,9 @@ private:
    * Since it's dimensions is unknown prior to class initialization, we just declare it here as empty struct and will do all allocations later.
    * Refer to rowBitStruct to get the idea of it's internal structure
    */
-  // frameStruct dma_buff;
-
   frameStruct frame_buffer[2];
   frameStruct *fb; // What framebuffer we are writing pixel changes to? (pointer to either frame_buffer[0] or frame_buffer[1] basically )
 
-  // ESP 32 DMA Linked List descriptor
-  int desccount = 0;
-  // lldesc_t * dmadesc_a = {0};
-  // lldesc_t * dmadesc_b = {0};
-
-  int active_gfx_writes = 0;   // How many async routines are 'drawing' (writing) to the DMA bit buffer. Function called from Adafruit_GFX draw routines like drawCircle etc.
   int back_buffer_id = 0;      // If using double buffer, which one is NOT active (ie. being displayed) to write too?
   int brightness = 128;        // If you get ghosting... reduce brightness level. ((60/64)*255) seems to be the limit before ghosting on a 64 pixel wide physical panel for some panels.
   int lsbMsbTransitionBit = 0; // For colour depth calculations

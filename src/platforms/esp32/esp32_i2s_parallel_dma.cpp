@@ -582,7 +582,8 @@ bool DRAM_ATTR i2s_parallel_is_previous_buffer_free() {
       }
 
       previousBufferFree = false;  
-      while (i2s_parallel_is_previous_buffer_free() == false) {}      
+      //while (i2s_parallel_is_previous_buffer_free() == false) {}      
+      while (!previousBufferFree);
 
            
 
