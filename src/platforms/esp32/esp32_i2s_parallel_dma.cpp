@@ -377,7 +377,9 @@ bool DRAM_ATTR i2s_parallel_is_previous_buffer_free() {
      // setup I2S Interrupt
     SET_PERI_REG_BITS(I2S_INT_ENA_REG(1), I2S_OUT_EOF_INT_ENA_V, 1, I2S_OUT_EOF_INT_ENA_S);
     // allocate a level 1 intterupt: lowest priority, as ISR isn't urgent and may take a long time to complete
-    esp_intr_alloc(ETS_I2S1_INTR_SOURCE, (int)(ESP_INTR_FLAG_IRAM | ESP_INTR_FLAG_LEVEL1), i2s_isr, NULL, NULL);
+    //esp_intr_alloc(ETS_I2S1_INTR_SOURCE, (int)(ESP_INTR_FLAG_IRAM | ESP_INTR_FLAG_LEVEL1), i2s_isr, NULL, NULL);
+    esp_intr_alloc(irq_source, (int)(ESP_INTR_FLAG_IRAM | ESP_INTR_FLAG_LEVEL1), i2s_isr, NULL, NULL);
+    
 
 
       
