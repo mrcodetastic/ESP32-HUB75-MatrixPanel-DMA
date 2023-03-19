@@ -199,7 +199,7 @@ void MatrixPanel_I2S_DMA::configureDMA(const HUB75_I2S_CFG &_cfg)
   }
 
 
- #ifndef ROW_SCAN_SHUFFLE
+ #ifndef ROW_SCAN_SHUFFLE 
  // Fill DMA linked lists for both frames (as in, halves of the HUB75 panel) in sequence (top to bottom) 
   for (int row = 0; row < ROWS_PER_FRAME; row++)
 #else
