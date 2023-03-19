@@ -29,7 +29,8 @@
 
 // #define NO_CIE1931
 
-// #define NO_ROW_SCAN_SHUFFLE
+// Turn on rows being displayed out of order in a mixed manner.
+//#define ROW_SCAN_SHUFFLE
 
 /* Physical / Chained HUB75(s) RGB pixel WIDTH and HEIGHT.
  *
