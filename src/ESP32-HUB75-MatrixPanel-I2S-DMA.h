@@ -139,12 +139,13 @@ struct rowBitStruct
   ESP32_I2S_DMA_STORAGE_TYPE *data;
 
   /** @brief 
-   * Returns size of row of data vectorfor a SINGLE buff for the number of colour depths rquested
+   * Returns size (in bytes) of row of data vectorfor a SINGLE buff for the number of colour depths requested
    * 
-   * default - returns full data vector size for a SINGLE buff
+   * default - Returns full data vector size for a SINGLE buff. 
+   *           You should only pass either PIXEL_COLOR_DEPTH_BITS or '1' to this
    *
    */
-  size_t size(uint8_t _dpth = 0)
+  size_t getColorDepthSize(uint8_t _dpth = 0)
   {
     if (!_dpth)
       _dpth = colour_depth;
@@ -171,12 +172,12 @@ struct rowBitStruct
 
     // data = (ESP32_I2S_DMA_STORAGE_TYPE *)heap_caps_aligned_alloc(64, size()+size()*double_buff, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
     // No longer have double buffer in the same struct - have a different struct
-    data = (ESP32_I2S_DMA_STORAGE_TYPE *)heap_caps_aligned_alloc(64, size(), MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+    data = (ESP32_I2S_DMA_STORAGE_TYPE *)heap_caps_aligned_alloc(64, getColorDepthSize(), MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
 #else
     // data = (ESP32_I2S_DMA_STORAGE_TYPE *)heap_caps_malloc( size()+size()*double_buff, MALLOC_CAP_INTERNAL | MALLOC_CAP_DMA);
 
     // No longer have double buffer in the same struct - have a different struct
-    data = (ESP32_I2S_DMA_STORAGE_TYPE *)heap_caps_malloc(size(), MALLOC_CAP_INTERNAL | MALLOC_CAP_DMA);
+    data = (ESP32_I2S_DMA_STORAGE_TYPE *)heap_caps_malloc(getColorDepthSize(), MALLOC_CAP_INTERNAL | MALLOC_CAP_DMA);
 
 #endif
   }

@@ -62,7 +62,7 @@ bool MatrixPanel_I2S_DMA::allocateDMAmemory()
         // TODO: should we release all previous rowBitStructs here???
       }
 
-      allocated_fb_memory += ptr->size();
+      allocated_fb_memory += ptr->getColorDepthSize();
       frame_buffer[fb].rowBits.emplace_back(ptr); // save new rowBitStruct into rows vector
       ++frame_buffer[fb].rows;
     }
@@ -124,7 +124,7 @@ bool MatrixPanel_I2S_DMA::allocateDMAmemory()
 
   // Refer to 'DMA_LL_PAYLOAD_SPLIT' code in configureDMA() below to understand why this exists.
   // numDMAdescriptorsPerRow is also used to calculate descount which is super important in i2s_parallel_config_t SoC DMA setup.
-  if (frame_buffer[0].rowBits[0]->size() > DMA_MAX)
+  if (frame_buffer[0].rowBits[0]->getColorDepthSize() > DMA_MAX)
   {
 
     ESP_LOGW("I2S-DMA", "rowBits struct is too large to fit in one DMA transfer payload, splitting required. Adding %d DMA descriptors\n", m_cfg.getPixelColorDepthBits() - 1);
@@ -193,7 +193,7 @@ void MatrixPanel_I2S_DMA::configureDMA(const HUB75_I2S_CFG &_cfg)
 
   // HACK: If we need to split the payload in 1/2 so that it doesn't breach DMA_MAX, lets do it by the colour_depth.
   int num_dma_payload_colour_depths = m_cfg.getPixelColorDepthBits();
-  if (frame_buffer[0].rowBits[0]->size() > DMA_MAX)
+  if (frame_buffer[0].rowBits[0]->getColorDepthSize() > DMA_MAX)
   {
     num_dma_payload_colour_depths = 1;
   }
@@ -224,26 +224,26 @@ void MatrixPanel_I2S_DMA::configureDMA(const HUB75_I2S_CFG &_cfg)
     // link_dma_desc(&dmadesc_a[current_dmadescriptor_offset], previous_dmadesc_a, dma_buff.rowBits[row]->getDataPtr(), dma_buff.rowBits[row]->size(num_dma_payload_colour_depths));
     //   previous_dmadesc_a = &dmadesc_a[current_dmadescriptor_offset];
 
-    dma_bus.create_dma_desc_link(frame_buffer[0].rowBits[row]->getDataPtr(0, 0), frame_buffer[0].rowBits[row]->size(), false);
+    dma_bus.create_dma_desc_link(frame_buffer[0].rowBits[row]->getDataPtr(0, 0), frame_buffer[0].rowBits[row]->getColorDepthSize(), false);
 
     if (m_cfg.double_buff)
     {
-      dma_bus.create_dma_desc_link(frame_buffer[1].rowBits[row]->getDataPtr(0, 1), frame_buffer[1].rowBits[row]->size(), true);
+      dma_bus.create_dma_desc_link(frame_buffer[1].rowBits[row]->getDataPtr(0, 1), frame_buffer[1].rowBits[row]->getColorDepthSize(), true);
     }
 
     current_dmadescriptor_offset++;
 
     // If the number of pixels per row is too great for the size of a DMA payload, so we need to split what we were going to send above.
-    if (frame_buffer[0].rowBits[0]->size() > DMA_MAX)
+    if (frame_buffer[0].rowBits[0]->getColorDepthSize() > DMA_MAX)
     {
 
       for (int cd = 1; cd < m_cfg.getPixelColorDepthBits(); cd++)
       {
-        dma_bus.create_dma_desc_link(frame_buffer[0].rowBits[row]->getDataPtr(cd, 0), frame_buffer[0].rowBits[row]->size(1), false);
+        dma_bus.create_dma_desc_link(frame_buffer[0].rowBits[row]->getDataPtr(cd, 0), frame_buffer[0].rowBits[row]->getColorDepthSize(1), false);
 
         if (m_cfg.double_buff)
         {
-          dma_bus.create_dma_desc_link(frame_buffer[1].rowBits[row]->getDataPtr(cd, 1), frame_buffer[1].rowBits[row]->size(1), true);
+          dma_bus.create_dma_desc_link(frame_buffer[1].rowBits[row]->getDataPtr(cd, 1), frame_buffer[1].rowBits[row]->getColorDepthSize(1), true);
         }
 
         current_dmadescriptor_offset++;
@@ -259,11 +259,11 @@ void MatrixPanel_I2S_DMA::configureDMA(const HUB75_I2S_CFG &_cfg)
 
       for (int k = 0; k < (1 << (i - lsbMsbTransitionBit - 1)); k++)
       {
-        dma_bus.create_dma_desc_link(frame_buffer[0].rowBits[row]->getDataPtr(i, 0), frame_buffer[0].rowBits[row]->size(1), false);
+        dma_bus.create_dma_desc_link(frame_buffer[0].rowBits[row]->getDataPtr(i, 0), frame_buffer[0].rowBits[row]->getColorDepthSize(1), false);
 
         if (m_cfg.double_buff)
         {
-          dma_bus.create_dma_desc_link(frame_buffer[1].rowBits[row]->getDataPtr(i, 1), frame_buffer[1].rowBits[row]->size(1), true);
+          dma_bus.create_dma_desc_link(frame_buffer[1].rowBits[row]->getDataPtr(i, 1), frame_buffer[1].rowBits[row]->getColorDepthSize(1), true);
         }
 
         current_dmadescriptor_offset++;
