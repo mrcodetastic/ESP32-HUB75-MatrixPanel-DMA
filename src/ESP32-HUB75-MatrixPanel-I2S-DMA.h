@@ -29,9 +29,6 @@
 
 // #define NO_CIE1931
 
-// Turn on rows being displayed out of order in a mixed manner.
-//#define ROW_SCAN_SHUFFLE
-
 /* Physical / Chained HUB75(s) RGB pixel WIDTH and HEIGHT.
  *
  * This library has been tested with a 64x32 and 64x64 RGB panels.
@@ -598,20 +595,14 @@ public:
     {
       return;
     }
-
-    if (back_buffer_id == 0) // back buffer is 0 (dmadesc_a)
-    {
-      fb = &frame_buffer[1];
-    }
-    else
-    {
-      fb = &frame_buffer[0];
-    }
-
+	
     dma_bus.flip_dma_output_buffer(back_buffer_id);
+	
+	back_buffer_id ^= 1;
+    fb = &frame_buffer[back_buffer_id];	
+	
 
-    back_buffer_id ^= 1;
-
+	
   }
 
   /**
@@ -625,13 +616,11 @@ public:
       return;
     }
 
-    fb = &frame_buffer[0];
     brightness = b;
     brtCtrlOEv2(b, 0);
 
     if (m_cfg.double_buff)
     {
-      fb = &frame_buffer[1];
       brtCtrlOEv2(b, 1);
     }
   }
@@ -705,7 +694,7 @@ protected:
    * This effectively clears buffers to blank BLACK and makes it ready to display output.
    * (Brightness control via OE bit manipulation is another case)
    */
-  void clearFrameBuffer();
+  void clearFrameBuffer(bool _buff_id);
 
   /* Update a specific pixel in the DMA buffer to a colour */
   void updateMatrixDMABuffer(uint16_t x, uint16_t y, uint8_t red, uint8_t green, uint8_t blue);
@@ -718,14 +707,12 @@ protected:
    */
   inline void resetbuffers()
   {
-    fb = &frame_buffer[0];
-    clearFrameBuffer();        
+    clearFrameBuffer(0);        
     brtCtrlOEv2(brightness, 0); 
 
     if (m_cfg.double_buff) {
-
-      fb = &frame_buffer[1];
-      clearFrameBuffer();        
+		
+      clearFrameBuffer(1);        
       brtCtrlOEv2(brightness, 1);
 
     }
@@ -855,7 +842,7 @@ private:
    * Refer to rowBitStruct to get the idea of it's internal structure
    */
   frameStruct frame_buffer[2];
-  frameStruct *fb; // What framebuffer we are writing pixel changes to? (pointer to either frame_buffer[0] or frame_buffer[1] basically )
+  frameStruct *fb; // What framebuffer we are writing pixel changes to? (pointer to either frame_buffer[0] or frame_buffer[1] basically ) used within updateMatrixDMABuffer(...)
 
   int back_buffer_id = 0;      // If using double buffer, which one is NOT active (ie. being displayed) to write too?
   int brightness = 128;        // If you get ghosting... reduce brightness level. ((60/64)*255) seems to be the limit before ghosting on a 64 pixel wide physical panel for some panels.

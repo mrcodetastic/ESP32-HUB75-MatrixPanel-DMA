@@ -429,13 +429,13 @@ void MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint8_t red, uint8_t green, uint
   /* https://ledshield.wordpress.com/2012/11/13/led-brightness-to-your-eye-gamma-correction-no/ */
   uint16_t red16, green16, blue16;
 #ifndef NO_CIE1931
-  red16 = lumConvTab[red];
-  green16 = lumConvTab[green];
-  blue16 = lumConvTab[blue];
+  red16 	= lumConvTab[red];
+  green16 	= lumConvTab[green];
+  blue16 	= lumConvTab[blue];
 #else
-  red16 = red << 8;
-  green16 = green << 8;
-  blue16 = blue << 8;
+  red16 	= red << 8;
+  green16 	= green << 8;
+  blue16 	= blue << 8;
 #endif
 
   for (uint8_t colour_depth_idx = 0; colour_depth_idx < m_cfg.getPixelColorDepthBits(); colour_depth_idx++) // colour depth - 8 iterations
@@ -493,10 +493,12 @@ void MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint8_t red, uint8_t green, uint
  * This effectively clears buffers to blank BLACK and makes it ready to display output.
  * (Brightness control via OE bit manipulation is another case) - this must be done as well seperately!
  */
-void MatrixPanel_I2S_DMA::clearFrameBuffer()
+void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id)
 {
   if (!initialized)
     return;
+
+  frameStruct *fb = &frame_buffer[_buff_id];
 
   // we start with iterating all rows in dma_buff structure
   int row_idx = fb->rowBits.size();
@@ -614,6 +616,8 @@ void MatrixPanel_I2S_DMA::brtCtrlOEv2(uint8_t brt, const int _buff_id)
 
   if (!initialized)
     return;
+
+  frameStruct *fb = &frame_buffer[_buff_id];
 
   uint8_t _blank = m_cfg.latch_blanking; // don't want to inadvertantly blast over this
   uint8_t _depth = fb->rowBits[0]->colour_depth;
