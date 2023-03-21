@@ -844,7 +844,7 @@ private:
   frameStruct frame_buffer[2];
   frameStruct *fb; // What framebuffer we are writing pixel changes to? (pointer to either frame_buffer[0] or frame_buffer[1] basically ) used within updateMatrixDMABuffer(...)
 
-  int back_buffer_id = 0;      // If using double buffer, which one is NOT active (ie. being displayed) to write too?
+  volatile int back_buffer_id = 0;      // If using double buffer, which one is NOT active (ie. being displayed) to write too?
   int brightness = 128;        // If you get ghosting... reduce brightness level. ((60/64)*255) seems to be the limit before ghosting on a 64 pixel wide physical panel for some panels.
   int lsbMsbTransitionBit = 0; // For colour depth calculations
 

@@ -49,11 +49,15 @@ Contributors:
 
 #define DMA_MAX (4096-4)
 
-// DO NOT CHANGE
-#define ESP32_I2S_DEVICE I2S_NUM_1	
-
 // The type used for this SoC
 #define HUB75_DMA_DESCRIPTOR_T lldesc_t
+
+
+#if defined (CONFIG_IDF_TARGET_ESP32S2)   
+#define ESP32_I2S_DEVICE I2S_NUM_0	
+#else
+#define ESP32_I2S_DEVICE I2S_NUM_1	
+#endif	
 
 //----------------------------------------------------------------------------
 

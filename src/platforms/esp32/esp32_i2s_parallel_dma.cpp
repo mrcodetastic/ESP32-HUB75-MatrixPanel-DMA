@@ -36,19 +36,23 @@ Modified heavily for the ESP32 HUB75 DMA library by:
 #include <soc/rtc.h>
 
 
-volatile bool previousBufferFree = true;
+	volatile bool previousBufferFree = true;
 
-// Todo: handle IS20? (this is hard coded for I2S1 only)
-static void IRAM_ATTR i2s_isr(void* arg) {
-    REG_WRITE(I2S_INT_CLR_REG(1), (REG_READ(I2S_INT_RAW_REG(1)) & 0xffffffc0) | 0x3f);
+	static void IRAM_ATTR i2s_isr(void* arg) {
 
-    // at this point, the previously active buffer is free, go ahead and write to it
-    previousBufferFree = true;
-}
+		// From original Sprite_TM Code
+		//REG_WRITE(I2S_INT_CLR_REG(1), (REG_READ(I2S_INT_RAW_REG(1)) & 0xffffffc0) | 0x3f);
+		
+		// Clear flag so we can get retriggered
+		SET_PERI_REG_BITS(I2S_INT_CLR_REG(ESP32_I2S_DEVICE), I2S_OUT_EOF_INT_CLR_V, 1, I2S_OUT_EOF_INT_CLR_S);                      
+		
+		// at this point, the previously active buffer is free, go ahead and write to it
+		previousBufferFree = true;
+	}
 
-bool DRAM_ATTR i2s_parallel_is_previous_buffer_free() {
-    return previousBufferFree;
-}
+	bool DRAM_ATTR i2s_parallel_is_previous_buffer_free() {
+		return previousBufferFree;
+	}
 
 
 	// Static
@@ -369,26 +373,22 @@ bool DRAM_ATTR i2s_parallel_is_previous_buffer_free() {
     dev->conf1.tx_stop_en = 0; 
     dev->timing.val = 0;
 
- 
-    /* If we have double buffering, then allocate an interrupt service routine function
-     * that can be used for I2S0/I2S1 created interrupts.
-     */
 
-     // setup I2S Interrupt
-    SET_PERI_REG_BITS(I2S_INT_ENA_REG(1), I2S_OUT_EOF_INT_ENA_V, 1, I2S_OUT_EOF_INT_ENA_S);
-    // allocate a level 1 intterupt: lowest priority, as ISR isn't urgent and may take a long time to complete
-    //esp_intr_alloc(ETS_I2S1_INTR_SOURCE, (int)(ESP_INTR_FLAG_IRAM | ESP_INTR_FLAG_LEVEL1), i2s_isr, NULL, NULL);
+    // If we have double buffering, then allocate an interrupt service routine function
+    // that can be used for I2S0/I2S1 created interrupts.
+
+    // Setup I2S Interrupt
+    SET_PERI_REG_BITS(I2S_INT_ENA_REG(ESP32_I2S_DEVICE), I2S_OUT_EOF_INT_ENA_V, 1, I2S_OUT_EOF_INT_ENA_S);
+
+    // Allocate a level 1 intterupt: lowest priority, as ISR isn't urgent and may take a long time to complete
     esp_intr_alloc(irq_source, (int)(ESP_INTR_FLAG_IRAM | ESP_INTR_FLAG_LEVEL1), i2s_isr, NULL, NULL);
-    
 
-
-      
+ 
   #if defined (CONFIG_IDF_TARGET_ESP32S2)
       ESP_LOGD("ESP32-S2", "init() GPIO and clock configuration set for ESP32-S2");    
   #else
       ESP_LOGD("ESP32-ORIG", "init() GPIO and clock configuration set for ESP32");    
   #endif
-
 
       return true;
   }
