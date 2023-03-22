@@ -131,7 +131,7 @@ public:
 
     void flipDMABuffer() { display->flipDMABuffer(); }
     void drawDisplayTest();
-    void setRotate(bool rotate);
+    void setRotation(int rotate);
 
     void setPhysicalPanelScanRate(PANEL_SCAN_RATE rate);
 
@@ -155,7 +155,7 @@ private:
 
     int16_t dmaResX; // The width of the chain in pixels (as the DMA engine sees it)
 
-    bool _rotate = false;
+    int _rotate = 0;
 
 }; // end Class header
 
@@ -172,12 +172,34 @@ inline VirtualCoords VirtualMatrixPanel::getCoords(int16_t &virt_x, int16_t &vir
         return coords;
     }
 
+    
     // Do we want to rotate?
-    if (_rotate)
-    {
+    switch (_rotate) {
+      case 0: //no rotation, do nothing
+      break;
+      
+      case (1): //90 degree rotation
+      {
         int16_t temp_x = virt_x;
         virt_x = virt_y;
         virt_y = virtualResY - 1 - temp_x;
+        break;
+      }
+
+      case (2): //180 rotation
+      {
+        virt_x = virtualResX - 1 - virt_x;
+        virt_y = virtualResY - 1 - virt_y;
+        break;
+      }
+
+      case (3): //270 rotation
+      {
+        int16_t temp_x = virt_x;
+        virt_x = virtualResX - 1 - virt_y;
+        virt_y = temp_x;
+        break;
+      }
     }
 
     int row = (virt_y / panelResY); // 0 indexed
@@ -404,21 +426,10 @@ inline void VirtualMatrixPanel::fillScreen(CRGB color)
 }
 #endif
 
-inline void VirtualMatrixPanel::setRotate(bool rotate)
+inline void VirtualMatrixPanel::setRotation(int rotate)
 {
+  if(rotate < 4 && rotate >= 0)
     _rotate = rotate;
-
-#ifndef NO_GFX
-    // We don't support rotation by degrees.
-    if (rotate)
-    {
-        setRotation(1);
-    }
-    else
-    {
-        setRotation(0);
-    }
-#endif
 }
 
 inline void VirtualMatrixPanel::setPhysicalPanelScanRate(PANEL_SCAN_RATE rate)
