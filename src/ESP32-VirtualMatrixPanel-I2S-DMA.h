@@ -131,7 +131,7 @@ public:
 
     void flipDMABuffer() { display->flipDMABuffer(); }
     void drawDisplayTest();
-    void setRotate(int rotate);
+    void setRotation(int rotate);
 
     void setPhysicalPanelScanRate(PANEL_SCAN_RATE rate);
 
@@ -426,7 +426,7 @@ inline void VirtualMatrixPanel::fillScreen(CRGB color)
 }
 #endif
 
-inline void VirtualMatrixPanel::setRotate(int rotate)
+inline void VirtualMatrixPanel::setRotation(int rotate)
 {
   if(rotate < 4 && rotate >= 0)
     _rotate = rotate;
