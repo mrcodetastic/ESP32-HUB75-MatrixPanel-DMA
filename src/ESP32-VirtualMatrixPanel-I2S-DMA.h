@@ -181,6 +181,14 @@ inline VirtualCoords VirtualMatrixPanel::getCoords(int16_t virt_x, int16_t virt_
         coords.x = coords.y = -1; // By defalt use an invalid co-ordinates that will be rejected by updateMatrixDMABuffer
         return coords;
     }
+#else
+	
+    if (virt_x < 0 || virt_x >= _virtualResX || virt_y < 0 || virt_y >= _virtualResY) // _width and _height are defined in the adafruit constructor
+    {                             // Co-ordinates go from 0 to X-1 remember! otherwise they are out of range!
+        coords.x = coords.y = -1; // By defalt use an invalid co-ordinates that will be rejected by updateMatrixDMABuffer
+        return coords;
+    }
+	
 #endif
     
     // Do we want to rotate?
@@ -458,24 +466,32 @@ inline void VirtualMatrixPanel::setRotation(int rotate)
   if(rotate < 4 && rotate >= 0)
     _rotate = rotate;
 
-#if !defined NO_GFX
-
   // Change the _width and _height variables used by the underlying adafruit gfx library.
   // Actual pixel rotation / mapping is done in the getCoords function.
   rotation = (rotate & 3);
   switch (rotation) {
   case 0: // nothing
   case 2: // 180
-    _width = virtualResX;
-    _height = virtualResY;
+	_virtualResX = virtualResX;
+	_virtualResY = virtualResY;
+
+#if !defined NO_GFX	
+    _width = virtualResX; // adafruit base class 
+    _height = virtualResY; // adafruit base class 
+#endif 
     break;
   case 1:
   case 3:
-    _width = virtualResY;
-    _height = virtualResX;
+	_virtualResX = virtualResY;
+	_virtualResY = virtualResX;
+	
+#if !defined NO_GFX		
+    _width = virtualResY; // adafruit base class 
+    _height = virtualResX; // adafruit base class 
+#endif 	
     break;
   }
-#endif 
+
   
 }
 
