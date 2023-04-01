@@ -227,4 +227,6 @@ There are a number of great looking LED graphical display projects which leverag
 * [PaintYourDragon](https://github.com/PaintYourDragon) for the DMA logic for the ESP32-S3.
 * And lots of others, let me know if I've missed you.
 
+If you want to donate money to the project, please refer to [this discussion](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-DMA/discussions/349) about it. If you want to donate/buy an LED panel for the library author to improve compatibility and/or testing - please feel free to post in the same [discussion](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-DMA/discussions/349).
+
 ![It's better in real life](image.jpg)
