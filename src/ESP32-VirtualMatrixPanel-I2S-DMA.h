@@ -109,10 +109,11 @@ public:
     }
 
     // equivalent methods of the matrix library so it can be just swapped out.
-    virtual void drawPixel(int16_t x, int16_t y, uint16_t color);
-    virtual void fillScreen(uint16_t color); // overwrite adafruit implementation
-    virtual void fillScreenRGB888(uint8_t r, uint8_t g, uint8_t b);
-
+    void drawPixel(int16_t x, int16_t y, uint16_t color);   // overwrite adafruit implementation
+    void fillScreen(uint16_t color); 			// overwrite adafruit implementation
+    void setRotation(int rotate); 				// overwrite adafruit implementation
+    
+	void fillScreenRGB888(uint8_t r, uint8_t g, uint8_t b);
     void clearScreen() { display->clearScreen(); }
     void drawPixelRGB888(int16_t x, int16_t y, uint8_t r, uint8_t g, uint8_t b);
 
@@ -131,9 +132,9 @@ public:
 
     void flipDMABuffer() { display->flipDMABuffer(); }
     void drawDisplayTest();
-    void setRotation(int rotate);
 
     void setPhysicalPanelScanRate(PANEL_SCAN_RATE rate);
+	void setScaleFactor(int scale);
 
 private:
     MatrixPanel_I2S_DMA *display;
@@ -141,11 +142,14 @@ private:
     PANEL_CHAIN_TYPE panel_chain_type;
     PANEL_SCAN_RATE panel_scan_rate = NORMAL_TWO_SCAN;
 
-    virtual VirtualCoords getCoords(int16_t &x, int16_t &y);
+    virtual VirtualCoords getCoords(int16_t x, int16_t y);
     VirtualCoords coords;
 
     int16_t virtualResX;
     int16_t virtualResY;
+	
+	int16_t _virtualResX;       ///< Display width as modified by current rotation
+	int16_t _virtualResY;       ///< Display height as modified by current rotation	
 
     int16_t vmodule_rows;
     int16_t vmodule_cols;
@@ -156,6 +160,8 @@ private:
     int16_t dmaResX; // The width of the chain in pixels (as the DMA engine sees it)
 
     int _rotate = 0;
+	
+	int _scale_factor = 0;
 
 }; // end Class header
 
@@ -164,14 +170,18 @@ private:
  * Updates the private class member variable 'coords', so no need to use the return value.
  * Not thread safe, but not a concern for ESP32 sketch anyway... I think.
  */
-inline VirtualCoords VirtualMatrixPanel::getCoords(int16_t &virt_x, int16_t &virt_y)
+inline VirtualCoords VirtualMatrixPanel::getCoords(int16_t virt_x, int16_t virt_y)
 {
-    if (virt_x < 0 || virt_x >= virtualResX || virt_y < 0 || virt_y >= virtualResY)
+	
+#if !defined NO_GFX
+	// I don't give any support if Adafruit GFX isn't being used.
+	
+    if (virt_x < 0 || virt_x >= _width || virt_y < 0 || virt_y >= _height) // _width and _height are defined in the adafruit constructor
     {                             // Co-ordinates go from 0 to X-1 remember! otherwise they are out of range!
         coords.x = coords.y = -1; // By defalt use an invalid co-ordinates that will be rejected by updateMatrixDMABuffer
         return coords;
     }
-
+#endif
     
     // Do we want to rotate?
     switch (_rotate) {
@@ -391,9 +401,26 @@ inline VirtualCoords VirtualMatrixPanel::getCoords(int16_t &virt_x, int16_t &vir
 
 inline void VirtualMatrixPanel::drawPixel(int16_t x, int16_t y, uint16_t color)
 { // adafruit virtual void override
-    getCoords(x, y);
-    // Serial.printf("Requested virtual x,y coord (%d, %d), got phyical chain coord of (%d,%d)\n", x,y, coords.x, coords.y);
-    this->display->drawPixel(coords.x, coords.y, color);
+
+	if (_scale_factor > 1) // only from 2 and beyond
+	{
+		int16_t scaled_x_start_pos = x * _scale_factor;
+		int16_t scaled_y_start_pos = y * _scale_factor;
+		
+		for (int16_t x = 0; x < _scale_factor; x++) {
+			for (int16_t y = 0; y < _scale_factor; y++) {	
+				VirtualCoords result = this->getCoords(scaled_x_start_pos+x, scaled_y_start_pos+y);
+				// Serial.printf("Requested virtual x,y coord (%d, %d), got phyical chain coord of (%d,%d)\n", x,y, coords.x, coords.y);
+				this->display->drawPixel(result.x, result.y, color);
+			}
+		}
+	}
+	else
+	{
+		this->getCoords(x, y);
+		// Serial.printf("Requested virtual x,y coord (%d, %d), got phyical chain coord of (%d,%d)\n", x,y, coords.x, coords.y);
+		this->display->drawPixel(coords.x, coords.y, color);	
+	}
 }
 
 inline void VirtualMatrixPanel::fillScreen(uint16_t color)
@@ -408,7 +435,7 @@ inline void VirtualMatrixPanel::fillScreenRGB888(uint8_t r, uint8_t g, uint8_t b
 
 inline void VirtualMatrixPanel::drawPixelRGB888(int16_t x, int16_t y, uint8_t r, uint8_t g, uint8_t b)
 {
-    getCoords(x, y);
+    this->getCoords(x, y);
     this->display->drawPixelRGB888(coords.x, coords.y, r, g, b);
 }
 
@@ -416,7 +443,7 @@ inline void VirtualMatrixPanel::drawPixelRGB888(int16_t x, int16_t y, uint8_t r,
 // Support for CRGB values provided via FastLED
 inline void VirtualMatrixPanel::drawPixel(int16_t x, int16_t y, CRGB color)
 {
-    getCoords(x, y);
+    this->getCoords(x, y);
     this->display->drawPixel(coords.x, coords.y, color);
 }
 
@@ -430,6 +457,26 @@ inline void VirtualMatrixPanel::setRotation(int rotate)
 {
   if(rotate < 4 && rotate >= 0)
     _rotate = rotate;
+
+#if !defined NO_GFX
+
+  // Change the _width and _height variables used by the underlying adafruit gfx library.
+  // Actual pixel rotation / mapping is done in the getCoords function.
+  rotation = (rotate & 3);
+  switch (rotation) {
+  case 0: // nothing
+  case 2: // 180
+    _width = virtualResX;
+    _height = virtualResY;
+    break;
+  case 1:
+  case 3:
+    _width = virtualResY;
+    _height = virtualResX;
+    break;
+  }
+#endif 
+  
 }
 
 inline void VirtualMatrixPanel::setPhysicalPanelScanRate(PANEL_SCAN_RATE rate)
@@ -437,9 +484,17 @@ inline void VirtualMatrixPanel::setPhysicalPanelScanRate(PANEL_SCAN_RATE rate)
     panel_scan_rate = rate;
 }
 
+inline void VirtualMatrixPanel::setScaleFactor(int scale)
+{
+  if(scale < 5 && scale > 0)
+	_scale_factor = scale;
+
+}
+
 #ifndef NO_GFX
 inline void VirtualMatrixPanel::drawDisplayTest()
 {
+	// Write to the underlying panels only via the dma_display instance.
     this->display->setFont(&FreeSansBold12pt7b);
     this->display->setTextColor(this->display->color565(255, 255, 0));
     this->display->setTextSize(1);
