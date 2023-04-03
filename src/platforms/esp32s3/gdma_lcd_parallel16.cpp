@@ -1,4 +1,4 @@
-/*
+/*********************************************************************************************
   Simple example of using the ESP32-S3's LCD peripheral for general-purpose
   (non-LCD) parallel data output with DMA. Connect 8 LEDs (or logic analyzer),
   cycles through a pattern among them at about 1 Hz.
@@ -15,33 +15,30 @@
 
  PLEASE SUPPORT THEM!
 
- */
+ ********************************************************************************************/
 #if __has_include (<hal/lcd_ll.h>)
 // Stop compile errors: /src/platforms/esp32s3/gdma_lcd_parallel16.hpp:64:10: fatal error: hal/lcd_ll.h: No such file or directory
 
-#ifdef ARDUINO_ARCH_ESP32
-  #include <Arduino.h>
-#endif
+  #ifdef ARDUINO_ARCH_ESP32
+     #include <Arduino.h>
+  #endif
 
   #include "gdma_lcd_parallel16.hpp"
   #include "esp_attr.h"
 
-//#if (CORE_DEBUG_LEVEL > ARDUHAL_LOG_LEVEL_NONE) || (ARDUHAL_LOG_LEVEL > ARDUHAL_LOG_LEVEL_NONE)  
-//  static const char* TAG = "gdma_lcd_parallel16";
-//#endif  
-
-  //static int _dmadesc_a_idx = 0;
-  //static int _dmadesc_b_idx = 0;  
-
-
-  dma_descriptor_t desc;          // DMA descriptor for testing
 /*
+  dma_descriptor_t desc;          // DMA descriptor for testing
+
   uint8_t data[8][312];           // Transmit buffer (2496 bytes total)  
   uint16_t* dmabuff2;
 */
+
+  DRAM_ATTR volatile bool previousBufferFree = true;
+ 
   // End-of-DMA-transfer callback
-  IRAM_ATTR bool dma_callback(gdma_channel_handle_t dma_chan,
+  IRAM_ATTR bool gdma_on_trans_eof_callback(gdma_channel_handle_t dma_chan,
                                     gdma_event_data_t *event_data, void *user_data) {
+										
   // This DMA callback seems to trigger a moment before the last data has
   // issued (buffering between DMA & LCD peripheral?), so pause a moment
   // before stopping LCD data out. The ideal delay may depend on the LCD
@@ -53,7 +50,10 @@
   // the transfer has finished, and the same flag is set later to trigger
   // the next transfer.
 
-    LCD_CAM.lcd_user.lcd_start = 0;
+    //LCD_CAM.lcd_user.lcd_start = 0;
+	
+	previousBufferFree = true;
+	
     return true;
   }  
 
@@ -116,28 +116,26 @@
     }
     else
     {
-		
-	  auto freq 		= (_cfg.bus_freq);
-	  
-	  auto _div_num = 8; // 20Mhz 
-	  if (freq < 20000000L)
-	  {
-		  _div_num = 12; // 13Mhz
+
+	  auto 	freq 	 = (_cfg.bus_freq);
+
+	  auto 	_div_num = 8; // 20Mhz 
+	  if (freq < 20000000L) {
+			_div_num = 12; // 13Mhz
 	  }
-	  else if (freq > 20000000L)
-	  {
-		  _div_num = 6; // 26Mhz --- likely to have noise without a good connection		  
+	  else if (freq > 20000000L) {
+			_div_num = 6; // 26Mhz --- likely to have noise without a good connection		  
 	  }
-	    
+
       //LCD_CAM.lcd_clock.lcd_clkm_div_num = lcd_clkm_div_num;      
       LCD_CAM.lcd_clock.lcd_clkm_div_num = _div_num; //3;      
 
     }
-     ESP_LOGI("S3", "Clock divider is %d", LCD_CAM.lcd_clock.lcd_clkm_div_num);   
 
-	 ESP_LOGD("S3", "Resulting output clock frequency: %ld Mhz",  (160000000L/LCD_CAM.lcd_clock.lcd_clkm_div_num)); 
+    ESP_LOGI("S3", "Clock divider is %d", LCD_CAM.lcd_clock.lcd_clkm_div_num);
+    ESP_LOGD("S3", "Resulting output clock frequency: %ld Mhz",  (160000000L/LCD_CAM.lcd_clock.lcd_clkm_div_num)); 
 
-    
+
     LCD_CAM.lcd_clock.lcd_clkm_div_a = 1;     // 0/1 fractional divide
     LCD_CAM.lcd_clock.lcd_clkm_div_b = 0;
     
@@ -212,10 +210,11 @@
     // in a single DMA descriptor (max 4095 bytes). Large transfers would
     // require a linked list of descriptors, but here it's just one...
 
+/*
     desc.dw0.owner = DMA_DESCRIPTOR_BUFFER_OWNER_DMA;
     desc.dw0.suc_eof = 0; // Last descriptor
     desc.next = &desc;     // No linked list
-
+*/
    
     // Remaining descriptor elements are initialized before each DMA transfer.
 
@@ -236,38 +235,18 @@
     gdma_apply_strategy(dma_chan, &strategy_config);
 
     gdma_transfer_ability_t ability = {
-        .sram_trans_align = 4,
+        .sram_trans_align = 32,
         .psram_trans_align = 64,
     };
     gdma_set_transfer_ability(dma_chan, &ability);    
 
     // Enable DMA transfer callback
-    /*
     static gdma_tx_event_callbacks_t tx_cbs = {
-      .on_trans_eof = dma_callback
+	   // .on_trans_eof is literally the only gdma tx event type available
+      .on_trans_eof = gdma_on_trans_eof_callback 
     };
     gdma_register_tx_event_callbacks(dma_chan, &tx_cbs, NULL);
-    */
 
-    // As mentioned earlier, the slowest clock we can get to the LCD
-    // peripheral is 40 MHz / 250 / 64 = 2500 Hz. To make an even slower
-    // bit pattern that's perceptible, we just repeat each value many
-    // times over. The pattern here just counts through each of 8 bits
-    // (each LED lights in sequence)...so to get this to repeat at about
-    // 1 Hz, each LED is lit for 2500/8 or 312 cycles, hence the
-    // data[8][312] declaration at the start of this code (it's not
-    // precisely 1 Hz because reality is messy, but sufficient for demo).
-    // In actual use, say controlling an LED matrix or NeoPixels, such
-    // shenanigans aren't necessary, as these operate at multiple MHz
-    // with much smaller clock dividers and can use 1 byte per datum.
-    /*
-    for (int i = 0; i < (sizeof(data) / sizeof(data[0])); i++) { // 0 to 7
-      for (int j = 0; j < sizeof(data[0]); j++) {            // 0 to 311
-        data[i][j] = 1 << i;
-      }
-    }
-    */
-    
 
     // This uses a busy loop to wait for each DMA transfer to complete...
     // but the whole point of DMA is that one's code can do other work in
@@ -277,36 +256,12 @@
     // After much experimentation, each of these steps is required to get
     // a clean start on the next LCD transfer:
     gdma_reset(dma_chan);                 // Reset DMA to known state
-    LCD_CAM.lcd_user.lcd_dout = 1;        // Enable data out
-    LCD_CAM.lcd_user.lcd_update = 1;      // Update registers
+    LCD_CAM.lcd_user.lcd_dout		 = 1; // Enable data out
+    LCD_CAM.lcd_user.lcd_update 	 = 1; // Update registers
     LCD_CAM.lcd_misc.lcd_afifo_reset = 1; // Reset LCD TX FIFO
 
-    // This program happens to send the same data over and over...but,
-    // if desired, one could fill the data buffer with a new bit pattern
-    // here, or point to a completely different buffer each time through.
-    // With two buffers, one can make best use of time by filling each
-    // with new data before the busy loop above, alternating between them.
-
-    // Reset elements of DMA descriptor. Just one in this code, long
-    // transfers would loop through a linked list.
-
-    /*
-    desc.dw0.size = desc.dw0.length = sizeof(data);
-    desc.buffer = dmabuff2; //data;
-    desc.next = &desc;
-*/
-
-
-/*
-    //gdma_start(dma_chan, (intptr_t)&desc); // Start DMA w/updated descriptor(s)
-    gdma_start(dma_chan, (intptr_t)&_dmadesc_a[0]); // Start DMA w/updated descriptor(s)
-    esp_rom_delay_us(100);              // Must 'bake' a moment before...
-    LCD_CAM.lcd_user.lcd_start = 1;        // Trigger LCD DMA transfer
-*/
-    
 
     return true; // no return val = illegal instruction
-
  }
 
 
@@ -379,7 +334,8 @@
     {
 
       _dmadesc_b[_dmadesc_b_idx].dw0.owner = DMA_DESCRIPTOR_BUFFER_OWNER_DMA;
-      _dmadesc_b[_dmadesc_b_idx].dw0.suc_eof = 0;
+      //_dmadesc_b[_dmadesc_b_idx].dw0.suc_eof = 0;	  
+	  _dmadesc_b[_dmadesc_b_idx].dw0.suc_eof = (_dmadesc_b_idx == (_dmadesc_count-1));
       _dmadesc_b[_dmadesc_b_idx].dw0.size = _dmadesc_b[_dmadesc_b_idx].dw0.length = size; //sizeof(data);
       _dmadesc_b[_dmadesc_b_idx].buffer = data; //data;
 
@@ -404,7 +360,8 @@
       }
 
       _dmadesc_a[_dmadesc_a_idx].dw0.owner = DMA_DESCRIPTOR_BUFFER_OWNER_DMA;
-      _dmadesc_a[_dmadesc_a_idx].dw0.suc_eof = 0;
+      //_dmadesc_a[_dmadesc_a_idx].dw0.suc_eof = 0;
+	  _dmadesc_a[_dmadesc_a_idx].dw0.suc_eof = (_dmadesc_a_idx == (_dmadesc_count-1));	  
       _dmadesc_a[_dmadesc_a_idx].dw0.size = _dmadesc_a[_dmadesc_a_idx].dw0.length = size; //sizeof(data);
       _dmadesc_a[_dmadesc_a_idx].buffer = data; //data;
 
@@ -458,6 +415,13 @@
     }
 
     //current_back_buffer_id ^= 1;
+	
+    previousBufferFree = false;  
+	
+    //while (i2s_parallel_is_previous_buffer_free() == false) {}      
+    while (!previousBufferFree);
+
+		
 
     
   } // end flip
