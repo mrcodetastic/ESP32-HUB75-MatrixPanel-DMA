@@ -134,7 +134,7 @@ public:
     void drawDisplayTest();
 
     void setPhysicalPanelScanRate(PANEL_SCAN_RATE rate);
-	void setScaleFactor(int scale);
+	void setZoomFactor(int scale);
 
 private:
     MatrixPanel_I2S_DMA *display;
@@ -500,7 +500,7 @@ inline void VirtualMatrixPanel::setPhysicalPanelScanRate(PANEL_SCAN_RATE rate)
     panel_scan_rate = rate;
 }
 
-inline void VirtualMatrixPanel::setScaleFactor(int scale)
+inline void VirtualMatrixPanel::setZoomFactor(int scale)
 {
   if(scale < 5 && scale > 0)
 	_scale_factor = scale;
