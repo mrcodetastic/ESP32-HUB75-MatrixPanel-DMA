@@ -45,11 +45,11 @@ bool MatrixPanel_I2S_DMA::allocateDMAmemory()
   size_t allocated_fb_memory = 0;
 
   int fbs_required = (m_cfg.double_buff) ? 2 : 1;
-  for (int fb = 0; fb < fbs_required; fb++)
+  for (int fb = 0; fb < (fbs_required); fb++)
   {
     frame_buffer[fb].rowBits.reserve(ROWS_PER_FRAME);
 
-    for (int malloc_num = 0; malloc_num < ROWS_PER_FRAME; ++malloc_num)
+    for (int malloc_num = 0; malloc_num < ROWS_PER_FRAME; malloc_num++)
     {
       auto ptr = std::make_shared<rowBitStruct>(PIXELS_PER_ROW, m_cfg.getPixelColorDepthBits(), m_cfg.double_buff);
 
@@ -62,14 +62,17 @@ bool MatrixPanel_I2S_DMA::allocateDMAmemory()
         // TODO: should we release all previous rowBitStructs here???
       }
 
-      allocated_fb_memory += ptr->getColorDepthSize();
-      frame_buffer[fb].rowBits.emplace_back(ptr); // save new rowBitStruct into rows vector
+      allocated_fb_memory += ptr->getColorDepthSize(); // byte required to display all colour depths for the rows shown at the same time
+      frame_buffer[fb].rowBits.emplace_back(ptr); // save new rowBitStruct pointer into rows vector
       ++frame_buffer[fb].rows;
     }
   }
   ESP_LOGI("I2S-DMA", "Allocating %d bytes memory for DMA BCM framebuffer(s).", allocated_fb_memory);
 
   // calculate the lowest LSBMSB_TRANSITION_BIT value that will fit in memory that will meet or exceed the configured refresh rate
+  
+//#define FORCE_COLOR_DEPTH 1
+  
 #if !defined(FORCE_COLOR_DEPTH)
 
   ESP_LOGI("I2S-DMA", "Minimum visual refresh rate (scan rate from panel top to bottom) requested: %d Hz", m_cfg.min_refresh_rate);
@@ -199,25 +202,8 @@ void MatrixPanel_I2S_DMA::configureDMA(const HUB75_I2S_CFG &_cfg)
   }
 
 
- #ifndef ROW_SCAN_SHUFFLE 
  // Fill DMA linked lists for both frames (as in, halves of the HUB75 panel) in sequence (top to bottom) 
   for (int row = 0; row < ROWS_PER_FRAME; row++)
-#else
-  // Create row vector for a row shuffle.
-  std::vector<int> v;
-  
-  if (ROWS_PER_FRAME == 16) { //64wx32h pixel panel
-     // v = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
-     v = {6,2,4,0,8,10,12,15,14,13,11,9,1,5,3,7};
-  }
- 
-  if (ROWS_PER_FRAME == 32) { //64wx64h panel
-     // v = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
-     v = {5,3,1,6,8,11,13,15,17,19,21,23,25,27,31,30,29,28,26,24,22,20,18,16,10,14,12,9,7,0,4,2};
-  }
-
-  for (int &row: v) 
-#endif
   {
     // first set of data is LSB through MSB, single pass (IF TOTAL SIZE < DMA_MAX) - all colour bits are displayed once, which takes care of everything below and including LSBMSB_TRANSITION_BIT
     // NOTE: size must be less than DMA_MAX - worst case for library: 16-bpp with 256 pixels per row would exceed this, need to break into two

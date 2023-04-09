@@ -8,6 +8,8 @@ MatrixPanel_I2S_DMA *dma_display = nullptr;
 
 void setup() {
 
+  Serial.begin(112500);
+
 
   HUB75_I2S_CFG::i2s_pins _pins={
     25, //R1_PIN, 
