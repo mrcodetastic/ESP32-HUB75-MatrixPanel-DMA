@@ -133,6 +133,8 @@ HUB75_I2S_CFG mxconfig(
 dma_display = new MatrixPanel_I2S_DMA(mxconfig);
 ```
 
+Make sure you also connect one of the HUB75 interfaces ground pins to a ground pin of the ESP32, otherwise you may get electrical artefacts on LED Matrix Panel.
+
 Various people have created PCBs for which one can simply connect an ESP32 to a PCB, and then the PCB to the HUB75 connector, such as:
 
 * Brian Lough's [ESP32 I2S Matrix Shield](http://blough.ie/i2smat/)
