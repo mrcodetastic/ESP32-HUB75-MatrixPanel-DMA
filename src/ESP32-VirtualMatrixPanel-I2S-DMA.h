@@ -362,13 +362,16 @@ inline VirtualCoords VirtualMatrixPanel::getCoords(int16_t virt_x, int16_t virt_
      *        there's only 2 x RGB pins... and convert this to 1/4 or something
      */	
 	
-    if (panel_scan_rate == FOUR_SCAN_64PX_HIGH)
+    if ((panel_scan_rate == FOUR_SCAN_32PX_HIGH) || (panel_scan_rate == FOUR_SCAN_64PX_HIGH))
     {
-	// https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-DMA/issues/345#issuecomment-1510401192
-	if ((virt_y & 8) != ((virt_y & 16) >> 1)) { virt_y = (virt_y & 0b11000) ^ 0b11000 + (virt_y & 0b11100111); }
-    }
-    else if (panel_scan_rate == FOUR_SCAN_32PX_HIGH)
-    {
+
+	if (panel_scan_rate == FOUR_SCAN_64PX_HIGH)
+	{
+	    // https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-DMA/issues/345#issuecomment-1510401192
+	    if ((virt_y & 8) != ((virt_y & 16) >> 1)) { virt_y = (virt_y & 0b11000) ^ 0b11000 + (virt_y & 0b11100111); }
+	}
+
+
         /* Convert Real World 'VirtualMatrixPanel' co-ordinates (i.e. Real World pixel you're looking at
            on the panel or chain of panels, per the chaining configuration) to a 1/8 panels
            double 'stretched' and 'squished' coordinates which is what needs to be sent from the
