@@ -83,7 +83,7 @@
 
     // Reset LCD bus
     LCD_CAM.lcd_user.lcd_reset = 1;
-    esp_rom_delay_us(100);
+    esp_rom_delay_us(1000);
 
 //    uint32_t lcd_clkm_div_num = ((160000000 + 1) / _cfg.bus_freq);
 //    ESP_LOGI("", "Clock divider is %d", lcd_clkm_div_num);     
@@ -153,8 +153,8 @@
     LCD_CAM.lcd_user.lcd_8bits_order = 0;    // Do not swap bytes
     LCD_CAM.lcd_user.lcd_bit_order = 0;      // Do not reverse bit order
     LCD_CAM.lcd_user.lcd_2byte_en = 1;       // 8-bit data mode
-    LCD_CAM.lcd_user.lcd_dummy = 0;          // Dummy phase(s) @ LCD start
-    LCD_CAM.lcd_user.lcd_dummy_cyclelen = 0; // 1 dummy phase
+    LCD_CAM.lcd_user.lcd_dummy = 1;          // Dummy phase(s) @ LCD start
+    LCD_CAM.lcd_user.lcd_dummy_cyclelen = 100; // 1 dummy phase
     LCD_CAM.lcd_user.lcd_cmd = 0;            // No command at LCD start
     // "Dummy phases" are initial LCD peripheral clock cycles before data
     // begins transmitting when requested. After much testing, determined
@@ -256,6 +256,8 @@
     // After much experimentation, each of these steps is required to get
     // a clean start on the next LCD transfer:
     gdma_reset(dma_chan);                 // Reset DMA to known state
+    esp_rom_delay_us(1000);
+	 
     LCD_CAM.lcd_user.lcd_dout		 = 1; // Enable data out
     LCD_CAM.lcd_user.lcd_update 	 = 1; // Update registers
     LCD_CAM.lcd_misc.lcd_afifo_reset = 1; // Reset LCD TX FIFO
