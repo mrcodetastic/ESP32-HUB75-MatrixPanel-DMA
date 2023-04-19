@@ -54,7 +54,7 @@ A typical 64x32px panel at 24bpp colour uses about 20kB of internal memory.
 
 Please use the ['Memory Calculator'](/doc/memcalc.md) to see what is *typically* achievable with the typical ESP32. ![Memory Calculator](doc/memcalc.jpg)
 
-For the ESP32-S3 only, you can use SPIRAM/PSRAM to drive the HUB75 DMA buffer when using **Octal SPI-RAM** (i.e. ESP32 S3 N8R8 variant). However, due to bandwidth limitations, the maximum output frequency is limited to approx. 13Mhz, which will limit the real-world number of panels that can be chained without flicker. 
+For the ESP32-S3 only, you can use SPIRAM/PSRAM to drive the HUB75 DMA buffer when using an ESP32-S3 with **OCTAL SPI-RAM (PSTRAM)** (i.e. ESP32 S3 N8R8 variant). However, due to bandwidth limitations, the maximum output frequency is limited to approx. 13Mhz, which will limit the real-world number of panels that can be chained without flicker. Please do not use PSRAM as the DMA buffer if using QUAD SPI (Q-SPI), as it's too slow.
 
 To enable PSRAM support on the ESP32-S3, refer to [the build options](/doc/BuildOptions.md) to enable.
 
