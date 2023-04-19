@@ -586,7 +586,7 @@ void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id)
     } while (colouridx);
 
 #if defined(SPIRAM_DMA_BUFFER)
-    Cache_WriteBack_Addr((uint32_t)row, sizeof(ESP32_I2S_DMA_STORAGE_TYPE) * ((fb->rowBits[row_idx]->width * fb->rowBits[row_idx]->colour_depth) - 1));
+    Cache_WriteBack_Addr((uint32_t)row, fb->rowBits[row_idx]->getColorDepthSize());
 #endif
 
   } while (row_idx);
@@ -656,8 +656,9 @@ void MatrixPanel_I2S_DMA::brtCtrlOEv2(uint8_t brt, const int _buff_id)
 
 // switch pointer to a row for a specific colour index
 #if defined(SPIRAM_DMA_BUFFER)
-    ESP32_I2S_DMA_STORAGE_TYPE *row_hack = fb->rowBits[row_idx]->getDataPtr(colouridx, _buff_id);
-    Cache_WriteBack_Addr((uint32_t)row_hack, sizeof(ESP32_I2S_DMA_STORAGE_TYPE) * ((fb->rowBits[row_idx]->width * fb->rowBits[row_idx]->colour_depth) - 1));
+    ESP32_I2S_DMA_STORAGE_TYPE *row_hack = fb->rowBits[row_idx]->getDataPtr(0, _buff_id);
+    //Cache_WriteBack_Addr((uint32_t)row_hack, sizeof(ESP32_I2S_DMA_STORAGE_TYPE) * ((fb->rowBits[row_idx]->width * fb->rowBits[row_idx]->colour_depth) - 1));
+    Cache_WriteBack_Addr((uint32_t)row_hack, fb->rowBits[row_idx]->getColorDepthSize());
 #endif
   } while (row_idx);
 }
