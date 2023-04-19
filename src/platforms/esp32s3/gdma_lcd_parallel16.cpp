@@ -109,10 +109,24 @@
 	LCD_CAM.lcd_clock.lcd_clk_equ_sysclk = 1; // PCLK = CLK / 1 (... so 160Mhz still)
 
 
-    if (_cfg.psram_clk_override) // fastest speed I can get PSRAM to work before nothing shows
+	// https://esp32.com/viewtopic.php?f=5&t=24459&start=80#p94487
+	/* Re: ESP32-S3 LCD and I2S FULL documentation 
+	 *  by ESP_Sprite » Fri Mar 25, 2022 2:06 am
+     *
+     *  Are you sure you are staying within the limits of the psram throughput? If GDMA can't fetch data fast 
+	 *	enough it leads to corruption. Also keep in mind that worst case scenario, the gdma can only use half of 
+	 * 	the bandwidth of the psram peripheral (as it's round-robin shared with the CPUs).
+	 */	
+	 
+	// Fastest speed I can get with Octoal PSRAM to work before nothing shows. Based on manual testing.
+	// If using an ESP32-S3 with slower (half the bandwidth) Q-SPI (Quad), then the divisor will need to be '20' (8Mhz) which wil be flickery! 
+    if (_cfg.psram_clk_override) 
     {
         ESP_LOGI("S3", "DMA buffer is on PSRAM. Limiting clockspeed....");   
-        LCD_CAM.lcd_clock.lcd_clkm_div_num = 10; //16mhz is the fasted the Octal PSRAM can support it seems 
+        //LCD_CAM.lcd_clock.lcd_clkm_div_num = 10; //16mhz is the fasted the Octal PSRAM can support it seems from faptastic's testing using an N8R8 variant (Octal SPI PSRAM).
+		
+		// https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-DMA/issues/441#issuecomment-1513631890
+		LCD_CAM.lcd_clock.lcd_clkm_div_num = 12; // 13Mhz is the fastest when the DMA memory is needed to service other peripherals as well.
     }
     else
     {
@@ -148,13 +162,16 @@
     LCD_CAM.lcd_ctrl.lcd_rgb_mode_en = 0;    // i8080 mode (not RGB)
     LCD_CAM.lcd_rgb_yuv.lcd_conv_bypass = 0; // Disable RGB/YUV converter
     LCD_CAM.lcd_misc.lcd_next_frame_en = 0;  // Do NOT auto-frame
+
+	LCD_CAM.lcd_misc.lcd_bk_en = 1; 		 // https://esp32.com/viewtopic.php?t=24459&start=60#p91835
+	
     LCD_CAM.lcd_data_dout_mode.val = 0;      // No data delays
     LCD_CAM.lcd_user.lcd_always_out_en = 1;  // Enable 'always out' mode
     LCD_CAM.lcd_user.lcd_8bits_order = 0;    // Do not swap bytes
     LCD_CAM.lcd_user.lcd_bit_order = 0;      // Do not reverse bit order
     LCD_CAM.lcd_user.lcd_2byte_en = 1;       // 8-bit data mode
     LCD_CAM.lcd_user.lcd_dummy = 1;          // Dummy phase(s) @ LCD start
-    LCD_CAM.lcd_user.lcd_dummy_cyclelen = 100; // 1 dummy phase
+    LCD_CAM.lcd_user.lcd_dummy_cyclelen = 1; // 1+1 dummy phase
     LCD_CAM.lcd_user.lcd_cmd = 0;            // No command at LCD start
     // "Dummy phases" are initial LCD peripheral clock cycles before data
     // begins transmitting when requested. After much testing, determined
