@@ -10,9 +10,13 @@ if(ARDUINO_ARCH_ESP32)
 else()
     list(APPEND esp_idf_build esp_lcd driver)
 endif()
-idf_component_register(SRCS "src/platforms/esp32/esp32_i2s_parallel_dma.cpp" "src/ESP32-HUB75-MatrixPanel-I2S-DMA.cpp" "src/ESP32-HUB75-MatrixPanel-leddrivers.cpp"
-                       src/platforms/${target}/gdma_lcd_parallel16.cpp
-                       INCLUDE_DIRS "./src" 
+
+if(${target} STREQUAL "esp32s3")
+  list(APPEND extra_srcs src/platforms/${target}/gdma_lcd_parallel16.cpp)
+endif()
+
+idf_component_register(SRCS "src/platforms/esp32/esp32_i2s_parallel_dma.cpp" "src/ESP32-HUB75-MatrixPanel-I2S-DMA.cpp" "src/ESP32-HUB75-MatrixPanel-leddrivers.cpp" ${extra_srcs}
+                       INCLUDE_DIRS "./src"
                        REQUIRES ${arduino_build} ${esp_idf_build}
                        )
 
@@ -29,7 +33,7 @@ if(ARDUINO_ARCH_ESP32)
 else()
     target_compile_options(${COMPONENT_TARGET} PUBLIC -DNO_GFX)
     if(${target} STREQUAL "esp32s3")
-		# Don't enable PSRAM based framebuffer just because it's an S3. 
+		# Don't enable PSRAM based framebuffer just because it's an S3.
 		# This is an advanced option and should only be used with an S3 with Octal-SPI RAM.
         # target_compile_options(${COMPONENT_TARGET} PUBLIC -DSPIRAM_FRAMEBUFFER)
 		target_compile_options(${COMPONENT_TARGET} PUBLIC)
