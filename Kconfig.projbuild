@@ -1,0 +1,9 @@
+menu "ESP32 HUB75 Configuration"
+
+  config ESP32_HUB75_USE_GFX
+      bool "Use Adafruit GFX library."
+      default y
+      help
+          This option enables use of the Adafruit GFX library using the `Adafruit-GFX-Library` component.
+
+endmenu
