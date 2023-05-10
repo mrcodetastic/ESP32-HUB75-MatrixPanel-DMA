@@ -28,7 +28,10 @@ Modified heavily for the ESP32 HUB75 DMA library by:
 #include <driver/periph_ctrl.h>
 #include <soc/gpio_sig_map.h>
 
-#include <Arduino.h> // Need to make sure this is uncommented to get ESP_LOG output on (Arduino) Serial output!!!!
+#if defined (ARDUINO_ARCH_ESP32)
+#include <Arduino.h>
+#endif
+
 #include <esp_err.h>
 #include <esp_log.h>
 
