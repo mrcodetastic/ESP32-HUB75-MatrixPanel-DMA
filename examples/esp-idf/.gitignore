@@ -1,0 +1,7 @@
+build
+
+*.swap
+
+sdkconfig*
+# Unignore sdkconfig.defaults
+!sdkconfig.defaults
