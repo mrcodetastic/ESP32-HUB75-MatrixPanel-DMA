@@ -1,6 +1,6 @@
 build
 
-*.swap
+*.swp
 
 sdkconfig*
 # Unignore sdkconfig.defaults
