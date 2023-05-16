@@ -1,0 +1,12 @@
+# ESP-IDF default build directory
+build
+
+# Temporary files
+*.swp
+
+# lock files for examples and components
+dependencies.lock
+
+sdkconfig*
+# Unignore sdkconfig.defaults
+!sdkconfig.defaults
