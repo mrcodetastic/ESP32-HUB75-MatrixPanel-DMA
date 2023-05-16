@@ -1,0 +1,34 @@
+name: esp-idf without Adafruit GFX Library
+
+on:
+  push:
+    paths-ignore:
+      - '**.md'
+      - 'doc/**'
+      - '.github/**'
+  pull_request:
+    paths-ignore:
+      - '**.md'
+      - 'doc/**'
+      - '.github/**'
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v2
+      with:
+        submodules: 'recursive'
+    - name: Checkout ESP32-HUB75-MatrixPanel-I2S-DMA component
+      uses: actions/checkout@v2
+      with:
+        path: 'examples/esp-idf/without-gfx/components/ESP32-HUB75-MatrixPanel-I2S-DMA'
+    - name: esp-idf build
+      uses: espressif/esp-idf-ci-action@v1
+      with:
+        esp_idf_version: v4.4
+        target: esp32
+        path: 'examples/esp-idf/without-gfx'
