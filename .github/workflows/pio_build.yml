@@ -10,13 +10,11 @@ on:
     paths-ignore:
       - '**.md'
       - 'doc/**'
-      - '.github/**'
   pull_request:
     branches: [ master, dev ]
     paths-ignore:
       - '**.md'
       - 'doc/**'
-      - '.github/**'
 
 jobs:
   build:
