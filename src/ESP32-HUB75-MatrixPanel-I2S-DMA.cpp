@@ -266,8 +266,9 @@ void MatrixPanel_I2S_DMA::configureDMA(const HUB75_I2S_CFG &_cfg)
   //
   auto bus_cfg = dma_bus.config(); // バス設定用の構造体を取得します。
 
-  bus_cfg.bus_freq = m_cfg.i2sspeed;
-  bus_cfg.pin_wr = m_cfg.gpio.clk; // WR を接続しているピン番号
+  bus_cfg.bus_freq    = m_cfg.i2sspeed;
+  bus_cfg.pin_wr      = m_cfg.gpio.clk;
+  bus_cfg.invert_pclk = m_cfg.clkphase;
 
   bus_cfg.pin_d0 = m_cfg.gpio.r1;
   bus_cfg.pin_d1 = m_cfg.gpio.g1;
