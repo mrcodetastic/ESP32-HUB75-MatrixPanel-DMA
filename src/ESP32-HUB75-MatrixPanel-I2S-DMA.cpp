@@ -513,6 +513,10 @@ void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id)
         // https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/issues/164
         row[x_pixel] = abcde & (0x18 << BITS_ADDR_OFFSET); // mask out the bottom 3 bits which are the clk di bk inputs
       }
+      else if (m_cfg.driver == HUB75_I2S_CFG::DP3246_SM5368) 
+      {
+        row[ESP32_TX_FIFO_POSITION_ADJUST(x_pixel)] = 0x0000;
+      }
       else
       {
         row[ESP32_TX_FIFO_POSITION_ADJUST(x_pixel)] = abcde;
@@ -532,6 +536,10 @@ void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id)
         // modifications here for row shift register type SM5266P
         // https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/issues/164
         row[x_pixel] = abcde & (0x18 << BITS_ADDR_OFFSET); // mask out the bottom 3 bits which are the clk di bk inputs
+      }
+      else if (m_cfg.driver == HUB75_I2S_CFG::DP3246_SM5368) 
+      {
+        row[ESP32_TX_FIFO_POSITION_ADJUST(x_pixel)] = 0x0000;
       }
       else
       {
@@ -557,6 +565,15 @@ void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id)
       } while (serialCount);
     } // end SM5266P
 
+    // row selection for SM5368 shift regs with ABC-only addressing. A is row clk, B is BK and C is row data
+    if (m_cfg.driver == HUB75_I2S_CFG::DP3246_SM5368) 
+    {
+      x_pixel = fb->rowBits[row_idx]->width - 1;                                                                        // last pixel in first block)
+      uint16_t c = (row_idx == 0) ? BIT_C : 0x0000;                                                                     // set row data (C) when row==0, then push through shift regs for all other rows
+      row[ESP32_TX_FIFO_POSITION_ADJUST(x_pixel - 1)] |= c;                                                             // set row data
+      row[ESP32_TX_FIFO_POSITION_ADJUST(x_pixel + 0)] |= c | BIT_A | BIT_B;                                             // set row clk and bk, carry row data
+    } // end DP3246_SM5368
+
     // let's set LAT/OE control bits for specific pixels in each colour_index subrows
     // Need to consider the original ESP32's (WROOM) DMA TX FIFO reordering of bytes...
     uint8_t colouridx = fb->rowBits[row_idx]->colour_depth;
@@ -567,6 +584,13 @@ void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id)
       // switch pointer to a row for a specific colour index
       row = fb->rowBits[row_idx]->getDataPtr(colouridx, -1);
 
+      // DP3246 needs the latch high for 3 clock cycles, so start 2 cycles earlier
+      if (m_cfg.driver == HUB75_I2S_CFG::DP3246_SM5368) 
+      {
+        row[ESP32_TX_FIFO_POSITION_ADJUST(fb->rowBits[row_idx]->width - 3)] |= BIT_LAT;   // DP3246 needs 3 clock cycle latch 
+        row[ESP32_TX_FIFO_POSITION_ADJUST(fb->rowBits[row_idx]->width - 2)] |= BIT_LAT;   // DP3246 needs 3 clock cycle latch 
+      } // DP3246_SM5368
+      
       row[ESP32_TX_FIFO_POSITION_ADJUST(fb->rowBits[row_idx]->width - 1)] |= BIT_LAT; // -1 pixel to compensate array index starting at 0
 
       // ESP32_TX_FIFO_POSITION_ADJUST(dma_buff.rowBits[row_idx]->width - 1)

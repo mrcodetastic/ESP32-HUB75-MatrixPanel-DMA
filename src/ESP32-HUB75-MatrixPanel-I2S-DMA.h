@@ -243,7 +243,8 @@ struct HUB75_I2S_CFG
     FM6126A,
     ICN2038S,
     MBI5124,
-    SM5266P
+    SM5266P,
+    DP3246_SM5368
   };
 
   /**
@@ -767,6 +768,11 @@ private:
    * @brief - FM6124-family chips initialization routine
    */
   void fm6124init(const HUB75_I2S_CFG &_cfg);
+
+  /**
+   * @brief - DP3246-family chips initialization routine
+   */
+  void dp3246init(const HUB75_I2S_CFG& _cfg);
 
   /**
    * @brief - reset OE bits in DMA buffer in a way to control brightness
