@@ -82,7 +82,8 @@ Due to the high-speed optimized nature of this library, only specific panels are
 * ICND2012
 * [RUC7258](http://www.ruichips.com/en/products.html?cateid=17496)
 * FM6126A AKA ICN2038S, [FM6124](https://datasheet4u.com/datasheet-pdf/FINEMADELECTRONICS/FM6124/pdf.php?id=1309677) (Refer to [PatternPlasma](/examples/2_PatternPlasma) example on how to use.)
-* SM5266P 
+* SM5266P
+* DP3246 with SM5368 row addressing registers
 
 ## Unsupported chips
 * [SM1620B](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-DMA/issues/416)
@@ -95,7 +96,7 @@ Please use an [alternative library](https://github.com/2dom/PxMatrix) if you bou
 # Getting Started
 ## 1. Library Installation
 
-* Dependancy: You will need to install Adafruit_GFX from the "Library > Manage Libraries" menu.
+* Dependency: You will need to install Adafruit_GFX from the "Library > Manage Libraries" menu.
 * Install this library from the Arduino Library manager.
 
 Library also tested to work fine with PlatformIO, install into your PlatformIO projects' lib/ folder as appropriate. Or just add it into [platformio.ini](/doc/BuildOptions.md) [lib_deps](https://docs.platformio.org/en/latest/projectconf/section_env_library.html#lib-deps) section.
