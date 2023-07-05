@@ -126,7 +126,7 @@ void MatrixPanel_I2S_DMA::dp3246init(const HUB75_I2S_CFG& _cfg) {
     bool REG2[16] = { 1,1,1,1,1, 1,1,1, 0, 0, 0, 0, 0, 0,0,0 };  // MSB first
 
     for (uint8_t _pin : {_cfg.gpio.r1, _cfg.gpio.r2, _cfg.gpio.g1, _cfg.gpio.g2, _cfg.gpio.b1, _cfg.gpio.b2, _cfg.gpio.clk, _cfg.gpio.lat, _cfg.gpio.oe}) {
-        gpio_reset_pin((gpio_num_t)_pin);                        // some pins are not un gpio mode after reset => https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/peripherals/gpio.html#gpio-summary
+        gpio_reset_pin((gpio_num_t)_pin);                        // some pins are not in gpio mode after reset => https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/peripherals/gpio.html#gpio-summary
         gpio_set_direction((gpio_num_t)_pin, GPIO_MODE_OUTPUT);
         gpio_set_level((gpio_num_t)_pin, LOW);
     }
