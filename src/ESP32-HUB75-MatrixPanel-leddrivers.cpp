@@ -106,6 +106,9 @@ void MatrixPanel_I2S_DMA::dp3246init(const HUB75_I2S_CFG& _cfg) {
 
     ESP_LOGI("LEDdrivers", "MatrixPanel_I2S_DMA - initializing DP3246 driver...");
 
+    // DP3246 needs positive clock edge
+    m_cfg.clkphase = true;
+
     // 15:13   3   000        reserved
     // 12:9    4   0000       OE widening (= OE_ADD * 6ns)
     // 8       1   0          reserved
@@ -123,11 +126,22 @@ void MatrixPanel_I2S_DMA::dp3246init(const HUB75_I2S_CFG& _cfg) {
     bool REG2[16] = { 1,1,1,1,1, 1,1,1, 0, 0, 0, 0, 0, 0,0,0 };  // MSB first
 
     for (uint8_t _pin : {_cfg.gpio.r1, _cfg.gpio.r2, _cfg.gpio.g1, _cfg.gpio.g2, _cfg.gpio.b1, _cfg.gpio.b2, _cfg.gpio.clk, _cfg.gpio.lat, _cfg.gpio.oe}) {
+        gpio_reset_pin((gpio_num_t)_pin);                        // some pins are not un gpio mode after reset => https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/peripherals/gpio.html#gpio-summary
         gpio_set_direction((gpio_num_t)_pin, GPIO_MODE_OUTPUT);
         gpio_set_level((gpio_num_t)_pin, LOW);
     }
 
     gpio_set_level((gpio_num_t)_cfg.gpio.oe, HIGH); // disable Display
+
+    // clear registers - this seems to help with reliability
+    for (int l = 0; l < PIXELS_PER_ROW; ++l) {
+        if (l == PIXELS_PER_ROW - 3) {       // DP3246 wants the latch dropped for 3 clk cycles
+            gpio_set_level((gpio_num_t)_cfg.gpio.lat, HIGH);
+        }
+        CLK_PULSE
+    }
+
+    gpio_set_level((gpio_num_t)_cfg.gpio.lat, LOW);
 
     // Send Data to control register REG1
     for (int l = 0; l < PIXELS_PER_ROW; l++) {
