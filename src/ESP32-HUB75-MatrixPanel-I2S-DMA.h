@@ -882,7 +882,7 @@ inline void MatrixPanel_I2S_DMA::color565to888(const uint16_t color, uint8_t &r,
 {
   r = (color >> 8) & 0xf8;
   g = (color >> 3) & 0xfc;
-  b = (color << 3) & 0xf8;
+  b = (color << 3);
   r |= r >> 5;
   g |= g >> 6;
   b |= b >> 5;
