@@ -880,9 +880,12 @@ private:
  */
 inline void MatrixPanel_I2S_DMA::color565to888(const uint16_t color, uint8_t &r, uint8_t &g, uint8_t &b)
 {
-  r = ((((color >> 11) & 0x1F) * 527) + 23) >> 6;
-  g = ((((color >> 5) & 0x3F) * 259) + 33) >> 6;
-  b = (((color & 0x1F) * 527) + 23) >> 6;
+  r = (color >> 8) & 0xf8;
+  g = (color >> 3) & 0xfc;
+  b = (color << 3);
+  r |= r >> 5;
+  g |= g >> 6;
+  b |= b >> 5;
 }
 
 inline void MatrixPanel_I2S_DMA::drawPixel(int16_t x, int16_t y, uint16_t color) // adafruit virtual void override

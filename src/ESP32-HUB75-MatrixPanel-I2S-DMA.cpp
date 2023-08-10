@@ -347,9 +347,9 @@ void IRAM_ATTR MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint16_t x_coord, uint
   green16 = lumConvTab[green];
   blue16 = lumConvTab[blue];
 #else
-  red16 = red << 8;
-  green16 = green << 8;
-  blue16 = blue << 8;
+  red16 = red << 8 | red;
+  green16 = green << 8 | green;
+  blue16 = blue << 8 | blue;
 #endif
 
   /* When using the drawPixel, we are obviously only changing the value of one x,y position,
