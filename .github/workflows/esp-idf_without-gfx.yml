@@ -18,11 +18,11 @@ jobs:
 
     steps:
     - name: Checkout repo
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         submodules: 'recursive'
     - name: Checkout ESP32-HUB75-MatrixPanel-I2S-DMA component
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         path: 'examples/esp-idf/without-gfx/components/ESP32-HUB75-MatrixPanel-I2S-DMA'
     - name: esp-idf build
