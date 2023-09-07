@@ -347,7 +347,7 @@ struct HUB75_I2S_CFG
     }
   }
 
-  uint8_t getPixelColorDepthBits()
+  uint8_t getPixelColorDepthBits() const
   {
     return pixel_color_depth_bits;
   }
