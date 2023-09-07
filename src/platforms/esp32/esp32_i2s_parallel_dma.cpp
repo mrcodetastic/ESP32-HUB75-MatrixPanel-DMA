@@ -28,54 +28,35 @@ Modified heavily for the ESP32 HUB75 DMA library by:
 #include <driver/periph_ctrl.h>
 #include <soc/gpio_sig_map.h>
 
-#include <Arduino.h> // Need to make sure thi is uncommented to get ESP_LOG output on (Arduino) Serial output!!!!
+#if defined (ARDUINO_ARCH_ESP32)
+#include <Arduino.h>
+#endif
+
 #include <esp_err.h>
 #include <esp_log.h>
 
 // Get CPU freq function.
 #include <soc/rtc.h>
 
-/*
 
-callback shiftCompleteCallback;
-void setShiftCompleteCallback(callback f) {
-    shiftCompleteCallback = f;
-}
+	volatile bool previousBufferFree = true;
 
-volatile int  previousBufferOutputLoopCount = 0;
-volatile bool previousBufferFree      = true;
+	static void IRAM_ATTR i2s_isr(void* arg) {
 
-static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
-
-        SET_PERI_REG_BITS(I2S_INT_CLR_REG(ESP32_I2S_DEVICE), I2S_OUT_EOF_INT_CLR_V, 1, I2S_OUT_EOF_INT_CLR_S);
-
-	previousBufferFree 		= true;
-
-
-        
-} // end irq_hndlr
-*/
-
-	volatile int DRAM_ATTR active_dma_buffer_output_count = 0;
-
-	void IRAM_ATTR irq_hndlr(void* arg) { 
-
+		// From original Sprite_TM Code
+		//REG_WRITE(I2S_INT_CLR_REG(1), (REG_READ(I2S_INT_RAW_REG(1)) & 0xffffffc0) | 0x3f);
+		
 		// Clear flag so we can get retriggered
 		SET_PERI_REG_BITS(I2S_INT_CLR_REG(ESP32_I2S_DEVICE), I2S_OUT_EOF_INT_CLR_V, 1, I2S_OUT_EOF_INT_CLR_S);                      
+		
+		// at this point, the previously active buffer is free, go ahead and write to it
+		previousBufferFree = true;
+	}
 
-		active_dma_buffer_output_count++;
+	bool DRAM_ATTR i2s_parallel_is_previous_buffer_free() {
+		return previousBufferFree;
+	}
 
-	/*        
-		  if ( active_dma_buffer_output_count++ ) 
-		  {
-			  // Disable DMA chain EOF interrupt until next requested flipbuffer.
-			  // Otherwise we're needlessly generating interrupts we don't care about.
-			  //SET_PERI_REG_BITS(I2S_INT_ENA_REG(ESP32_I2S_DEVICE), I2S_OUT_EOF_INT_ENA_V, 0, I2S_OUT_EOF_INT_ENA_S);  
-			  active_dma_buffer_output_count = 0;
-		  }
-	*/
-
-	} // end irq_hndlr
 
 	// Static
 	i2s_dev_t* getDev()
@@ -221,22 +202,6 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
     ESP_LOGD("ESP32/S2", "Requested output clock frequency: %d Mhz",  (freq/1000000));   		
 	
 	// What is the current CPU frequency?
-/*	
-    rtc_cpu_freq_config_t conf;
-    rtc_clk_cpu_freq_get_config(&conf);
-	auto source_freq = conf.source_freq_mhz;		
-	
-	
-    ESP_LOGD("ESP32/S2", "PLL (source) frequency: %d",  source_freq);    
-    ESP_LOGD("ESP32/S2", "CPU frequency: %d",  conf.freq_mhz);    
-*/	
-
-	/*
-    if(_div_num < 2 || _div_num > 16) {
-	
-      return false;
-    }
-	*/	
 
     // Calculate clock divider for ESP32-S2
     #if defined (CONFIG_IDF_TARGET_ESP32S2)      
@@ -303,7 +268,7 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
     #endif
  
 
-	output_freq = output_freq + 0; // work around arudino 'unused var' issue if debug isn't enabled.
+	  output_freq = output_freq + 0; // work around arudino 'unused var' issue if debug isn't enabled.
     ESP_LOGI("ESP32/S2", "Output frequency is %ld Mhz??", (output_freq/1000000/i2s_parallel_get_memory_width(ESP32_I2S_DEVICE, 16)));    	
 
 
@@ -411,33 +376,22 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
     dev->conf1.tx_stop_en = 0; 
     dev->timing.val = 0;
 
+
+    // If we have double buffering, then allocate an interrupt service routine function
+    // that can be used for I2S0/I2S1 created interrupts.
+
+    // Setup I2S Interrupt
+    SET_PERI_REG_BITS(I2S_INT_ENA_REG(ESP32_I2S_DEVICE), I2S_OUT_EOF_INT_ENA_V, 1, I2S_OUT_EOF_INT_ENA_S);
+
+    // Allocate a level 1 intterupt: lowest priority, as ISR isn't urgent and may take a long time to complete
+    esp_intr_alloc(irq_source, (int)(ESP_INTR_FLAG_IRAM | ESP_INTR_FLAG_LEVEL1), i2s_isr, NULL, NULL);
+
  
-    /* If we have double buffering, then allocate an interrupt service routine function
-     * that can be used for I2S0/I2S1 created interrupts.
-     */
-    if (_double_dma_buffer) {
-
-        // Get ISR setup 
-        esp_err_t err =  esp_intr_alloc(irq_source, 
-                                      (int)(ESP_INTR_FLAG_IRAM | ESP_INTR_FLAG_LEVEL1),
-                                      irq_hndlr, NULL, NULL);
-        
-        if(err) {
-            ESP_LOGE("ESP32/S2", "init() Failed to setup interrupt request handeler.");    
-            return false;
-        }
-
-        // Don't do this here. Don't enable just yet.        
-        // dev->int_ena.out_eof = 1;
-    }
-
-      
   #if defined (CONFIG_IDF_TARGET_ESP32S2)
       ESP_LOGD("ESP32-S2", "init() GPIO and clock configuration set for ESP32-S2");    
   #else
       ESP_LOGD("ESP32-ORIG", "init() GPIO and clock configuration set for ESP32");    
   #endif
-
 
       return true;
   }
@@ -490,7 +444,7 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
 
       ESP_LOGD("ESP32/S2", "Allocating the second buffer (double buffer enabled).");              
 
-      _dmadesc_b= (HUB75_DMA_DESCRIPTOR_T*)heap_caps_malloc(sizeof(HUB75_DMA_DESCRIPTOR_T) * len, MALLOC_CAP_DMA);
+      _dmadesc_b = (HUB75_DMA_DESCRIPTOR_T*)heap_caps_malloc(sizeof(HUB75_DMA_DESCRIPTOR_T) * len, MALLOC_CAP_DMA);
 
       if (_dmadesc_b == nullptr)
       {
@@ -611,20 +565,15 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
   } // end   
 
 
-  void Bus_Parallel16::flip_dma_output_buffer(int &current_back_buffer_id) // pass by reference so we can change in main matrixpanel class
+  void Bus_Parallel16::flip_dma_output_buffer(int buffer_id) // pass by reference so we can change in main matrixpanel class
   {
 	  
       // Setup interrupt handler which is focussed only on the (page 322 of Tech. Ref. Manual)
       // "I2S_OUT_EOF_INT: Triggered when rxlink has finished sending a packet" (when dma linked list with eof = 1 is hit)
-      //_dev->int_ena.out_eof = 1;      
-      _dev->int_ena.out_eof = 1; // enable interrupt
-	  
-      if ( current_back_buffer_id == 1) { 
+  	  
+      if ( buffer_id == 1) { 
 
-	_dmadesc_a[_dmadesc_last].qe.stqe_next = &_dmadesc_b[0]; // Start sending out _dmadesc_b (or buffer 1)
-				
-        active_dma_buffer_output_count = 0;  
-        while (!active_dma_buffer_output_count) {}      		
+	      _dmadesc_a[_dmadesc_last].qe.stqe_next = &_dmadesc_b[0]; // Start sending out _dmadesc_b (or buffer 1)
 
         //fix _dmadesc_ loop issue #407
         //need to connect the up comming _dmadesc_ not the old one
@@ -633,17 +582,16 @@ static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
       } else { 
 	      
         _dmadesc_b[_dmadesc_last].qe.stqe_next = &_dmadesc_a[0]; 
-
-        active_dma_buffer_output_count = 0;  
-        while (!active_dma_buffer_output_count) {}    
-  
         _dmadesc_a[_dmadesc_last].qe.stqe_next = &_dmadesc_a[0];
 		
       }
-      current_back_buffer_id ^= 1;            
 
-      // Disable intterupt  
-      _dev->int_ena.out_eof = 0;      
+      previousBufferFree = false;  
+      //while (i2s_parallel_is_previous_buffer_free() == false) {}      
+      while (!previousBufferFree);
+
+           
+
 
   } // end flip
 

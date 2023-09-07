@@ -1,18 +1,29 @@
-// How to use this library with a FM6126 panel, thanks goes to:
-// https://github.com/hzeller/rpi-rgb-led-matrix/issues/746
+/**********************************************************************
+ * The library by default supports simple 'shift register' based panels
+ * with A,B,C,D,E lines to select a specific row, but there are plenty
+ * of examples of new chips coming on the market that work different.
+ *
+ * Please search through the project's issues. For some of these chips
+ * (you will need to look at the back of your panel to identify), this
+ * library has workarounds. This can be configured through using one of:
+ 
+ 	// mxconfig.driver = HUB75_I2S_CFG::FM6126A;     
+	//mxconfig.driver = HUB75_I2S_CFG::ICN2038S;
+	//mxconfig.driver = HUB75_I2S_CFG::FM6124;
+	//mxconfig.driver = HUB75_I2S_CFG::MBI5124;	
+ */
+
 
 #include <Arduino.h>
 #include <ESP32-HUB75-MatrixPanel-I2S-DMA.h>
 #include <FastLED.h>
 
 ////////////////////////////////////////////////////////////////////
-// FM6126 support is still experimental
 
 // Output resolution and panel chain length configuration
 #define PANEL_RES_X 64 	   // Number of pixels wide of each INDIVIDUAL panel module. 
 #define PANEL_RES_Y 32 	   // Number of pixels tall of each INDIVIDUAL panel module.
 #define PANEL_CHAIN 1      // Total number of panels chained one to another
-
 
 // placeholder for the matrix object
 MatrixPanel_I2S_DMA *dma_display = nullptr;
@@ -33,14 +44,6 @@ CRGB ColorFromCurrentPalette(uint8_t index = 0, uint8_t brightness = 255, TBlend
 }
 
 void setup(){
-	
-	/*
-		The configuration for MatrixPanel_I2S_DMA object is held in HUB75_I2S_CFG structure,
-		All options has it's predefined default values. So we can create a new structure and redefine only the options we need
-
-		Please refer to the '2_PatternPlasma.ino' example for detailed example of how to use the MatrixPanel_I2S_DMA configuration
-		if you need to change the pin mappings etc.
-	*/
 
 	HUB75_I2S_CFG mxconfig(
 				PANEL_RES_X,   // module width
@@ -48,7 +51,12 @@ void setup(){
 				PANEL_CHAIN    // Chain length
 	);
 
-	mxconfig.driver = HUB75_I2S_CFG::FM6126A;     // in case that we use panels based on FM6126A chip, we can set it here before creating MatrixPanel_I2S_DMA object
+	// in case that we use panels based on FM6126A chip, we can set it here before creating MatrixPanel_I2S_DMA object
+	mxconfig.driver = HUB75_I2S_CFG::FM6126A;     
+	//mxconfig.driver = HUB75_I2S_CFG::ICN2038S;
+	//mxconfig.driver = HUB75_I2S_CFG::FM6124;
+	//mxconfig.driver = HUB75_I2S_CFG::MBI5124;	
+
 
 	// OK, now we can create our matrix object
 	dma_display = new MatrixPanel_I2S_DMA(mxconfig);
@@ -100,3 +108,7 @@ void loop(){
       fps = 0;
     }
 }
+
+
+// FM6126 panel , thanks goes to:
+// https://github.com/hzeller/rpi-rgb-led-matrix/issues/746

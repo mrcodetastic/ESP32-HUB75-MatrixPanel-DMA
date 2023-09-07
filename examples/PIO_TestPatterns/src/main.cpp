@@ -116,7 +116,7 @@ void setup(){
   chain->begin();
   chain->setBrightness8(255);
   // create VirtualDisplay object based on our newly created dma_display object
-  matrix = new VirtualMatrixPanel((*chain), NUM_ROWS, NUM_COLS, PANEL_WIDTH, PANEL_HEIGHT, SERPENT, TOPDOWN);
+  matrix = new VirtualMatrixPanel((*chain), NUM_ROWS, NUM_COLS, PANEL_WIDTH, PANEL_HEIGHT, CHAIN_TOP_LEFT_DOWN);
 #endif
 
   ledbuff = (CRGB *)malloc(NUM_LEDS * sizeof(CRGB));  // allocate buffer for some tests

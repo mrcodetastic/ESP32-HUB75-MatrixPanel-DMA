@@ -54,7 +54,7 @@ A typical 64x32px panel at 24bpp colour uses about 20kB of internal memory.
 
 Please use the ['Memory Calculator'](/doc/memcalc.md) to see what is *typically* achievable with the typical ESP32. ![Memory Calculator](doc/memcalc.jpg)
 
-For the ESP32-S3 only, you can use SPIRAM/PSRAM to drive the HUB75 DMA buffer when using **Octal SPI-RAM** (i.e. ESP32 S3 N8R8 variant). However, due to bandwidth limitations, the maximum output frequency is limited to approx. 13Mhz, which will limit the real-world number of panels that can be chained without flicker. 
+For the ESP32-S3 only, you can use SPIRAM/PSRAM to drive the HUB75 DMA buffer when using an ESP32-S3 with **OCTAL SPI-RAM (PSTRAM)** (i.e. ESP32 S3 N8R8 variant). However, due to bandwidth limitations, the maximum output frequency is limited to approx. 13Mhz, which will limit the real-world number of panels that can be chained without flicker. Please do not use PSRAM as the DMA buffer if using QUAD SPI (Q-SPI), as it's too slow.
 
 To enable PSRAM support on the ESP32-S3, refer to [the build options](/doc/BuildOptions.md) to enable.
 
@@ -82,9 +82,11 @@ Due to the high-speed optimized nature of this library, only specific panels are
 * ICND2012
 * [RUC7258](http://www.ruichips.com/en/products.html?cateid=17496)
 * FM6126A AKA ICN2038S, [FM6124](https://datasheet4u.com/datasheet-pdf/FINEMADELECTRONICS/FM6124/pdf.php?id=1309677) (Refer to [PatternPlasma](/examples/2_PatternPlasma) example on how to use.)
-* SM5266P 
+* SM5266P
+* DP3246 with SM5368 row addressing registers
 
-## Unsupported Panels
+## Unsupported chips
+* [SM1620B](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-DMA/issues/416)
 * RUL5358 / SHIFTREG_ABC_BIN_DE based panels are not supported.
 * ICN2053 / FM6353 based panels - Refer to [this library](https://github.com/LAutour/ESP32-HUB75-MatrixPanel-DMA-ICN2053), which is a fork of this library ( [discussion link](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-DMA/discussions/324)).
 * Any other panel not listed above.
@@ -94,7 +96,7 @@ Please use an [alternative library](https://github.com/2dom/PxMatrix) if you bou
 # Getting Started
 ## 1. Library Installation
 
-* Dependancy: You will need to install Adafruit_GFX from the "Library > Manage Libraries" menu.
+* Dependency: You will need to install Adafruit_GFX from the "Library > Manage Libraries" menu.
 * Install this library from the Arduino Library manager.
 
 Library also tested to work fine with PlatformIO, install into your PlatformIO projects' lib/ folder as appropriate. Or just add it into [platformio.ini](/doc/BuildOptions.md) [lib_deps](https://docs.platformio.org/en/latest/projectconf/section_env_library.html#lib-deps) section.
@@ -131,6 +133,8 @@ HUB75_I2S_CFG mxconfig(
 );
 dma_display = new MatrixPanel_I2S_DMA(mxconfig);
 ```
+
+Make sure you also connect one of the HUB75 interfaces ground pins to a ground pin of the ESP32, otherwise you may get electrical artefacts on LED Matrix Panel.
 
 Various people have created PCBs for which one can simply connect an ESP32 to a PCB, and then the PCB to the HUB75 connector, such as:
 
@@ -225,5 +229,7 @@ There are a number of great looking LED graphical display projects which leverag
 * [Mark Donners](https://github.com/donnersm) ('The Electronic Engineer' on [youtube](https://www.youtube.com/watch?v=bQ7c9Vlhyp0&t=118s)) for the donation of a 1/8 scan panel to build and test working support of these led matrix panels! 
 * [PaintYourDragon](https://github.com/PaintYourDragon) for the DMA logic for the ESP32-S3.
 * And lots of others, let me know if I've missed you.
+
+If you want to donate money to the project, please refer to [this discussion](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-DMA/discussions/349) about it. If you want to donate/buy an LED panel for the library author to improve compatibility and/or testing - please feel free to post in the same [discussion](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-DMA/discussions/349).
 
 ![It's better in real life](image.jpg)

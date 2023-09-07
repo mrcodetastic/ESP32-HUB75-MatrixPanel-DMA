@@ -147,7 +147,7 @@
     void dma_transfer_start();
     void dma_transfer_stop();
 
-     void flip_dma_output_buffer(int &current_back_buffer_id);
+     void flip_dma_output_buffer(int back_buffer_id);
 
   private:
 

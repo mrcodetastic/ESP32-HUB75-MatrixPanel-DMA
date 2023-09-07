@@ -1,3 +1,9 @@
+// Example uses the following configuration:  mxconfig.double_buff = true;
+// to enable double buffering, which means display->flipDMABuffer(); is required.
+
+// Bounce squares around the screen, doing the re-drawing in the background back-buffer.
+// Double buffering is not always required in reality.
+
 #include <ESP32-HUB75-MatrixPanel-I2S-DMA.h>
 
 MatrixPanel_I2S_DMA *display = nullptr;
@@ -32,14 +38,14 @@ void setup()
 
   Serial.println("...Starting Display");
   HUB75_I2S_CFG mxconfig;
-  //mxconfig.double_buff = true; // Turn of double buffer
-  mxconfig.clkphase = false;
+  mxconfig.double_buff = true; // <------------- Turn on double buffer
+  //mxconfig.clkphase = false;
 
   // OK, now we can create our matrix object
   display = new MatrixPanel_I2S_DMA(mxconfig);
   display->begin();  // setup display with pins as pre-defined in the library
 
-  // Create some Squares
+  // Create some random squares
   for (int i = 0; i < numSquares; i++)
   {
     Squares[i].square_size = random(2,10);
@@ -47,8 +53,6 @@ void setup()
     Squares[i].ypos = random(0, display->height() - Squares[i].square_size);
     Squares[i].velocityx = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
     Squares[i].velocityy = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
-    //Squares[i].xdir = (random(2) == 1) ? true:false;
-    //Squares[i].ydir = (random(2) == 1) ? true:false;
 
     int random_num = random(6);
     Squares[i].colour = colours[random_num];
@@ -57,9 +61,11 @@ void setup()
 
 void loop()
 {
-  display->flipDMABuffer(); // not used if double buffering isn't enabled
-  delay(25);
-  display->clearScreen();
+  
+  display->flipDMABuffer(); // Show the back buffer, set currently output buffer to the back (i.e. no longer being sent to LED panels)
+  display->clearScreen();   // Now clear the back-buffer
+
+  delay(16);  // <----------- Shouldn't see this clearscreen occur as it happens on the back buffer when double buffering is enabled.
 
   for (int i = 0; i < numSquares; i++)
   {

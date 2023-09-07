@@ -7,6 +7,10 @@
 MatrixPanel_I2S_DMA *dma_display = nullptr;
 
 void setup() {
+
+  Serial.begin(112500);
+
+
   HUB75_I2S_CFG::i2s_pins _pins={
     25, //R1_PIN, 
     26, //G1_PIN, 
@@ -26,8 +30,8 @@ void setup() {
   HUB75_I2S_CFG mxconfig(
     PANEL_RES_X, // Module width
     PANEL_RES_Y, // Module height
-    PANEL_CHAIN, // chain length
-    _pins // pin mapping
+    PANEL_CHAIN //, // chain length
+    //_pins // pin mapping -- uncomment if providing own custom pin mapping as per above.
   );
   //mxconfig.clkphase = false;
   //mxconfig.driver = HUB75_I2S_CFG::FM6126A;
@@ -40,12 +44,13 @@ void setup() {
 
 void loop() {
   // Canvas loop
-  float t = (float)(millis()%4000)/4000.f;
-  float tt = (float)((millis()%16000)/16000.f;
+  float t = (float) ((millis()%4000)/4000.f);
+  float tt = (float) ((millis()%16000)/16000.f);
 
-  for(int x = 0; x < PANEL_RES_X*PANEL_CHAIN; x++){
+  for(int x = 0; x < (PANEL_RES_X*PANEL_CHAIN); x++)
+  {
     // calculate the overal shade
-    float f = ((sin(tt-(float)x/PANEL_RES_Y/32.)*2.f*PI)+1)/2)*255;
+    float f = (((sin(tt-(float)x/PANEL_RES_Y/32.)*2.f*PI)+1)/2)*255;
     // calculate hue spectrum into rgb
     float r = max(min(cosf(2.f*PI*(t+((float)x/PANEL_RES_Y+0.f)/3.f))+0.5f,1.f),0.f);
     float g = max(min(cosf(2.f*PI*(t+((float)x/PANEL_RES_Y+1.f)/3.f))+0.5f,1.f),0.f);

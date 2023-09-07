@@ -1,158 +1,67 @@
 /******************************************************************************
-    -----------
-    Steps to use
-    -----------
+    -------------------------------------------------------------------------
+    Steps to create a virtual display made up of a chain of panels in a grid
+    -------------------------------------------------------------------------
 
-    1) In the sketch (i.e. this example):
+    Read the documentation!
+    https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-DMA/tree/master/examples/ChainedPanels
+
+    tl/dr:
     
-    - Set values for NUM_ROWS, NUM_COLS, PANEL_RES_X, PANEL_RES_Y, PANEL_CHAIN. 
-      There are comments beside them explaining what they are in more detail.
+    - Set values for NUM_ROWS, NUM_COLS, PANEL_RES_X, PANEL_RES_Y, PANEL_CHAIN_TYPE. 
+
     - Other than where the matrix is defined and matrix.begin in the setup, you 
       should now be using the virtual display for everything (drawing pixels, writing text etc).
        You can do a find and replace of all calls if it's an existing sketch
       (just make sure you don't replace the definition and the matrix.begin)
+
     - If the sketch makes use of MATRIX_HEIGHT or MATRIX_WIDTH, these will need to be 
       replaced with the width and height of your virtual screen. 
       Either make new defines and use that, or you can use virtualDisp.width() or .height()
 
-    Thanks to:
-
-    * Brian Lough for the original example as raised in this issue:
-      https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/issues/26
-
-      YouTube: https://www.youtube.com/brianlough
-      Tindie: https://www.tindie.com/stores/brianlough/
-      Twitter: https://twitter.com/witnessmenow
-
-    * Galaxy-Man for the kind donation of panels make/test that this is possible:
-      https://github.com/Galaxy-Man
-
 *****************************************************************************/
+// 1) Include key virtual display library
+    #include <ESP32-VirtualMatrixPanel-I2S-DMA.h>
 
-
- /******************************************************************************
-  * VIRTUAL DISPLAY / MATRIX PANEL CHAINING CONFIGURATION
-  * 
-  * Note 1: If chaining from the top right to the left, and then S curving down
-  *         then serpentine_chain = true and top_down_chain = true
-  *         (these being the last two parameters of the virtualDisp(...) constructor.
-  * 
-  * Note 2: If chaining starts from the bottom up, then top_down_chain = false.
-  * 
-  * Note 3: By default, this library has serpentine_chain = true, that is, every 
-  *         second row has the panels 'upside down' (rotated 180), so the output
-  *         pin of the row above is right above the input connector of the next 
-  *         row.
-  
-  Example 1 panel chaining:
-  +-----------------+-----------------+-------------------+
-  | 64x32px PANEL 3 | 64x32px PANEL 2 | 64x32px PANEL 1   |
-  |        ------------   <--------   | ------------xx    |
-  | [OUT]  |   [IN] | [OUT]      [IN] | [OUT]    [ESP IN] |
-  +--------|--------+-----------------+-------------------+
-  | 64x32px|PANEL 4 | 64x32px PANEL 5 | 64x32px PANEL 6   |
-  |       \|/   ---------->           |  ----->           |
-  | [IN]      [OUT] | [IN]      [OUT] | [IN]      [OUT]   |
-  +-----------------+-----------------+-------------------+
-
-  Example 1 configuration:
-    
-    #define PANEL_RES_X 64 // Number of pixels wide of each INDIVIDUAL panel module. 
-    #define PANEL_RES_Y 32 // Number of pixels tall of each INDIVIDUAL panel module.
-
-    #define NUM_ROWS 2 // Number of rows of chained INDIVIDUAL PANELS
-    #define NUM_COLS 3 // Number of INDIVIDUAL PANELS per ROW
-
-    virtualDisp(dma_display, NUM_ROWS, NUM_COLS, PANEL_RES_X, PANEL_RES_Y, true, true);
-
-    = 192x64 px virtual display, with the top left of panel 3 being pixel co-ord (0,0)
-
-  ==========================================================
-
-  Example 2 panel chaining:
-
-  +-------------------+
-  | 64x32px PANEL 1   |
-  | ----------------- |
-  | [OUT]    [ESP IN] |
-  +-------------------+
-  | 64x32px PANEL 2   |
-  |                   |
-  | [IN]      [OUT]   |
-  +-------------------+
-  | 64x32px PANEL 3   |
-  |                   |
-  | [OUT]      [IN]   |
-  +-------------------+
-  | 64x32px PANEL 4   |
-  |                   |
-  | [IN]      [OUT]   |
-  +-------------------+    
-
-  Example 2 configuration:
-    
-    #define PANEL_RES_X 64 // Number of pixels wide of each INDIVIDUAL panel module. 
-    #define PANEL_RES_Y 32 // Number of pixels tall of each INDIVIDUAL panel module.
-
-    #define NUM_ROWS 4 // Number of rows of chained INDIVIDUAL PANELS
-    #define NUM_COLS 1 // Number of INDIVIDUAL PANELS per ROW
-
-    virtualDisp(dma_display, NUM_ROWS, NUM_COLS, PANEL_RES_X, PANEL_RES_Y, true, true);
-
-    virtualDisp(dma_display, NUM_ROWS, NUM_COLS, PANEL_RES_X, PANEL_RES_Y, true, true);     
-
-    = 128x64 px virtual display, with the top left of panel 1 being pixel co-ord (0,0)
-
-  ==========================================================
-
-  Example 3 panel chaining (bottom up):
-
-  +-----------------+-----------------+
-  | 64x32px PANEL 4 | 64x32px PANEL 3 | 
-  |             <----------           | 
-  | [OUT]      [IN] | [OUT]      [in] | 
-  +-----------------+-----------------+
-  | 64x32px PANEL 1 | 64x32px PANEL 2 | 
-  |             ---------->           | 
-  | [ESP IN]  [OUT] | [IN]      [OUT] | 
-  +-----------------+-----------------+
-
-  Example 1 configuration:
-    
+// 2) Set configuration
     #define PANEL_RES_X 64 // Number of pixels wide of each INDIVIDUAL panel module. 
     #define PANEL_RES_Y 32 // Number of pixels tall of each INDIVIDUAL panel module.
 
     #define NUM_ROWS 2 // Number of rows of chained INDIVIDUAL PANELS
     #define NUM_COLS 2 // Number of INDIVIDUAL PANELS per ROW
+    #define PANEL_CHAIN NUM_ROWS*NUM_COLS    // total number of panels chained one to another
 
-    virtualDisp(dma_display, NUM_ROWS, NUM_COLS, PANEL_RES_X, PANEL_RES_Y, true, false);
+    /* Configure the serpetine chaining approach. Options are:
+        CHAIN_TOP_LEFT_DOWN
+        CHAIN_TOP_RIGHT_DOWN
+        CHAIN_BOTTOM_LEFT_UP
+        CHAIN_BOTTOM_RIGHT_UP
 
-    = 128x64 px virtual display, with the top left of panel 4 being pixel co-ord (0,0)  
+        The location (i.e. 'TOP_LEFT', 'BOTTOM_RIGHT') etc. refers to the starting point where 
+        the ESP32 is located, and how the chain of panels will 'roll out' from there.
 
-*/
+        In this example we're using 'CHAIN_BOTTOM_LEFT_UP' which would look like this in the real world:
 
+        Chain of 4 x 64x32 panels with the ESP at the BOTTOM_LEFT:
 
+        +---------+---------+
+        |    4    |    3    |
+        |         |         |
+        +---------+---------+
+        |    1    |    2    |
+        |  (ESP)  |         |
+        +---------+---------+      
 
+    */
+    #define VIRTUAL_MATRIX_CHAIN_TYPE CHAIN_BOTTOM_LEFT_UP 
 
-#define PANEL_RES_X 64 // Number of pixels wide of each INDIVIDUAL panel module. 
-#define PANEL_RES_Y 32 // Number of pixels tall of each INDIVIDUAL panel module.
+// 3) Create the runtime objects to use
 
-#define NUM_ROWS 2 // Number of rows of chained INDIVIDUAL PANELS
-#define NUM_COLS 2 // Number of INDIVIDUAL PANELS per ROW
-#define PANEL_CHAIN NUM_ROWS*NUM_COLS    // total number of panels chained one to another
+    // placeholder for the matrix object
+    MatrixPanel_I2S_DMA *dma_display = nullptr;
 
-// Change this to your needs, for details on VirtualPanel pls read the PDF!
-#define SERPENT true
-#define TOPDOWN false
-
-// library includes
-#include <ESP32-VirtualMatrixPanel-I2S-DMA.h>
-
-// placeholder for the matrix object
-MatrixPanel_I2S_DMA *dma_display = nullptr;
-
-// placeholder for the virtual display object
-VirtualMatrixPanel  *virtualDisp = nullptr;
+    // placeholder for the virtual display object
+    VirtualMatrixPanel  *virtualDisp = nullptr;
 
 
 /******************************************************************************
@@ -203,37 +112,58 @@ void setup() {
       Serial.println("****** !KABOOM! I2S memory allocation failed ***********");
 
   // create VirtualDisplay object based on our newly created dma_display object
-  virtualDisp = new VirtualMatrixPanel((*dma_display), NUM_ROWS, NUM_COLS, PANEL_RES_X, PANEL_RES_Y, SERPENT, TOPDOWN);
+  virtualDisp = new VirtualMatrixPanel((*dma_display), NUM_ROWS, NUM_COLS, PANEL_RES_X, PANEL_RES_Y, VIRTUAL_MATRIX_CHAIN_TYPE);
 
   // So far so good, so continue
   virtualDisp->fillScreen(virtualDisp->color444(0, 0, 0));
   virtualDisp->drawDisplayTest(); // draw text numbering on each screen to check connectivity
 
-  delay(3000);
+ // delay(1000);
 
-  Serial.println("Chain of 64x32 panels for this example:");
-  Serial.println("+--------+---------+");
-  Serial.println("|   4    |    3    |");
-  Serial.println("|        |         |");
-  Serial.println("+--------+---------+");
-  Serial.println("|   1    |    2    |");
-  Serial.println("| (ESP)  |         |");
-  Serial.println("+--------+---------+");
+  Serial.println("Chain of 4x 64x32 panels for this example:");
+  Serial.println("+---------+---------+");
+  Serial.println("|    4    |    3    |");
+  Serial.println("|         |         |");
+  Serial.println("+---------+---------+");
+  Serial.println("|    1    |    2    |");
+  Serial.println("| (ESP32) |         |");
+  Serial.println("+---------+---------+");
 
+   // draw blue text
    virtualDisp->setFont(&FreeSansBold12pt7b);
    virtualDisp->setTextColor(virtualDisp->color565(0, 0, 255));
-   virtualDisp->setTextSize(2); 
-   virtualDisp->setCursor(10, virtualDisp->height()-20); 
-   
+   virtualDisp->setTextSize(3); 
+   virtualDisp->setCursor(0, virtualDisp->height()- ((virtualDisp->height()-45)/2));    
+   virtualDisp->print("ABCD");
+
    // Red text inside red rect (2 pix in from edge)
-   virtualDisp->print("1234");
    virtualDisp->drawRect(1,1, virtualDisp->width()-2, virtualDisp->height()-2, virtualDisp->color565(255,0,0));
 
    // White line from top left to bottom right
    virtualDisp->drawLine(0,0, virtualDisp->width()-1, virtualDisp->height()-1, virtualDisp->color565(255,255,255));
+
+   virtualDisp->drawDisplayTest(); // re draw text numbering on each screen to check connectivity
+   
 }
 
 void loop() {
   
 
 } // end loop
+
+
+/*****************************************************************************
+
+    Thanks to:
+
+    * Brian Lough for the original example as raised in this issue:
+      https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/issues/26
+
+      YouTube: https://www.youtube.com/brianlough
+      Tindie: https://www.tindie.com/stores/brianlough/
+      Twitter: https://twitter.com/witnessmenow
+
+    * Galaxy-Man for the kind donation of panels make/test that this is possible:
+      https://github.com/Galaxy-Man
+
+*****************************************************************************/

@@ -49,12 +49,15 @@ Contributors:
 
 #define DMA_MAX (4096-4)
 
-#ifndef ESP32_I2S_DEVICE 
-  #define ESP32_I2S_DEVICE I2S_NUM_0	
-#endif 
-
 // The type used for this SoC
 #define HUB75_DMA_DESCRIPTOR_T lldesc_t
+
+
+#if defined (CONFIG_IDF_TARGET_ESP32S2)   
+#define ESP32_I2S_DEVICE I2S_NUM_0	
+#else
+#define ESP32_I2S_DEVICE I2S_NUM_1	
+#endif	
 
 //----------------------------------------------------------------------------
 
@@ -119,7 +122,7 @@ i2s_dev_t* getDev();
     void dma_transfer_start();
     void dma_transfer_stop();
 
-    void flip_dma_output_buffer(int &current_back_buffer_id);
+    void flip_dma_output_buffer(int buffer_id);
   
   private:
 
