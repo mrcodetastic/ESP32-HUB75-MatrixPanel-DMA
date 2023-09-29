@@ -462,9 +462,8 @@ public:
   }
 
   // Obj destructor
-  ~MatrixPanel_I2S_DMA()
+  virtual ~MatrixPanel_I2S_DMA()
   {
-
     dma_bus.release();
   }
 
