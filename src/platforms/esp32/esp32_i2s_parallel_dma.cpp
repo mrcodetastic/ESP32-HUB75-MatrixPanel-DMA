@@ -27,6 +27,7 @@ Modified heavily for the ESP32 HUB75 DMA library by:
 #include <driver/gpio.h>
 #include <driver/periph_ctrl.h>
 #include <soc/gpio_sig_map.h>
+#include <soc/i2s_periph.h>
 
 #if defined (ARDUINO_ARCH_ESP32)
 #include <Arduino.h>
@@ -199,7 +200,7 @@ Modified heavily for the ESP32 HUB75 DMA library by:
     ////////////////////////////// Clock configuration //////////////////////////////
 
     auto freq 		= (_cfg.bus_freq);
-    ESP_LOGD("ESP32/S2", "Requested output clock frequency: %d Mhz",  (freq/1000000));   		
+    ESP_LOGD("ESP32/S2", "Requested output clock frequency: %ld Mhz",  (freq/1000000));   		
 	
 	// What is the current CPU frequency?
 
@@ -487,7 +488,7 @@ Modified heavily for the ESP32 HUB75 DMA library by:
     if ( !dmadesc_b )
     {
       if ( (_dmadesc_a_idx+1) > _dmadesc_count) {
-        ESP_LOGE("ESP32/S2", "Attempted to create more DMA descriptors than allocated memory for. Expecting a maximum of %d DMA descriptors", _dmadesc_count);          
+        ESP_LOGE("ESP32/S2", "Attempted to create more DMA descriptors than allocated memory for. Expecting a maximum of %ld DMA descriptors", _dmadesc_count);          
         return;
       }
     }

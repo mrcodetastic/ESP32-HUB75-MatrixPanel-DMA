@@ -44,6 +44,7 @@ Contributors:
 #include <sys/types.h>
 #include <freertos/FreeRTOS.h>
 #include <driver/i2s.h>
+#include <soc/i2s_struct.h>
 #include <rom/lldesc.h>
 #include <rom/gpio.h>
 
