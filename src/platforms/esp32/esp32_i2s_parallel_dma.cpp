@@ -199,8 +199,8 @@ Modified heavily for the ESP32 HUB75 DMA library by:
 
     ////////////////////////////// Clock configuration //////////////////////////////
 
-    auto freq 		= (_cfg.bus_freq);
-    ESP_LOGD("ESP32/S2", "Requested output clock frequency: %ld Mhz",  (freq/1000000));   		
+    unsigned int freq 		= (_cfg.bus_freq);
+    ESP_LOGD("ESP32/S2", "Requested output clock frequency: %u Mhz",  (unsigned int)((freq/1000000));   		
 	
 	// What is the current CPU frequency?
 
@@ -214,7 +214,7 @@ Modified heavily for the ESP32 HUB75 DMA library by:
 
 		// I2S_CLKM_DIV_NUM 2=40MHz  /  3=27MHz  /  4=20MHz  /  5=16MHz  /  8=10MHz  /  10=8MHz
 		//auto _div_num = std::min(255u, 1 + ((pll_160M_clock_d2) / (1 + freq)));
-		auto _div_num = 160000000L / freq / i2s_parallel_get_memory_width(ESP32_I2S_DEVICE, 16); // 16 bits in parallel
+		 unsigned int _div_num = (unsigned int) (160000000L / freq / i2s_parallel_get_memory_width(ESP32_I2S_DEVICE, 16)); // 16 bits in parallel
 		
 		if(_div_num < 2 || _div_num > 0xFF) {
 		//	return ESP_ERR_INVALID_ARG;
@@ -222,7 +222,7 @@ Modified heavily for the ESP32 HUB75 DMA library by:
 		}
 		
 			
-		ESP_LOGD("ESP32", "i2s pll_160M_clock_d2 clkm_div_num is: %d", _div_num);    		
+		ESP_LOGD("ESP32", "i2s pll_160M_clock_d2 clkm_div_num is: %u", _div_num);    		
 
 		// I2S_CLK_SEL Set this bit to select I2S module clock source. 
 		// 0: No clock. 1: APLL_CLK. 2: PLL_160M_CLK. 3: No clock. (R/W)
@@ -233,7 +233,7 @@ Modified heavily for the ESP32 HUB75 DMA library by:
 		dev->clkm_conf.clk_en  = 1;
 		
 		// Calc
-		auto output_freq = (160000000L/_div_num);		
+		unsigned int output_freq = (unsigned int)(160000000L/_div_num);		
 
     // Calculate clock divider for Original ESP32
     #else  
@@ -249,7 +249,7 @@ Modified heavily for the ESP32 HUB75 DMA library by:
 		// I2S_CLKM_DIV_NUM 2=40MHz  /  3=27MHz  /  4=20MHz  /  5=16MHz  /  8=10MHz  /  10=8MHz
 		//auto _div_num = std::min(255u, 1 + ((pll_d2_clock) / (1 + freq)));
 		
-		auto _div_num = 80000000L / freq / i2s_parallel_get_memory_width(ESP32_I2S_DEVICE, 16); // 16 bits in parallel
+		unsigned int _div_num = (unsigned int) (80000000L / freq / i2s_parallel_get_memory_width(ESP32_I2S_DEVICE, 16)); // 16 bits in parallel
 		if(_div_num < 2 || _div_num > 0xFF) {
 		//	return ESP_ERR_INVALID_ARG;
 			_div_num = 4;
@@ -257,20 +257,20 @@ Modified heavily for the ESP32 HUB75 DMA library by:
 
 		///auto _div_num = 80000000L/freq;
 
-		ESP_LOGD("ESP32", "i2s pll_d2_clock clkm_div_num is: %ld", _div_num);    		
+		ESP_LOGD("ESP32", "i2s pll_d2_clock clkm_div_num is: %u", _div_num);    		
 
 		dev->clkm_conf.clka_en=1;         // Use the 80mhz system clock (PLL_D2_CLK) when '0'
 		dev->clkm_conf.clkm_div_a = 1;      // Clock denominator 
 		dev->clkm_conf.clkm_div_b = 0;      // Clock numerator
 		dev->clkm_conf.clkm_div_num = _div_num;  
 		
-		auto output_freq = (80000000L/_div_num);		
+		unsigned int output_freq = (unsigned int)(80000000L/_div_num);		
 		
     #endif
  
 
 	  output_freq = output_freq + 0; // work around arudino 'unused var' issue if debug isn't enabled.
-    ESP_LOGI("ESP32/S2", "Output frequency is %ld Mhz??", (output_freq/1000000/i2s_parallel_get_memory_width(ESP32_I2S_DEVICE, 16)));    	
+    ESP_LOGI("ESP32/S2", "Output frequency is %u Mhz??", (unsigned int)(output_freq/1000000/i2s_parallel_get_memory_width(ESP32_I2S_DEVICE, 16)));    	
 
 
     // Setup i2s clock
@@ -428,7 +428,7 @@ Modified heavily for the ESP32 HUB75 DMA library by:
     _dmadesc_count = len; 
     _dmadesc_last  = len-1; 
 
-    ESP_LOGI("ESP32/S2", "Allocating memory for %d DMA descriptors.", len);    
+    ESP_LOGI("ESP32/S2", "Allocating memory for %d DMA descriptors.", (int)len);    
 
     _dmadesc_a= (HUB75_DMA_DESCRIPTOR_T*)heap_caps_malloc(sizeof(HUB75_DMA_DESCRIPTOR_T) * len, MALLOC_CAP_DMA);
 
@@ -458,7 +458,7 @@ Modified heavily for the ESP32 HUB75 DMA library by:
     _dmadesc_a_idx  = 0;
     _dmadesc_b_idx  = 0;
 
-    ESP_LOGD("ESP32/S2", "Allocating %d bytes of memory for DMA descriptors.", sizeof(HUB75_DMA_DESCRIPTOR_T) * len);       
+    ESP_LOGD("ESP32/S2", "Allocating %d bytes of memory for DMA descriptors.", (int)sizeof(HUB75_DMA_DESCRIPTOR_T) * len);       
 
     // New - Temporary blank descriptor for transitions between DMA buffer
     _dmadesc_blank = (HUB75_DMA_DESCRIPTOR_T*)heap_caps_malloc(sizeof(HUB75_DMA_DESCRIPTOR_T) * 1, MALLOC_CAP_DMA);
@@ -488,7 +488,7 @@ Modified heavily for the ESP32 HUB75 DMA library by:
     if ( !dmadesc_b )
     {
       if ( (_dmadesc_a_idx+1) > _dmadesc_count) {
-        ESP_LOGE("ESP32/S2", "Attempted to create more DMA descriptors than allocated memory for. Expecting a maximum of %ld DMA descriptors", _dmadesc_count);          
+        ESP_LOGE("ESP32/S2", "Attempted to create more DMA descriptors than allocated memory for. Expecting a maximum of %u DMA descriptors", (unsigned int)_dmadesc_count);          
         return;
       }
     }

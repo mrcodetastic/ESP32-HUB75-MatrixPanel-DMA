@@ -146,8 +146,8 @@
 
     }
 
-    ESP_LOGI("S3", "Clock divider is %d", LCD_CAM.lcd_clock.lcd_clkm_div_num);
-    ESP_LOGD("S3", "Resulting output clock frequency: %ld Mhz",  (160000000L/LCD_CAM.lcd_clock.lcd_clkm_div_num)); 
+    ESP_LOGI("S3", "Clock divider is %d", (int)LCD_CAM.lcd_clock.lcd_clkm_div_num);
+    ESP_LOGD("S3", "Resulting output clock frequency: %d Mhz",  (int)(160000000L/LCD_CAM.lcd_clock.lcd_clkm_div_num)); 
 
 
     LCD_CAM.lcd_clock.lcd_clkm_div_a = 1;     // 0/1 fractional divide
@@ -311,7 +311,7 @@
     if (_dmadesc_a) heap_caps_free(_dmadesc_a); // free all dma descrptios previously
     _dmadesc_count = len;
 
-    ESP_LOGD("S3", "Allocating %d bytes memory for DMA descriptors.", sizeof(HUB75_DMA_DESCRIPTOR_T) * len);        
+    ESP_LOGD("S3", "Allocating %d bytes memory for DMA descriptors.", (int)sizeof(HUB75_DMA_DESCRIPTOR_T) * len);        
 
     _dmadesc_a= (HUB75_DMA_DESCRIPTOR_T*)heap_caps_malloc(sizeof(HUB75_DMA_DESCRIPTOR_T) * len, MALLOC_CAP_DMA);
   
@@ -374,7 +374,7 @@
         
       if ( _dmadesc_a_idx >= _dmadesc_count)
       {
-        ESP_LOGE("S3", "Attempted to create more DMA descriptors than allocated. Expecting max %" PRIu32 " descriptors.", _dmadesc_count);          
+        ESP_LOGE("S3", "Attempted to create more DMA descriptors than allocated. Expecting max %u descriptors.", (unsigned int)_dmadesc_count);          
         return;
       }
 
