@@ -27,10 +27,10 @@ __[BUILD OPTIONS](/doc/BuildOptions.md) | [EXAMPLES](/examples/README.md)__ | [!
 - [Thank you!](#thank-you)
 
 # Introduction
-* This is an ESP32 Arduino/IDF library for HUB75 / HUB75E RGB LED panels. 
-* This library 'out of the box' (mostly) supports HUB75 panels where TWO rows/lines are updated in parallel... referred to as 'two scan' panels within this library's documentation. 
-* 'Four scan' panels are also supported - but please refer to the Four Scan Panel example.
-* The library uses the DMA functionality provided by the ESP32's 'LCD Mode' for faster output.
+* This is an ESP32 Arduino/IDF library for HUB75 / HUB75E connection based RGB LED panels. 
+* This library 'out of the box' (mostly) supports HUB75 panels where simple TWO rows/lines are updated in parallel... referred to as 'two scan' panels within this documentation. 
+* 'Four scan' panels are also supported - but please refer to the Four Scan Panel example sketch.
+* The library uses the DMA functionality provided by the ESP32's 'LCD Mode' for fast data output.
 
 ## Features
 -  **Low CPU overhead** - Pixel data is sent directly with the use of hardware-backed DMA, no CPU involvement
@@ -45,14 +45,12 @@ __[BUILD OPTIONS](/doc/BuildOptions.md) | [EXAMPLES](/examples/README.md)__ | [!
 * ESP32-S2; and
 * ESP32-S3
 
-RISC-V ESP32's (like the C3) are not supported as they do not have the hardware 'LCD mode' required for this library.
+RISC-V ESP32's (like the C3) are not supported as they do not have the hardware 'LCD mode' support.
 
 ## Required memory
 "*What's the price for those features?*" - It's [memory](/doc/memcalc.md), you pay it all by precious MCU's internal memory (SRAM) for the DMA buffer. 
 
-A typical 64x32px panel at 24bpp colour uses about 20kB of internal memory.
-
-Please use the ['Memory Calculator'](/doc/memcalc.md) to see what is *typically* achievable with the typical ESP32. ![Memory Calculator](doc/memcalc.jpg)
+Please use the ['Memory Calculator'](/doc/memcalc.md) to see what is *typically* achievable with the typical ESP32. This is only a guide. ![Memory Calculator](doc/memcalc.jpg)
 
 For the ESP32-S3 only, you can use SPIRAM/PSRAM to drive the HUB75 DMA buffer when using an ESP32-S3 with **OCTAL SPI-RAM (PSTRAM)** (i.e. ESP32 S3 N8R8 variant). However, due to bandwidth limitations, the maximum output frequency is limited to approx. 13Mhz, which will limit the real-world number of panels that can be chained without flicker. Please do not use PSRAM as the DMA buffer if using QUAD SPI (Q-SPI), as it's too slow.
 
@@ -61,10 +59,11 @@ To enable PSRAM support on the ESP32-S3, refer to [the build options](/doc/Build
 For all other ESP32 variants (like the most popular ‘original’ ESP32), [only *internal* SRAM can be used](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/issues/55), so you will be limited to the ~200KB or so of 'free' SRAM (because of the memory used for your sketch amongst other things) regardless of how many megabytes of SPIRAM/PSRAM you may have connected.
 
 
-## Supported panels
-### Parallel scan lines
+## Supported panel can types
+It is impossible to provide a comprehensive list of what panels are supported (or not supported) as new variations of the chips used to 'drive' these panels are created almost weekly (usually from China). You should contact the seller to confirm the chips used in a panel before purchasing to use with this library. 
+
 * 'Two scan' panels where **two** rows/lines are updated in parallel. 
-    * 64x32 (width x height) 'Indoor' panels, such as this [typical RGB panel available for purchase](https://www.aliexpress.com/item/256-128mm-64-32-pixels-1-16-Scan-Indoor-3in1-SMD2121-RGB-full-color-P4-led/32810362851.html). Often also referred to as 1/16 'scan panel' as every 16th row is updated in parallel (hence why I refer to it as 'two scan')
+    * 64x32 (width x height) 'Indoor' panels, which are often referred to as 1/16 'scan panel' as every 16th row is updated in parallel (hence why I refer to it as 'two scan')
     * 64x64 pixel 1/32 Scan LED Matrix 'Indoor' Panel
 
 * 'Four scan' panels where **four** rows/lines are updated in parallel.
@@ -73,19 +72,17 @@ For all other ESP32 variants (like the most popular ‘original’ ESP32), [only
 
 Ones interested in internals of such matrices could find [this article](https://www.sparkfun.com/news/2650) useful.
 
-Due to the high-speed optimized nature of this library, only specific panels are supported. Please do not raise issues with respect to panels not supported on the list below.
-
 ![Panel Scan Types](doc/ScanRateGraphic.jpg)
 
-### Driver chips known to be working well
-
+## Specific chips found to work
 * ICND2012
 * [RUC7258](http://www.ruichips.com/en/products.html?cateid=17496)
 * FM6126A AKA ICN2038S, [FM6124](https://datasheet4u.com/datasheet-pdf/FINEMADELECTRONICS/FM6124/pdf.php?id=1309677) (Refer to [PatternPlasma](/examples/2_PatternPlasma) example on how to use.)
 * SM5266P
 * DP3246 with SM5368 row addressing registers
 
-## Unsupported chips
+## Specific chips found NOT TO work
+* ANY panel that uses S-PWM or PWM based chips (such as the RUL6024, MBI6024).
 * [SM1620B](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-DMA/issues/416)
 * RUL5358 / SHIFTREG_ABC_BIN_DE based panels are not supported.
 * ICN2053 / FM6353 based panels - Refer to [this library](https://github.com/LAutour/ESP32-HUB75-MatrixPanel-DMA-ICN2053), which is a fork of this library ( [discussion link](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-DMA/discussions/324)).
