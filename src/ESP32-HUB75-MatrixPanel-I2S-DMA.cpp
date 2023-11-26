@@ -195,11 +195,13 @@ void MatrixPanel_I2S_DMA::configureDMA(const HUB75_I2S_CFG &_cfg)
   int current_dmadescriptor_offset = 0;
 
   // HACK: If we need to split the payload in 1/2 so that it doesn't breach DMA_MAX, lets do it by the colour_depth.
+  /*
   int num_dma_payload_colour_depths = m_cfg.getPixelColorDepthBits();
   if (frame_buffer[0].rowBits[0]->getColorDepthSize() > DMA_MAX)
   {
     num_dma_payload_colour_depths = 1;
   }
+  */
 
 
  // Fill DMA linked lists for both frames (as in, halves of the HUB75 panel) in sequence (top to bottom) 
