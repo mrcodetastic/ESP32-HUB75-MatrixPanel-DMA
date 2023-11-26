@@ -200,7 +200,7 @@ Modified heavily for the ESP32 HUB75 DMA library by:
     ////////////////////////////// Clock configuration //////////////////////////////
 
     unsigned int freq 		= (_cfg.bus_freq);
-    ESP_LOGD("ESP32/S2", "Requested output clock frequency: %u Mhz",  (unsigned int)((freq/1000000));   		
+    ESP_LOGD("ESP32/S2", "Requested output clock frequency: %u Mhz",  (unsigned int)(freq/1000000));   		
 	
 	// What is the current CPU frequency?
 
