@@ -31,7 +31,11 @@ Modified heavily for the ESP32 HUB75 DMA library by:
 #endif
 
 #include <driver/gpio.h>
+#if (ESP_IDF_VERSION_MAJOR == 5)
 #include <esp_private/periph_ctrl.h>
+#else
+#include <driver/periph_ctrl.h>
+#endif
 #include <soc/gpio_sig_map.h>
 #include <soc/i2s_periph.h> //includes struct and reg
 
