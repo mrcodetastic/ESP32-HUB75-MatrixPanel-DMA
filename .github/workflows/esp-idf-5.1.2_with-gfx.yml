@@ -1,0 +1,48 @@
+name: esp-idf 5.1.2 with Adafruit GFX Library
+
+on:
+  push:
+    paths-ignore:
+      - '**.md'
+      - 'doc/**'
+  pull_request:
+    paths-ignore:
+      - '**.md'
+      - 'doc/**'
+
+jobs:
+  build:
+    name: esp-idf with Adafruit GFX
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v4
+      with:
+        submodules: 'recursive'
+    - name: Checkout ESP32-HUB75-MatrixPanel-I2S-DMA component
+      uses: actions/checkout@v4
+      with:
+        path: 'examples/esp-idf/with-gfx/components/ESP32-HUB75-MatrixPanel-I2S-DMA'
+    - name: Checkout Adafruit-GFX-Library repo
+      uses: actions/checkout@v4
+      with:
+        repository: 'adafruit/Adafruit-GFX-Library'
+        path: 'examples/esp-idf/with-gfx/components/Adafruit-GFX-Library'
+    - name: Checkout Adafruit_BusIO repo
+      uses: actions/checkout@v4
+      with:
+        repository: 'adafruit/Adafruit_BusIO'
+        path: 'examples/esp-idf/with-gfx/components/Adafruit_BusIO'
+    - name: Checkout arduino-esp32 repo
+      uses: actions/checkout@v4
+      with:
+        repository: 'espressif/arduino-esp32'
+        path: 'examples/esp-idf/with-gfx/components/arduino'
+    - name: esp-idf build
+      uses: espressif/esp-idf-ci-action@v1
+      with:
+        esp_idf_version: v5.1.2
+        target: esp32
+        path: 'examples/esp-idf/with-gfx'
