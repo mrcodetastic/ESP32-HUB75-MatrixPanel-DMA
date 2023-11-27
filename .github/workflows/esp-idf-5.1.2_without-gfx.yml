@@ -1,4 +1,4 @@
-name: esp-idf without Adafruit GFX Library
+name: esp-idf 5.1.2 without Adafruit GFX Library
 
 on:
   push:
