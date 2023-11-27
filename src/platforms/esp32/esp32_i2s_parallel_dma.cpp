@@ -24,10 +24,17 @@ Modified heavily for the ESP32 HUB75 DMA library by:
 
 #include "esp32_i2s_parallel_dma.hpp"
 
+#if defined (CONFIG_IDF_TARGET_ESP32S2)
+  #pragma message "Compiling for ESP32-S2"
+#else
+  #pragma message "Compiling for original ESP32 (released 2016)"  
+#endif
+
 #include <driver/gpio.h>
-#include <driver/periph_ctrl.h>
+#include <esp_private/periph_ctrl.h>
 #include <soc/gpio_sig_map.h>
-#include <soc/i2s_periph.h>
+#include <soc/i2s_periph.h> //includes struct and reg
+
 
 #if defined (ARDUINO_ARCH_ESP32)
 #include <Arduino.h>

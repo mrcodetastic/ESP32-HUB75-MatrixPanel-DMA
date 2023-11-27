@@ -3,10 +3,11 @@
 
 */
 
+#include <driver/gpio.h>
+
 #ifdef ARDUINO_ARCH_ESP32
   #include <Arduino.h>
 #else
-    #include <driver/gpio.h>
     #define LOW 0
     #define HIGH 1
 #endif

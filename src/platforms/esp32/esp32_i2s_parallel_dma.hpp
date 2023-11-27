@@ -43,10 +43,12 @@ Contributors:
 
 #include <sys/types.h>
 #include <freertos/FreeRTOS.h>
-#include <driver/i2s.h>
-#include <soc/i2s_struct.h>
+//#include <driver/i2s.h>
 #include <rom/lldesc.h>
 #include <rom/gpio.h>
+#include <driver/i2s_types.h> //includes struct and reg
+#include <soc/i2s_periph.h> //includes struct and reg
+
 
 #define DMA_MAX (4096-4)
 
