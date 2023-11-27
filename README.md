@@ -1,6 +1,6 @@
 # HUB75 RGB LED matrix panel library utilizing ESP32 DMA
 
-__[BUILD OPTIONS](/doc/BuildOptions.md) | [EXAMPLES](/examples/README.md)__ | [![PlatformIO CI](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-DMA/actions/workflows/pio_build.yml/badge.svg)](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-DMA/actions/workflows/pio_build.yml)
+__[BUILD OPTIONS](/doc/BuildOptions.md) | [EXAMPLES](/examples/README.md)__ | [![PlatformIO CI](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-DMA/actions/workflows/pio_arduino_build.yml/badge.svg)](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-DMA/actions/workflows/pio_build.yml)
 
 **Table of Content**
 
