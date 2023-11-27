@@ -50,11 +50,13 @@
 
 #include <stdint.h>
 
+/*
 #if (ESP_IDF_VERSION_MAJOR == 5)
 #include <esp_private/periph_ctrl.h>
 #else
 #include <driver/periph_ctrl.h>
 #endif
+*/
 
 #include <esp_private/gdma.h>
 #include <esp_rom_gpio.h>
