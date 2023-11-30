@@ -94,7 +94,7 @@
     #define B2_PIN_DEFAULT  13
 
     #define A_PIN_DEFAULT   23
-    #define B_PIN_DEFAULT   19
+    #define B_PIN_DEFAULT   22
     #define C_PIN_DEFAULT   5
     #define D_PIN_DEFAULT   17
     #define E_PIN_DEFAULT   -1 // IMPORTANT: Change to a valid pin if using a 64x64px panel.
