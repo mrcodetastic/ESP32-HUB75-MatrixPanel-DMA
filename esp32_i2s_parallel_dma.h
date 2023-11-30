@@ -26,7 +26,7 @@ extern "C" {
 
 
 // Get MCU Type and Max CLK Hz for MCU
-#include <esp32_i2s_parallel_mcu_def.h>
+#include "esp32_i2s_parallel_mcu_def.h"
 
 typedef enum {
   I2S_PARALLEL_WIDTH_8,
@@ -89,7 +89,7 @@ typedef struct {
 } i2s_parallel_state_t;
 
 void i2s_parallel_flip_to_buffer(i2s_port_t port, int bufid);
-bool IRAM_ATTR i2s_parallel_is_previous_buffer_free();
+bool i2s_parallel_is_previous_buffer_free();
 void i2s_parallel_set_previous_buffer_not_free();
 
 // Callback function for when whole length of DMA chain has been sent out.
