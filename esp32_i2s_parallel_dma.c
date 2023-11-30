@@ -41,8 +41,8 @@ void setShiftCompleteCallback(callback f) {
     shiftCompleteCallback = f;
 }
 
-volatile int DRAM_ATTR  previousBufferOutputLoopCount = 0;
-volatile bool DRAM_ATTR  previousBufferFree      = true;
+volatile int  previousBufferOutputLoopCount = 0;
+volatile bool previousBufferFree      = true;
 
 static void IRAM_ATTR irq_hndlr(void* arg) { // if we use I2S1 (default)
 
@@ -433,7 +433,7 @@ void i2s_parallel_flip_to_buffer(i2s_port_t port, int buffer_id) {
 	i2s_parallel_set_previous_buffer_not_free();
 }
 
-bool IRAM_ATTR i2s_parallel_is_previous_buffer_free() {
+bool i2s_parallel_is_previous_buffer_free() {
     return previousBufferFree;
 }
 
