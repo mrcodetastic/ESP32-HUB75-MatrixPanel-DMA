@@ -112,7 +112,7 @@ public:
     // equivalent methods of the matrix library so it can be just swapped out.
     void drawPixel(int16_t x, int16_t y, uint16_t color);   // overwrite adafruit implementation
     void fillScreen(uint16_t color); 			// overwrite adafruit implementation
-    void setRotation(int rotate); 				// overwrite adafruit implementation
+    void setRotation(uint8_t rotate); 				// overwrite adafruit implementation
     
 	void fillScreenRGB888(uint8_t r, uint8_t g, uint8_t b);
     void clearScreen() { display->clearScreen(); }
@@ -472,7 +472,7 @@ inline void VirtualMatrixPanel::fillScreen(CRGB color)
 }
 #endif
 
-inline void VirtualMatrixPanel::setRotation(int rotate)
+inline void VirtualMatrixPanel::setRotation(uint8_t rotate)
 {
   if(rotate < 4 && rotate >= 0)
     _rotate = rotate;
