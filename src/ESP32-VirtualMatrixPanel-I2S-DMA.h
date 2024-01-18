@@ -124,6 +124,11 @@ public:
     void drawPixel(int16_t x, int16_t y, CRGB color);
 #endif
 
+#ifdef NO_GFX
+    inline int16_t width() const { return _virtualResX; }
+    inline int16_t height() const { return _virtualResY; }
+#endif
+
     uint16_t color444(uint8_t r, uint8_t g, uint8_t b)
     {
         return display->color444(r, g, b);
@@ -479,6 +484,9 @@ inline void VirtualMatrixPanel::setRotation(uint8_t rotate)
 
   // Change the _width and _height variables used by the underlying adafruit gfx library.
   // Actual pixel rotation / mapping is done in the getCoords function.
+#ifdef NO_GFX
+    int8_t rotation;
+#endif
   rotation = (rotate & 3);
   switch (rotation) {
   case 0: // nothing
