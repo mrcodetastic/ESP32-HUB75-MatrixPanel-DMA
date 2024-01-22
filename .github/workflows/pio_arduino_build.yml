@@ -37,7 +37,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
     - name: Cache pip and platformio
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: |
           ~/.cache/pip
