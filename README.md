@@ -145,7 +145,7 @@ Please contact or order these products from the respective authors.
 
 You need to find the correct pin mapping for your board. For Adafruit boards/shields, you can look in one of the examples provided with the Protomatter library, for example [here](https://github.com/adafruit/Adafruit_Protomatter/blob/master/examples/doublebuffer_scrolltext/doublebuffer_scrolltext.ino). Find your board variant, copy the pin values into the `#define`s described above, and pass the pin mapping into your `mxconfig`.
 
-For example, for MatrixPoral S3, the Protomatter example file contains the following:
+For example, for MatrixPortal S3, the Protomatter example file contains the following:
 
 ```
 uint8_t rgbPins[]  = {42, 41, 40, 38, 39, 37};
