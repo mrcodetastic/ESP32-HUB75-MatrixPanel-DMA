@@ -141,6 +141,50 @@ Various people have created PCBs for which one can simply connect an ESP32 to a 
 
 Please contact or order these products from the respective authors.
 
+### How can I configure it to work with an off-the-shelf board/shield with HUB75 connector, e.g. Adafruit MatrixPortal?
+
+You need to find the correct pin mapping for your board. For Adafruit boards/shields, you can look in one of the examples provided with the Protomatter library, for example [here](https://github.com/adafruit/Adafruit_Protomatter/blob/master/examples/doublebuffer_scrolltext/doublebuffer_scrolltext.ino). Find your board variant, copy the pin values into the `#define`s described above, and pass the pin mapping into your `mxconfig`.
+
+For example, for MatrixPoral S3, the Protomatter example file contains the following:
+
+```
+uint8_t rgbPins[]  = {42, 41, 40, 38, 39, 37};
+uint8_t addrPins[] = {45, 36, 48, 35, 21};
+uint8_t clockPin   = 2;
+uint8_t latchPin   = 47;
+uint8_t oePin      = 14;
+```
+
+which for use with this library, converts to:
+
+```
+#define R1_PIN 42
+#define G1_PIN 41
+#define B1_PIN 40
+#define R2_PIN 38
+#define G2_PIN 39
+#define B2_PIN 37
+#define A_PIN  45
+#define B_PIN  36
+#define C_PIN  48
+#define D_PIN  35
+#define E_PIN  21 
+#define LAT_PIN 47
+#define OE_PIN  14
+#define CLK_PIN 2
+
+HUB75_I2S_CFG::i2s_pins _pins={R1_PIN, G1_PIN, B1_PIN, R2_PIN, G2_PIN, B2_PIN, A_PIN, B_PIN, C_PIN, D_PIN, E_PIN, LAT_PIN, OE_PIN, CLK_PIN};
+
+// Module configuration
+HUB75_I2S_CFG mxconfig(
+  PANEL_RES_X,   // module width
+  PANEL_RES_Y,   // module height
+  PANEL_CHAIN,   // Chain length
+  _pins          // Pin mapping
+);
+```
+
+
 ### Can I use with a larger panel (i.e. 64x64px square panel)?
 If you want to use with a 64x64 pixel panel (typically a HUB75*E* panel) you MUST configure a valid *E_PIN* to your ESP32 and connect it to the E pin of the HUB75 panel! Hence the 'E' in 'HUB75E'
 
