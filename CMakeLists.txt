@@ -13,6 +13,11 @@ endif()
 
 if(${target} STREQUAL "esp32s3")
   list(APPEND extra_srcs src/platforms/${target}/gdma_lcd_parallel16.cpp)
+
+  # Required by gdma_lcd_parallel16.cpp
+  if (NOT esp_lcd IN_LIST build_dependencies)
+    list(APPEND build_dependencies esp_lcd)
+  endif()
 endif()
 
 idf_component_register(SRCS "src/platforms/esp32/esp32_i2s_parallel_dma.cpp" "src/ESP32-HUB75-MatrixPanel-I2S-DMA.cpp" "src/ESP32-HUB75-MatrixPanel-leddrivers.cpp" ${extra_srcs}
