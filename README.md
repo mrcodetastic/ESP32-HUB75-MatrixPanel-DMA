@@ -135,7 +135,7 @@ Make sure you also connect one of the HUB75 interfaces ground pins to a ground p
 
 Various people have created PCBs for which one can simply connect an ESP32 to a PCB, and then the PCB to the HUB75 connector, such as:
 
-* Brian Lough's [ESP32 I2S Matrix Shield](http://blough.ie/i2smat/)
+* Brian Lough's [ESP32 I2S Matrix Shield](https://github.com/rorosaurus/esp32-hub75-driver)
 * Charles Hallard's [WeMos Matrix Shield](https://github.com/hallard/WeMos-Matrix-Shield-DMA)
 * Bogdan Sass's [Morph Clock Shield](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/discussions/110#discussioncomment-861152)
 
