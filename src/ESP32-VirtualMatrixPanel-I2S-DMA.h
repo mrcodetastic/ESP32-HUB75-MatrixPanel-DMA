@@ -97,6 +97,9 @@ public:
         virtualResX = vmodule_cols * _panelResX;
         virtualResY = vmodule_rows * _panelResY;
 
+	_virtualResX = virtualResX;
+	_virtualResY = virtualResY;
+	    
         dmaResX = panelResX * vmodule_rows * vmodule_cols - 1;
 
         /* Virtual Display width() and height() will return a real-world value. For example:
@@ -151,9 +154,10 @@ private:
     virtual VirtualCoords getCoords(int16_t x, int16_t y);
     VirtualCoords coords;
 
-    int16_t virtualResX;
-    int16_t virtualResY;
-	
+    int16_t virtualResX;	///< Display width as combination of panels
+    int16_t virtualResY;	///< Display height as combination of panels
+
+
 	int16_t _virtualResX;       ///< Display width as modified by current rotation
 	int16_t _virtualResY;       ///< Display height as modified by current rotation	
 
