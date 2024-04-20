@@ -145,14 +145,16 @@ public:
     void setPhysicalPanelScanRate(PANEL_SCAN_RATE rate);
 	void setZoomFactor(int scale);
 
+    virtual VirtualCoords getCoords(int16_t x, int16_t y);
+    VirtualCoords coords;
+    int16_t panelResX;
+    int16_t panelResY;
+
 private:
     MatrixPanel_I2S_DMA *display;
 
     PANEL_CHAIN_TYPE panel_chain_type;
     PANEL_SCAN_RATE panel_scan_rate = NORMAL_TWO_SCAN;
-
-    virtual VirtualCoords getCoords(int16_t x, int16_t y);
-    VirtualCoords coords;
 
     int16_t virtualResX;	///< Display width as combination of panels
     int16_t virtualResY;	///< Display height as combination of panels
@@ -163,9 +165,6 @@ private:
 
     int16_t vmodule_rows;
     int16_t vmodule_cols;
-
-    int16_t panelResX;
-    int16_t panelResY;
 
     int16_t dmaResX; // The width of the chain in pixels (as the DMA engine sees it)
 
