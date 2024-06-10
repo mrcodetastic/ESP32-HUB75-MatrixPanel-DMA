@@ -38,15 +38,19 @@
 // limitation of parlio interface
 // PARLIO_LL_TX_MAX_BITS_PER_FRAME = (PARLIO_LL_TX_MAX_BYTES_PER_FRAME * 8)
 // PARLIO_LL_TX_MAX_BYTES_PER_FRAME = 0xFFFF
+// the problem are not these 2 defines. In "soc/parl_io_struct.h" (esp32-arduino-libs\esp32c6\include\soc\esp32c6\include\soc\parl_io_struct.h)
+// there are only 16 bit for the number of bytes. I'm not sure, but I think this is the limiting factor. And I think
+// this struct links to registers for die parlio driver, so no software change possible -> maybe software change?
 // Max of 65535 bytes for matrix with 2 scan lines the following resulutions are theoretical max for pixeldepths
 //                              theory                         tested
-// pixeldepth 8:                              16x16             14x32
-// pixeldepth 7:                     16x32    32x16             28x32
-// pixeldepth 6:                     32x32    64x16             55x32
-// pixeldepth 5:             32x64   64x32   128x16            102x32
-// pixeldepth 4:             64x64  128x32   256x16            186x32 
-// pixeldepth 3:            128x64  256x32   512x16            341x32
-// pixeldepth 2:   128x128  256x64  512x32  1024x16            682x32
+// pixeldepth 8:                              16x16             14x32            14*16*255 = 57120
+// pixeldepth 7:                     16x32    32x16             28x32            28*16*127 = 56896
+// pixeldepth 6:                     32x32    64x16             55x32            55*16*63  = 55440
+// pixeldepth 5:             32x64   64x32   128x16            102x32           102*16*31  = 50592
+// pixeldepth 4:             64x64  128x32   256x16            186x32           186*16*15  = 44640
+// pixeldepth 3:            128x64  256x32   512x16            341x32           341*16*7   = 38192
+// pixeldepth 2:   128x128  256x64  512x32  1024x16            682x32           682*16*2   = 32736
+//                                                                              I don't get it
 
 
 
