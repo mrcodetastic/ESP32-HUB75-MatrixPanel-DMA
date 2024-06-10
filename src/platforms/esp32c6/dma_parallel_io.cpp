@@ -4,6 +4,34 @@
 
 //First implementation might have a lot of bugs, especially on deleting and reloading
 
+//major test setup:
+// ESP32-C6 4MB Flash (USB disabled)
+// 64x32 matrix (2 scanlines) P5
+// esp32c6_default_pins.hpp 
+// double_buffer = sometimes active, sometimes not - not much difference
+// clkphase = false, latch_blanking = 1, i2sspeed = 10Mhz, colordepth = 5
+// brightness = 15
+// I use my custom GFX library, so neither GFX Class nor AdafruitGFX, during testing I forced it to 50hz. more would case ghosting and artifacts
+// I'm to lazy to make a proper voltage supply, so lets just say - powersupply might be an issue 
+// I sodered the pins to the esp32c6 devkit, but used jumer wired to conned to a HUB75 Data cable 
+// which is plug into the hub 
+// I'm using custom arduino build, quite close to the 3.0.1 release, based on idf-5.1 - there might be problems when updating to idf 5.2
+
+//known bugs of this first implementation:
+// - doublebuffer might shift the first view colums
+// - when wriring to littlefs (maybe flash in general) flashing of the first lines, because the 
+//     restart is sceduled - seems like reading ha sno effect
+//     maybe the problem is the webserver which reveives the data
+// - there seems to be glowing of the fist line - might be power supply issue on my side
+// - BIG PROBLEM on 64x32 matrix (2 scanlines) the first 13x16 block flickers. Not the bottom half,
+//     just the top half, maybe pin related? - increases by higher gfx action, never goes to zero
+//     sometimer randomly stops fur multiple minutes
+// - due to a single core everything (I expierienced just a view, very little artifacts with all of
+//     them active at the same time: WiFi, AsyncWeserver, AsyncTCP, Filesystem, Serial, dns, mdns, sntp, custom GFX Task @ 50hz, berry-lang interpreter)
+//     can cause artifacts and flashing - the problem is that the 'dma-loop' has to be retriggered
+//     see gdma_on_trans_eof_callback, it may be a isr action, but still needs to reserve the core 
+//     for a view clocks
+
 
 #pragma message "Compiling for ESP32-C6"
 
@@ -36,6 +64,17 @@ IRAM_ATTR bool gdma_on_trans_eof_callback(gdma_channel_handle_t dma_chan,
 
     previousBufferFree = true;
 
+
+    //parlio_ll_tx_reset_fifo(&PARL_IO);
+    parlio_ll_tx_reset_clock(&PARL_IO);
+    
+    //gdma_start(dma_chan, (intptr_t)&_dmadesc_a[0]);
+    
+    //while (parlio_ll_tx_is_ready(&PARL_IO) == false);
+
+    //parlio_ll_tx_start(&PARL_IO, true);
+    //parlio_ll_tx_enable_clock(&PARL_IO, true);
+    
     return true;
 }
 
@@ -56,7 +95,6 @@ bool Bus_Parallel16::init(void)
     // Reset LCD bus
     parlio_ll_tx_reset_fifo(&PARL_IO);
     esp_rom_delay_us(1000);
-
 
     parlio_ll_clock_source_t clk_src = (parlio_ll_clock_source_t)PARLIO_CLK_SRC_DEFAULT;
     uint32_t periph_src_clk_hz = 0;
@@ -139,7 +177,7 @@ bool Bus_Parallel16::init(void)
     gpio_set_drive_capability((gpio_num_t)_cfg.pin_wr, (gpio_drive_cap_t)3);
 
     parlio_ll_tx_set_idle_data_value(&PARL_IO, 0);
-    parlio_ll_tx_set_trans_bit_len(&PARL_IO, ((1<<16) -1) * 8);
+    parlio_ll_tx_set_trans_bit_len(&PARL_IO, 0);//((1<<16) -1) * 8);
 
     return true; // no return val = illegal instruction
 }
@@ -296,13 +334,9 @@ void Bus_Parallel16::flip_dma_output_buffer(int back_buffer_id)
         _dmadesc_a[_dmadesc_count - 1].next = (dma_descriptor_t *)&_dmadesc_a[0];
     }
 
-    // current_back_buffer_id ^= 1;
-
     previousBufferFree = false;
 
-    // while (i2s_parallel_is_previous_buffer_free() == false) {}
-    while (!previousBufferFree)
-        ;
+    while (!previousBufferFree)  ;
 
 } // end flip
 

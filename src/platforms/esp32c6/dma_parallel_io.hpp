@@ -96,7 +96,6 @@ class Bus_Parallel16
 
     config_t _cfg;
 
-
     gdma_channel_handle_t dma_chan; 
 
     uint32_t _dmadesc_count  = 0;   // number of dma decriptors
