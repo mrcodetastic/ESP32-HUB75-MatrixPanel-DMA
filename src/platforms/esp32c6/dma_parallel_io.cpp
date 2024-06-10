@@ -33,6 +33,24 @@
 //     for a view clocks
 
 
+
+
+// limitation of parlio interface
+// PARLIO_LL_TX_MAX_BITS_PER_FRAME = (PARLIO_LL_TX_MAX_BYTES_PER_FRAME * 8)
+// PARLIO_LL_TX_MAX_BYTES_PER_FRAME = 0xFFFF
+// Max of 65535 bytes for matrix with 2 scan lines the following resulutions are theoretical max for pixeldepths
+//                              theory                         tested
+// pixeldepth 8:                              16x16             14x32
+// pixeldepth 7:                     16x32    32x16             28x32
+// pixeldepth 6:                     32x32    64x16             55x32
+// pixeldepth 5:             32x64   64x32   128x16            102x32
+// pixeldepth 4:             64x64  128x32   256x16            186x32 
+// pixeldepth 3:            128x64  256x32   512x16            341x32
+// pixeldepth 2:   128x128  256x64  512x32  1024x16            682x32
+
+
+
+
 #pragma message "Compiling for ESP32-C6"
 
 #ifdef ARDUINO_ARCH_ESP32
