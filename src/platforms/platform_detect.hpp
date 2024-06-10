@@ -22,11 +22,7 @@ Modified heavily for the ESP32 HUB75 DMA library by:
 
  #include <sdkconfig.h>
 
- #if defined (CONFIG_IDF_TARGET_ESP32C3)
-
-  #error "ERROR: ESP32C3 not supported."
-
- #elif defined (CONFIG_IDF_TARGET_ESP32S2)
+ #if defined (CONFIG_IDF_TARGET_ESP32S2)
 
   //#pragma message "Compiling for ESP32-S2"
   #include "esp32/esp32_i2s_parallel_dma.hpp"  
@@ -47,9 +43,14 @@ Modified heavily for the ESP32 HUB75 DMA library by:
    #define NO_FAST_FUNCTIONS 1
   #endif
 
- #elif defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32H2)
+ #elif defined(CONFIG_IDF_TARGET_ESP32C6)
 
-	#error "ESP32 RISC-V devices do not have an LCD interface and are therefore not supported by this library."
+  #include "esp32c6/dma_parallel_io.hpp"
+  #include "esp32c6/esp32c6-default-pins.hpp"
+
+ #elif defined(CONFIG_IDF_TARGET_ESP32P4)
+
+   #pragma message "you are ahead of your time. ESP32P4 Support is planned"
 
  #elif defined (CONFIG_IDF_TARGET_ESP32) || defined(ESP32)
 
@@ -63,6 +64,11 @@ Modified heavily for the ESP32 HUB75 DMA library by:
   #include "esp32/esp32_i2s_parallel_dma.hpp"  
   #include "esp32/esp32-default-pins.hpp"
 
+#elif defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32H2)
+
+	#error "ESP32 C2 C3 and H2 devices are not supported by this library."
+
+ 
  #else
     #error "Unknown platform."
   
