@@ -560,6 +560,76 @@ public:
     fillRectDMA(x, y, w, h, r, g, b);
     
   }
+
+   // rgb888 overload
+  
+  virtual inline void fillEllipse(int16_t x, int16_t y, int16_t rad, int16_t length, float angle, uint8_t r, uint8_t g, uint8_t b)
+  {
+    transform(x,y);
+    fillEllipseDMA(x, y, rad, length, angle, r, g, b);
+  }
+
+
+  virtual void fillTriangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, uint16_t color)
+  {
+    uint8_t r, g, b;
+    color565to888(color, r, g, b);
+    
+    
+    transform(x0, y0);
+    transform(x1, y1);
+    transform(x2, y2);
+    fillTriangleDMA(x0, y0, x1, y1, x2, y2, r, g, b);
+    
+  }
+  // rgb888 overload
+  virtual inline void fillTriangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, uint8_t r, uint8_t g, uint8_t b)
+  {
+    
+    transform(x0, y0);
+    transform(x1, y1);
+    transform(x2, y2);
+    fillTriangleDMA(x0, y0, x1, y1, x2, y2, r, g, b);
+    
+  }
+  /**
+   * @brief - override Adafruit's fillCircle
+   * this works much faster than multiple consecutive per-pixel drawPixel() calls
+   */
+  virtual void fillCircle(int16_t x0, int16_t y0, int16_t rad, uint16_t color)
+  {
+    uint8_t r, g, b;
+    color565to888(color, r, g, b);
+    transform(x0, y0);
+    fillCircleDMA(x0, y0, rad, r, g, b);
+  }
+
+  // rgb888 overload
+  virtual inline void fillCircle(int16_t x0, int16_t y0, int16_t rad, uint8_t r, uint8_t g, uint8_t b)
+  {
+    transform(x0, y0);
+    fillCircleDMA(x0, y0, rad, r, g, b);
+  }
+
+  /**
+   * @brief - Helper function for drawing filled circles
+   * this works much faster than multiple consecutive per-pixel drawPixel() calls
+   */
+  virtual void fillCircleHelper(int16_t x0, int16_t y0, int16_t rad, uint8_t corners, int16_t delta, uint16_t color)
+  {
+    uint8_t r, g, b;
+    color565to888(color, r, g, b);
+    transform(x0, y0);
+    fillCircleHelperDMA(x0, y0, rad, corners, delta, r, g, b);
+  }
+
+  // rgb888 overload
+  virtual inline void fillCircleHelper(int16_t x0, int16_t y0, int16_t rad, uint8_t corners, int16_t delta, uint8_t r, uint8_t g, uint8_t b)
+  {
+    transform(x0, y0);
+    fillCircleHelperDMA(x0, y0, rad, corners, delta, r, g, b);
+  }
+
 #endif
 
   void fillScreenRGB888(uint8_t r, uint8_t g, uint8_t b);
@@ -753,6 +823,65 @@ protected:
    * @param uint8_t b - RGB888 colour
    */
   void fillRectDMA(int16_t x_coord, int16_t y_coord, int16_t w, int16_t h, uint8_t r, uint8_t g, uint8_t b);
+
+  /**
+   * @brief - update DMA buff drawing a filled ellipse at specified coordinates
+   * @param int16_t x, int16_t y - coordinates of the center of the ellipse
+   * @param int16_t rad - radius along the x-axis
+   * @param int16_t length - radius along the y-axis
+   * @param float angle - rotation angle in degrees
+   * @param uint8_t r - RGB888 colour for red
+   * @param uint8_t g - RGB888 colour for green
+   * @param uint8_t b - RGB888 colour for blue
+   * This function uses a series of filled circles to approximate the shape of a rotated ellipse.
+   */
+  void fillEllipseDMA(int16_t x, int16_t y, int16_t rad, int16_t length, float angle, uint8_t r, uint8_t g, uint8_t b);
+
+  /**
+   * @brief - update DMA buff drawing a triangle at specified coordinates
+   * uses Fast H/V line draw internally, works faster than multiple consecutive pixel by pixel calls to updateMatrixDMABuffer()
+   * @param int16_t x0, int16_t y0 - coordinates of the first vertex
+   * @param int16_t x1, int16_t y1 - coordinates of the second vertex
+   * @param int16_t x2, int16_t y2 - coordinates of the third vertex
+   * @param uint8_t r - RGB888 colour
+   * @param uint8_t g - RGB888 colour
+   * @param uint8_t b - RGB888 colour
+   */
+
+  /**
+   * @brief - update DMA buff drawing a triangle at specified coordinates
+   * uses Fast H/V line draw internally, works faster than multiple consecutive pixel by pixel calls to updateMatrixDMABuffer()
+   * @param int16_t x0_coord, int16_t y0_coord - coordinates of the first vertex
+   * @param int16_t x1_coord, int16_t y1_coord - coordinates of the second vertex
+   * @param int16_t x2_coord, int16_t y2_coord - coordinates of the third vertex
+   * @param uint8_t r - RGB888 colour for red
+   * @param uint8_t g - RGB888 colour for green
+   * @param uint8_t b - RGB888 colour for blue
+   */
+  void fillTriangleDMA(int16_t x0_coord, int16_t y0_coord, int16_t x1_coord, int16_t y1_coord,
+                                int16_t x2_coord, int16_t y2_coord, uint8_t red, uint8_t green, uint8_t blue );
+
+  /**
+   * @brief - update DMA buff drawing a circle at specified coordinates
+   * @param int16_t x0 - x coordinate of the center
+   * @param int16_t y0 - y coordinate of the center
+   * @param int16_t rad - radius of the circle
+   * @param uint8_t r - RGB888 colour
+   * @param uint8_t g - RGB888 colour
+   * @param uint8_t b - RGB888 colour
+   */
+  void fillCircleDMA(int16_t x0, int16_t y0, int16_t rad, uint8_t r, uint8_t g, uint8_t b);
+
+  /**
+   * @brief - update DMA buff drawing a circle at specified coordinates
+   * @param int16_t x0 - x coordinate of the center
+   * @param int16_t y0 - y coordinate of the center
+   * @param int16_t rad - radius of the circle
+   * @param uint8_t r - RGB888 colour
+   * @param uint8_t g - RGB888 colour
+   * @param uint8_t b - RGB888 colour
+   */
+  void fillCircleHelperDMA(int16_t x0, int16_t y0, int16_t rad, uint8_t corners, int16_t delta, uint8_t r, uint8_t g, uint8_t b);
 #endif
 
   // ------- PRIVATE -------
@@ -792,6 +921,35 @@ private:
    * @param _buff_id - buffer id to control
    */
   void brtCtrlOEv2(uint8_t brt, const int _buff_id = 0);
+
+  /**
+   * @brief - transforms coordinates according to orientation
+   * @param x - x position origin
+   * @param y - y position origin
+   */
+  void transform(int16_t &x, int16_t &y)
+  {
+#ifndef NO_GFX
+    int16_t t;
+    switch (rotation)
+    {
+    case 1:
+      t = _height - 1 - y;
+      y = x;
+      x = t;
+      return;
+    case 2:
+      x = _width - 1 - x;
+      y = _height - 1 - y;
+      return;
+    case 3:
+      t = y;
+      y = _width - 1 - x;
+      x = t;
+      return;
+    }
+#endif
+  };
 
   /**
    * @brief - transforms coordinates according to orientation
