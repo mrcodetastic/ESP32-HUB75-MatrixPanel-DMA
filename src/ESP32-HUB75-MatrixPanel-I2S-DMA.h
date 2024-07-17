@@ -254,9 +254,10 @@ struct HUB75_I2S_CFG
   enum clk_speed
   {
     HZ_8M = 8000000,
-    HZ_10M = 10000000,
-    HZ_15M = 15000000,
-    HZ_20M = 20000000
+    HZ_10M = 8000000,
+    HZ_15M = 16000000, // for compatability
+    HZ_16M = 16000000,
+    HZ_20M = 16000000 // for compatability  
   };
 
   //
@@ -318,9 +319,14 @@ struct HUB75_I2S_CFG
           R1_PIN_DEFAULT, G1_PIN_DEFAULT, B1_PIN_DEFAULT, R2_PIN_DEFAULT, G2_PIN_DEFAULT, B2_PIN_DEFAULT,
           A_PIN_DEFAULT, B_PIN_DEFAULT, C_PIN_DEFAULT, D_PIN_DEFAULT, E_PIN_DEFAULT,
           LAT_PIN_DEFAULT, OE_PIN_DEFAULT, CLK_PIN_DEFAULT},
-      shift_driver _drv = SHIFTREG, bool _dbuff = false, clk_speed _i2sspeed = HZ_15M,
+      shift_driver _drv = SHIFTREG, 
+      bool _dbuff = false, 
+      clk_speed _i2sspeed = HZ_8M,
       uint8_t _latblk = DEFAULT_LAT_BLANKING, // Anything > 1 seems to cause artefacts on ICS panels
-      bool _clockphase = true, uint16_t _min_refresh_rate = 60, uint8_t _pixel_color_depth_bits = PIXEL_COLOR_DEPTH_BITS_DEFAULT) : mx_width(_w), mx_height(_h), chain_length(_chain), gpio(_pinmap), driver(_drv), double_buff(_dbuff), i2sspeed(_i2sspeed), latch_blanking(_latblk), clkphase(_clockphase), min_refresh_rate(_min_refresh_rate)
+      bool _clockphase = true, 
+      uint16_t _min_refresh_rate = 60, 
+      uint8_t _pixel_color_depth_bits = PIXEL_COLOR_DEPTH_BITS_DEFAULT) 
+      : mx_width(_w), mx_height(_h), chain_length(_chain), gpio(_pinmap), driver(_drv), double_buff(_dbuff), i2sspeed(_i2sspeed), latch_blanking(_latblk), clkphase(_clockphase), min_refresh_rate(_min_refresh_rate)
   {
     setPixelColorDepthBits(_pixel_color_depth_bits);
   }

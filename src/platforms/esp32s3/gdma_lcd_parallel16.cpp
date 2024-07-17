@@ -58,6 +58,16 @@
     return true;
   }  
 
+  // LCD end of transaction interrupt
+  static void IRAM_ATTR lcd_isr(void* arg) {                       
+
+    LCD_CAM.lc_dma_int_clr.lcd_trans_done_int_clr = 1;    
+    
+    previousBufferFree = true;
+ 
+  }  
+
+
   lcd_cam_dev_t* getDev()
   {
     return &LCD_CAM;
@@ -259,11 +269,21 @@
     gdma_set_transfer_ability(dma_chan, &ability);    
 
     // Enable DMA transfer callback
+    /*
     static gdma_tx_event_callbacks_t tx_cbs = {
        // .on_trans_eof is literally the only gdma tx event type available
       .on_trans_eof = gdma_on_trans_eof_callback 
     };
     gdma_register_tx_event_callbacks(dma_chan, &tx_cbs, NULL);
+    */
+
+     //
+    // Enable Transaction Done interrupt
+    LCD_CAM.lc_dma_int_ena.lcd_trans_done_int_ena = 1;
+
+    // Allocate a level 1 intterupt: lowest priority, as ISR isn't urgent and may take a long time to complete
+    esp_intr_alloc(ETS_LCD_CAM_INTR_SOURCE, (int)(ESP_INTR_FLAG_IRAM | ESP_INTR_FLAG_LEVEL1), lcd_isr, NULL, NULL);
+
 
 
     // This uses a busy loop to wait for each DMA transfer to complete...

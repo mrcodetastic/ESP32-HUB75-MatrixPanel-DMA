@@ -47,6 +47,9 @@ Modified heavily for the ESP32 HUB75 DMA library by:
 #include <esp_err.h>
 #include <esp_log.h>
 
+// Get current frequecny
+#include "esp_clk_tree.h"
+
 // Get CPU freq function.
 #include <soc/rtc.h>
 
@@ -131,9 +134,16 @@ Modified heavily for the ESP32 HUB75 DMA library by:
  {
     ESP_LOGI("ESP32/S2", "Performing DMA bus init() for ESP32 or ESP32-S2");
 
+    /*
     if(_cfg.parallel_width < 8 || _cfg.parallel_width >= 24) {
       return false;
     }
+    */
+
+    // Only 16 bit mode used for this library
+    if(_cfg.parallel_width != 16) {
+      return false;
+    }   
 
     auto dev = _dev;
     volatile int iomux_signal_base;
@@ -209,45 +219,59 @@ Modified heavily for the ESP32 HUB75 DMA library by:
     }
 
     ////////////////////////////// Clock configuration //////////////////////////////
+    unsigned int freq 		= (_cfg.bus_freq); // requested freq    
 
-    unsigned int freq 		= (_cfg.bus_freq);
-    ESP_LOGD("ESP32/S2", "Requested output clock frequency: %u Mhz",  (unsigned int)(freq/1000000));   		
-	
-	// What is the current CPU frequency?
+    // Setup i2s clock (sample rate)
+    dev->sample_rate_conf.val = 0;
+    
+    // Third stage config, width of data to be written to IO (I think this should always be the actual data width?)
+    dev->sample_rate_conf.rx_bits_mod = bus_width;
+    dev->sample_rate_conf.tx_bits_mod = bus_width;
+        
+    // Hard-code clock divider for ESP32-S2 to 8Mhz
+    #if defined (CONFIG_IDF_TARGET_ESP32S2) 
 
-    // Calculate clock divider for ESP32-S2
-    #if defined (CONFIG_IDF_TARGET_ESP32S2)      
-	
-		// Right shift (>> 1) and divide 160mhz in half to 80Mhz for the calc due to the fact 
-		// that later we must have tx_bck_div_num = 2  for both esp32 and esp32-s2
+		  // I2S_CLK_SEL Set this bit to select I2S module clock source. 
+		  // 0: No clock. 1: APLL_CLK. 2: PLL_160M_CLK. 3: No clock. (R/W)
+  		dev->clkm_conf.clk_sel = 2;         // 160 Mhz    
+      
+      dev->clkm_conf.clkm_div_a   = 1;      // Clock denominator 			
+      dev->clkm_conf.clkm_div_b   = 0;      // Clock numerator
 
-		//static uint32_t pll_160M_clock_d2 = 160 * 1000 * 1000 >> 1;
+      dev->clkm_conf.clkm_div_num = 5;	  // 160 / 5 = 32 Mhz ('fi2s')
+      dev->clkm_conf.clk_en  = 1;
 
-		// I2S_CLKM_DIV_NUM 2=40MHz  /  3=27MHz  /  4=20MHz  /  5=16MHz  /  8=10MHz  /  10=8MHz
-		//auto _div_num = std::min(255u, 1 + ((pll_160M_clock_d2) / (1 + freq)));
-		 unsigned int _div_num = (unsigned int) (160000000L / freq / i2s_parallel_get_memory_width(ESP32_I2S_DEVICE, 16)); // 16 bits in parallel
-		
-		if(_div_num < 2 || _div_num > 0xFF) {
-		//	return ESP_ERR_INVALID_ARG;
-			_div_num = 8;
-		}
-		
-			
-		ESP_LOGD("ESP32", "i2s pll_160M_clock_d2 clkm_div_num is: %u", _div_num);    		
+      // Binary clock 
+      /*
+      In LCD mode, WS clock frequency is:
+      fWS = fi2s / W ∗ 2
 
-		// I2S_CLK_SEL Set this bit to select I2S module clock source. 
-		// 0: No clock. 1: APLL_CLK. 2: PLL_160M_CLK. 3: No clock. (R/W)
-		dev->clkm_conf.clk_sel = 2; 
-		dev->clkm_conf.clkm_div_a = 1;      // Clock denominator 			
-		dev->clkm_conf.clkm_div_b = 0;      // Clock numerator
-		dev->clkm_conf.clkm_div_num = _div_num;				
-		dev->clkm_conf.clk_en  = 1;
-		
-		// Calc
-		unsigned int output_freq = (unsigned int)(160000000L/_div_num);		
+      W is an integer in the range 1 to 64. W corresponds to the value of I2S_TX_BCK_DIV_NUM[5:0] in register
+      I2S_SAMPLE_RATE_CONF_REG as follows.
+      • When I2S_TX_BCK_DIV_NUM[5:0] = 0, W = 64.
+      • When I2S_TX_BCK_DIV_NUM[5:0] is set to other values, W = I2S_TX_BCK_DIV_NUM[5:0      
+
+      */
+
+      dev->sample_rate_conf.rx_bck_div_num = 2;
+
+      // ESP32 and ESP32-S2 TRM clearly say that "Note that I2S_TX_BCK_DIV_NUM[5:0] must not be configured as 1." 
+      // Testing has revealed that setting it to 1 causes problems.      
+      dev->sample_rate_conf.tx_bck_div_num = 2;   
+
+      // Output Frequency is now
+      //160 / 5 / (2*2) = 8Mhz
+
 
     // Calculate clock divider for Original ESP32
     #else  
+
+    dev->sample_rate_conf.rx_bck_div_num = 1;
+
+    // ESP32 and ESP32-S2 TRM clearly say that "Note that I2S_TX_BCK_DIV_NUM[5:0] must not be configured as 1." 
+    // Testing has revealed that setting it to 1 causes problems.      
+    dev->sample_rate_conf.tx_bck_div_num = 1;   
+
 
 		// Note: clkm_div_num must only be set here AFTER clkm_div_b, clkm_div_a, etc. Or weird things happen!
 		// On original ESP32, max I2S DMA parallel speed is 20Mhz.  
@@ -260,42 +284,30 @@ Modified heavily for the ESP32 HUB75 DMA library by:
 		// I2S_CLKM_DIV_NUM 2=40MHz  /  3=27MHz  /  4=20MHz  /  5=16MHz  /  8=10MHz  /  10=8MHz
 		//auto _div_num = std::min(255u, 1 + ((pll_d2_clock) / (1 + freq)));
 		
+    /*
 		unsigned int _div_num = (unsigned int) (80000000L / freq / i2s_parallel_get_memory_width(ESP32_I2S_DEVICE, 16)); // 16 bits in parallel
 		if(_div_num < 2 || _div_num > 0xFF) {
 		//	return ESP_ERR_INVALID_ARG;
 			_div_num = 4;
 		}
-
-		///auto _div_num = 80000000L/freq;
+    */
+   
+		unsigned int _div_num = (freq > 8000000) ? 5:10; // 8 mhz or 16mhz
 
 		ESP_LOGD("ESP32", "i2s pll_d2_clock clkm_div_num is: %u", _div_num);    		
 
-		dev->clkm_conf.clka_en=1;         // Use the 80mhz system clock (PLL_D2_CLK) when '0'
+		dev->clkm_conf.clka_en=0;           // Use the 80mhz system clock (PLL_D2_CLK) when '0'
 		dev->clkm_conf.clkm_div_a = 1;      // Clock denominator 
 		dev->clkm_conf.clkm_div_b = 0;      // Clock numerator
 		dev->clkm_conf.clkm_div_num = _div_num;  
-		
-		unsigned int output_freq = (unsigned int)(80000000L/_div_num);		
+   // dev->clkm_conf.clk_en=1;
+
+   // Note tx_bck_div_num value of 2 will further divide clock rate
 		
     #endif
  
 
-	  output_freq = output_freq + 0; // work around arudino 'unused var' issue if debug isn't enabled.
-    ESP_LOGI("ESP32/S2", "Output frequency is %u Mhz??", (unsigned int)(output_freq/1000000/i2s_parallel_get_memory_width(ESP32_I2S_DEVICE, 16)));    	
-
-
-    // Setup i2s clock
-    dev->sample_rate_conf.val = 0;
-    
-    // Third stage config, width of data to be written to IO (I think this should always be the actual data width?)
-    dev->sample_rate_conf.rx_bits_mod = bus_width;
-    dev->sample_rate_conf.tx_bits_mod = bus_width;
-    
-    // Serial clock 
-	// ESP32 and ESP32-S2 TRM clearly say that "Note that I2S_TX_BCK_DIV_NUM[5:0] must not be configured as 1."
-    dev->sample_rate_conf.rx_bck_div_num = 2;
-    dev->sample_rate_conf.tx_bck_div_num = 2;
-    
+  
     ////////////////////////////// END CLOCK CONFIGURATION /////////////////////////////////
 
     // I2S conf2 reg
