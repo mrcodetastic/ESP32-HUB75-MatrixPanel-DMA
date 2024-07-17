@@ -241,6 +241,23 @@ Modified heavily for the ESP32 HUB75 DMA library by:
 		  unsigned int _div_num = (freq > 8000000) ? 3:5; // 8 mhz or 13mhz   (eventual output after factoring in tx_bck_div_num)   
       // Divider of 2 works theoretically with SRAM (22mhz output rate!)
 
+      /*
+        Page 675 of ESP-S2 TRM.
+
+        In LCD and camera modes:
+          • Support to connect to external LCD, and configured as 8- ~ 24-bit parallel output mode.
+
+          – I2S LCD accesses internal memory via DMA.
+          * Clock frequency should be less than 40 MHz when LCD data bus is configured as 8- ~ 16-bit parallel output.
+          * Clock frequency should be less than 26.7 MHz when LCD data bus is configured as 17- ~ 24-bit parallel output.
+          * 
+          – I2S LCD accesses external RAM via EDMA.
+          * Clock frequency should be less than 25 MHz when LCD data bus is configured as 8-bit parallel output.
+          * Clock frequency should be less than 12.5 MHz when LCD data bus is configured as 9- ~ 16-bit parallel output.
+          * Clock frequency should be less than 6.25 MHz when LCD data bus is configured as 17- ~ 24-bit parallel output.
+
+      */
+
       dev->clkm_conf.clkm_div_num = _div_num;	
       dev->clkm_conf.clk_en  = 1;
 
