@@ -238,7 +238,10 @@ Modified heavily for the ESP32 HUB75 DMA library by:
       dev->clkm_conf.clkm_div_a   = 1;      // Clock denominator 			
       dev->clkm_conf.clkm_div_b   = 0;      // Clock numerator
 
-      dev->clkm_conf.clkm_div_num = 5;	  // 160 / 5 = 32 Mhz ('fi2s')
+		  unsigned int _div_num = (freq > 8000000) ? 3:5; // 8 mhz or 13mhz   (eventual output after factoring in tx_bck_div_num)   
+      // Divider of 2 works theoretically with SRAM (22mhz output rate!)
+
+      dev->clkm_conf.clkm_div_num = _div_num;	
       dev->clkm_conf.clk_en  = 1;
 
       // Binary clock 
