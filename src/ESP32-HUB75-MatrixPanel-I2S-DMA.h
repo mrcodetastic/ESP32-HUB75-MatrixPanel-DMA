@@ -257,7 +257,7 @@ struct HUB75_I2S_CFG
     HZ_10M = 8000000,
     HZ_15M = 16000000, // for compatability
     HZ_16M = 16000000,
-    HZ_20M = 16000000 // for compatability  
+    HZ_20M = 20000000 // for compatability  
   };
 
   //
