@@ -140,8 +140,6 @@
             _div_num = 7; // 22Mhz --- likely to have noise without a good connection         
       }
       
-      _div_num = 6;
-
       //LCD_CAM.lcd_clock.lcd_clkm_div_num = lcd_clkm_div_num;      
       LCD_CAM.lcd_clock.lcd_clkm_div_num = _div_num; //3;      
 
