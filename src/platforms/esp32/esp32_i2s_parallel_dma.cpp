@@ -47,9 +47,6 @@ Modified heavily for the ESP32 HUB75 DMA library by:
 #include <esp_err.h>
 #include <esp_log.h>
 
-// Get current frequecny
-#include "esp_clk_tree.h"
-
 // Get CPU freq function.
 #include <soc/rtc.h>
 
