@@ -47,9 +47,6 @@ Modified heavily for the ESP32 HUB75 DMA library by:
 #include <esp_err.h>
 #include <esp_log.h>
 
-// Get current frequecny
-#include "esp_clk_tree.h"
-
 // Get CPU freq function.
 #include <soc/rtc.h>
 
@@ -238,8 +235,8 @@ Modified heavily for the ESP32 HUB75 DMA library by:
       dev->clkm_conf.clkm_div_a   = 1;      // Clock denominator 			
       dev->clkm_conf.clkm_div_b   = 0;      // Clock numerator
 
-		  unsigned int _div_num = (freq > 8000000) ? 3:5; // 8 mhz or 13mhz   (eventual output after factoring in tx_bck_div_num)   
-      // Divider of 2 works theoretically with SRAM (22mhz output rate!)
+      // Output Frequency = (160Mhz / clkm_div_num) / (tx_bck_div_num*2)
+		  unsigned int _div_num = (freq > 8000000) ? 2:4; // 20 mhz or 10mhz 
 
       /*
         Page 675 of ESP-S2 TRM.
@@ -258,7 +255,7 @@ Modified heavily for the ESP32 HUB75 DMA library by:
 
       */
 
-      dev->clkm_conf.clkm_div_num = _div_num;	
+      dev->clkm_conf.clkm_div_num = _div_num;	 
       dev->clkm_conf.clk_en  = 1;
 
       // Binary clock 
@@ -276,7 +273,7 @@ Modified heavily for the ESP32 HUB75 DMA library by:
       dev->sample_rate_conf.rx_bck_div_num = 2;
 
       // ESP32 and ESP32-S2 TRM clearly say that "Note that I2S_TX_BCK_DIV_NUM[5:0] must not be configured as 1." 
-      // Testing has revealed that setting it to 1 causes problems.      
+      // Testing has revealed that setting it to 1 causes problems on S2.      
       dev->sample_rate_conf.tx_bck_div_num = 2;   
 
       // Output Frequency is now
@@ -286,48 +283,29 @@ Modified heavily for the ESP32 HUB75 DMA library by:
     // Calculate clock divider for Original ESP32
     #else  
 
-    dev->sample_rate_conf.rx_bck_div_num = 1;
+    /*
+      The clock configuration of the LCD master transmitting mode is identical to I2S’ clock configuration. 
+      In the LCD mode, the frequency of WS is half of f-bck
+    */
 
     // ESP32 and ESP32-S2 TRM clearly say that "Note that I2S_TX_BCK_DIV_NUM[5:0] must not be configured as 1." 
-    // Testing has revealed that setting it to 1 causes problems.      
-    dev->sample_rate_conf.tx_bck_div_num = 1;   
+    dev->sample_rate_conf.tx_bck_div_num = 2;   
+    dev->sample_rate_conf.rx_bck_div_num = 2;
 
-
-		// Note: clkm_div_num must only be set here AFTER clkm_div_b, clkm_div_a, etc. Or weird things happen!
-		// On original ESP32, max I2S DMA parallel speed is 20Mhz.  
-		
-		// 160Mhz is only assured when the CPU clock is 240Mhz on the ESP32...	
-		// [esp32-hal-cpu.c:244] setCpuFrequencyMhz(): PLL: 480 / 2 = 240 Mhz, APB: 80000000 Hz		
-		
-		//static uint32_t pll_d2_clock = (source_freq/2) * 1000 * 1000 >> 1;
-		
-		// I2S_CLKM_DIV_NUM 2=40MHz  /  3=27MHz  /  4=20MHz  /  5=16MHz  /  8=10MHz  /  10=8MHz
-		//auto _div_num = std::min(255u, 1 + ((pll_d2_clock) / (1 + freq)));
-		
-    /*
-		unsigned int _div_num = (unsigned int) (80000000L / freq / i2s_parallel_get_memory_width(ESP32_I2S_DEVICE, 16)); // 16 bits in parallel
-		if(_div_num < 2 || _div_num > 0xFF) {
-		//	return ESP_ERR_INVALID_ARG;
-			_div_num = 4;
-		}
-    */
-   
-		unsigned int _div_num = (freq > 8000000) ? 5:10; // 8 mhz or 16mhz
-
-		ESP_LOGD("ESP32", "i2s pll_d2_clock clkm_div_num is: %u", _div_num);    		
-
-		dev->clkm_conf.clka_en=0;           // Use the 80mhz system clock (PLL_D2_CLK) when '0'
+  	dev->clkm_conf.clka_en    = 0;           // Use the 80mhz system clock (PLL_D2_CLK) when '0'
 		dev->clkm_conf.clkm_div_a = 1;      // Clock denominator 
 		dev->clkm_conf.clkm_div_b = 0;      // Clock numerator
+
+    unsigned int _div_num = (freq > 8000000) ? 2:4; // 20 mhz or 10mhz
+		ESP_LOGD("ESP32", "i2s pll_d2_clock clkm_div_num is: %u", _div_num);    		
+
+    // Frequency will be (80Mhz / clkm_div_num / tx_bck_div_num (2))
 		dev->clkm_conf.clkm_div_num = _div_num;  
-   // dev->clkm_conf.clk_en=1;
 
    // Note tx_bck_div_num value of 2 will further divide clock rate
 		
     #endif
- 
-
-  
+   
     ////////////////////////////// END CLOCK CONFIGURATION /////////////////////////////////
 
     // I2S conf2 reg
