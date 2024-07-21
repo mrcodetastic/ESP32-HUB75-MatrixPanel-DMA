@@ -1,6 +1,9 @@
 #include "dma_parallel_io.hpp"
+#include <Arduino.h>
 
 #ifdef CONFIG_IDF_TARGET_ESP32C6
+
+#pragma message "Compiling for ESP32-C6"
 
 //First implementation might have a lot of bugs, especially on deleting and reloading
 
@@ -33,8 +36,6 @@
 //     for a view clocks
 
 
-
-
 // limitation of parlio interface
 // PARLIO_LL_TX_MAX_BITS_PER_FRAME = (PARLIO_LL_TX_MAX_BYTES_PER_FRAME * 8)
 // PARLIO_LL_TX_MAX_BYTES_PER_FRAME = 0xFFFF
@@ -51,8 +52,6 @@
 // pixeldepth 3:            128x64  256x32   512x16            341x32           341*16*7   = 38192
 // pixeldepth 2:   128x128  256x64  512x32  1024x16            682x32           682*16*2   = 32736
 //                                                                              I don't get it
-
-
 
 
 #pragma message "Compiling for ESP32-C6"
@@ -81,22 +80,17 @@ DRAM_ATTR volatile bool previousBufferFree = true;
 IRAM_ATTR bool gdma_on_trans_eof_callback(gdma_channel_handle_t dma_chan,
                                           gdma_event_data_t *event_data, void *user_data)
 {
-
     //esp_rom_delay_us(100);
-
     previousBufferFree = true;
-
 
     //parlio_ll_tx_reset_fifo(&PARL_IO);
     parlio_ll_tx_reset_clock(&PARL_IO);
     
     //gdma_start(dma_chan, (intptr_t)&_dmadesc_a[0]);
-    
     //while (parlio_ll_tx_is_ready(&PARL_IO) == false);
-
     //parlio_ll_tx_start(&PARL_IO, true);
     //parlio_ll_tx_enable_clock(&PARL_IO, true);
-    
+
     return true;
 }
 
@@ -110,9 +104,10 @@ void Bus_Parallel16::config(const config_t &cfg)
 
 bool Bus_Parallel16::init(void)
 {
+    ESP_LOGI("ESP32-C6", "Performing DMA bus init() for ESP-C6");
 
     periph_module_enable(PERIPH_PARLIO_MODULE);
-    periph_module_reset(PERIPH_PARLIO_MODULE);
+    periph_module_reset (PERIPH_PARLIO_MODULE);
 
     // Reset LCD bus
     parlio_ll_tx_reset_fifo(&PARL_IO);
@@ -120,17 +115,16 @@ bool Bus_Parallel16::init(void)
 
     parlio_ll_clock_source_t clk_src = (parlio_ll_clock_source_t)PARLIO_CLK_SRC_DEFAULT;
     uint32_t periph_src_clk_hz = 0;
+
     esp_clk_tree_src_get_freq_hz((soc_module_clk_t)clk_src, ESP_CLK_TREE_SRC_FREQ_PRECISION_CACHED, &periph_src_clk_hz);
     parlio_ll_tx_set_clock_source(&PARL_IO, clk_src);
+
     uint32_t div = (periph_src_clk_hz + _cfg.bus_freq - 1) / _cfg.bus_freq;
     parlio_ll_tx_set_clock_div(&PARL_IO, div);
     _cfg.bus_freq = periph_src_clk_hz / div;
 
-
     ESP_LOGI("C6", "Clock divider is %d", (int)div);
     ESP_LOGD("C6", "Resulting output clock frequency: %d Mhz", (int)(160000000L /  _cfg.bus_freq));
-
-    
 
 
     // Allocate DMA channel and connect it to the LCD peripheral

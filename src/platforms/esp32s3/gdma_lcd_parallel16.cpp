@@ -99,7 +99,7 @@
     //LCD_CAM.lcd_clock.clk_en = 0;             // Enable peripheral clock
 
     // LCD_CAM_LCD_CLK_SEL Select LCD module source clock. 0: clock source is disabled. 1: XTAL_CLK. 2: PLL_D2_CLK. 3: PLL_F160M_CLK. (R/W)
-    LCD_CAM.lcd_clock.lcd_clk_sel = 3;        // Use 160Mhz Clock Source
+    LCD_CAM.lcd_clock.lcd_clk_sel = 3;        // Use 160Mhz Clock Source -> PLL_F160M_CLK
     
     LCD_CAM.lcd_clock.lcd_ck_out_edge = 0;    // PCLK low in 1st half cycle
     LCD_CAM.lcd_clock.lcd_ck_idle_edge = 0;   // PCLK low idle
@@ -127,20 +127,20 @@
         //LCD_CAM.lcd_clock.lcd_clkm_div_num = 10; //16mhz is the fasted the Octal PSRAM can support it seems from faptastic's testing using an N8R8 variant (Octal SPI PSRAM).
         
         // https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-DMA/issues/441#issuecomment-1513631890
-        LCD_CAM.lcd_clock.lcd_clkm_div_num = 12; // 13Mhz is the fastest when the DMA memory is needed to service other peripherals as well.
+        LCD_CAM.lcd_clock.lcd_clkm_div_num = 12; // 13Mhz is about the fastest output from PSRAM if we want to be able to service other peripherals as well.
     }
     else
     {
 
       auto  freq     = (_cfg.bus_freq);
-
-      auto  _div_num = 8; // 20Mhz 
+      auto  _div_num = 20; // 8Mhzhz 
       if (freq < 20000000L) {
-            _div_num = 12; // 13Mhz
+            _div_num = 10; // 16Mhz
+      } else {
+            _div_num = 7; // 22Mhz --- likely to have noise without a good connection         
       }
-      else if (freq > 20000000L) {
-            _div_num = 6; // 26Mhz --- likely to have noise without a good connection         
-      }
+      
+      _div_num = 6;
 
       //LCD_CAM.lcd_clock.lcd_clkm_div_num = lcd_clkm_div_num;      
       LCD_CAM.lcd_clock.lcd_clkm_div_num = _div_num; //3;      
