@@ -12,11 +12,11 @@
 // #include <Arduino.h>
 #include "platforms/platform_detect.hpp"
 
-#ifdef USE_GFX_ROOT
-#include <FastLED.h>
-#include "GFX.h" // Adafruit GFX core class -> https://github.com/mrfaptastic/GFX_Root
+#ifdef USE_GFX_LITE
+  // Slimmed version of Adafruit GFX + FastLED: https://github.com/mrcodetastic/GFX_Lite
+  #include "GFX_Lite.h" 
 #elif !defined NO_GFX
-#include "Adafruit_GFX.h" // Adafruit class with all the other stuff
+  #include "Adafruit_GFX.h" // Adafruit class with all the other stuff
 #endif
 
 /*******************************************************************************************
@@ -366,7 +366,8 @@ private:
 }; // end of structure HUB75_I2S_CFG
 
 /***************************************************************************************/
-#ifdef USE_GFX_ROOT
+#ifdef USE_GFX_LITE
+// Slimmed version of Adafruit GFX + FastLED: https://github.com/mrcodetastic/GFX_Lite
 class MatrixPanel_I2S_DMA : public GFX
 {
 #elif !defined NO_GFX
@@ -386,7 +387,7 @@ public:
    *
    */
   MatrixPanel_I2S_DMA()
-#ifdef USE_GFX_ROOT
+#ifdef USE_GFX_LITE
       : GFX(MATRIX_WIDTH, MATRIX_HEIGHT)
 #elif !defined NO_GFX
       : Adafruit_GFX(MATRIX_WIDTH, MATRIX_HEIGHT)
@@ -401,7 +402,7 @@ public:
    *
    */
   MatrixPanel_I2S_DMA(const HUB75_I2S_CFG &opts)
-#ifdef USE_GFX_ROOT
+#ifdef USE_GFX_LITE
       : GFX(opts.mx_width * opts.chain_length, opts.mx_height)
 #elif !defined NO_GFX
       : Adafruit_GFX(opts.mx_width * opts.chain_length, opts.mx_height)
@@ -572,7 +573,7 @@ public:
   void fillScreenRGB888(uint8_t r, uint8_t g, uint8_t b);
   void drawPixelRGB888(int16_t x, int16_t y, uint8_t r, uint8_t g, uint8_t b);
 
-#ifdef USE_GFX_ROOT
+#ifdef USE_GFX_LITE
   // 24bpp FASTLED CRGB colour struct support
   void fillScreen(CRGB color);
   void drawPixel(int16_t x, int16_t y, CRGB color);
@@ -930,7 +931,7 @@ inline void MatrixPanel_I2S_DMA::fillScreenRGB888(uint8_t r, uint8_t g, uint8_t 
   updateMatrixDMABuffer(r, g, b); // RGB only (no pixel coordinate) version of 'updateMatrixDMABuffer'
 }
 
-#ifdef USE_GFX_ROOT
+#ifdef USE_GFX_LITE
 // Support for CRGB values provided via FastLED
 inline void MatrixPanel_I2S_DMA::drawPixel(int16_t x, int16_t y, CRGB color)
 {
