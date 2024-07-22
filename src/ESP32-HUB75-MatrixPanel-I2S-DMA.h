@@ -13,7 +13,7 @@
 #include "platforms/platform_detect.hpp"
 
 #ifdef USE_GFX_LITE
-  // Slimmed version of Adafruit GFX + FastLED: https://github.com/mrcodetastc/GFX_Lite
+  // Slimmed version of Adafruit GFX + FastLED: https://github.com/mrcodetastic/GFX_Lite
   #include "GFX_Lite.h" 
 #elif !defined NO_GFX
   #include "Adafruit_GFX.h" // Adafruit class with all the other stuff
