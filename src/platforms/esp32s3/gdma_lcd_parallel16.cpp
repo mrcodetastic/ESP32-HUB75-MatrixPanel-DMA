@@ -133,8 +133,9 @@
     {
 
       auto  freq     = (_cfg.bus_freq);
-      auto  _div_num = 20; // 8Mhz 
-      if (freq < 20000000L) {
+      auto  _div_num = 16; // 10Mhz 
+      if (freq <= 10000000L) {      
+      } else if (freq < 20000000L) {
             _div_num = 10; // 16Mhz
       } else {
             _div_num = 7; // 22Mhz --- likely to have noise without a good connection         
