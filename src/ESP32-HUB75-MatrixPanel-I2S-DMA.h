@@ -561,15 +561,6 @@ public:
     
   }
 
-   // rgb888 overload
-  
-  virtual inline void fillEllipse(int16_t x, int16_t y, int16_t rad, int16_t length, float angle, uint8_t r, uint8_t g, uint8_t b)
-  {
-    transform(x,y);
-    fillEllipseDMA(x, y, rad, length, angle, r, g, b);
-  }
-
-
   virtual void fillTriangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, uint16_t color)
   {
     uint8_t r, g, b;
@@ -823,19 +814,6 @@ protected:
    * @param uint8_t b - RGB888 colour
    */
   void fillRectDMA(int16_t x_coord, int16_t y_coord, int16_t w, int16_t h, uint8_t r, uint8_t g, uint8_t b);
-
-  /**
-   * @brief - update DMA buff drawing a filled ellipse at specified coordinates
-   * @param int16_t x, int16_t y - coordinates of the center of the ellipse
-   * @param int16_t rad - radius along the x-axis
-   * @param int16_t length - radius along the y-axis
-   * @param float angle - rotation angle in degrees
-   * @param uint8_t r - RGB888 colour for red
-   * @param uint8_t g - RGB888 colour for green
-   * @param uint8_t b - RGB888 colour for blue
-   * This function uses a series of filled circles to approximate the shape of a rotated ellipse.
-   */
-  void fillEllipseDMA(int16_t x, int16_t y, int16_t rad, int16_t length, float angle, uint8_t r, uint8_t g, uint8_t b);
 
   /**
    * @brief - update DMA buff drawing a triangle at specified coordinates

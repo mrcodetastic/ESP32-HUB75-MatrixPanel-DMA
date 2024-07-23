@@ -968,31 +968,6 @@ void MatrixPanel_I2S_DMA::fillRectDMA(int16_t x, int16_t y, int16_t w, int16_t h
   }
 }
 
-void MatrixPanel_I2S_DMA::fillEllipseDMA(int16_t x, int16_t y, int16_t rad, int16_t length, float angle, uint8_t r, uint8_t g, uint8_t b) {
-
-    // Calculate the rotation angle in radians
-    float cosAngle = cos(angle);
-    float sinAngle = sin(angle);
-
-    int16_t _rad, _length;
-    _rad = min(rad, length);
-    _length = max(rad, length);
-
-    // Calculate the step size and number of circles based on the rectangle's dimensions
-    int numCircles = max(_rad, static_cast<int16_t>(_length / 2)); // Adjust the divisor to control circle density
-    for (int i = -numCircles; i <= numCircles; i++) {
-        float dx = i * cosAngle;
-        float dy = i * sinAngle;
-
-        // Calculate circle center
-        int16_t circleX = x + dx;
-        int16_t circleY = y + dy;
-
-        // Draw circle
-        fillCircleDMA(circleX, circleY, _rad, r, g, b);
-    }
-}
-
 #ifndef _swap_int16_t
 #define _swap_int16_t(a, b)                                                    \
   {                                                                            \
