@@ -80,16 +80,16 @@ private:
         void move() {
             switch (direction) {
                 case UP:
-                    pixels[0].y = (pixels[0].y + 1) % MATRIX_HEIGHT;
+                    pixels[0].y = (pixels[0].y + 1) % VPANEL_H;
                     break;
                 case LEFT:
-                    pixels[0].x = (pixels[0].x + 1) % MATRIX_WIDTH;
+                    pixels[0].x = (pixels[0].x + 1) % VPANEL_W;
                     break;
                 case DOWN:
-                    pixels[0].y = pixels[0].y == 0 ? MATRIX_HEIGHT - 1 : pixels[0].y - 1;
+                    pixels[0].y = pixels[0].y == 0 ? VPANEL_H - 1 : pixels[0].y - 1;
                     break;
                 case RIGHT:
-                    pixels[0].x = pixels[0].x == 0 ? MATRIX_WIDTH - 1 : pixels[0].x - 1;
+                    pixels[0].x = pixels[0].x == 0 ? VPANEL_W - 1 : pixels[0].x - 1;
                     break;
             }
         }

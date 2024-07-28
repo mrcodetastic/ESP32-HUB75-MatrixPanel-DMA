@@ -58,15 +58,15 @@ class PatternFire : public Drawable {
 
       effects.DimAll(235); 
 
-      for (int x = 0; x < MATRIX_WIDTH; x++) {
+      for (int x = 0; x < VPANEL_W; x++) {
         // Step 1.  Cool down every cell a little
-        for (int y = 0; y < MATRIX_HEIGHT; y++) {
+        for (int y = 0; y < VPANEL_H; y++) {
           int xy = XY(x, y);
-          heat[xy] = qsub8(heat[xy], random8(0, ((cooling * 10) / MATRIX_HEIGHT) + 2));
+          heat[xy] = qsub8(heat[xy], random8(0, ((cooling * 10) / VPANEL_H) + 2));
         }
 
         // Step 2.  Heat from each cell drifts 'up' and diffuses a little
-        for (int y = 0; y < MATRIX_HEIGHT; y++) {
+        for (int y = 0; y < VPANEL_H; y++) {
           heat[XY(x, y)] = (heat[XY(x, y + 1)] + heat[XY(x, y + 2)] + heat[XY(x, y + 2)]) / 3;
         }
 
@@ -74,12 +74,12 @@ class PatternFire : public Drawable {
         if (random8() < sparking) {
           // int x = (p[0] + p[1] + p[2]) / 3;
 
-          int xy = XY(x, MATRIX_HEIGHT - 1);
+          int xy = XY(x, VPANEL_H - 1);
           heat[xy] = qadd8(heat[xy], random8(160, 255));
         }
 
         // Step 4.  Map from heat cells to LED colors
-        for (int y = 0; y < MATRIX_HEIGHT; y++) {
+        for (int y = 0; y < VPANEL_H; y++) {
           int xy = XY(x, y);
           byte colorIndex = heat[xy];
 

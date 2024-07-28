@@ -250,19 +250,19 @@ class Boid {
     }
 
     void wrapAroundBorders() {
-      if (location.x < 0) location.x = MATRIX_WIDTH - 1;
-      if (location.y < 0) location.y = MATRIX_HEIGHT - 1;
-      if (location.x >= MATRIX_WIDTH) location.x = 0;
-      if (location.y >= MATRIX_HEIGHT) location.y = 0;
+      if (location.x < 0) location.x = VPANEL_W - 1;
+      if (location.y < 0) location.y = VPANEL_H - 1;
+      if (location.x >= VPANEL_W) location.x = 0;
+      if (location.y >= VPANEL_H) location.y = 0;
     }
 
     void avoidBorders() {
       PVector desired = velocity;
 
       if (location.x < 8) desired = PVector(maxspeed, velocity.y);
-      if (location.x >= MATRIX_WIDTH - 8) desired = PVector(-maxspeed, velocity.y);
+      if (location.x >= VPANEL_W - 8) desired = PVector(-maxspeed, velocity.y);
       if (location.y < 8) desired = PVector(velocity.x, maxspeed);
-      if (location.y >= MATRIX_HEIGHT - 8) desired = PVector(velocity.x, -maxspeed);
+      if (location.y >= VPANEL_H - 8) desired = PVector(velocity.x, -maxspeed);
 
       if (desired != velocity) {
         PVector steer = desired - velocity;
@@ -272,15 +272,15 @@ class Boid {
 
       if (location.x < 0) location.x = 0;
       if (location.y < 0) location.y = 0;
-      if (location.x >= MATRIX_WIDTH) location.x = MATRIX_WIDTH - 1;
-      if (location.y >= MATRIX_HEIGHT) location.y = MATRIX_HEIGHT - 1;
+      if (location.x >= VPANEL_W) location.x = VPANEL_W - 1;
+      if (location.y >= VPANEL_H) location.y = VPANEL_H - 1;
     }
 
     bool bounceOffBorders(float bounce) {
       bool bounced = false;
 
-      if (location.x >= MATRIX_WIDTH) {
-        location.x = MATRIX_WIDTH - 1;
+      if (location.x >= VPANEL_W) {
+        location.x = VPANEL_W - 1;
         velocity.x *= -bounce;
         bounced = true;
       }
@@ -290,8 +290,8 @@ class Boid {
         bounced = true;
       }
 
-      if (location.y >= MATRIX_HEIGHT) {
-        location.y = MATRIX_HEIGHT - 1;
+      if (location.y >= VPANEL_H) {
+        location.y = VPANEL_H - 1;
         velocity.y *= -bounce;
         bounced = true;
       }
@@ -318,7 +318,7 @@ class Boid {
       //vertex(r, r*2);
       //endShape();
       //popMatrix();
-      //dma_display->drawBackgroundPixelRGB888(location.x, location.y, CRGB::Blue);
+      //matrix.drawBackgroundPixelRGB888(location.x, location.y, CRGB::Blue);
     }
 };
 

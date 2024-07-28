@@ -37,8 +37,8 @@
 #define WAVE_BPM 25
 #define AMP_BPM 2
 #define SKEW_BPM 4
-#define WAVE_TIMEMINSKEW MATRIX_WIDTH/8
-#define WAVE_TIMEMAXSKEW MATRIX_WIDTH/2
+#define WAVE_TIMEMINSKEW VPANEL_W/8
+#define WAVE_TIMEMAXSKEW VPANEL_W/2
 
 class PatternPendulumWave : public Drawable {
   public:
@@ -49,10 +49,10 @@ class PatternPendulumWave : public Drawable {
     unsigned int drawFrame() {
       effects.ClearFrame();
 
-      for (int x = 0; x < MATRIX_WIDTH; ++x)
+      for (int x = 0; x < VPANEL_W; ++x)
       {
-        uint16_t amp = beatsin16(AMP_BPM, MATRIX_HEIGHT/8, MATRIX_HEIGHT-1);
-        uint16_t offset = (MATRIX_HEIGHT - beatsin16(AMP_BPM, 0, MATRIX_HEIGHT))/2;
+        uint16_t amp = beatsin16(AMP_BPM, VPANEL_H/8, VPANEL_H-1);
+        uint16_t offset = (VPANEL_H - beatsin16(AMP_BPM, 0, VPANEL_H))/2;
 
         uint8_t y = beatsin16(WAVE_BPM, 0, amp, x*beatsin16(SKEW_BPM, WAVE_TIMEMINSKEW, WAVE_TIMEMAXSKEW)) + offset;
 

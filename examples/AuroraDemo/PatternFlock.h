@@ -36,6 +36,11 @@
 #define PatternFlock_H
 
 class PatternFlock : public Drawable {
+
+  private:
+    unsigned long last_update_hue_ms = 0;
+    unsigned long last_update_predator_ms = 0;
+
   public:
     PatternFlock() {
       name = (char *)"Flock";
@@ -110,11 +115,13 @@ class PatternFlock : public Drawable {
         effects.drawBackgroundFastLEDPixelCRGB(location.x, location.y, color);
       }
 
-      EVERY_N_MILLIS(200) {
+      if (millis() - last_update_hue_ms > 200) {
+        last_update_hue_ms = millis();
         hue++;
       }
       
-      EVERY_N_SECONDS(30) {
+      if (millis() - last_update_predator_ms > 30000) {
+        last_update_predator_ms = millis();
         predatorPresent = !predatorPresent;
       }
 

@@ -40,8 +40,8 @@ public:
 
     unsigned int drawFrame() {
        
-        for (uint16_t x = 0; x < MATRIX_WIDTH; x++) {
-            for (uint16_t y = 0; y < MATRIX_HEIGHT; y++) {
+        for (uint16_t x = 0; x < VPANEL_W; x++) {
+            for (uint16_t y = 0; y < VPANEL_H; y++) {
                 effects.leds[XY16(x, y)] = (x ^ y ^ flip) < count ? effects.ColorFromCurrentPalette(((x ^ y) << 2) + generation) : CRGB::Black;
 
                 // The below is more pleasant
@@ -51,13 +51,13 @@ public:
         
         count += dir;
         
-        if (count <= 0 || count >= MATRIX_WIDTH) {
+        if (count <= 0 || count >= VPANEL_W) {
           dir = -dir;
         }
         
         if (count <= 0) {
           if (flip == 0)
-            flip = MATRIX_WIDTH-1;
+            flip = VPANEL_W-1;
           else
             flip = 0;
         }

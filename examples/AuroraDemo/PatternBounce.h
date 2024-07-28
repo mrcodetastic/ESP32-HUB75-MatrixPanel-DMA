@@ -58,8 +58,8 @@ public:
 
             effects.drawBackgroundFastLEDPixelCRGB(boid.location.x, boid.location.y, effects.ColorFromCurrentPalette(boid.colorIndex));
 
-            if (boid.location.y >= MATRIX_HEIGHT - 1) {
-                boid.location.y = MATRIX_HEIGHT - 1;
+            if (boid.location.y >= VPANEL_H - 1) {
+                boid.location.y = VPANEL_H - 1;
                 boid.velocity.y *= -1.0;
             }
 

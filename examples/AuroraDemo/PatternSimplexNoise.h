@@ -65,8 +65,8 @@ class PatternSimplexNoise : public Drawable {
 
     // show just one layer
     void ShowNoiseLayer(byte layer, byte colorrepeat, byte colorshift) {
-      for (uint16_t i = 0; i < MATRIX_WIDTH; i++) {
-        for (uint16_t j = 0; j < MATRIX_HEIGHT; j++) {
+      for (uint16_t i = 0; i < VPANEL_W; i++) {
+        for (uint16_t j = 0; j < VPANEL_H; j++) {
           uint8_t pixel = noise[i][j];
 
           // assign a color depending on the actual palette

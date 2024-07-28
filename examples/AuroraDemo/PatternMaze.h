@@ -85,8 +85,8 @@ private:
 //    int width = 16;
 //    int height = 16;
 
-    static const int width = MATRIX_WIDTH / 2;
-    static const int height = MATRIX_HEIGHT / 2;
+    static const int width = VPANEL_W / 2;
+    static const int height = VPANEL_H / 2;
     
 
     Directions grid[width][height];

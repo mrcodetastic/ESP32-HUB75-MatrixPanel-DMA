@@ -1,94 +1,125 @@
-#include <ESP32-HUB75-MatrixPanel-I2S-DMA.h>
-
-/*--------------------- MATRIX GPIO CONFIG  -------------------------*/
-#define R1_PIN 25
-#define G1_PIN 26
-#define B1_PIN 27
-#define R2_PIN 14
-#define G2_PIN 12
-#define B2_PIN 13
-#define A_PIN 23
-#define B_PIN 19 // Changed from library default
-#define C_PIN 5
-#define D_PIN 17
-#define E_PIN -1
-#define LAT_PIN 4
-#define OE_PIN 15
-#define CLK_PIN 16
-
-
-/*--------------------- MATRIX PANEL CONFIG -------------------------*/
-#define PANEL_RES_X 64      // Number of pixels wide of each INDIVIDUAL panel module. 
-#define PANEL_RES_Y 32     // Number of pixels tall of each INDIVIDUAL panel module.
-#define PANEL_CHAIN 1      // Total number of panels chained one to another
- 
 /*
-//Another way of creating config structure
-//Custom pin mapping for all pins
-HUB75_I2S_CFG::i2s_pins _pins={R1, G1, BL1, R2, G2, BL2, CH_A, CH_B, CH_C, CH_D, CH_E, LAT, OE, CLK};
-HUB75_I2S_CFG mxconfig(
-						64,   // width
-						64,   // height
-						 4,   // chain length
-					 _pins,   // pin mapping
-  HUB75_I2S_CFG::FM6126A      // driver chip
-);
+        _    _   _ ____   ___  ____      _    
+       / \  | | | |  _ \ / _ \|  _ \    / \   
+      / _ \ | | | | |_) | | | | |_) |  / _ \  
+     / ___ \| |_| |  _ <| |_| |  _ <  / ___ \ 
+    /_/   \_\\___/|_| \_\\___/|_| \_\/_/   \_\
+                                              
+           ____  _____ __  __  ___  
+          |  _ \| ____|  \/  |/ _ \ 
+          | | | |  _| | |\/| | | | |
+          | |_| | |___| |  | | |_| |
+          |____/|_____|_|  |_|\___/ 
+
+ Description:
+ * This demonstrates a combination of the following libraries two:
+    - "ESP32-HUB75-MatrixPanel-DMA" to send pixel data to the physical panels in combination with its 
+       in-built "VirtualMatrix" class which used to create a virtual display of chained panels, so the
+       graphical effects of the Aurora demonstration can be shown on a 'bigger' grid of physical panels
+       acting as one big display.
+
+    - "GFX_Lite" to provide a simple graphics library for drawing on the virtual display.
+       GFX_Lite is a fork of AdaFruitGFX and FastLED library combined together, with a focus on simplicity and ease of use.
 
 */
-MatrixPanel_I2S_DMA *dma_display = nullptr;
 
-// Module configuration
-HUB75_I2S_CFG mxconfig(
-	PANEL_RES_X,   // module width
-	PANEL_RES_Y,   // module height
-	PANEL_CHAIN    // Chain length
-);
+#define USE_GFX_LITE 1
+#include <ESP32-VirtualMatrixPanel-I2S-DMA.h>
+
+/***************************************************************************************************************************/
+
+// Step 1) Provide the size of each individual physical panel LED Matrix panel that is chained (or not) together
+#define PANEL_RES_X 64 // Number of pixels wide of each INDIVIDUAL panel module. 
+#define PANEL_RES_Y 32 // Number of pixels tall of each INDIVIDUAL panel module.
+
+// Step 2) Provide details of the physical panel chaining that is in place.
+#define NUM_ROWS 2 // Number of rows of chained INDIVIDUAL PANELS
+#define NUM_COLS 1 // Number of INDIVIDUAL PANELS per ROW
+#define PANEL_CHAIN NUM_ROWS*NUM_COLS    // total number of panels chained one to another
+
+// Step 3) How are the panels chained together?
+#define PANEL_CHAIN_TYPE CHAIN_TOP_RIGHT_DOWN
+
+// Refer to: https://github.com/mrcodetastic/ESP32-HUB75-MatrixPanel-DMA/tree/master/examples/VirtualMatrixPanel
+//      and: https://github.com/mrcodetastic/ESP32-HUB75-MatrixPanel-DMA/blob/master/doc/VirtualMatrixPanel.pdf
+
+// Virtual Panel dimensions - our combined panel would be a square 4x4 modules with a combined resolution of 128x128 pixels
+#define VPANEL_W PANEL_RES_X*NUM_COLS // Kosso: All Pattern files have had the MATRIX_WIDTH and MATRIX_HEIGHT replaced by these.
+#define VPANEL_H PANEL_RES_Y*NUM_ROWS //
+
+/***************************************************************************************************************************/
+
+// The palettes are set to change every 60 seconds. 
+int lastPattern = 0;
 
 
-//mxconfig.gpio.e = -1; // Assign a pin if you have a 64x64 panel
-//mxconfig.clkphase = false; // Change this if you have issues with ghosting.
-//mxconfig.driver = HUB75_I2S_CFG::FM6126A; // Change this according to your pane.
+// placeholder for the matrix object
+MatrixPanel_I2S_DMA *matrix = nullptr;
 
+// placeholder for the virtual display object
+VirtualMatrixPanel  *virtualDisp = nullptr;
 
-
-#include <FastLED.h>
-
+// Aurora related
 #include "Effects.h"
 Effects effects;
 
 #include "Drawable.h"
 #include "Playlist.h"
-//#include "Geometry.h"
+#include "Geometry.h"
 
 #include "Patterns.h"
 Patterns patterns;
 
 /* -------------------------- Some variables -------------------------- */
-unsigned long fps = 0, fps_timer; // fps (this is NOT a matrix refresh rate!)
-unsigned int default_fps = 30, pattern_fps = 30;  // default fps limit (this is not a matrix refresh counter!)
-unsigned long ms_animation_max_duration = 20000;  // 20 seconds
-unsigned long last_frame=0, ms_previous=0;
+unsigned long ms_current  = 0;
+unsigned long ms_previous = 0;
+unsigned long ms_animation_max_duration = 20000; // 10 seconds
+unsigned long next_frame = 0;
+
+void listPatterns();
 
 void setup()
 {
- /************** SERIAL **************/
+  // Setup serial interface
   Serial.begin(115200);
   delay(250);
-  
- /************** DISPLAY **************/
-  Serial.println("...Starting Display");
-  dma_display = new MatrixPanel_I2S_DMA(mxconfig);
-  dma_display->begin();
-  dma_display->setBrightness8(90); //0-255
 
-  dma_display->fillScreenRGB888(128,0,0);
-  delay(1000);
-  dma_display->fillScreenRGB888(0,0,128);
-  delay(1000);
-  dma_display->clearScreen();  
-  delay(1000);  
+
+  // Configure your matrix setup here
+  HUB75_I2S_CFG mxconfig(PANEL_RES_X, PANEL_RES_Y, PANEL_CHAIN);
+
+  // custom pin mapping (if required)
+  //HUB75_I2S_CFG::i2s_pins _pins={R1, G1, BL1, R2, G2, BL2, CH_A, CH_B, CH_C, CH_D, CH_E, LAT, OE, CLK};
+  //mxconfig.gpio = _pins;
+
+  // in case that we use panels based on FM6126A chip, we can change that
+  //mxconfig.driver = HUB75_I2S_CFG::FM6126A;
+
+  // FM6126A panels could be cloked at 20MHz with no visual artefacts
+  // mxconfig.i2sspeed = HUB75_I2S_CFG::HZ_20M;
+
+  // OK, now we can create our matrix object
+  matrix = new MatrixPanel_I2S_DMA(mxconfig);
+
+  // Allocate memory and start DMA display
+  if( not matrix->begin() )
+      Serial.println("****** !KABOOM! I2S memory allocation failed ***********");
+
+  // let's adjust default brightness to about 75%
+  matrix->setBrightness8(192);    // range is 0-255, 0 - 0%, 255 - 100%
+
+  // create VirtualDisplay object based on our newly created dma_display object
+  virtualDisp = new VirtualMatrixPanel((*matrix), NUM_ROWS, NUM_COLS, PANEL_RES_X, PANEL_RES_Y, PANEL_CHAIN_TYPE);
+
   Serial.println("**************** Starting Aurora Effects Demo ****************");
 
+  Serial.print("MATRIX_WIDTH: ");  Serial.println(PANEL_RES_X*PANEL_CHAIN);
+  Serial.print("MATRIX_HEIGHT: "); Serial.println(PANEL_RES_Y);
+
+#ifdef VPANEL_W
+  Serial.println("VIRTUAL PANEL WIDTH " + String(VPANEL_W));
+  Serial.println("VIRTUAL PANEL HEIGHT " + String(VPANEL_H));
+#endif
 
    // setup the effects generator
   effects.Setup();
@@ -96,51 +127,49 @@ void setup()
   delay(500);
   Serial.println("Effects being loaded: ");
   listPatterns();
- 
 
-  patterns.moveRandom(1); // start from a random pattern
+  Serial.println("LastPattern index: " + String(lastPattern));
+  
+  patterns.setPattern(lastPattern); //   // simple noise
+  patterns.start();     
 
   Serial.print("Starting with pattern: ");
   Serial.println(patterns.getCurrentPatternName());
-  patterns.start();
-  ms_previous = millis();
-  fps_timer = millis();
+
+}
+
+
+void patternAdvance(){
+    // Go to next pattern in the list (se Patterns.h)
+    patterns.stop();
+
+    patterns.moveRandom(1);
+    //patterns.move(1);
+    patterns.start();  
+
+    // Select a random palette as well
+    effects.RandomPalette();
+    Serial.print("Changing pattern to:  ");
+    Serial.println(patterns.getCurrentPatternName());
+    
 }
 
 void loop()
 {
-    // menu.run(mainMenuItems, mainMenuItemCount);  
+  
+    ms_current = millis();
+      
+    if ( (ms_current - ms_previous) > ms_animation_max_duration ) 
+    {
+       patternAdvance();
 
-  if ( (millis() - ms_previous) > ms_animation_max_duration ) 
-  {
-       patterns.stop();      
-       patterns.moveRandom(1);
-       //patterns.move(1);
-       patterns.start();  
-       
-       Serial.print("Changing pattern to:  ");
-       Serial.println(patterns.getCurrentPatternName());
-        
-       ms_previous = millis();
-
-       // Select a random palette as well
-       //effects.RandomPalette();
+       // just auto-change the palette
+       effects.RandomPalette();
+       ms_previous = ms_current;
     }
  
-    if ( 1000 / pattern_fps + last_frame < millis()){
-      last_frame = millis();
-      pattern_fps = patterns.drawFrame();
-      if (!pattern_fps)
-        pattern_fps = default_fps;
-
-      ++fps;
-    }
-
-    if (fps_timer + 1000 < millis()){
-       Serial.printf_P(PSTR("Effect fps: %ld\n"), fps);
-       fps_timer = millis();
-       fps = 0;
-    }
+    if ( next_frame < ms_current)
+      next_frame = patterns.drawFrame() + ms_current; 
        
 }
 

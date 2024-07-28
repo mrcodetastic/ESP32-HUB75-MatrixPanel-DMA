@@ -38,13 +38,13 @@ public:
 
 class PatternLife : public Drawable {
 private:
-    Cell world[MATRIX_WIDTH][MATRIX_HEIGHT];
+    Cell world[VPANEL_W][VPANEL_H];
     unsigned int density = 50;
     int generation = 0;
 
     void randomFillWorld() {
-        for (int i = 0; i < MATRIX_WIDTH; i++) {
-            for (int j = 0; j < MATRIX_HEIGHT; j++) {
+        for (int i = 0; i < VPANEL_W; i++) {
+            for (int j = 0; j < VPANEL_H; j++) {
                 if (random(100) < density) {
                     world[i][j].alive = 1;
                     world[i][j].brightness = 255;
@@ -60,14 +60,14 @@ private:
     }
 
     int neighbours(int x, int y) {
-        return (world[(x + 1) % MATRIX_WIDTH][y].prev) +
-            (world[x][(y + 1) % MATRIX_HEIGHT].prev) +
-            (world[(x + MATRIX_WIDTH - 1) % MATRIX_WIDTH][y].prev) +
-            (world[x][(y + MATRIX_HEIGHT - 1) % MATRIX_HEIGHT].prev) +
-            (world[(x + 1) % MATRIX_WIDTH][(y + 1) % MATRIX_HEIGHT].prev) +
-            (world[(x + MATRIX_WIDTH - 1) % MATRIX_WIDTH][(y + 1) % MATRIX_HEIGHT].prev) +
-            (world[(x + MATRIX_WIDTH - 1) % MATRIX_WIDTH][(y + MATRIX_HEIGHT - 1) % MATRIX_HEIGHT].prev) +
-            (world[(x + 1) % MATRIX_WIDTH][(y + MATRIX_HEIGHT - 1) % MATRIX_HEIGHT].prev);
+        return (world[(x + 1) % VPANEL_W][y].prev) +
+            (world[x][(y + 1) % VPANEL_H].prev) +
+            (world[(x + VPANEL_W - 1) % VPANEL_W][y].prev) +
+            (world[x][(y + VPANEL_H - 1) % VPANEL_H].prev) +
+            (world[(x + 1) % VPANEL_W][(y + 1) % VPANEL_H].prev) +
+            (world[(x + VPANEL_W - 1) % VPANEL_W][(y + 1) % VPANEL_H].prev) +
+            (world[(x + VPANEL_W - 1) % VPANEL_W][(y + VPANEL_H - 1) % VPANEL_H].prev) +
+            (world[(x + 1) % VPANEL_W][(y + VPANEL_H - 1) % VPANEL_H].prev);
     }
 
 public:
@@ -83,15 +83,15 @@ public:
         }
 
         // Display current generation
-        for (int i = 0; i < MATRIX_WIDTH; i++) {
-            for (int j = 0; j < MATRIX_HEIGHT; j++) {
+        for (int i = 0; i < VPANEL_W; i++) {
+            for (int j = 0; j < VPANEL_H; j++) {
                 effects.leds[XY(i, j)] = effects.ColorFromCurrentPalette(world[i][j].hue * 4, world[i][j].brightness);
             }
         }
 
         // Birth and death cycle
-        for (int x = 0; x < MATRIX_WIDTH; x++) {
-            for (int y = 0; y < MATRIX_HEIGHT; y++) {
+        for (int x = 0; x < VPANEL_W; x++) {
+            for (int y = 0; y < VPANEL_H; y++) {
                 // Default is for cell to stay the same
                 if (world[x][y].brightness > 0 && world[x][y].prev == 0)
                   world[x][y].brightness *= 0.9;
@@ -109,8 +109,8 @@ public:
         }
 
         // Copy next generation into place
-        for (int x = 0; x < MATRIX_WIDTH; x++) {
-            for (int y = 0; y < MATRIX_HEIGHT; y++) {
+        for (int x = 0; x < VPANEL_W; x++) {
+            for (int y = 0; y < VPANEL_H; y++) {
                 world[x][y].prev = world[x][y].alive;
             }
         }

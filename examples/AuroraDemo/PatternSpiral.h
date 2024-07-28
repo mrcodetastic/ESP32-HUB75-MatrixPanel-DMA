@@ -74,13 +74,13 @@ public:
 
         multiTimer[0].lastMillis = now;
         multiTimer[0].takt = 42;     //x1
-        multiTimer[0].up = MATRIX_WIDTH - 1;
+        multiTimer[0].up = VPANEL_W - 1;
         multiTimer[0].down = 0;
         multiTimer[0].count = 0;
 
         multiTimer[1].lastMillis = now;
         multiTimer[1].takt = 55;     //y1
-        multiTimer[1].up = MATRIX_HEIGHT - 1;
+        multiTimer[1].up = VPANEL_H - 1;
         multiTimer[1].down = 0;
         multiTimer[1].count = 0;
 
@@ -92,13 +92,13 @@ public:
 
         multiTimer[3].lastMillis = now;
         multiTimer[3].takt = 71;     //x2  
-        multiTimer[3].up = MATRIX_WIDTH - 1;
+        multiTimer[3].up = VPANEL_W - 1;
         multiTimer[3].down = 0;
         multiTimer[3].count = 0;
 
         multiTimer[4].lastMillis = now;
         multiTimer[4].takt = 89;     //y2
-        multiTimer[4].up = MATRIX_HEIGHT - 1;
+        multiTimer[4].up = VPANEL_H - 1;
         multiTimer[4].down = 0;
         multiTimer[4].count = 0;
     }

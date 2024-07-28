@@ -37,6 +37,7 @@ class PatternFlowField : public Drawable {
 
     static const int count = 40;
 
+    unsigned long last_update_hue_ms = 0;
     byte hue = 0;
 
     void start() {
@@ -45,7 +46,7 @@ class PatternFlowField : public Drawable {
       z = random16();
 
       for (int i = 0; i < count; i++) {
-        boids[i] = Boid(random(MATRIX_WIDTH), 0);
+        boids[i] = Boid(random(VPANEL_W), 0);
       }
     }
 
@@ -68,14 +69,15 @@ class PatternFlowField : public Drawable {
 
         effects.drawBackgroundFastLEDPixelCRGB(boid->location.x, boid->location.y, effects.ColorFromCurrentPalette(angle + hue)); // color
 
-        if (boid->location.x < 0 || boid->location.x >= MATRIX_WIDTH ||
-            boid->location.y < 0 || boid->location.y >= MATRIX_HEIGHT) {
-          boid->location.x = random(MATRIX_WIDTH);
+        if (boid->location.x < 0 || boid->location.x >= VPANEL_W ||
+            boid->location.y < 0 || boid->location.y >= VPANEL_H) {
+          boid->location.x = random(VPANEL_W);
           boid->location.y = 0;
         }
       }
 
-      EVERY_N_MILLIS(200) {
+      if (millis() - last_update_hue_ms > 200) {
+        last_update_hue_ms = millis();
         hue++;
       }
 

@@ -138,7 +138,7 @@ void setup() {
   dma_display = new MatrixPanel_I2S_DMA(mxconfig);
 
   // let's adjust default brightness to about 75%
-  dma_display->setBrightness8(192);    // range is 0-255, 0 - 0%, 255 - 100%
+  dma_display->setBrightness8(255);    // range is 0-255, 0 - 0%, 255 - 100%
 
   // Allocate memory and start DMA display
   if( not dma_display->begin() )
@@ -176,13 +176,13 @@ void loop() {
   
     for (int x = 0; x < PANE_WIDTH; x++) {
             for (int y = 0; y <  PANE_HEIGHT; y++) {
-                int16_t v = 0;
+                int16_t v = 128;
                 uint8_t wibble = sin8(time_counter);
                 v += sin16(x * wibble * 3 + time_counter);
                 v += cos16(y * (128 - wibble)  + time_counter);
                 v += sin16(y * x * cos8(-time_counter) / 8);
 
-                currentColor = ColorFromPalette(currentPalette, (v >> 8) + 127); //, brightness, currentBlendType);
+                currentColor = ColorFromPalette(currentPalette, (v >> 8)); //, brightness, currentBlendType);
                 dma_display->drawPixelRGB888(x, y, currentColor.r, currentColor.g, currentColor.b);
             }
     }

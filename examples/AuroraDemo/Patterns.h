@@ -44,7 +44,7 @@
 #include "PatternPendulumWave.h"
 #include "PatternFlowField.h"
 #include "PatternIncrementalDrift.h"
-//#include "PatternIncrementalDrift2.h" // Doesn't seem to work, omitting.
+#include "PatternIncrementalDrift2.h" // Doesn't seem to work, omitting.
 #include "PatternMunch.h"
 #include "PatternElectricMandala.h"
 //#include "PatternSpin.h" // Doesn't seem to work, omitting.
@@ -82,7 +82,7 @@ class Patterns : public Playlist {
     PatternPendulumWave pendulumWave;
     PatternFlowField flowField;
     PatternIncrementalDrift incrementalDrift;
- //   PatternIncrementalDrift2 incrementalDrift2;
+    PatternIncrementalDrift2 incrementalDrift2;
     PatternMunch munch;
     PatternElectricMandala electricMandala;
  //   PatternSpin spin;
@@ -112,9 +112,7 @@ class Patterns : public Playlist {
       return currentIndex;
     }
 
-    //const static int PATTERN_COUNT = 37;   
-
-    const static int PATTERN_COUNT = 17;
+    const static int PATTERN_COUNT = 14;
 
     Drawable* shuffledItems[PATTERN_COUNT];
 
@@ -134,20 +132,20 @@ class Patterns : public Playlist {
       &pendulumWave, //11 ok
 
       &incrementalDrift, //12 ok
-   //   &incrementalDrift2, // 13 fail
+      &incrementalDrift2, // 13 fail
       &munch, // 14 ok
-      &electricMandala, // 15 ok
+   //   &electricMandala, // 15 ok, but ugly (vortigont)
    //   &spin, // 16 ok but repetitive
-      &simplexNoise, // 17 - cool!
+   //   &simplexNoise, // 17 - cool!
    //   &wave, // 18 ok (can't work with 256+ matrix due to uint8_t vars)
    //   &rainbowFlag, //20 // fail
       &attract, // 21 ok
-      &swirl, // 22
+   //   &swirl, // 22 ok, but ugly (vortigont)
    //   &bounce, // bouncing line crap
       &flock, // works
       &infinity, // works
       &plasma, // works
-      &invadersSmall, // works ish
+   //   &invadersSmall, // works ish, but ugly (vortigont)
    //   &invadersMedium, // fail
    //   &invadersLarge, // fail
       &snake, // ok

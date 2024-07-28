@@ -35,10 +35,10 @@ private:
 
     byte rotation = 0;
 
-    uint8_t scale = 256 / MATRIX_WIDTH;
+    uint8_t scale = 256 / VPANEL_W;
 
-    uint8_t maxX = MATRIX_WIDTH - 1;
-    uint8_t maxY = MATRIX_HEIGHT - 1;
+    uint8_t maxX = VPANEL_W - 1;
+    uint8_t maxY = VPANEL_H - 1;
 
     uint8_t waveCount = 1;
 
@@ -58,7 +58,7 @@ public:
 
         switch (rotation) {
             case 0:
-                for (int x = 0; x < MATRIX_WIDTH; x++) {
+                for (int x = 0; x < VPANEL_W; x++) {
                     n = quadwave8(x * 2 + theta) / scale;
                     effects.drawBackgroundFastLEDPixelCRGB(x, n, effects.ColorFromCurrentPalette(x + hue));
                     if (waveCount == 2)
@@ -67,7 +67,7 @@ public:
                 break;
 
             case 1:
-                for (int y = 0; y < MATRIX_HEIGHT; y++) {
+                for (int y = 0; y < VPANEL_H; y++) {
                     n = quadwave8(y * 2 + theta) / scale;
                     effects.drawBackgroundFastLEDPixelCRGB(n, y, effects.ColorFromCurrentPalette(y + hue));
                     if (waveCount == 2)
@@ -76,7 +76,7 @@ public:
                 break;
 
             case 2:
-                for (int x = 0; x < MATRIX_WIDTH; x++) {
+                for (int x = 0; x < VPANEL_W; x++) {
                     n = quadwave8(x * 2 - theta) / scale;
                     effects.drawBackgroundFastLEDPixelCRGB(x, n, effects.ColorFromCurrentPalette(x + hue));
                     if (waveCount == 2)
@@ -85,7 +85,7 @@ public:
                 break;
 
             case 3:
-                for (int y = 0; y < MATRIX_HEIGHT; y++) {
+                for (int y = 0; y < VPANEL_H; y++) {
                     n = quadwave8(y * 2 - theta) / scale;
                     effects.drawBackgroundFastLEDPixelCRGB(n, y, effects.ColorFromCurrentPalette(y + hue));
                     if (waveCount == 2)

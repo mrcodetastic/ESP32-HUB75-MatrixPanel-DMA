@@ -30,8 +30,8 @@ void setup() {
   HUB75_I2S_CFG mxconfig(
     PANEL_RES_X, // Module width
     PANEL_RES_Y, // Module height
-    PANEL_CHAIN //, // chain length
-    //_pins // pin mapping -- uncomment if providing own custom pin mapping as per above.
+    PANEL_CHAIN // // chain length
+    //,_pins // pin mapping -- uncomment if providing own custom pin mapping as per above.
   );
   //mxconfig.clkphase = false;
   //mxconfig.driver = HUB75_I2S_CFG::FM6126A;

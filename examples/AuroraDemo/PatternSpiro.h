@@ -28,8 +28,8 @@ class PatternSpiro : public Drawable {
     byte theta2 = 0;
     byte hueoffset = 0;
 
-    uint8_t radiusx = MATRIX_WIDTH / 4;
-    uint8_t radiusy = MATRIX_HEIGHT / 4;
+    uint8_t radiusx = VPANEL_W / 4;
+    uint8_t radiusy = VPANEL_H / 4;
     uint8_t minx = MATRIX_CENTER_X - radiusx;
     uint8_t maxx = MATRIX_CENTER_X + radiusx + 1;
     uint8_t miny = MATRIX_CENTER_Y - radiusy;
@@ -41,6 +41,10 @@ class PatternSpiro : public Drawable {
 
     boolean handledChange = false;
 
+    unsigned long last_update_theta1_ms = 0;
+    unsigned long last_update_hue_ms = 0;    
+    unsigned long last_update_frame_ms = 0;
+
   public:
     PatternSpiro() {
       name = (char *)"Spiro";
@@ -51,7 +55,7 @@ class PatternSpiro : public Drawable {
     };
 
     unsigned int drawFrame() {
-      blur2d(effects.leds, MATRIX_WIDTH > 255 ? 255 : MATRIX_WIDTH, MATRIX_HEIGHT > 255 ? 255 : MATRIX_HEIGHT, 192);
+      blur2d(effects.leds, VPANEL_W > 255 ? 255 : VPANEL_W, VPANEL_H > 255 ? 255 : VPANEL_H, 192);
 
       boolean change = false;
       
@@ -71,15 +75,18 @@ class PatternSpiro : public Drawable {
 
       theta2 += 1;
 
-      EVERY_N_MILLIS(25) {
+      if (millis() - last_update_theta1_ms > 25) {
+        last_update_theta1_ms = millis();
         theta1 += 1;
       }
 
-      EVERY_N_MILLIS(100) {
+      if (millis() - last_update_frame_ms > 100) {
+        last_update_frame_ms = millis();
+        
         if (change && !handledChange) {
           handledChange = true;
           
-          if (spirocount >= MATRIX_WIDTH || spirocount == 1) spiroincrement = !spiroincrement;
+          if (spirocount >= VPANEL_W || spirocount == 1) spiroincrement = !spiroincrement;
 
           if (spiroincrement) {
             if(spirocount >= 4)
@@ -100,7 +107,8 @@ class PatternSpiro : public Drawable {
         if(!change) handledChange = false;
       }
 
-      EVERY_N_MILLIS(33) {
+      if (millis() - last_update_hue_ms > 33) {
+        last_update_hue_ms = millis();
         hueoffset += 1;
       }
 

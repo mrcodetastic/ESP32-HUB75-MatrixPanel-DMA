@@ -12,7 +12,7 @@ class PatternTest : public Drawable {
 
     unsigned int drawFrame() {
 
-       dma_display->fillScreen(dma_display->color565(128, 0, 0));  
+       matrix->fillScreen(matrix->color565(128, 0, 0));  
       return 1000;
     }
 };

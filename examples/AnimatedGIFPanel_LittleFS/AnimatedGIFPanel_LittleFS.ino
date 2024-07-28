@@ -18,26 +18,17 @@
  * 3. Have fun.
  */
 
-#define FILESYSTEM SPIFFS
-#include <SPIFFS.h>
+#include "FS.h"
+#include <LittleFS.h>
 #include <AnimatedGIF.h>
 #include <ESP32-HUB75-MatrixPanel-I2S-DMA.h>
 
-// ----------------------------
+#define FILESYSTEM LittleFS
+#define FORMAT_LITTLEFS_IF_FAILED true
 
-/* 
- * Below is an is the 'legacy' way of initialising the MatrixPanel_I2S_DMA class.
- * i.e. MATRIX_WIDTH and MATRIX_HEIGHT are modified by compile-time directives.
- * By default the library assumes a single 64x32 pixel panel is connected.
- *
- * Refer to the example '2_PatternPlasma' on the new / correct way to setup this library
- * for different resolutions / panel chain lengths within the sketch 'setup()'.
- * 
- */
-
-#define PANEL_RES_X 64      // Number of pixels wide of each INDIVIDUAL panel module. 
+#define PANEL_RES_X 64     // Number of pixels wide of each INDIVIDUAL panel module. 
 #define PANEL_RES_Y 32     // Number of pixels tall of each INDIVIDUAL panel module.
-#define PANEL_CHAIN 1      // Total number of panels chained one to another
+#define PANEL_CHAIN 1      // Total number of panels chained one to another horizontally only.
  
 //MatrixPanel_I2S_DMA dma_display;
 MatrixPanel_I2S_DMA *dma_display = nullptr;
@@ -47,7 +38,6 @@ uint16_t myWHITE = dma_display->color565(255, 255, 255);
 uint16_t myRED = dma_display->color565(255, 0, 0);
 uint16_t myGREEN = dma_display->color565(0, 255, 0);
 uint16_t myBLUE = dma_display->color565(0, 0, 255);
-
 
 AnimatedGIF gif;
 File f;
@@ -63,8 +53,8 @@ void GIFDraw(GIFDRAW *pDraw)
     int x, y, iWidth;
 
   iWidth = pDraw->iWidth;
-  if (iWidth > MATRIX_WIDTH)
-      iWidth = MATRIX_WIDTH;
+  if (iWidth > dma_display->width())
+      iWidth = dma_display->width();
 
     usPalette = pDraw->pPalette;
     y = pDraw->iY + pDraw->y; // current line
@@ -195,9 +185,9 @@ void ShowGIF(char *name)
    
   if (gif.open(name, GIFOpenFile, GIFCloseFile, GIFReadFile, GIFSeekFile, GIFDraw))
   {
-    x_offset = (MATRIX_WIDTH - gif.getCanvasWidth())/2;
+    x_offset = (dma_display->width() - gif.getCanvasWidth())/2;
     if (x_offset < 0) x_offset = 0;
-    y_offset = (MATRIX_HEIGHT - gif.getCanvasHeight())/2;
+    y_offset = (dma_display->height() - gif.getCanvasHeight())/2;
     if (y_offset < 0) y_offset = 0;
     Serial.printf("Successfully opened GIF; Canvas size = %d x %d\n", gif.getCanvasWidth(), gif.getCanvasHeight());
     Serial.flush();
@@ -217,17 +207,21 @@ void ShowGIF(char *name)
 /************************* Arduino Sketch Setup and Loop() *******************************/
 void setup() {
   Serial.begin(115200);
-  delay(1000);
+
+  if(!LittleFS.begin(FORMAT_LITTLEFS_IF_FAILED)){
+      Serial.println("LittleFS Mount Failed");
+      return;
+  }
 
   HUB75_I2S_CFG mxconfig(
     PANEL_RES_X,   // module width
     PANEL_RES_Y,   // module height
-    PANEL_CHAIN    // Chain length
+    PANEL_CHAIN    // Chain of panels - Horizontal width only.
   );
 
- // mxconfig.gpio.e = 18;
- // mxconfig.clkphase = false;
-  //mxconfig.driver = HUB75_I2S_CFG::FM6126A;
+  // mxconfig.gpio.e = 18;
+  // mxconfig.clkphase = false;
+  // mxconfig.driver = HUB75_I2S_CFG::FM6126A;
 
   // Display Setup
   dma_display = new MatrixPanel_I2S_DMA(mxconfig);
@@ -236,18 +230,7 @@ void setup() {
   dma_display->clearScreen();
   dma_display->fillScreen(myWHITE);
 
-  Serial.println("Starting AnimatedGIFs Sketch");
-
-  // Start filesystem
-  Serial.println(" * Loading SPIFFS");
-  if(!SPIFFS.begin()){
-        Serial.println("SPIFFS Mount Failed");
-  }
-  
-  dma_display->begin();
-  
-  /* all other pixel drawing functions can only be called after .begin() */
-  dma_display->fillScreen(dma_display->color565(0, 0, 0));
+  // Start going through GIFS  
   gif.begin(LITTLE_ENDIAN_PIXELS);
 
 }
@@ -288,3 +271,6 @@ void loop()
       
    } // while
 }
+
+// Other LittleFS filesystem function examples available at:
+// https://randomnerdtutorials.com/esp32-write-data-littlefs-arduino/

@@ -158,7 +158,7 @@ class PatternCube : public Drawable {
       uint8_t blurAmount = beatsin8(2, 10, 255);
 
 #if FASTLED_VERSION >= 3001000
-      blur2d(effects.leds, MATRIX_WIDTH, MATRIX_HEIGHT, blurAmount);
+      blur2d(effects.leds, VPANEL_W, VPANEL_H, blurAmount);
 #else
       effects.DimAll(blurAmount); effects.ShowFrame();
 #endif
@@ -188,7 +188,7 @@ class PatternCube : public Drawable {
       {
         e = edge + i;
         if (!e->visible) {
-          dma_display->drawLine(screen[e->x].x, screen[e->x].y, screen[e->y].x, screen[e->y].y, color);
+          matrix.drawLine(screen[e->x].x, screen[e->x].y, screen[e->y].x, screen[e->y].y, color);
         }
       }
 
@@ -200,7 +200,7 @@ class PatternCube : public Drawable {
         e = edge + i;
         if (e->visible)
         {
-          dma_display->drawLine(screen[e->x].x, screen[e->x].y, screen[e->y].x, screen[e->y].y, color);
+          matrix.drawLine(screen[e->x].x, screen[e->x].y, screen[e->y].x, screen[e->y].y, color);
         }
       }
 

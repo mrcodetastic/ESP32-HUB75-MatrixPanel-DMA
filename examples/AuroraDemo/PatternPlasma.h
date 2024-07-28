@@ -37,13 +37,13 @@ public:
     }
 
     unsigned int drawFrame() {
-        for (int x = 0; x < MATRIX_WIDTH; x++) {
-            for (int y = 0; y < MATRIX_HEIGHT; y++) {
+        for (int x = 0; x < VPANEL_W; x++) {
+            for (int y = 0; y < VPANEL_H; y++) {
                 int16_t v = 0;
                 uint8_t wibble = sin8(time);
-                v += sin16(x * wibble * 2 + time);
-                v += cos16(y * (128 - wibble) * 2 + time);
-                v += sin16(y * x * cos8(-time) / 2);
+                v += sin16(x * wibble * 6 + time);
+                v += cos16(y * (128 - wibble) * 6 + time);
+                v += sin16(y * x * cos8(-time) / 8);
 
                 effects.Pixel(x, y, (v >> 8) + 127);
             }

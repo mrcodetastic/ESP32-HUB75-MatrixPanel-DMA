@@ -31,7 +31,7 @@ public:
     unsigned int drawFrame() {
         // dim all pixels on the display slightly 
         // to 250/255 (98%) of their current brightness
-      blur2d(effects.leds, MATRIX_WIDTH > 255 ? 255 : MATRIX_WIDTH, MATRIX_HEIGHT > 255 ? 255 : MATRIX_HEIGHT, 250);
+      blur2d(effects.leds, VPANEL_W > 255 ? 255 : VPANEL_W, VPANEL_H > 255 ? 255 : VPANEL_H, 250);
         //        effects.DimAll(250); effects.ShowFrame();
 
 
@@ -41,7 +41,7 @@ public:
 
         // the horizontal position of the head of the infinity sign
         // oscillates from 0 to the maximum horizontal and back
-        int x = (MATRIX_WIDTH - 1) - effects.p[1];
+        int x = (VPANEL_W - 1) - effects.p[1];
 
         // the vertical position of the head oscillates
         // from 8 to 23 and back (hard-coded for a 32x32 matrix)

@@ -34,7 +34,8 @@ class PatternIncrementalDrift2 : public Drawable {
       uint8_t dim = beatsin8(2, 170, 250);
       effects.DimAll(dim); effects.ShowFrame();
 
-      for (uint8_t i = 0; i < 32; i++)
+      for (int i = 2; i < VPANEL_H / 2; ++i)
+      //for (uint8_t i = 0; i < 32; i++)
       {
         CRGB color;
 
@@ -42,14 +43,14 @@ class PatternIncrementalDrift2 : public Drawable {
         uint8_t y = 0;
 
         if (i < 16) {
-          x = beatcos8((i + 1) * 2, i, MATRIX_WIDTH - i);
-          y = beatsin8((i + 1) * 2, i, MATRIX_HEIGHT - i);
+          x = beatcos8((i + 1) * 2, i, VPANEL_W - i);
+          y = beatsin8((i + 1) * 2, i, VPANEL_H - i);
           color = effects.ColorFromCurrentPalette(i * 14);
         }
         else
         {
-          x = beatsin8((32 - i) * 2, MATRIX_WIDTH - i, i + 1);
-          y = beatcos8((32 - i) * 2, MATRIX_HEIGHT - i, i + 1);
+          x = beatsin8((32 - i) * 2, VPANEL_W - i, i + 1);
+          y = beatcos8((32 - i) * 2, VPANEL_H - i, i + 1);
           color = effects.ColorFromCurrentPalette((31 - i) * 14);
         }
 

@@ -1,5 +1,5 @@
-#define PANEL_RES_X 128    // Number of pixels wide of each INDIVIDUAL panel module. 
-#define PANEL_RES_Y 64     // Number of pixels tall of each INDIVIDUAL panel module.
+#define PANEL_RES_X 64    // Number of pixels wide of each INDIVIDUAL panel module. 
+#define PANEL_RES_Y 32     // Number of pixels tall of each INDIVIDUAL panel module.
 #define PANEL_CHAIN 1      // Total number of panels chained one to another
 #define USE_FLOATHACK      // To boost float performance, comment if this doesn't work. 
 
@@ -102,7 +102,7 @@ void drawCanvas() {
   }
 }
 
-volatile int frameCounts=0;
+int frameCounts=0;
 void Task1code(void *parameter){
   while(true){
     drawCanvas();
@@ -119,8 +119,8 @@ void setup() {
   HUB75_I2S_CFG mxconfig(
     PANEL_RES_X, // Module width
     PANEL_RES_Y, // Module height
-    PANEL_CHAIN, // chain length
-    _pins
+    PANEL_CHAIN // chain length
+  //  ,_pins    // uncomment this line if using custom pins, provide in _pins above
   );
 
   // Display Setup

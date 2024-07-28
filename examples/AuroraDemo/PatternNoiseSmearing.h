@@ -261,8 +261,8 @@ public:
     effects.DimAll(170); effects.ShowFrame();
    
     // draw a rainbow color palette
-    for (uint8_t y = 0; y < MATRIX_HEIGHT; y++) {
-      for (uint8_t x = 0; x < MATRIX_WIDTH; x++) {
+    for (uint8_t y = 0; y < VPANEL_H; y++) {
+      for (uint8_t x = 0; x < VPANEL_W; x++) {
         effects.leds[XY(x, y)] += effects.ColorFromCurrentPalette(x * 8, y * 8 + 7);
       }
     }
@@ -309,12 +309,12 @@ public:
 
     for (uint8_t c = 0; c < 6; c++) {
       for (uint8_t j = 0; j < 5; j++) {
-        for (uint8_t x = 0; x < MATRIX_WIDTH; x++) {
+        for (uint8_t x = 0; x < VPANEL_W; x++) {
           effects.leds[XY(x, y)] += rainbow[c];
         }
 
         y++;
-        if (y >= MATRIX_HEIGHT)
+        if (y >= VPANEL_H)
           break;
       }
     }

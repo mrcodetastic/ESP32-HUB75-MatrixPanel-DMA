@@ -204,7 +204,7 @@ Yes!
 
 For example: If you want to chain two of these horizontally to make a 128x32 panel you can do so by connecting the panels in series using the HUB75 ribbon cable. Than you must provide proper configuration structure to the class constructor letting it know that you use "one long virtual matrix chain". Refer to [Pattern Plasma](/examples/2_PatternPlasma/) example for all the details about configuration setup.
 
-Finally, if you wanted to chain 4 x (64x32px) panels to make 128x64px display (essentially a 2x2 grid of 64x32 LED Matrix modules), a little more magic will be required. Refer to the [Chained Panels](examples/ChainedPanels/) example.
+Finally, if you wanted to chain 4 x (64x32px) panels to make 128x64px display (essentially a 2x2 grid of 64x32 LED Matrix modules), a little more magic will be required. Refer to the [VirtualMatrixPanel](examples/VirtualMatrixPanel/) example and the [AuroraDemo](examples/AuroraDemo/) example of its practical use.
 
 Resolutions beyond 128x64 are more likely to result in crashes due to [memory](/doc/i2s_memcalc.md) constraints etc. You are on your own after this point - PLEASE do not raise issues about this, the library can't magically defeat the SRAM memory constraints of the ESP32.
 

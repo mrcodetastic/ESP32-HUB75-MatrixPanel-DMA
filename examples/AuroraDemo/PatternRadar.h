@@ -26,6 +26,7 @@ class PatternRadar : public Drawable {
   private:
     byte theta = 0;
     byte hueoffset = 0;
+    unsigned long last_update_hue_ms = 0;
 
   public:
     PatternRadar() {
@@ -38,12 +39,13 @@ class PatternRadar : public Drawable {
       for (int offset = 0; offset < MATRIX_CENTER_X; offset++) {
         byte hue = 255 - (offset * 16 + hueoffset);
         CRGB color = effects.ColorFromCurrentPalette(hue);
-        uint8_t x = mapcos8(theta, offset, (MATRIX_WIDTH - 1) - offset);
-        uint8_t y = mapsin8(theta, offset, (MATRIX_HEIGHT - 1) - offset);
+        uint8_t x = mapcos8(theta, offset, (VPANEL_W - 1) - offset);
+        uint8_t y = mapsin8(theta, offset, (VPANEL_H - 1) - offset);
         uint16_t xy = XY(x, y);
         effects.leds[xy] = color;
 
-        EVERY_N_MILLIS(25) {
+        if (millis() - last_update_hue_ms > 25) {
+          last_update_hue_ms = millis();
           theta += 2;
           hueoffset += 1;
         }
