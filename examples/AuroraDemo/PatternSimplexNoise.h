@@ -27,6 +27,10 @@
 #define PatternSimplexNoise_H
 
 class PatternSimplexNoise : public Drawable {
+
+  private:
+
+  unsigned int last_update_ms = 0;
   public:
     PatternSimplexNoise() {
       name = (char *)"Noise";
@@ -34,18 +38,19 @@ class PatternSimplexNoise : public Drawable {
 
     void start() {
       // Initialize our coordinates to some random values
-      noise_x = random16();
-      noise_y = random16();
-      noise_z = random16();
+      effects.noise_x = random16();
+      effects.noise_y = random16();
+      effects.noise_z = random16();
     }
 
     unsigned int drawFrame() {
 #if FASTLED_VERSION >= 3001000
       // a new parameter set every 15 seconds
-      EVERY_N_SECONDS(15) {
-        noise_x = random16();
-        noise_y = random16();
-        noise_z = random16();
+      if(millis() - last_update_ms > 15000) {
+        last_update_ms = millis();
+        effects.noise_x = random16();
+        effects.noise_y = random16();
+        effects.noise_z = random16();
       }
 #endif
 
@@ -55,8 +60,8 @@ class PatternSimplexNoise : public Drawable {
       ShowNoiseLayer(0, 1, 0);
 
       // noise_x += speed;
-      noise_y += speed;
-      noise_z += speed;
+      effects.noise_y += speed;
+      effects.noise_z += speed;
 
       effects.ShowFrame();
 
@@ -67,7 +72,7 @@ class PatternSimplexNoise : public Drawable {
     void ShowNoiseLayer(byte layer, byte colorrepeat, byte colorshift) {
       for (uint16_t i = 0; i < VPANEL_W; i++) {
         for (uint16_t j = 0; j < VPANEL_H; j++) {
-          uint8_t pixel = noise[i][j];
+          uint8_t pixel = effects.noise[i][j];
 
           // assign a color depending on the actual palette
           effects.leds[XY16(i, j)] = effects.ColorFromCurrentPalette(colorrepeat * (pixel + colorshift), pixel);

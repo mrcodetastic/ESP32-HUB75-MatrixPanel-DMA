@@ -45,7 +45,7 @@ public:
                 v += cos16(y * (128 - wibble) * 6 + time);
                 v += sin16(y * x * cos8(-time) / 8);
 
-                effects.Pixel(x, y, (v >> 8) + 127);
+                effects.setPixelFromPaletteIndex(x, y, (v >> 8) + 127);
             }
         }
 

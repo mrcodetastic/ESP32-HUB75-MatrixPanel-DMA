@@ -38,10 +38,10 @@ class PatternIncrementalDrift : public Drawable {
       {
         CRGB color = effects.ColorFromCurrentPalette((i - 2) * (240 / (VPANEL_W / 2)));
 
-        uint8_t x = beatcos8((17 - i) * 2, MATRIX_CENTER_X - i, MATRIX_CENTER_X + i);
-        uint8_t y = beatsin8((17 - i) * 2, MATRIX_CENTER_Y - i, MATRIX_CENTER_Y + i);
+        uint8_t x = effects.beatcos8((17 - i) * 2, VPANEL_W/2 - i, VPANEL_W/2 + i);
+        uint8_t y = beatsin8((17 - i) * 2, VPANEL_H/2 - i, VPANEL_H/2 + i);
 
-        effects.drawBackgroundFastLEDPixelCRGB(x, y, color);
+        effects.setPixel(x, y, color);
       }
 
       return 0;

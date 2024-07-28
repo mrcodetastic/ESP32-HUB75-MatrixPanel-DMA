@@ -43,18 +43,18 @@ class PatternIncrementalDrift2 : public Drawable {
         uint8_t y = 0;
 
         if (i < 16) {
-          x = beatcos8((i + 1) * 2, i, VPANEL_W - i);
+          x = effects.beatcos8((i + 1) * 2, i, VPANEL_W - i);
           y = beatsin8((i + 1) * 2, i, VPANEL_H - i);
           color = effects.ColorFromCurrentPalette(i * 14);
         }
         else
         {
           x = beatsin8((32 - i) * 2, VPANEL_W - i, i + 1);
-          y = beatcos8((32 - i) * 2, VPANEL_H - i, i + 1);
+          y = effects.beatcos8((32 - i) * 2, VPANEL_H - i, i + 1);
           color = effects.ColorFromCurrentPalette((31 - i) * 14);
         }
 
-        effects.drawBackgroundFastLEDPixelCRGB(x, y, color);
+        effects.setPixel(x, y, color);
       }
 
       return 0;

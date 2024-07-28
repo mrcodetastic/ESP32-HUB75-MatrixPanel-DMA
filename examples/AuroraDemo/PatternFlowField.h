@@ -67,7 +67,7 @@ class PatternFlowField : public Drawable {
         boid->velocity.y = -((float)cos8(angle) * 0.0078125 - 1.0);
         boid->update();
 
-        effects.drawBackgroundFastLEDPixelCRGB(boid->location.x, boid->location.y, effects.ColorFromCurrentPalette(angle + hue)); // color
+        effects.setPixel(boid->location.x, boid->location.y, effects.ColorFromCurrentPalette(angle + hue)); // color
 
         if (boid->location.x < 0 || boid->location.x >= VPANEL_W ||
             boid->location.y < 0 || boid->location.y >= VPANEL_H) {

@@ -30,12 +30,12 @@ class PatternSpiro : public Drawable {
 
     uint8_t radiusx = VPANEL_W / 4;
     uint8_t radiusy = VPANEL_H / 4;
-    uint8_t minx = MATRIX_CENTER_X - radiusx;
-    uint8_t maxx = MATRIX_CENTER_X + radiusx + 1;
-    uint8_t miny = MATRIX_CENTER_Y - radiusy;
-    uint8_t maxy = MATRIX_CENTER_Y + radiusy + 1;
+    uint8_t minx = VPANEL_W/2 - radiusx;
+    uint8_t maxx = VPANEL_W/2 + radiusx + 1;
+    uint8_t miny = VPANEL_H/2 - radiusy;
+    uint8_t maxy = VPANEL_H/2 + radiusy + 1;
 
-    uint8_t spirocount = 1;
+    uint8_t spirocount = 16;
     uint8_t spirooffset = 256 / spirocount;
     boolean spiroincrement = true;
 
@@ -60,17 +60,17 @@ class PatternSpiro : public Drawable {
       boolean change = false;
       
       for (int i = 0; i < spirocount; i++) {
-        uint8_t x = mapsin8(theta1 + i * spirooffset, minx, maxx);
-        uint8_t y = mapcos8(theta1 + i * spirooffset, miny, maxy);
+        uint8_t x = effects.mapsin8(theta1 + i * spirooffset, minx, maxx);
+        uint8_t y = effects.mapcos8(theta1 + i * spirooffset, miny, maxy);
 
-        uint8_t x2 = mapsin8(theta2 + i * spirooffset, x - radiusx, x + radiusx);
-        uint8_t y2 = mapcos8(theta2 + i * spirooffset, y - radiusy, y + radiusy);
+        uint8_t x2 = effects.mapsin8(theta2 + i * spirooffset, x - radiusx, x + radiusx);
+        uint8_t y2 = effects.mapcos8(theta2 + i * spirooffset, y - radiusy, y + radiusy);
 
         CRGB color = effects.ColorFromCurrentPalette(hueoffset + i * spirooffset, 128);
-        effects.leds[XY(x2, y2)] += color;
+        effects.leds[XY16(x2, y2)] += color;
         
-        if((x2 == MATRIX_CENTER_X && y2 == MATRIX_CENTER_Y) ||
-           (x2 == MATRIX_CENTRE_X && y2 == MATRIX_CENTRE_Y)) change = true;
+        if((x2 == VPANEL_W/2 && y2 == VPANEL_H/2) ||
+           (x2 == VPANEL_W/2 && y2 == VPANEL_H/2)) change = true;
       }
 
       theta2 += 1;

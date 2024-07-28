@@ -61,7 +61,7 @@ public:
             boid.applyForce(force);
 
             boid.update();
-            effects.drawBackgroundFastLEDPixelCRGB(boid.location.x, boid.location.y, effects.ColorFromCurrentPalette(boid.colorIndex));
+            effects.setPixel(boid.location.x, boid.location.y, effects.ColorFromCurrentPalette(boid.colorIndex));
 
             boids[i] = boid;
         }

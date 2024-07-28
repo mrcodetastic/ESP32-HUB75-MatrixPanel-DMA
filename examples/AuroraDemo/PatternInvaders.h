@@ -48,10 +48,10 @@ class PatternInvadersSmall : public Drawable {
 
           if (random(0, 2) == 1) color = color1;
 
-          effects.drawBackgroundFastLEDPixelCRGB(x + i, y + j, color);
+          effects.setPixel(x + i, y + j, color);
 
           if (i < 2)
-            effects.drawBackgroundFastLEDPixelCRGB(x + (4 - i), y + j, color);
+            effects.setPixel(x + (4 - i), y + j, color);
         }
       }
 
@@ -92,10 +92,10 @@ class PatternInvadersMedium : public Drawable {
 
           if (random(0, 2) == 1) color = color1;
 
-          effects.drawBackgroundFastLEDPixelCRGB(x + (i * 2), y + (j * 2), color);
+          effects.setPixel(x + (i * 2), y + (j * 2), color);
 
           if (i < 2)
-            effects.drawBackgroundFastLEDPixelCRGB(x + (8 - i * 2), y + (j * 2), color);
+            effects.setPixel(x + (8 - i * 2), y + (j * 2), color);
         }
       }
 
@@ -138,10 +138,10 @@ class PatternInvadersLarge : public Drawable {
             color = color1;
           }
 
-          effects.drawBackgroundFastLEDPixelCRGB(1 + x * 6, 1 + y * 6, color);
+          effects.setPixel(1 + x * 6, 1 + y * 6, color);
 
           if (x < 2)
-            effects.drawBackgroundFastLEDPixelCRGB(1 + (4 - x) * 6, 1 + y * 6, color);
+            effects.setPixel(1 + (4 - x) * 6, 1 + y * 6, color);
         }
       }
 

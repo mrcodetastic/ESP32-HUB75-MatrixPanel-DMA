@@ -36,12 +36,12 @@ class PatternRadar : public Drawable {
     unsigned int drawFrame() {
       effects.DimAll(254); effects.ShowFrame();
 
-      for (int offset = 0; offset < MATRIX_CENTER_X; offset++) {
+      for (int offset = 0; offset < VPANEL_W/2; offset++) {
         byte hue = 255 - (offset * 16 + hueoffset);
         CRGB color = effects.ColorFromCurrentPalette(hue);
-        uint8_t x = mapcos8(theta, offset, (VPANEL_W - 1) - offset);
-        uint8_t y = mapsin8(theta, offset, (VPANEL_H - 1) - offset);
-        uint16_t xy = XY(x, y);
+        uint8_t x = effects.mapcos8(theta, offset, (VPANEL_W - 1) - offset);
+        uint8_t y = effects.mapsin8(theta, offset, (VPANEL_H - 1) - offset);
+        uint16_t xy = XY16(x, y);
         effects.leds[xy] = color;
 
         if (millis() - last_update_hue_ms > 25) {

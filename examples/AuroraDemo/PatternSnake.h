@@ -96,7 +96,7 @@ private:
 
         void draw(CRGB colors[SNAKE_LENGTH]) {
             for (byte i = 0; i < SNAKE_LENGTH; i++) {
-                effects.leds[XY(pixels[i].x, pixels[i].y)] = colors[i] %= (255 - i * (255 / SNAKE_LENGTH));
+                effects.leds[XY16(pixels[i].x, pixels[i].y)] = colors[i] %= (255 - i * (255 / SNAKE_LENGTH));
             }
         }
     };

@@ -45,7 +45,7 @@ public:
                 effects.leds[XY16(x, y)] = (x ^ y ^ flip) < count ? effects.ColorFromCurrentPalette(((x ^ y) << 2) + generation) : CRGB::Black;
 
                 // The below is more pleasant
-               // effects.leds[XY(x, y)] = effects.ColorFromCurrentPalette(((x ^ y) << 2) + generation) ;
+               // effects.leds[XY16(x, y)] = effects.ColorFromCurrentPalette(((x ^ y) << 2) + generation) ;
             }
         }
         

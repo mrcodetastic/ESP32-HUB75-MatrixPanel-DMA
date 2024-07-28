@@ -175,7 +175,7 @@ private:
 
         Point imagePoint = createPoint(point.x * 2, point.y * 2);
 
-        //effects.drawBackgroundFastLEDPixelCRGB(imagePoint.x, imagePoint.y, CRGB(CRGB::Gray));
+        //effects.setPixel(imagePoint.x, imagePoint.y, CRGB(CRGB::Gray));
 
         shuffleDirections();
 
@@ -191,7 +191,7 @@ private:
 
                 Point newImagePoint = imagePoint.Move(direction);
 
-                effects.drawBackgroundFastLEDPixelCRGB(newImagePoint.x, newImagePoint.y, color);
+                effects.setPixel(newImagePoint.x, newImagePoint.y, color);
 
                 cellCount++;
                 cells[cellCount - 1] = newPoint;
@@ -204,7 +204,7 @@ private:
         if (index > -1) {
             Point finishedPoint = cells[index];
             imagePoint = createPoint(finishedPoint.x * 2, finishedPoint.y * 2);
-            effects.drawBackgroundFastLEDPixelCRGB(imagePoint.x, imagePoint.y, color);
+            effects.setPixel(imagePoint.x, imagePoint.y, color);
 
             removeCell(index);
         }

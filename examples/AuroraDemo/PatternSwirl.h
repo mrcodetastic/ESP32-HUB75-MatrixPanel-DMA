@@ -62,12 +62,12 @@ class PatternSwirl : public Drawable {
 
       // The color of each point shifts over time, each at a different speed.
       uint16_t ms = millis();
-      effects.leds[XY(i, j)] += effects.ColorFromCurrentPalette(ms / 11);
-      //effects.leds[XY(j, i)] += effects.ColorFromCurrentPalette(ms / 13);   // this doesn't work for non-square matrices
-      effects.leds[XY(ni, nj)] += effects.ColorFromCurrentPalette(ms / 17);
-      //effects.leds[XY(nj, ni)] += effects.ColorFromCurrentPalette(ms / 29); // this doesn't work for non-square matrices
-      effects.leds[XY(i, nj)] += effects.ColorFromCurrentPalette(ms / 37);
-      effects.leds[XY(ni, j)] += effects.ColorFromCurrentPalette(ms / 41);
+      effects.leds[XY16(i, j)] += effects.ColorFromCurrentPalette(ms / 11);
+      //effects.leds[XY16(j, i)] += effects.ColorFromCurrentPalette(ms / 13);   // this doesn't work for non-square matrices
+      effects.leds[XY16(ni, nj)] += effects.ColorFromCurrentPalette(ms / 17);
+      //effects.leds[XY16(nj, ni)] += effects.ColorFromCurrentPalette(ms / 29); // this doesn't work for non-square matrices
+      effects.leds[XY16(i, nj)] += effects.ColorFromCurrentPalette(ms / 37);
+      effects.leds[XY16(ni, j)] += effects.ColorFromCurrentPalette(ms / 41);
 
       
       effects.ShowFrame();

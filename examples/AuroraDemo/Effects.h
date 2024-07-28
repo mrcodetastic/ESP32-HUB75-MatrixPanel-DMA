@@ -7,6 +7,8 @@
  * Portions of this code are adapted from "NoiseSmearing" by Stefan Petrick: https://gist.github.com/StefanPetrick/9ee2f677dbff64e3ba7a
  * Copyright (c) 2014 Stefan Petrick
  * http://www.stefan-petrick.de/wordpress_beta
+ * 
+ * Modified by Codetastic 2024
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -29,106 +31,74 @@
 #ifndef Effects_H
 #define Effects_H
 
-/* ---------------------------- GLOBAL CONSTANTS ----------------------------- */
-
-const int  MATRIX_CENTER_X = VPANEL_W / 2;
-const int  MATRIX_CENTER_Y = VPANEL_H / 2;
-// US vs GB, huh? :)
-//const byte MATRIX_CENTRE_X = MATRIX_CENTER_X - 1;
-//const byte MATRIX_CENTRE_Y = MATRIX_CENTER_Y - 1;
-#define MATRIX_CENTRE_X MATRIX_CENTER_X
-#define MATRIX_CENTRE_Y MATRIX_CENTER_Y
 
 
-const uint16_t NUM_LEDS = (VPANEL_W * VPANEL_H) + 1; // one led spare to capture out of bounds
+  /**
+   *  The one for 256+ matrices
+   *  otherwise this:
+   *    for (uint8_t i = 0; i < VPANEL_W; i++) {}
+   *  turns into an infinite loop
+   */
+  uint16_t XY16( uint16_t x, uint16_t y) 
+  {
+      if( x >= VPANEL_W) return 0;
+      if( y >= VPANEL_H) return 0;
 
-// forward declaration
-uint16_t XY16( uint16_t x, uint16_t y);
-
-/* Convert x,y co-ordinate to flat array index. 
- * x and y positions start from 0, so must not be >= 'real' panel width or height 
- * (i.e. 64 pixels or 32 pixels.).  Max value: VPANEL_W-1 etc.
- * Ugh... uint8_t - really??? this weak method can't cope with 256+ pixel matrices :(
- */
-uint16_t XY( uint8_t x, uint8_t y) 
-{
-  return XY16(x, y);
-}
-
-/**
- *  The one for 256+ matrices
- *  otherwise this:
- *    for (uint8_t i = 0; i < VPANEL_W; i++) {}
- *  turns into an infinite loop
- */
-uint16_t XY16( uint16_t x, uint16_t y) 
-{
-    if( x >= VPANEL_W) return 0;
-    if( y >= VPANEL_H) return 0;
-
-    return (y * VPANEL_W) + x + 1; // everything offset by one to compute out of bounds stuff - never displayed by ShowFrame()
-}
+      return (y * VPANEL_W) + x;
+  }
 
 
-uint8_t beatcos8(accum88 beats_per_minute, uint8_t lowest = 0, uint8_t highest = 255, uint32_t timebase = 0, uint8_t phase_offset = 0)
-{
-  uint8_t beat = beat8(beats_per_minute, timebase);
-  uint8_t beatcos = cos8(beat + phase_offset);
-  uint8_t rangewidth = highest - lowest;
-  uint8_t scaledbeat = scale8(beatcos, rangewidth);
-  uint8_t result = lowest + scaledbeat;
-  return result;
-}
+  /* Convert x,y co-ordinate to flat array index. 
+  * x and y positions start from 0, so must not be >= 'real' panel width or height 
+  * (i.e. 64 pixels or 32 pixels.).  Max value: VPANEL_W-1 etc.
+  * Ugh... uint8_t - really??? this weak method can't cope with 256+ pixel matrices :(
+  */
+  uint16_t XY( uint16_t x, uint16_t y) 
+  {
+    return XY16(x, y);
+  }
 
-uint8_t mapsin8(uint8_t theta, uint8_t lowest = 0, uint8_t highest = 255) {
-  uint8_t beatsin = sin8(theta);
-  uint8_t rangewidth = highest - lowest;
-  uint8_t scaledbeat = scale8(beatsin, rangewidth);
-  uint8_t result = lowest + scaledbeat;
-  return result;
-}
 
-uint8_t mapcos8(uint8_t theta, uint8_t lowest = 0, uint8_t highest = 255) {
-  uint8_t beatcos = cos8(theta);
-  uint8_t rangewidth = highest - lowest;
-  uint8_t scaledbeat = scale8(beatcos, rangewidth);
-  uint8_t result = lowest + scaledbeat;
-  return result;
-}
 
-// Array of temperature readings at each simulation cell
-//byte heat[NUM_LEDS];    // none of the currently enabled effects uses this
-
-uint32_t noise_x;
-uint32_t noise_y;
-uint32_t noise_z;
-uint32_t noise_scale_x;
-uint32_t noise_scale_y;
-
-//uint8_t noise[VPANEL_W][VPANEL_H];
-uint8_t **noise = nullptr;  // we will allocate mem later
-uint8_t noisesmoothing;
 
 class Effects {
-public:
-  CRGB *leds;
 
-  Effects(){
+public:
+
+  uint32_t noise_x;
+  uint32_t noise_y;
+  uint32_t noise_z;
+  uint32_t noise_scale_x;
+  uint32_t noise_scale_y;
+
+  uint8_t **noise = nullptr;  // we will allocate mem later
+  uint8_t noisesmoothing;
+
+
+  CRGB *leds;
+  int width;
+  int height;
+  int num_leds = 0;
+
+  Effects(int w, int h) : width(w), height(h) {
+
     // we do dynamic allocation for leds buffer, otherwise esp32 toolchain can't link static arrays of such a big size for 256+ matrices
-    leds = (CRGB *)malloc(NUM_LEDS * sizeof(CRGB));
+    leds = (CRGB *)malloc((width * height + 1) * sizeof(CRGB));
+    num_leds = width * height;
 
     // allocate mem for noise effect
     // (there should be some guards for malloc errors eventually)
-    noise = (uint8_t **)malloc(VPANEL_W * sizeof(uint8_t *));
-    for (int i = 0; i < VPANEL_W; ++i) {
-      noise[i] = (uint8_t *)malloc(VPANEL_H * sizeof(uint8_t));
+    noise = (uint8_t **)malloc(width * sizeof(uint8_t *));
+    for (int i = 0; i < width; ++i) {
+      noise[i] = (uint8_t *)malloc(height * sizeof(uint8_t));
     }
 
     ClearFrame();
   }
+
   ~Effects(){
     free(leds);
-    for (int i = 0; i < VPANEL_W; ++i) {
+    for (int i = 0; i < width; ++i) {
       free(noise[i]);
     }
     free(noise);
@@ -141,91 +111,69 @@ public:
    * As such, any time these effects want to write a pixel color, we first have to update
    * the leds or leds2 array, and THEN write it to the RGB panel. This enables us to 'look up' the array to see what a pixel color was previously, each drawFrame().
    */
-  void drawBackgroundFastLEDPixelCRGB(int16_t x, int16_t y, CRGB color)
+  void setPixel(int16_t x, int16_t y, CRGB color)
   {
-	  leds[XY(x, y)] = color;
-	  //matrix.drawPixelRGB888(x, y, color.r, color.g, color.b); 
+	  leds[XY16(x, y)] = color;
   }
 
   // write one pixel with the specified color from the current palette to coordinates
-  void Pixel(int x, int y, uint8_t colorIndex) {
-    leds[XY(x, y)] = ColorFromCurrentPalette(colorIndex);
-    //matrix.drawPixelRGB888(x, y, temp.r, temp.g, temp.b); // now draw it?
+  void setPixelFromPaletteIndex(int x, int y, uint8_t colorIndex) {
+    leds[XY16(x, y)] = ColorFromCurrentPalette(colorIndex);
   }
   
- void PrepareFrame() {
-   // leds = (CRGB*) backgroundLayer.backBuffer();
-  }
+ void PrepareFrame() { }
 
-  void ShowFrame() {
-    //#if (FASTLED_VERSION >= 3001000)
-    //      nblendPaletteTowardPalette(currentPalette, targetPalette, 24);
-    //#else
+  void ShowFrame() { // send to display
     currentPalette = targetPalette;
-    //#endif
-
-  //  backgroundLayer.swapBuffers();
-   // leds = (CRGB*) backgroundLayer.backBuffer();
-   // LEDS.countFPS();
-
-	for (int y=0; y<VPANEL_H; ++y){
-  	    for (int x=0; x<VPANEL_W; ++x){
-		//Serial.printf("Flushing x, y coord %d, %d\n", x, y);
-    		uint16_t _pixel = XY16(x,y);
-    		virtualDisp->drawPixelRGB888( x, y, leds[_pixel].r, leds[_pixel].g, leds[_pixel].b);
-	    } // end loop to copy fast led to the dma matrix
-	}
+  
+    for (int y=0; y<height; ++y){
+          for (int x=0; x<width; ++x){
+          uint16_t _pixel = XY16(x,y);
+          virtualDisp->drawPixelRGB888( x, y, leds[_pixel].r, leds[_pixel].g, leds[_pixel].b);
+        } // end loop to copy fast led to the dma matrix
+    }
   }
 
   // scale the brightness of the screenbuffer down
-  void DimAll(byte value)
-  {
-    for (int i = 0; i < NUM_LEDS; i++)
-    {
-      leds[i].nscale8(value);
-    }
+  void DimAll(byte value)  {
+      for (int i = 0; i < num_leds; i++)
+        leds[i].nscale8(value);
   }  
 
-  void ClearFrame()
+  void ClearFrame() {
+      for (int i = 0; i < num_leds; i++)
+        leds[i]= CRGB(0,0,0);
+
+  }
+  
+
+  uint8_t beatcos8(accum88 beats_per_minute, uint8_t lowest = 0, uint8_t highest = 255, uint32_t timebase = 0, uint8_t phase_offset = 0)
   {
-      memset(leds, 0x00, NUM_LEDS * sizeof(CRGB)); // flush
+    uint8_t beat = beat8(beats_per_minute, timebase);
+    uint8_t beatcos = cos8(beat + phase_offset);
+    uint8_t rangewidth = highest - lowest;
+    uint8_t scaledbeat = scale8(beatcos, rangewidth);
+    uint8_t result = lowest + scaledbeat;
+    return result;
   }
-  
+
+  uint8_t mapsin8(uint8_t theta, uint8_t lowest = 0, uint8_t highest = 255) {
+    uint8_t beatsin = sin8(theta);
+    uint8_t rangewidth = highest - lowest;
+    uint8_t scaledbeat = scale8(beatsin, rangewidth);
+    uint8_t result = lowest + scaledbeat;
+    return result;
+  }
+
+  uint8_t mapcos8(uint8_t theta, uint8_t lowest = 0, uint8_t highest = 255) {
+    uint8_t beatcos = cos8(theta);
+    uint8_t rangewidth = highest - lowest;
+    uint8_t scaledbeat = scale8(beatcos, rangewidth);
+    uint8_t result = lowest + scaledbeat;
+    return result;
+  }
+
 	 
-  
-/*
-  void CircleStream(uint8_t value) {
-    DimAll(value); ShowFrame();
-
-    for (uint8_t offset = 0; offset < MATRIX_CENTER_X; offset++) {
-      boolean hasprev = false;
-      uint16_t prevxy = 0;
-
-      for (uint8_t theta = 0; theta < 255; theta++) {
-        uint8_t x = mapcos8(theta, offset, (VPANEL_W - 1) - offset);
-        uint8_t y = mapsin8(theta, offset, (VPANEL_H - 1) - offset);
-
-        uint16_t xy = XY(x, y);
-
-        if (hasprev) {
-          leds[prevxy] += leds[xy];
-        }
-
-        prevxy = xy;
-        hasprev = true;
-      }
-    }
-
-    for (uint8_t x = 0; x < VPANEL_W; x++) {
-      for (uint8_t y = 0; y < VPANEL_H; y++) {
-        uint16_t xy = XY(x, y);
-        leds[xy] = leds2[xy];
-        leds[xy].nscale8(value);
-        leds2[xy].nscale8(value);
-      }
-    }
-  }
-*/
 
   // palettes
   static const int paletteCount = 10;
@@ -394,7 +342,7 @@ public:
     if (osci[4] % 2 == 0)
       osci[5] = osci[5] + 1; // .5
     for (int i = 0; i < 4; i++) {
-      p[i] = map8(sin8(osci[i]), 0, VPANEL_W - 1); //why? to keep the result in the range of 0-VPANEL_W (matrix size)
+      p[i] = map8(sin8(osci[i]), 0, width - 1); //why? to keep the result in the range of 0-VPANEL_W (matrix size)
     }
   }
 
@@ -404,11 +352,11 @@ public:
 
   // rotates the first 16x16 quadrant 3 times onto a 32x32 (+90 degrees rotation for each one)
   void Caleidoscope1() {
-    for (int x = 0; x < MATRIX_CENTER_X; x++) {
-      for (int y = 0; y < MATRIX_CENTER_Y; y++) {
-        leds[XY16(VPANEL_W - 1 - x, y)] = leds[XY16(x, y)];
-        leds[XY16(VPANEL_W - 1 - x, VPANEL_H - 1 - y)] = leds[XY16(x, y)];
-        leds[XY16(x, VPANEL_H - 1 - y)] = leds[XY16(x, y)];
+    for (int x = 0; x < width / 2; x++) {
+      for (int y = 0; y < height / 2; y++) {
+        leds[XY16(width - 1 - x, y)] = leds[XY16(x, y)];
+        leds[XY16(width - 1 - x, height - 1 - y)] = leds[XY16(x, y)];
+        leds[XY16(x, height - 1 - y)] = leds[XY16(x, y)];
       }
     }
   }
@@ -416,19 +364,19 @@ public:
 
   // mirror the first 16x16 quadrant 3 times onto a 32x32
   void Caleidoscope2() {
-    for (int x = 0; x < MATRIX_CENTER_X; x++) {
-      for (int y = 0; y < MATRIX_CENTER_Y; y++) {
-        leds[XY16(VPANEL_W - 1 - x, y)] = leds[XY16(y, x)];
-        leds[XY16(x, VPANEL_H - 1 - y)] = leds[XY16(y, x)];
-        leds[XY16(VPANEL_W - 1 - x, VPANEL_H - 1 - y)] = leds[XY16(x, y)];
+    for (int x = 0; x < width / 2; x++) {
+      for (int y = 0; y < height / 2; y++) {
+        leds[XY16(width - 1 - x, y)] = leds[XY16(y, x)];
+        leds[XY16(x, height - 1 - y)] = leds[XY16(y, x)];
+        leds[XY16(width - 1 - x, height - 1 - y)] = leds[XY16(x, y)];
       }
     }
   }
 
   // copy one diagonal triangle into the other one within a 16x16
   void Caleidoscope3() {
-    for (int x = 0; x <= MATRIX_CENTRE_X && x < VPANEL_H; x++) {
-      for (int y = 0; y <= x && y<VPANEL_H; y++) {
+    for (int x = 0; x <= width / 2 - 1 && x < height; x++) {
+      for (int y = 0; y <= x && y<height; y++) {
         leds[XY16(x, y)] = leds[XY16(y, x)];
       }
     }
@@ -436,48 +384,48 @@ public:
 
   // copy one diagonal triangle into the other one within a 16x16 (90 degrees rotated compared to Caleidoscope3)
   void Caleidoscope4() {
-    for (int x = 0; x <= MATRIX_CENTRE_X; x++) {
-      for (int y = 0; y <= MATRIX_CENTRE_Y - x; y++) {
-        leds[XY16(MATRIX_CENTRE_Y - y, MATRIX_CENTRE_X - x)] = leds[XY16(x, y)];
+    for (int x = 0; x <= width / 2 - 1; x++) {
+      for (int y = 0; y <= height / 2 - 1 - x; y++) {
+        leds[XY16(height / 2 - 1 - y, width / 2 - 1 - x)] = leds[XY16(x, y)];
       }
     }
   }
 
   // copy one diagonal triangle into the other one within a 8x8
   void Caleidoscope5() {
-    for (int x = 0; x < VPANEL_W / 4; x++) {
-      for (int y = 0; y <= x && y<=VPANEL_H; y++) {
+    for (int x = 0; x < width / 4; x++) {
+      for (int y = 0; y <= x && y<=height; y++) {
         leds[XY16(x, y)] = leds[XY16(y, x)];
       }
     }
 
-    for (int x = VPANEL_W / 4; x < VPANEL_W / 2; x++) {
-      for (int y = VPANEL_H / 4; y >= 0; y--) {
+    for (int x = width / 4; x < width / 2; x++) {
+      for (int y = height / 4; y >= 0; y--) {
         leds[XY16(x, y)] = leds[XY16(y, x)];
       }
     }
   }
 
   void Caleidoscope6() {
-    for (int x = 1; x < MATRIX_CENTER_X; x++) {
+    for (int x = 1; x < width / 2; x++) {
       leds[XY16(7 - x, 7)] = leds[XY16(x, 0)];
     } //a
-    for (int x = 2; x < MATRIX_CENTER_X; x++) {
+    for (int x = 2; x < width / 2; x++) {
       leds[XY16(7 - x, 6)] = leds[XY16(x, 1)];
     } //b
-    for (int x = 3; x < MATRIX_CENTER_X; x++) {
+    for (int x = 3; x < width / 2; x++) {
       leds[XY16(7 - x, 5)] = leds[XY16(x, 2)];
     } //c
-    for (int x = 4; x < MATRIX_CENTER_X; x++) {
+    for (int x = 4; x < width / 2; x++) {
       leds[XY16(7 - x, 4)] = leds[XY16(x, 3)];
     } //d
-    for (int x = 5; x < MATRIX_CENTER_X; x++) {
+    for (int x = 5; x < width / 2; x++) {
       leds[XY16(7 - x, 3)] = leds[XY16(x, 4)];
     } //e
-    for (int x = 6; x < MATRIX_CENTER_X; x++) {
+    for (int x = 6; x < width / 2; x++) {
       leds[XY16(7 - x, 2)] = leds[XY16(x, 5)];
     } //f
-    for (int x = 7; x < MATRIX_CENTER_X; x++) {
+    for (int x = 7; x < width / 2; x++) {
       leds[XY16(7 - x, 1)] = leds[XY16(x, 6)];
     } //g
   }
@@ -566,7 +514,7 @@ public:
   }
 
   // give it a linear tail to the right
-  void StreamRight(byte scale, int fromX = 0, int toX = VPANEL_W, int fromY = 0, int toY = VPANEL_H)
+  void StreamRight(byte scale, int fromX = 0, int toX = 0, int fromY = 0, int toY = 0)
   {
     for (int x = fromX + 1; x < toX; x++) {
       for (int y = fromY; y < toY; y++) {
@@ -579,7 +527,7 @@ public:
   }
 
   // give it a linear tail to the left
-  void StreamLeft(byte scale, int fromX = VPANEL_W, int toX = 0, int fromY = 0, int toY = VPANEL_H)
+  void StreamLeft(byte scale, int fromX = 0, int toX = 0, int fromY = 0, int toY = 0)
   {
     for (int x = toX; x < fromX; x++) {
       for (int y = fromY; y < toY; y++) {
@@ -594,66 +542,66 @@ public:
   // give it a linear tail downwards
   void StreamDown(byte scale)
   {
-    for (int x = 0; x < VPANEL_W; x++) {
-      for (int y = 1; y < VPANEL_H; y++) {
+    for (int x = 0; x < width; x++) {
+      for (int y = 1; y < height; y++) {
         leds[XY16(x, y)] += leds[XY16(x, y - 1)];
         leds[XY16(x, y)].nscale8(scale);
       }
     }
-    for (int x = 0; x < VPANEL_W; x++)
+    for (int x = 0; x < width; x++)
       leds[XY16(x, 0)].nscale8(scale);
   }
 
   // give it a linear tail upwards
   void StreamUp(byte scale)
   {
-    for (int x = 0; x < VPANEL_W; x++) {
-      for (int y = VPANEL_H - 2; y >= 0; y--) {
+    for (int x = 0; x < width; x++) {
+      for (int y = height - 2; y >= 0; y--) {
         leds[XY16(x, y)] += leds[XY16(x, y + 1)];
         leds[XY16(x, y)].nscale8(scale);
       }
     }
-    for (int x = 0; x < VPANEL_W; x++)
-      leds[XY16(x, VPANEL_H - 1)].nscale8(scale);
+    for (int x = 0; x < width; x++)
+      leds[XY16(x, height - 1)].nscale8(scale);
   }
 
   // give it a linear tail up and to the left
   void StreamUpAndLeft(byte scale)
   {
-    for (int x = 0; x < VPANEL_W - 1; x++) {
-      for (int y = VPANEL_H - 2; y >= 0; y--) {
+    for (int x = 0; x < width - 1; x++) {
+      for (int y = height - 2; y >= 0; y--) {
         leds[XY16(x, y)] += leds[XY16(x + 1, y + 1)];
         leds[XY16(x, y)].nscale8(scale);
       }
     }
-    for (int x = 0; x < VPANEL_W; x++)
-      leds[XY16(x, VPANEL_H - 1)].nscale8(scale);
-    for (int y = 0; y < VPANEL_H; y++)
-      leds[XY16(VPANEL_W - 1, y)].nscale8(scale);
+    for (int x = 0; x < width; x++)
+      leds[XY16(x, height - 1)].nscale8(scale);
+    for (int y = 0; y < height; y++)
+      leds[XY16(width - 1, y)].nscale8(scale);
   }
 
   // give it a linear tail up and to the right
   void StreamUpAndRight(byte scale)
   {
-    for (int x = 0; x < VPANEL_W - 1; x++) {
-      for (int y = VPANEL_H - 2; y >= 0; y--) {
+    for (int x = 0; x < width - 1; x++) {
+      for (int y = height - 2; y >= 0; y--) {
         leds[XY16(x + 1, y)] += leds[XY16(x, y + 1)];
         leds[XY16(x, y)].nscale8(scale);
       }
     }
     // fade the bottom row
-    for (int x = 0; x < VPANEL_W; x++)
-      leds[XY16(x, VPANEL_H - 1)].nscale8(scale);
+    for (int x = 0; x < width; x++)
+      leds[XY16(x, height - 1)].nscale8(scale);
 
     // fade the right column
-    for (int y = 0; y < VPANEL_H; y++)
-      leds[XY16(VPANEL_W - 1, y)].nscale8(scale);
+    for (int y = 0; y < height; y++)
+      leds[XY16(width - 1, y)].nscale8(scale);
   }
 
   // just move everything one line down
   void MoveDown() {
-    for (int y = VPANEL_H - 1; y > 0; y--) {
-      for (int x = 0; x < VPANEL_W; x++) {
+    for (int y = height - 1; y > 0; y--) {
+      for (int x = 0; x < width; x++) {
         leds[XY16(x, y)] = leds[XY16(x, y - 1)];
       }
     }
@@ -662,7 +610,7 @@ public:
   // just move everything one line down
   void VerticalMoveFrom(int start, int end) {
     for (int y = end; y > start; y--) {
-      for (int x = 0; x < VPANEL_W; x++) {
+      for (int x = 0; x < width; x++) {
         leds[XY16(x, y)] = leds[XY16(x, y - 1)];
       }
     }
@@ -680,18 +628,18 @@ public:
 
   // rotate + copy triangle (MATRIX_CENTER_X*MATRIX_CENTER_X)
   void RotateTriangle() {
-    for (int x = 1; x < MATRIX_CENTER_X; x++) {
+    for (int x = 1; x < width / 2; x++) {
       for (int y = 0; y < x; y++) {
-        leds[XY16(x, 7 - y)] = leds[XY16(7 - x, y)];
+        leds[XY16(x, height / 2 - 1 - y)] = leds[XY16(width / 2 - 1 - x, y)];
       }
     }
   }
 
   // mirror + copy triangle (MATRIX_CENTER_X*MATRIX_CENTER_X)
   void MirrorTriangle() {
-    for (int x = 1; x < MATRIX_CENTER_X; x++) {
+    for (int x = 1; x < width / 2; x++) {
       for (int y = 0; y < x; y++) {
-        leds[XY16(7 - y, x)] = leds[XY16(7 - x, y)];
+        leds[XY16(height / 2 - 1 - y, x)] = leds[XY16(width / 2 - 1 - x, y)];
       }
     }
   }
@@ -699,9 +647,9 @@ public:
   // draw static rainbow triangle pattern (MATRIX_CENTER_XxWIDTH / 2)
   // (just for debugging)
   void RainbowTriangle() {
-    for (int i = 0; i < MATRIX_CENTER_X; i++) {
+    for (int i = 0; i < width / 2; i++) {
       for (int j = 0; j <= i; j++) {
-        Pixel(7 - i, j, i * j * 4);
+        setPixelFromPaletteIndex(height / 2 - 1 - i, j, i * j * 4);
       }
     }
   }
@@ -734,8 +682,8 @@ public:
   // write one pixel with the specified color from the current palette to coordinates
   /*
   void Pixel(int x, int y, uint8_t colorIndex) {
-    leds[XY(x, y)] = ColorFromCurrentPalette(colorIndex);
-    matrix.drawBackgroundPixelRGB888(x,y, leds[XY(x, y)]); // now draw it?
+    leds[XY16(x, y)] = ColorFromCurrentPalette(colorIndex);
+    matrix.drawBackgroundPixelRGB888(x,y, leds[XY16(x, y)]); // now draw it?
   }
   */
 
@@ -761,11 +709,11 @@ public:
   }
 
   void FillNoise() {
-    for (uint16_t i = 0; i < VPANEL_W; i++) {
-      uint32_t ioffset = noise_scale_x * (i - MATRIX_CENTRE_Y);
+    for (uint16_t i = 0; i < width; i++) {
+      uint32_t ioffset = noise_scale_x * (i - width / 2);
 
-      for (uint16_t j = 0; j < VPANEL_H; j++) {
-        uint32_t joffset = noise_scale_y * (j - MATRIX_CENTRE_Y);
+      for (uint16_t j = 0; j < height; j++) {
+        uint32_t joffset = noise_scale_y * (j - height / 2);
 
         byte data = inoise16(noise_x + ioffset, noise_y + joffset, noise_z) >> 8;
 
@@ -784,7 +732,7 @@ public:
 
     CRGB tmp = 0;
 
-    for (int y = 0; y < VPANEL_H; y++) 
+    for (int y = 0; y < height; y++) 
     {
  
       // Shift Left: https://codedost.com/c/arraypointers-in-c/c-program-shift-elements-array-left-direction/
@@ -794,24 +742,24 @@ public:
       for (int m = 0; m < delta; m++)
       {
         // Do this delta time for each row... computationally expensive potentially.
-        for(int x = 0; x < VPANEL_W; x++)
+        for(int x = 0; x < width; x++)
         {
             leds[XY16(x, y)] = leds [XY16(x+1, y)];
         }
 
-        leds[XY16(VPANEL_W-1, y)] = tmp;
+        leds[XY16(width-1, y)] = tmp;
       }
    
 
       /*
       // Shift
       for (int x = 0; x < VPANEL_W - delta; x++) {
-        leds2[XY(x, y)] = leds[XY(x + delta, y)];
+        leds2[XY16(x, y)] = leds[XY16(x + delta, y)];
       }
 
       // Wrap around
       for (int x = VPANEL_W - delta; x < VPANEL_W; x++) {
-        leds2[XY(x, y)] = leds[XY(x + delta - VPANEL_W, y)];
+        leds2[XY16(x, y)] = leds[XY16(x + delta - VPANEL_W, y)];
       }
       */
     } // end row loop
@@ -820,7 +768,7 @@ public:
     // write back to leds
     for (uint8_t y = 0; y < VPANEL_H; y++) {
       for (uint8_t x = 0; x < VPANEL_W; x++) {
-        leds[XY(x, y)] = leds2[XY(x, y)];
+        leds[XY16(x, y)] = leds2[XY16(x, y)];
       }
     }
     */
@@ -830,18 +778,18 @@ public:
   {
     
     CRGB tmp = 0; 
-    for (int x = 0; x < VPANEL_W; x++) 
+    for (int x = 0; x < width; x++) 
     {
       tmp = leds[XY16(x, 0)];      
       for (int m = 0; m < delta; m++) // moves
       {
         // Do this delta time for each row... computationally expensive potentially.
-        for(int y = 0; y < VPANEL_H; y++)
+        for(int y = 0; y < height; y++)
         {
             leds[XY16(x, y)] = leds [XY16(x, y+1)];
         }
 
-        leds[XY16(x, VPANEL_H-1)] = tmp;
+        leds[XY16(x, height-1)] = tmp;
       }
     } // end column loop
   } /// MoveY

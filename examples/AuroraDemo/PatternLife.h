@@ -85,7 +85,7 @@ public:
         // Display current generation
         for (int i = 0; i < VPANEL_W; i++) {
             for (int j = 0; j < VPANEL_H; j++) {
-                effects.leds[XY(i, j)] = effects.ColorFromCurrentPalette(world[i][j].hue * 4, world[i][j].brightness);
+                effects.leds[XY16(i, j)] = effects.ColorFromCurrentPalette(world[i][j].hue * 4, world[i][j].brightness);
             }
         }
 

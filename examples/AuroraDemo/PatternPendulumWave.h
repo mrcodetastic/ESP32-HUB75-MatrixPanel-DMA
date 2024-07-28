@@ -56,7 +56,7 @@ class PatternPendulumWave : public Drawable {
 
         uint8_t y = beatsin16(WAVE_BPM, 0, amp, x*beatsin16(SKEW_BPM, WAVE_TIMEMINSKEW, WAVE_TIMEMAXSKEW)) + offset;
 
-        effects.drawBackgroundFastLEDPixelCRGB(x, y, effects.ColorFromCurrentPalette(x * 7));
+        effects.setPixel(x, y, effects.ColorFromCurrentPalette(x * 7));
       }
       effects.ShowFrame();
       return 20;

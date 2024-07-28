@@ -61,7 +61,7 @@ VirtualMatrixPanel  *virtualDisp = nullptr;
 
 // Aurora related
 #include "Effects.h"
-Effects effects;
+Effects effects(VPANEL_W, VPANEL_H);
 
 #include "Drawable.h"
 #include "Playlist.h"
@@ -73,7 +73,7 @@ Patterns patterns;
 /* -------------------------- Some variables -------------------------- */
 unsigned long ms_current  = 0;
 unsigned long ms_previous = 0;
-unsigned long ms_animation_max_duration = 20000; // 10 seconds
+unsigned long ms_animation_max_duration = 10000; // 10 seconds
 unsigned long next_frame = 0;
 
 void listPatterns();

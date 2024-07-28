@@ -39,6 +39,9 @@ class PatternElectricMandala : public Drawable {
     int16_t dsx;
     int16_t dsy;
 
+
+    unsigned int last_parameter_change_ms = 0;
+
   public:
     PatternElectricMandala() {
       name = (char *)"ElectricMandala";
@@ -46,18 +49,18 @@ class PatternElectricMandala : public Drawable {
 
     void start() {
       // set to reasonable values to avoid a black out
-      noisesmoothing = 200;
+      effects.noisesmoothing = 200;
 
       // just any free input pin
       //random16_add_entropy(analogRead(18));
 
       // fill coordinates with random values
       // set zoom levels
-      noise_x = random16();
-      noise_y = random16();
-      noise_z = random16();
-      noise_scale_x = 6000;
-      noise_scale_y = 6000;
+      effects.noise_x = random16();
+      effects.noise_y = random16();
+      effects.noise_z = random16();
+      effects.noise_scale_x = 6000;
+      effects.noise_scale_y = 6000;
 
       // for the random movement
       dx = random8();
@@ -70,19 +73,20 @@ class PatternElectricMandala : public Drawable {
     unsigned int drawFrame() {
 #if FASTLED_VERSION >= 3001000
       // a new parameter set every 15 seconds
-      EVERY_N_SECONDS(15) {
+      if(millis() - last_parameter_change_ms > 15000) {
+        last_parameter_change_ms = millis();
         //SetupRandomPalette3();
         dy = random16(500) - 250; // random16(2000) - 1000 is pretty fast but works fine, too
         dx = random16(500) - 250;
         dz = random16(500) - 250;
-        noise_scale_x = random16(10000) + 2000;
-        noise_scale_y = random16(10000) + 2000;
+        effects.noise_scale_x = random16(10000) + 2000;
+        effects.noise_scale_y = random16(10000) + 2000;
       }
 #endif
 
-      noise_y += dy;
-      noise_x += dx;
-      noise_z += dz;
+      effects.noise_y += dy;
+      effects.noise_x += dx;
+      effects.noise_z += dz;
 
       effects.FillNoise();
       ShowNoiseLayer(0, 1, 0);
@@ -100,7 +104,7 @@ class PatternElectricMandala : public Drawable {
       for (uint16_t i = 0; i < VPANEL_W; i++) {
         for (uint16_t j = 0; j < VPANEL_H; j++) {
 
-          uint8_t color = noise[i][j];
+          uint8_t color = effects.noise[i][j];
 
           uint8_t bri = color;
 

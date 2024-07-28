@@ -51,7 +51,7 @@ public:
         byte hue = sin8(effects.osci[5]);
 
         // draw a pixel at x,y using a color from the current palette
-        effects.Pixel(x, y, hue);
+        effects.setPixelFromPaletteIndex(x, y, hue);
 
         effects.ShowFrame();
         return 30;

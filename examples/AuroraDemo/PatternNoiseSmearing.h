@@ -54,8 +54,8 @@ public:
     byte x2 = 8 + sin8(counter * 2) / 16;
     byte y2 = 8 + cos8((counter * 2) / 3) / 16;
 
-    effects.leds[XY(x1, x2)] = effects.ColorFromCurrentPalette(patternNoiseSmearingHue);
-    effects.leds[XY(x2, y2)] = effects.ColorFromCurrentPalette(patternNoiseSmearingHue + 128);
+    effects.leds[XY16(x1, x2)] = effects.ColorFromCurrentPalette(patternNoiseSmearingHue);
+    effects.leds[XY16(x2, y2)] = effects.ColorFromCurrentPalette(patternNoiseSmearingHue + 128);
 
     // Noise
     noise_x += 1000;
@@ -87,13 +87,13 @@ public:
 
     byte xx = 4 + sin8(millis() / 9) / 10;
     byte yy = 4 + cos8(millis() / 10) / 10;
-    effects.leds[XY(xx, yy)] += effects.ColorFromCurrentPalette(patternNoiseSmearingHue);
+    effects.leds[XY16(xx, yy)] += effects.ColorFromCurrentPalette(patternNoiseSmearingHue);
 
     xx = 8 + sin8(millis() / 10) / 16;
     yy = 8 + cos8(millis() / 7) / 16;
-    effects.leds[XY(xx, yy)] += effects.ColorFromCurrentPalette(patternNoiseSmearingHue + 80);
+    effects.leds[XY16(xx, yy)] += effects.ColorFromCurrentPalette(patternNoiseSmearingHue + 80);
 
-    effects.leds[XY(15, 15)] += effects.ColorFromCurrentPalette(patternNoiseSmearingHue + 160);
+    effects.leds[XY16(15, 15)] += effects.ColorFromCurrentPalette(patternNoiseSmearingHue + 160);
 
     noise_x += 1000;
     noise_y += 1000;
@@ -125,7 +125,7 @@ public:
     effects.DimAll(235); effects.ShowFrame();
 
     for (uint8_t i = 3; i < 32; i = i + 4) {
-      effects.leds[XY(i, 15)] += effects.ColorFromCurrentPalette(i * 8);
+      effects.leds[XY16(i, 15)] += effects.ColorFromCurrentPalette(i * 8);
     }
 
     // Noise
@@ -159,7 +159,7 @@ public:
     //CLS();
     effects.DimAll(235); effects.ShowFrame();
 
-    effects.leds[XY(15, 15)] += effects.ColorFromCurrentPalette(patternNoiseSmearingHue);
+    effects.leds[XY16(15, 15)] += effects.ColorFromCurrentPalette(patternNoiseSmearingHue);
 
 
     // Noise
@@ -194,7 +194,7 @@ public:
 
 
     for (uint8_t i = 3; i < 32; i = i + 4) {
-      effects.leds[XY(i, 31)] += effects.ColorFromCurrentPalette(i * 8);
+      effects.leds[XY16(i, 31)] += effects.ColorFromCurrentPalette(i * 8);
     }
 
     // Noise
@@ -228,7 +228,7 @@ public:
     for (uint8_t y = 1; y < 32; y = y + 6) {
       for (uint8_t x = 1; x < 32; x = x + 6) {
 
-        effects.leds[XY(x, y)] += effects.ColorFromCurrentPalette((x * y) / 4);
+        effects.leds[XY16(x, y)] += effects.ColorFromCurrentPalette((x * y) / 4);
       }
     }
 
@@ -263,7 +263,7 @@ public:
     // draw a rainbow color palette
     for (uint8_t y = 0; y < VPANEL_H; y++) {
       for (uint8_t x = 0; x < VPANEL_W; x++) {
-        effects.leds[XY(x, y)] += effects.ColorFromCurrentPalette(x * 8, y * 8 + 7);
+        effects.leds[XY16(x, y)] += effects.ColorFromCurrentPalette(x * 8, y * 8 + 7);
       }
     }
  
@@ -310,7 +310,7 @@ public:
     for (uint8_t c = 0; c < 6; c++) {
       for (uint8_t j = 0; j < 5; j++) {
         for (uint8_t x = 0; x < VPANEL_W; x++) {
-          effects.leds[XY(x, y)] += rainbow[c];
+          effects.leds[XY16(x, y)] += rainbow[c];
         }
 
         y++;
