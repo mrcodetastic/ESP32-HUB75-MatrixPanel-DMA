@@ -28,7 +28,7 @@
 
 class PatternSnake : public Drawable {
 private:
-    static const byte SNAKE_LENGTH = 16;
+    static const byte SNAKE_LENGTH = 8;
 
     CRGB colors[SNAKE_LENGTH];
     uint8_t initialHue;

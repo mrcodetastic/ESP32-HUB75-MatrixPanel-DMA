@@ -20,54 +20,46 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef PatternAttract_H
+#ifndef PatternInfinity_H
 
-class PatternAttract : public Drawable {
-private:
-    const int count = 8;
-    Attractor attractor;
-
+class PatternInfinity : public Drawable {
 public:
-    PatternAttract() {
-        name = (char *)"Attract";
+    PatternInfinity() {
+        name = (char *)"Infinity";
     }
 
     void start() {
-        int direction = random(0, 2);
-        if (direction == 0)
-            direction = -1;
-
-        for (int i = 0; i < count; i++) {
-            Boid boid = Boid(15, 31 - i);
-            boid.mass = 1; // random(0.1, 2);
-            boid.velocity.x = ((float) random(40, 50)) / 100.0;
-            boid.velocity.x *= direction;
-            boid.velocity.y = 0;
-            boid.colorIndex = i * 32;
-            boids[i] = boid;
-            //dim = random(170, 250);
-        }
+        effects.ClearFrame();
     }
 
     unsigned int drawFrame() {
-        // dim all pixels on the display
-        uint8_t dim = beatsin8(2, 170, 250);
-        effects.DimAll(dim);
+        // dim all pixels on the display slightly 
+        // to 250/255 (98%) of their current brightness
+      //blur2d(effects.leds, VPANEL_W > 255 ? 255 : VPANEL_W, VPANEL_H > 255 ? 255 : VPANEL_H, 250);
+        //        effects.DimAll(250); effects.ShowFrame();
 
-        for (int i = 0; i < count; i++) {
-            Boid boid = boids[i];
 
-            PVector force = attractor.attract(boid);
-            boid.applyForce(force);
+        // the EffectsLayer class has some sample oscillators
+        // that move from 0 to 255 at different speeds
+        effects.MoveOscillators();
 
-            boid.update();
-            effects.setPixel(boid.location.x, boid.location.y, effects.ColorFromCurrentPalette(boid.colorIndex));
+        // the horizontal position of the head of the infinity sign
+        // oscillates from 0 to the maximum horizontal and back
+        int x = (VPANEL_W - 4) - effects.p[1];
 
-            boids[i] = boid;
-        }
+        // the vertical position of the head oscillates
+        // from 8 to 23 and back (hard-coded for a 32x32 matrix)
+        int y = map8(sin8(effects.osci[3]), 8, VPANEL_H - 8);
+
+        // the hue oscillates from 0 to 255, overflowing back to 0
+        byte hue = sin8(effects.osci[5]);
+
+        // draw a pixel at x,y using a color from the current palette
+        effects.drawTriangle(x,y,x+1,y+1,x+2,y+2,effects.ColorFromCurrentPalette(hue));
+        ////effects.setPixelFromPaletteIndex(x, y, hue);
 
         effects.ShowFrame();
-        return 0;
+        return 30;
     }
 };
 

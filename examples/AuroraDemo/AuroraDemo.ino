@@ -21,6 +21,10 @@
     - "GFX_Lite" to provide a simple graphics library for drawing on the virtual display.
        GFX_Lite is a fork of AdaFruitGFX and FastLED library combined together, with a focus on simplicity and ease of use.
 
+ Instructions:
+  * Use the serial input to advance through the patterns, or to toggle auto advance. Sending 'n' will advance to the next
+    pattern, 'p' will go to the previous pattern. Sending 'a' will toggle auto advance on and off.
+
 */
 
 #define USE_GFX_LITE 1
@@ -59,21 +63,21 @@ MatrixPanel_I2S_DMA *matrix = nullptr;
 // placeholder for the virtual display object
 VirtualMatrixPanel  *virtualDisp = nullptr;
 
-// Aurora related
-#include "Effects.h"
-Effects effects(VPANEL_W, VPANEL_H);
 
-#include "Drawable.h"
-#include "Playlist.h"
-#include "Geometry.h"
+#include "EffectsLayer.hpp" // FastLED CRGB Pixel Buffer for which the patterns are drawn
+EffectsLayer effects(VPANEL_W, VPANEL_H);
 
-#include "Patterns.h"
+#include "Drawable.hpp"
+#include "Geometry.hpp"
+
+#include "Patterns.hpp"
 Patterns patterns;
 
 /* -------------------------- Some variables -------------------------- */
 unsigned long ms_current  = 0;
 unsigned long ms_previous = 0;
-unsigned long ms_animation_max_duration = 10000; // 10 seconds
+unsigned long ms_previous_palette = 0;
+unsigned long ms_animation_max_duration = 30000; // 10 seconds
 unsigned long next_frame = 0;
 
 void listPatterns();
@@ -121,17 +125,13 @@ void setup()
   Serial.println("VIRTUAL PANEL HEIGHT " + String(VPANEL_H));
 #endif
 
-   // setup the effects generator
-  effects.Setup();
 
-  delay(500);
-  Serial.println("Effects being loaded: ");
   listPatterns();
 
-  Serial.println("LastPattern index: " + String(lastPattern));
-  
-  patterns.setPattern(lastPattern); //   // simple noise
+  patterns.setPattern(0);
   patterns.start();     
+
+  ms_previous = millis();
 
   Serial.print("Starting with pattern: ");
   Serial.println(patterns.getCurrentPatternName());
@@ -139,32 +139,57 @@ void setup()
 }
 
 
-void patternAdvance(){
-    // Go to next pattern in the list (se Patterns.h)
-    patterns.stop();
+bool   autoAdvance = true;
+char   incomingByte    = 0;
+void handleSerialRead()
+{
+    if (Serial.available() > 0) {
 
-    patterns.moveRandom(1);
-    //patterns.move(1);
-    patterns.start();  
+        // read the incoming byte:
+        incomingByte = Serial.read();
 
-    // Select a random palette as well
-    effects.RandomPalette();
-    Serial.print("Changing pattern to:  ");
-    Serial.println(patterns.getCurrentPatternName());
-    
-}
+        if (incomingByte == 'n') {
+            Serial.println("Going to next pattern");
+            patterns.move(1);
+        }
+
+        if (incomingByte == 'p') {
+            Serial.println("Going to previous pattern");
+            patterns.move(-1);
+        }
+
+        if (incomingByte == 'a') {
+            autoAdvance = !autoAdvance;
+
+            if (autoAdvance)
+              Serial.println("Auto pattern advance is ON");
+            else
+              Serial.println("Auto pattern advance is OFF");
+        } 
+
+        ms_previous = millis();
+    }
+} // end handleSerialRead
+
 
 void loop()
 {
-  
-    ms_current = millis();
-      
-    if ( (ms_current - ms_previous) > ms_animation_max_duration ) 
-    {
-       patternAdvance();
 
-       // just auto-change the palette
-       effects.RandomPalette();
+  handleSerialRead();
+
+    ms_current = millis();
+
+    if (ms_current - ms_previous_palette > 10000) // change colour palette evert 10 seconds
+    {
+      effects.RandomPalette();
+      ms_previous_palette = ms_current;
+    }
+
+    if ( ((ms_current - ms_previous) > ms_animation_max_duration) && autoAdvance) 
+    {
+
+       patterns.move(1);
+
        ms_previous = ms_current;
     }
  

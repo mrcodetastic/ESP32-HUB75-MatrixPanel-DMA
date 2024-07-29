@@ -20,53 +20,54 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef PatternBounce_H
+#ifndef PatternAttract_H
 
-class PatternBounce : public Drawable {
+class PatternAttract : public Drawable {
 private:
-    static const int count = 32;
-    PVector gravity = PVector(0, 0.0125);
+    const int count = AVAILABLE_BOID_COUNT-1;
+    Attractor attractor;
 
 public:
-    PatternBounce() {
-        name = (char *)"Bounce";
+    PatternAttract() {
+        name = (char *)"Attract";
     }
 
     void start() {
-        unsigned int colorWidth = 256 / count;
+        int direction = random(0, 2);
+        if (direction == 0)
+            direction = -1;
+
         for (int i = 0; i < count; i++) {
-            Boid boid = Boid(i, 0);
-            boid.velocity.x = 0;
-            boid.velocity.y = i * -0.01;
-            boid.colorIndex = colorWidth * i;
-            boid.maxforce = 10;
-            boid.maxspeed = 10;
+            Boid boid = Boid(VPANEL_W/2, VPANEL_H - i);
+            boid.mass = 1; // random(0.1, 2);
+            boid.velocity.x = ((float) random(40, 50)) / 100.0;
+            boid.velocity.x *= direction;
+            boid.velocity.y = 0;
+            boid.colorIndex = i * 32;
             boids[i] = boid;
+            //dim = random(170, 250);
         }
     }
 
     unsigned int drawFrame() {
         // dim all pixels on the display
-        effects.DimAll(170); effects.ShowFrame();
+        uint8_t dim = beatsin8(2, 170, 250);
+        effects.DimAll(dim);
 
         for (int i = 0; i < count; i++) {
             Boid boid = boids[i];
 
-            boid.applyForce(gravity);
+            PVector force = attractor.attract(boid);
+            boid.applyForce(force);
 
             boid.update();
-
-            effects.drawBackgroundFastLEDPixelCRGB(boid.location.x, boid.location.y, effects.ColorFromCurrentPalette(boid.colorIndex));
-
-            if (boid.location.y >= VPANEL_H - 1) {
-                boid.location.y = VPANEL_H - 1;
-                boid.velocity.y *= -1.0;
-            }
+            effects.setPixel(boid.location.x, boid.location.y, effects.ColorFromCurrentPalette(boid.colorIndex));
 
             boids[i] = boid;
         }
 
-        return 15;
+        effects.ShowFrame();
+        return 0;
     }
 };
 

@@ -46,7 +46,7 @@ class PatternFlock : public Drawable {
       name = (char *)"Flock";
     }
 
-    static const int boidCount = 10;
+    static const int boidCount = VPANEL_W-1;
     Boid predator;
 
     PVector wind;

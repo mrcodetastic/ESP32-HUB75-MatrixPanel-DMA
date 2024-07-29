@@ -61,7 +61,7 @@
 
 
 
-class Effects {
+class EffectsLayer : public GFX {
 
 public:
 
@@ -80,7 +80,7 @@ public:
   int height;
   int num_leds = 0;
 
-  Effects(int w, int h) : width(w), height(h) {
+  EffectsLayer(int w, int h) : GFX(w, h), width(w), height(h) {
 
     // we do dynamic allocation for leds buffer, otherwise esp32 toolchain can't link static arrays of such a big size for 256+ matrices
     leds = (CRGB *)malloc((width * height + 1) * sizeof(CRGB));
@@ -93,10 +93,15 @@ public:
       noise[i] = (uint8_t *)malloc(height * sizeof(uint8_t));
     }
 
+    // Set starting palette
+    currentPalette = RainbowColors_p;
+    loadPalette(0);
+    NoiseVariablesSetup();    
+
     ClearFrame();
   }
 
-  ~Effects(){
+  ~EffectsLayer(){
     free(leds);
     for (int i = 0; i < width; ++i) {
       free(noise[i]);
@@ -133,6 +138,15 @@ public:
         } // end loop to copy fast led to the dma matrix
     }
   }
+
+  uint16_t getCenterX() {
+    return width / 2;
+  }
+
+  uint16_t getCenterY() {
+    return height / 2;
+  }
+
 
   // scale the brightness of the screenbuffer down
   void DimAll(byte value)  {
@@ -186,11 +200,6 @@ public:
   static const int HeatColorsPaletteIndex = 6;
   static const int RandomPaletteIndex = 9;
 
-  void Setup() {
-    currentPalette = RainbowColors_p;
-    loadPalette(0);
-    NoiseVariablesSetup();
-  }
 
   void CyclePalette(int offset = 1) {
     loadPalette(paletteIndex + offset);
@@ -679,13 +688,6 @@ public:
     }
   }
 
-  // write one pixel with the specified color from the current palette to coordinates
-  /*
-  void Pixel(int x, int y, uint8_t colorIndex) {
-    leds[XY16(x, y)] = ColorFromCurrentPalette(colorIndex);
-    matrix.drawBackgroundPixelRGB888(x,y, leds[XY16(x, y)]); // now draw it?
-  }
-  */
 
   CRGB ColorFromCurrentPalette(uint8_t index = 0, uint8_t brightness = 255, TBlendType blendType = LINEARBLEND) {
     return ColorFromPalette(currentPalette, index, brightness, currentBlendType);
@@ -794,7 +796,22 @@ public:
     } // end column loop
   } /// MoveY
 
-  
+  // Override GFX methods
+  void drawPixel(int16_t x, int16_t y, uint16_t color) override {
+    setPixel(x, y, CRGB(color));
+  }
+
+  // Override GFX methods
+  void drawPixel(int16_t x, int16_t y, CRGB color) override {
+    setPixel(x, y, color);
+  }  
+
+  void fillScreen(uint16_t color) override {
+    ClearFrame();
+  }
+
+  // Add any other GFX methods you want to override
+
 };
 
 #endif

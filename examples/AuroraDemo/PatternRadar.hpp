@@ -20,20 +20,39 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef Playlist_H
-#define Playlist_H
+#ifndef PatternRadar_H
 
-class Playlist : public Drawable {
-public:
-    virtual bool isPlaylist() {
-        return true;
+class PatternRadar : public Drawable {
+  private:
+    byte theta = 0;
+    byte hueoffset = 0;
+    unsigned long last_update_hue_ms = 0;
+
+  public:
+    PatternRadar() {
+      name = (char *)"Radar";
     }
-    
-    boolean isCurrentItemFinished = true;
 
-    virtual void move(int step) = 0;
-    virtual void moveRandom(int step) = 0;
-    virtual int getCurrentIndex();
+    unsigned int drawFrame() {
+      effects.DimAll(254); effects.ShowFrame();
+
+      for (int offset = 0; offset < effects.getCenterX(); offset++) {
+        byte hue = 255 - (offset * 16 + hueoffset);
+        CRGB color = effects.ColorFromCurrentPalette(hue);
+        uint8_t x = effects.mapcos8(theta, offset, (VPANEL_W - 1) - offset);
+        uint8_t y = effects.mapsin8(theta, offset, (VPANEL_H - 1) - offset);
+        uint16_t xy = XY16(x, y);
+        effects.leds[xy] = color;
+
+        if (millis() - last_update_hue_ms > 25) {
+          last_update_hue_ms = millis();
+          theta += 2;
+          hueoffset += 1;
+        }
+      }
+
+      return 0;
+    }
 };
 
 #endif

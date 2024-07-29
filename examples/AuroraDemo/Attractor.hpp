@@ -24,7 +24,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include "Vector.h"
+#include "Vector2.hpp"
 
 class Attractor {
 public:
@@ -33,7 +33,7 @@ public:
     PVector location;   // Location
 
     Attractor() {
-        location = PVector(VPANEL_W/2, VPANEL_H/2);
+        location = PVector(effects.getCenterX(), effects.getCenterY());
         mass = 10;
         G = .5;
     }

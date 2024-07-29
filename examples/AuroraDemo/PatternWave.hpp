@@ -94,8 +94,8 @@ public:
                 break;
         }
 
-        effects.DimAll(254);
-		effects.ShowFrame();
+        effects.DimAll(220);
+
 
         if (thetaUpdate >= thetaUpdateFrequency) {
             thetaUpdate = 0;
@@ -112,6 +112,8 @@ public:
         else {
             hueUpdate++;
         }
+
+		effects.ShowFrame();        
 
         return 0;
     }

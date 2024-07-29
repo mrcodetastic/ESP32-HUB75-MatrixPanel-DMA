@@ -35,7 +35,7 @@ class PatternCube : public Drawable {
     int cubeWidth = 28; // Cube size
     float Angx = 20.0, AngxSpeed = 0.05; // rotation (angle+speed) around X-axis
     float Angy = 10.0, AngySpeed = 0.05; // rotation (angle+speed) around Y-axis
-    float Ox = 15.5, Oy = 15.5; // position (x,y) of the frame center
+    float Ox = VPANEL_W/2, Oy = VPANEL_H/2; // position (x,y) of the frame center
     int zCamera = 110; // distance from cube to the eye of the camera
 
     // Local vertices
@@ -151,11 +151,11 @@ class PatternCube : public Drawable {
   public:
     PatternCube() {
       name = (char *)"Cube";
-      make(cubeWidth);
+      make(VPANEL_W);
     }
 
     unsigned int drawFrame() {
-      uint8_t blurAmount = beatsin8(2, 10, 255);
+      uint8_t blurAmount = beatsin8(2, 10, 128);
 
 #if FASTLED_VERSION >= 3001000
       blur2d(effects.leds, VPANEL_W, VPANEL_H, blurAmount);
@@ -164,8 +164,8 @@ class PatternCube : public Drawable {
 #endif
 
       zCamera = beatsin8(2, 100, 140);
-      AngxSpeed = beatsin8(3, 1, 10) / 100.0f;
-      AngySpeed = beatcos8(5, 1, 10) / 100.0f;
+      AngxSpeed = beatsin8(3, 1, 6) / 100.0f;
+      AngySpeed = effects.beatcos8(5, 1, 6) / 100.0f;
 
       // Update values
       Angx += AngxSpeed;
@@ -188,7 +188,7 @@ class PatternCube : public Drawable {
       {
         e = edge + i;
         if (!e->visible) {
-          matrix.drawLine(screen[e->x].x, screen[e->x].y, screen[e->y].x, screen[e->y].y, color);
+          effects.drawLine(screen[e->x].x, screen[e->x].y, screen[e->y].x, screen[e->y].y, color);
         }
       }
 
@@ -200,7 +200,7 @@ class PatternCube : public Drawable {
         e = edge + i;
         if (e->visible)
         {
-          matrix.drawLine(screen[e->x].x, screen[e->x].y, screen[e->y].x, screen[e->y].y, color);
+          effects.drawLine(screen[e->x].x, screen[e->x].y, screen[e->y].x, screen[e->y].y, color);
         }
       }
 

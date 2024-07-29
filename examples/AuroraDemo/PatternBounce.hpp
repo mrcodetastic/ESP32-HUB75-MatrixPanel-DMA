@@ -20,38 +20,53 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef PatternRadar_H
+#ifndef PatternBounce_H
 
-class PatternRadar : public Drawable {
-  private:
-    byte theta = 0;
-    byte hueoffset = 0;
-    unsigned long last_update_hue_ms = 0;
+class PatternBounce : public Drawable {
+private:
+    static const int count = VPANEL_W-1;
+    PVector gravity = PVector(0, 0.0125);
 
-  public:
-    PatternRadar() {
-      name = (char *)"Radar";
+public:
+    PatternBounce() {
+        name = (char *)"Bounce";
+    }
+
+    void start() {
+        unsigned int colorWidth = 256 / count;
+        for (int i = 0; i < count; i++) {
+            Boid boid = Boid(i, 0);
+            boid.velocity.x = 0;
+            boid.velocity.y = i * -0.01;
+            boid.colorIndex = colorWidth * i;
+            boid.maxforce = 10;
+            boid.maxspeed = 10;
+            boids[i] = boid;
+        }
     }
 
     unsigned int drawFrame() {
-      effects.DimAll(254); effects.ShowFrame();
+        // dim all pixels on the display
+        effects.DimAll(170); effects.ShowFrame();
 
-      for (int offset = 0; offset < VPANEL_W/2; offset++) {
-        byte hue = 255 - (offset * 16 + hueoffset);
-        CRGB color = effects.ColorFromCurrentPalette(hue);
-        uint8_t x = effects.mapcos8(theta, offset, (VPANEL_W - 1) - offset);
-        uint8_t y = effects.mapsin8(theta, offset, (VPANEL_H - 1) - offset);
-        uint16_t xy = XY16(x, y);
-        effects.leds[xy] = color;
+        for (int i = 0; i < count; i++) {
+            Boid boid = boids[i];
 
-        if (millis() - last_update_hue_ms > 25) {
-          last_update_hue_ms = millis();
-          theta += 2;
-          hueoffset += 1;
+            boid.applyForce(gravity);
+
+            boid.update();
+
+            effects.setPixel(boid.location.x, boid.location.y, effects.ColorFromCurrentPalette(boid.colorIndex));
+
+            if (boid.location.y >= VPANEL_H - 1) {
+                boid.location.y = VPANEL_H - 1;
+                boid.velocity.y *= -1.0;
+            }
+
+            boids[i] = boid;
         }
-      }
 
-      return 0;
+        return 15;
     }
 };
 

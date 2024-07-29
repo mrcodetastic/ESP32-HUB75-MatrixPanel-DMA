@@ -30,12 +30,12 @@ class PatternSpiro : public Drawable {
 
     uint8_t radiusx = VPANEL_W / 4;
     uint8_t radiusy = VPANEL_H / 4;
-    uint8_t minx = VPANEL_W/2 - radiusx;
-    uint8_t maxx = VPANEL_W/2 + radiusx + 1;
-    uint8_t miny = VPANEL_H/2 - radiusy;
-    uint8_t maxy = VPANEL_H/2 + radiusy + 1;
+    uint8_t minx = effects.getCenterX() - radiusx;
+    uint8_t maxx = effects.getCenterX() + radiusx + 1;
+    uint8_t miny = effects.getCenterY() - radiusy;
+    uint8_t maxy = effects.getCenterY() + radiusy + 1;
 
-    uint8_t spirocount = 16;
+    uint8_t spirocount = 64;
     uint8_t spirooffset = 256 / spirocount;
     boolean spiroincrement = true;
 
@@ -55,7 +55,7 @@ class PatternSpiro : public Drawable {
     };
 
     unsigned int drawFrame() {
-      blur2d(effects.leds, VPANEL_W > 255 ? 255 : VPANEL_W, VPANEL_H > 255 ? 255 : VPANEL_H, 192);
+      blur2d(effects.leds, VPANEL_W > 255 ? 255 : VPANEL_W, VPANEL_H > 255 ? 255 : VPANEL_H, 64);
 
       boolean change = false;
       
@@ -69,8 +69,8 @@ class PatternSpiro : public Drawable {
         CRGB color = effects.ColorFromCurrentPalette(hueoffset + i * spirooffset, 128);
         effects.leds[XY16(x2, y2)] += color;
         
-        if((x2 == VPANEL_W/2 && y2 == VPANEL_H/2) ||
-           (x2 == VPANEL_W/2 && y2 == VPANEL_H/2)) change = true;
+        if((x2 == effects.getCenterX() && y2 == effects.getCenterY()) ||
+           (x2 == effects.getCenterX() && y2 == effects.getCenterY())) change = true;
       }
 
       theta2 += 1;

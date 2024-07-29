@@ -38,7 +38,7 @@
 #define AMP_BPM 2
 #define SKEW_BPM 4
 #define WAVE_TIMEMINSKEW VPANEL_W/8
-#define WAVE_TIMEMAXSKEW VPANEL_W/2
+#define WAVE_TIMEMAXSKEW effects.getCenterX()
 
 class PatternPendulumWave : public Drawable {
   public:
@@ -46,8 +46,9 @@ class PatternPendulumWave : public Drawable {
       name = (char *)"Pendulum Wave";
     }
 
-    unsigned int drawFrame() {
-      effects.ClearFrame();
+    unsigned int drawFrame() 
+    {
+      effects.DimAll(192);
 
       for (int x = 0; x < VPANEL_W; ++x)
       {

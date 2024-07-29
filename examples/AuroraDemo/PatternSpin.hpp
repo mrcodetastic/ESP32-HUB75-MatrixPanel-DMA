@@ -48,7 +48,7 @@ public:
     }
 
     unsigned int drawFrame() {
-        effects.DimAll(190); effects.ShowFrame();
+        
 
         CRGB color = effects.ColorFromCurrentPalette(speed * 8);
 
@@ -59,23 +59,26 @@ public:
         // target position
         float targetDegrees = degrees + speed;
         float targetRadians = radians(targetDegrees);
-        int targetX = (int) (MATRIX_CENTER_X + radius * cos(targetRadians));
-        int targetY = (int) (MATRIX_CENTER_Y - radius * sin(targetRadians));
+        int targetX = (int) (effects.getCenterX() + radius * cos(targetRadians));
+        int targetY = (int) (effects.getCenterY() - radius * sin(targetRadians));
 
         float tempDegrees = degrees;
 
-        do{
+        for (int i =0; i < 16; i++)
+        {
             float radians = radians(tempDegrees);
-            x = (int) (MATRIX_CENTER_X + radius * cos(radians));
-            y = (int) (MATRIX_CENTER_Y - radius * sin(radians));
+            x = (int) (effects.getCenterX() + radius * cos(radians));
+            y = (int) (effects.getCenterY() - radius * sin(radians));
 
-            effects.drawBackgroundFastLEDPixelCRGB(x, y, color);
-            effects.drawBackgroundFastLEDPixelCRGB(y, x, color);
+            effects.setPixel(x, y, color);
+            effects.setPixel(y, x, color);
 
             tempDegrees += 1;
             if (tempDegrees >= 360)
                 tempDegrees = 0;
-        } while (x != targetX || y != targetY);
+                
+        } 
+        
 
         degrees += speed;
 
@@ -92,6 +95,8 @@ public:
                 velocity *= -1;
             }
         }
+
+        effects.ShowFrame();
 
         return 0;
     }

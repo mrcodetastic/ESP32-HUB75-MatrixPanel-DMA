@@ -31,18 +31,20 @@ class PatternIncrementalDrift : public Drawable {
     }
 
     unsigned int drawFrame() {
-      uint8_t dim = beatsin8(2, 230, 250);
-      effects.DimAll(dim); effects.ShowFrame();
+      //uint8_t dim = beatsin8(2, 230, 250);
+      effects.DimAll(250); 
 
       for (int i = 2; i <= VPANEL_W / 2; i++)
       {
         CRGB color = effects.ColorFromCurrentPalette((i - 2) * (240 / (VPANEL_W / 2)));
 
-        uint8_t x = effects.beatcos8((17 - i) * 2, VPANEL_W/2 - i, VPANEL_W/2 + i);
-        uint8_t y = beatsin8((17 - i) * 2, VPANEL_H/2 - i, VPANEL_H/2 + i);
+        uint8_t x = effects.beatcos8((17 - i) * 2, effects.getCenterX() - i, effects.getCenterX() + i);
+        uint8_t y = beatsin8((17 - i) * 2, effects.getCenterY() - i, effects.getCenterY() + i);
 
         effects.setPixel(x, y, color);
       }
+
+       effects.ShowFrame();
 
       return 0;
     }

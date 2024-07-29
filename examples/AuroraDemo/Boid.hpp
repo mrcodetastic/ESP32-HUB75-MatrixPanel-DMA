@@ -322,5 +322,5 @@ class Boid {
     }
 };
 
-static const uint8_t AVAILABLE_BOID_COUNT = 40;
+static const uint8_t AVAILABLE_BOID_COUNT = VPANEL_W;
 Boid boids[AVAILABLE_BOID_COUNT];
