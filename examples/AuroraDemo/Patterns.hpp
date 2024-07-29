@@ -44,6 +44,7 @@
 #include "PatternSpiro.hpp"
 #include "PatternWave.hpp" 
 #include "PatternTheMatrix.hpp"
+#include "PatternJuliaSetFractal.hpp"
 //#include "PatternTunnel.hpp" // fail
 //#include "PatternSphereSpin.hpp" // fail
 
@@ -75,9 +76,11 @@ class Patterns {
     PatternWave wave;
     PatternTheMatrix matrix;
    // PatternTunnel tunnel;
+    PatternJuliaSet juliaSet;
 
     std::vector<Drawable*> availablePatterns = {
   //    &tunnel,
+      &juliaSet,
       &matrix,
       &starfield,
  //     &sspin,    
