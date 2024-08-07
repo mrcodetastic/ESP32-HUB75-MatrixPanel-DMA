@@ -127,6 +127,8 @@
         //LCD_CAM.lcd_clock.lcd_clkm_div_num = 10; //16mhz is the fasted the Octal PSRAM can support it seems from faptastic's testing using an N8R8 variant (Octal SPI PSRAM).
         
         // https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-DMA/issues/441#issuecomment-1513631890
+		// and 
+		// https://github.com/mrcodetastic/ESP32-HUB75-MatrixPanel-DMA/issues/442
         LCD_CAM.lcd_clock.lcd_clkm_div_num = 12; // 13Mhz is the fastest output from PSRAM if we want to be able to service other peripherals as well.
     }
     else
