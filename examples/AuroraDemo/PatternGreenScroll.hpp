@@ -1,5 +1,6 @@
 // Codetastic 2024
 // ChatGPT was used to create this.
+// It sucks.
 
 #ifndef PatternTheMatrix_H
 #define PatternTheMatrix_H

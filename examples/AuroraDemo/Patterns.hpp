@@ -43,17 +43,17 @@
 #include "PatternSpiral.hpp"
 #include "PatternSpiro.hpp"
 #include "PatternWave.hpp" 
-#include "PatternTheMatrix.hpp"
+#include "PatternRain.hpp"
 #include "PatternJuliaSetFractal.hpp"
-//#include "PatternTunnel.hpp" // fail
-//#include "PatternSphereSpin.hpp" // fail
+#include "PatternRain.hpp"
+#include "PatternFireworks.hpp"
+
 
 
 class Patterns {
   private:
 
     PatternStarfield starfield;
-  //  PatternSphereSpin sspin;    
     PatternAttract attract;
     PatternBounce bounce;
     PatternCube cube;
@@ -74,16 +74,15 @@ class Patterns {
     PatternSpiral spiral;
     PatternSpiro spiro;
     PatternWave wave;
-    PatternTheMatrix matrix;
-   // PatternTunnel tunnel;
     PatternJuliaSet juliaSet;
+    
+    PatternRain rain;
+    PatternFirework fireworks;
+    
 
     std::vector<Drawable*> availablePatterns = {
-  //    &tunnel,
       &juliaSet,
-      &matrix,
       &starfield,
- //     &sspin,    
       &attract,
       &bounce,
       &cube,
@@ -102,10 +101,10 @@ class Patterns {
       &plasma,
       &radar,
       &simpnoise,
-      //&snake, // a bit crap
-      //&spiral, // a bit crap
       &spiro,
       &wave,
+      &rain,
+      &fireworks
     };    
 
     int currentIndex = 0;
