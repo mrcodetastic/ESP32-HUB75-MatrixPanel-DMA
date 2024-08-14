@@ -120,10 +120,7 @@ class PatternStarfield : public Drawable {
     } // end start
 
     void stop() {
-
-        delete[] stars;
-        delete stars;
-        
+        delete[] stars;       
     }
 
 
