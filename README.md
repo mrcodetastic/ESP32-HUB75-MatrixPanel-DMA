@@ -25,6 +25,7 @@ __[BUILD OPTIONS](/doc/BuildOptions.md) | [EXAMPLES](/examples/README.md)__ | [!
   * [Inspiration](#inspiration)
   * [Cool uses of this library](#cool-uses-of-this-library)
 - [Thank you!](#thank-you)
+- [Music](#music)
 
 # Introduction
 * This is an ESP32 Arduino/IDF library for HUB75 / HUB75E connection based RGB LED panels. 
@@ -273,5 +274,12 @@ There are a number of great looking LED graphical display projects which leverag
 * And lots of others, let me know if I've missed you.
 
 If you want to donate money to the project, please refer to [this discussion](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-DMA/discussions/349) about it. If you want to donate/buy an LED panel for the library author to improve compatibility and/or testing - please feel free to post in the same [discussion](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-DMA/discussions/349).
+
+
+## Music
+
+Of course, now Generative AI is everywhere. What happens when you ask AI to generate a song about an 'ESP32 HUB75 DMA LED Matrix Panel library'?
+
+[You get this.](https://suno.com/song/183aa807-9fb6-410c-b0e9-0ea945232950)... Enjoy. 😊
 
 ![It's better in real life](image.jpg)
