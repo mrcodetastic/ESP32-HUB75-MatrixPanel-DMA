@@ -13,13 +13,7 @@
 //MatrixPanel_I2S_DMA dma_display;
 MatrixPanel_I2S_DMA *dma_display = nullptr;
 
-uint16_t myBLACK = dma_display->color565(0, 0, 0);
-uint16_t myWHITE = dma_display->color565(255, 255, 255);
-uint16_t myRED = dma_display->color565(255, 0, 0);
-uint16_t myGREEN = dma_display->color565(0, 255, 0);
-uint16_t myBLUE = dma_display->color565(0, 0, 255);
-
-
+uint16_t myBLACK, myWHITE, myRED, myGREEN, myBLUE;
 
 // Input a value 0 to 255 to get a color value.
 // The colours are a transition r - g - b - back to r.
@@ -109,6 +103,14 @@ void setup() {
   dma_display->begin();
   dma_display->setBrightness8(90); //0-255
   dma_display->clearScreen();
+
+  myBLACK = dma_display->color565(0, 0, 0);
+  myWHITE = dma_display->color565(255, 255, 255);
+  myRED = dma_display->color565(255, 0, 0);
+  myGREEN = dma_display->color565(0, 255, 0);
+  myBLUE = dma_display->color565(0, 0, 255);
+  
+
   dma_display->fillScreen(myWHITE);
   
   // fix the screen with green
