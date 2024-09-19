@@ -5,16 +5,15 @@
 // Double buffering is not always required in reality.
 
 #include <ESP32-HUB75-MatrixPanel-I2S-DMA.h>
+#include <array>
 
 MatrixPanel_I2S_DMA *display = nullptr;
 
-uint16_t myDARK = display->color565(64, 64, 64);
-uint16_t myWHITE = display->color565(192, 192, 192);
-uint16_t myRED = display->color565(255, 0, 0);
-uint16_t myGREEN = display->color565(0, 255, 0);
-uint16_t myBLUE = display->color565(0, 0, 255);
+constexpr std::size_t color_num = 5;
+using colour_arr_t = std::array<uint16_t, color_num>;
 
-uint16_t colours[5] = { myDARK, myWHITE, myRED, myGREEN, myBLUE };
+uint16_t myDARK, myWHITE, myRED, myGREEN, myBLUE;
+colour_arr_t colours;
 
 struct Square
 {
@@ -44,6 +43,14 @@ void setup()
   // OK, now we can create our matrix object
   display = new MatrixPanel_I2S_DMA(mxconfig);
   display->begin();  // setup display with pins as pre-defined in the library
+
+  myDARK = display->color565(64, 64, 64);
+  myWHITE = display->color565(192, 192, 192);
+  myRED = display->color565(255, 0, 0);
+  myGREEN = display->color565(0, 255, 0);
+  myBLUE = display->color565(0, 0, 255);
+
+  colours = {{ myDARK, myWHITE, myRED, myGREEN, myBLUE }};
 
   // Create some random squares
   for (int i = 0; i < numSquares; i++)

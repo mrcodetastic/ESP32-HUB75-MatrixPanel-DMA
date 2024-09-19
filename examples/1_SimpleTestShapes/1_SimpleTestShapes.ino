@@ -108,7 +108,7 @@ void setup() {
   myWHITE = dma_display->color565(255, 255, 255);
   myRED = dma_display->color565(255, 0, 0);
   myGREEN = dma_display->color565(0, 255, 0);
-  myBLUE = dma_disdisplay->color565(0, 0, 255);
+  myBLUE = dma_display->color565(0, 0, 255);
   
 
   dma_display->fillScreen(myWHITE);
