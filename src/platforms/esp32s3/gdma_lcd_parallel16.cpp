@@ -294,6 +294,7 @@
     if (_i80_bus)
     {
       esp_lcd_del_i80_bus(_i80_bus);
+      _i80_bus = nullptr;
     }
     if (_dmadesc_a)
     {
