@@ -239,6 +239,11 @@ An example:
 dma_display->setLatBlanking(2);
 ```
 
+## Clock Phase
+If you are facing issues with pixels being 'off' by 1 px to the co-ordinate requested, or experiencing ghosting, then it could be due to the 'clock phase' setting. For some panels data is clocked 'in' with negative clock edge, others with the positive.
+
+By default this library is configured to 'clock data' in with a positive clock edge. To change this, configure with  `mxconfig.clkphase = false;`. Refer to the [example](https://github.com/mrcodetastic/ESP32-HUB75-MatrixPanel-DMA/blob/a5d6611b65c365a252e6787e0afc267cf63c1996/examples/1_SimpleTestShapes/1_SimpleTestShapes.ino#L98) for the relevant line that is commented out.
+
 ## Power, Power and Power!
 Having a good power supply is CRITICAL, and it is highly recommended, for chains of LED Panels to have a 1000-2000uf capacitor soldered to the back of each LED Panel across the [GND and VCC pins](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/issues/39#issuecomment-720780463), otherwise you WILL run into issues with 'flashy' graphics whereby a large amount of LEDs are turned on and off in succession (due to current/power draw peaks and troughs).
 
