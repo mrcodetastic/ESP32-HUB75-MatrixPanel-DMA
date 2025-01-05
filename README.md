@@ -288,3 +288,8 @@ Of course, now Generative AI is everywhere. What happens when you ask AI to gene
 [You get this.](https://suno.com/song/183aa807-9fb6-410c-b0e9-0ea945232950)... Enjoy. 😊
 
 ![It's better in real life](image.jpg)
+
+
+## Support
+
+This library has been developed in my own time as a personal project. If you use it in a commercial context and want to send a few bucks my way, feel free to [support me](https://github.com/mrcodetastic/ESP32-HUB75-MatrixPanel-DMA). I'll end up using funds to potentially buy more panels to test with.
