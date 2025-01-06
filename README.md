@@ -53,7 +53,7 @@ RISC-V ESP32's (like the C3) are not supported as they do not have the hardware 
 
 Please use the ['Memory Calculator'](/doc/memcalc.md) to see what is *typically* achievable with the typical ESP32. This is only a guide. ![Memory Calculator](doc/memcalc.jpg)
 
-For the ESP32-S3 only, you can use SPIRAM/PSRAM to drive the HUB75 DMA buffer when using an ESP32-S3 with **OCTAL SPI-RAM (PSTRAM)** (i.e. ESP32 S3 N8R8 variant). However, due to bandwidth limitations, the maximum output frequency is limited to approx. 13Mhz, which will limit the real-world number of panels that can be chained without flicker. Please do not use PSRAM as the DMA buffer if using QUAD SPI (Q-SPI), as it's too slow.
+For the ESP32-S3 only, you can use SPIRAM/PSRAM to drive the HUB75 DMA buffer when using an ESP32-S3 with **OCTAL SPI-RAM (PSRAM)** (i.e. ESP32 S3 N8R8 variant). However, due to bandwidth limitations, the maximum output frequency is limited to approx. 13Mhz, which will limit the real-world number of panels that can be chained without flicker. Please do not use PSRAM as the DMA buffer if using QUAD SPI (Q-SPI), as it's too slow.
 
 To enable PSRAM support on the ESP32-S3, refer to [the build options](/doc/BuildOptions.md) to enable.
 
@@ -83,7 +83,7 @@ Ones interested in internals of such matrices could find [this article](https://
 * DP3246 with SM5368 row addressing registers
 
 ## Specific chips found NOT TO work
-* ANY panel that uses S-PWM or PWM based chips (such as the RUL6024, MBI6024).
+* ANY panel that has S-PWM or PWM based chips (such as the RUL6024, MBI6024, HX6158SP, MBI5051, MBI5052, MBI5053, ICND2055CP etc.). There are LOTS of panels now which are 'self PWM generating'. Essentially these panel aren't just a dumb array of LEDs and a series of shift registers, but have a framebuffer that pixel colour data is sent to, and they generate the relevant PWM output for each LED, independantly. A more advanced LED panel technology, but not what this library supports.
 * [SM1620B](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-DMA/issues/416)
 * RUL5358 / SHIFTREG_ABC_BIN_DE based panels are not supported.
 * ICN2053 / FM6353 based panels - Refer to [this library](https://github.com/LAutour/ESP32-HUB75-MatrixPanel-DMA-ICN2053), which is a fork of this library ( [discussion link](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-DMA/discussions/324)).
