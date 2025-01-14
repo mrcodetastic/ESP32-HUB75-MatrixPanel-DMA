@@ -140,6 +140,7 @@ bool Bus_Parallel16::init(void)
         .auto_update_desc = false};
     gdma_apply_strategy(dma_chan, &strategy_config);
 
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 4, 0)
     gdma_transfer_config_t transfer_config = {
 #ifdef SPIRAM_DMA_BUFFER
       .max_data_burst_size = 64,
@@ -150,6 +151,13 @@ bool Bus_Parallel16::init(void)
 #endif
     };
     gdma_config_transfer(dma_chan, &transfer_config);
+#else
+    gdma_transfer_ability_t ability = {
+        .sram_trans_align = 32,
+        .psram_trans_align = 64,
+    };
+    gdma_set_transfer_ability(dma_chan, &ability);
+#endif
 
     // Enable DMA transfer callback
     static gdma_tx_event_callbacks_t tx_cbs = {
