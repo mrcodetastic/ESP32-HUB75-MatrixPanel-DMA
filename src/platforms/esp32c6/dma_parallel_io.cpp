@@ -1,5 +1,4 @@
 #include "dma_parallel_io.hpp"
-#include <Arduino.h>
 
 #ifdef CONFIG_IDF_TARGET_ESP32C6
 
