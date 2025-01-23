@@ -26,6 +26,7 @@
 
   #include "gdma_lcd_parallel16.hpp"
   #include "esp_attr.h"
+  #include "esp_idf_version.h"
 
 /*
   dma_descriptor_t desc;          // DMA descriptor for testing
