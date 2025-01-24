@@ -1,4 +1,4 @@
-## Ohter driver based LED Matrix Panels ##
+## Other driver based LED Matrix Panels ##
 
 Limited support for other panels exists, but requires this to be passed as a configuration option when using the library.
 
