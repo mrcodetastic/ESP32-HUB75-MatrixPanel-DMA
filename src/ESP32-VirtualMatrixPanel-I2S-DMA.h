@@ -97,6 +97,7 @@ public:
 
         panelResX = _panelResX;
         panelResY = _panelResY;
+        panel_pixel_base = _panelResX;
 
         vmodule_rows = _vmodule_rows;
         vmodule_cols = _vmodule_cols;
@@ -150,12 +151,14 @@ public:
     void drawDisplayTest();
 
     void setPhysicalPanelScanRate(PANEL_SCAN_RATE rate);
+    void setPhysicalPanelScanRate(PANEL_SCAN_RATE rate, int16_t pixel_base);
 	void setZoomFactor(int scale);
 
     virtual VirtualCoords getCoords(int16_t x, int16_t y);
     VirtualCoords coords;
     int16_t panelResX;
     int16_t panelResY;
+    int16_t panel_pixel_base;
 
 private:
     MatrixPanel_I2S_DMA *display;
@@ -395,10 +398,10 @@ inline VirtualCoords VirtualMatrixPanel::getCoords(int16_t virt_x, int16_t virt_
 
             if ((coords.y & 8) == 0)
                 // 1st, 3rd 'block' of 8 rows of pixels, offset by panel width in DMA buffer
-                coords.x += ((coords.x / panelResX) + 1) * panelResX;
+                coords.x += ((coords.x / panel_pixel_base) + 1) * panel_pixel_base;
             else
                 // 2nd, 4th 'block' of 8 rows of pixels, offset by panel width in DMA buffer
-                coords.x += (coords.x / panelResX) * panelResX;
+                coords.x += (coords.x / panel_pixel_base) * panel_pixel_base;
 
             // http://cpp.sh/4ak5u
             // Real number of DMA y rows is half reality
@@ -408,17 +411,17 @@ inline VirtualCoords VirtualMatrixPanel::getCoords(int16_t virt_x, int16_t virt_
         case FOUR_SCAN_16PX_HIGH:
             if ((coords.y & 4) == 0)
                 // 1st, 3rd 'block' of 8 rows of pixels, offset by panel width in DMA buffer
-                coords.x += ((coords.x / panelResX) + 1) * panelResX;
+                coords.x += ((coords.x / panel_pixel_base) + 1) * panel_pixel_base;
             else
                 // 2nd, 4th 'block' of 8 rows of pixels, offset by panel width in DMA buffer
-                coords.x += (coords.x / panelResX) * panelResX;
+                coords.x += (coords.x / panel_pixel_base) * panel_pixel_base;
             coords.y = (coords.y >> 3) * 4 + (coords.y & 0b00000011);
             break;
         case FOUR_SCAN_40PX_HIGH:
             if ((coords.y / 10) % 2 == 0)
-                coords.x += ((coords.x / panelResX) + 1) * panelResX;
+                coords.x += ((coords.x / panel_pixel_base) + 1) * panel_pixel_base;
             else
-                coords.x += (coords.x / panelResX) * panelResX;
+                coords.x += (coords.x / panel_pixel_base) * panel_pixel_base;
             coords.y = (coords.y / 20) * 10 + (coords.y % 10);
             break;
         default:
@@ -522,6 +525,12 @@ inline void VirtualMatrixPanel::setRotation(uint8_t rotate)
 inline void VirtualMatrixPanel::setPhysicalPanelScanRate(PANEL_SCAN_RATE rate)
 {
     panel_scan_rate = rate;
+}
+
+inline void VirtualMatrixPanel::setPhysicalPanelScanRate(PANEL_SCAN_RATE rate, int16_t pixel_base)
+{
+    panel_scan_rate = rate;
+    panel_pixel_base = pixel_base;
 }
 
 inline void VirtualMatrixPanel::setZoomFactor(int scale)
