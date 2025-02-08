@@ -153,8 +153,8 @@ public:
 
     virtual VirtualCoords getCoords(int16_t x, int16_t y);
     VirtualCoords coords;
-    uint16_t panelResX;
-    uint16_t panelResY;
+    uint8_t panelResX;
+    uint8_t panelResY;
 
 private:
     MatrixPanel_I2S_DMA *display;
@@ -169,8 +169,8 @@ private:
 	uint16_t _virtualResX;       ///< Display width as modified by current rotation
 	uint16_t _virtualResY;       ///< Display height as modified by current rotation
 
-    uint16_t vmodule_rows;
-    uint16_t vmodule_cols;
+    uint8_t vmodule_rows;
+    uint8_t vmodule_cols;
 
     uint16_t dmaResX; // The width of the chain in pixels (as the DMA engine sees it)
 
