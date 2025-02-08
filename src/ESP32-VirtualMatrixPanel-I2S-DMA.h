@@ -151,14 +151,14 @@ public:
     void drawDisplayTest();
 
     void setPhysicalPanelScanRate(PANEL_SCAN_RATE rate);
-    void setPhysicalPanelScanRate(PANEL_SCAN_RATE rate, int16_t pixel_base);
+    void setPhysicalPanelScanRate(PANEL_SCAN_RATE rate, uint8_t pixel_base);
 	void setZoomFactor(int scale);
 
     virtual VirtualCoords getCoords(int16_t x, int16_t y);
     VirtualCoords coords;
     uint8_t panelResX;
     uint8_t panelResY;
-    int16_t panel_pixel_base;
+    uint8_t panel_pixel_base;
 
 private:
     MatrixPanel_I2S_DMA *display;
@@ -527,7 +527,7 @@ inline void VirtualMatrixPanel::setPhysicalPanelScanRate(PANEL_SCAN_RATE rate)
     panel_scan_rate = rate;
 }
 
-inline void VirtualMatrixPanel::setPhysicalPanelScanRate(PANEL_SCAN_RATE rate, int16_t pixel_base)
+inline void VirtualMatrixPanel::setPhysicalPanelScanRate(PANEL_SCAN_RATE rate, uint8_t pixel_base)
 {
     panel_scan_rate = rate;
     panel_pixel_base = pixel_base;
