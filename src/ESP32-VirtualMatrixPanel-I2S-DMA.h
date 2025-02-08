@@ -56,7 +56,8 @@ enum PANEL_SCAN_RATE
     NORMAL_ONE_SIXTEEN, // treated as the same
     FOUR_SCAN_32PX_HIGH,
     FOUR_SCAN_16PX_HIGH,
-    FOUR_SCAN_64PX_HIGH
+    FOUR_SCAN_64PX_HIGH,
+    FOUR_SCAN_40PX_HIGH
 };
 
 // Chaining approach... From the perspective of the DISPLAY / LED side of the chain of panels.
@@ -412,6 +413,13 @@ inline VirtualCoords VirtualMatrixPanel::getCoords(int16_t virt_x, int16_t virt_
                 // 2nd, 4th 'block' of 8 rows of pixels, offset by panel width in DMA buffer
                 coords.x += (coords.x / panelResX) * panelResX;
             coords.y = (coords.y >> 3) * 4 + (coords.y & 0b00000011);
+            break;
+        case FOUR_SCAN_40PX_HIGH:
+            if ((coords.y / 10) % 2 == 0)
+                coords.x += ((coords.x / panelResX) + 1) * panelResX;
+            else
+                coords.x += (coords.x / panelResX) * panelResX;
+            coords.y = (coords.y / 20) * 10 + (coords.y % 10);
             break;
         default:
             break;
