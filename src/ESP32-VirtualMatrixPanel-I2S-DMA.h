@@ -136,8 +136,8 @@ public:
 #endif
 
 #ifdef NO_GFX
-    inline int16_t width() const { return _virtualResX; }
-    inline int16_t height() const { return _virtualResY; }
+    inline uint16_t width() const { return _virtualResX; }
+    inline uint16_t height() const { return _virtualResY; }
 #endif
 
     uint16_t color444(uint8_t r, uint8_t g, uint8_t b)
@@ -156,8 +156,8 @@ public:
 
     virtual VirtualCoords getCoords(int16_t x, int16_t y);
     VirtualCoords coords;
-    int16_t panelResX;
-    int16_t panelResY;
+    uint8_t panelResX;
+    uint8_t panelResY;
     int16_t panel_pixel_base;
 
 private:
@@ -166,17 +166,17 @@ private:
     PANEL_CHAIN_TYPE panel_chain_type;
     PANEL_SCAN_RATE panel_scan_rate = NORMAL_TWO_SCAN;
 
-    int16_t virtualResX;	///< Display width as combination of panels
-    int16_t virtualResY;	///< Display height as combination of panels
+    uint16_t virtualResX;	///< Display width as combination of panels
+    uint16_t virtualResY;	///< Display height as combination of panels
 
 
-	int16_t _virtualResX;       ///< Display width as modified by current rotation
-	int16_t _virtualResY;       ///< Display height as modified by current rotation	
+	uint16_t _virtualResX;       ///< Display width as modified by current rotation
+	uint16_t _virtualResY;       ///< Display height as modified by current rotation
 
-    int16_t vmodule_rows;
-    int16_t vmodule_cols;
+    uint8_t vmodule_rows;
+    uint8_t vmodule_cols;
 
-    int16_t dmaResX; // The width of the chain in pixels (as the DMA engine sees it)
+    uint16_t dmaResX; // The width of the chain in pixels (as the DMA engine sees it)
 
     int _rotate = 0;
 	
