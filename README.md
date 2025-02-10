@@ -268,6 +268,7 @@ There are a number of great looking LED graphical display projects which leverag
 * [Big Visualisation](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/discussions/155)
 * [Clockwise](https://jnthas.github.io/clockwise/)
 * [ZeDMD](https://github.com/PPUC/ZeDMD)
+* [MatrixCOS](https://github.com/mklossde/MatrixCOS)
 
 # Thank you!
 * [Brian Lough](https://www.tindie.com/stores/brianlough/) ([youtube link](https://www.youtube.com/c/brianlough)) for providing code contributions, hardware and suggestions
