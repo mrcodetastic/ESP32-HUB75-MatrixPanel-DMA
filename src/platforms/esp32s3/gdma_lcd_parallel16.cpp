@@ -257,7 +257,7 @@
     };
     gdma_apply_strategy(dma_chan, &strategy_config);
 
-#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 4, 0)
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 1, 0)
     gdma_transfer_config_t transfer_config = {
 #ifdef SPIRAM_DMA_BUFFER
       .max_data_burst_size = 64,

@@ -74,6 +74,7 @@ enum PANEL_CHAIN_TYPE
     CHAIN_BOTTOM_LEFT_UP_ZZ
 };
 
+[[deprecated("VirtualMatrixPanel is depreciated. Please include 'HUB75-VirtualMatrixPanelT.hpp' and use VirtualMatrixPanelT instead. Refer to the documentation.")]]
 #ifdef USE_GFX_LITE
 class VirtualMatrixPanel : public GFX
 #elif !defined NO_GFX
@@ -140,12 +141,8 @@ public:
     inline uint16_t height() const { return _virtualResY; }
 #endif
 
-    uint16_t color444(uint8_t r, uint8_t g, uint8_t b)
-    {
-        return display->color444(r, g, b);
-    }
+    uint16_t color444(uint8_t r, uint8_t g, uint8_t b) { return display->color444(r, g, b); }
     uint16_t color565(uint8_t r, uint8_t g, uint8_t b) { return display->color565(r, g, b); }
-    uint16_t color333(uint8_t r, uint8_t g, uint8_t b) { return display->color333(r, g, b); }
 
     void flipDMABuffer() { display->flipDMABuffer(); }
     void drawDisplayTest();
@@ -558,19 +555,5 @@ inline void VirtualMatrixPanel::drawDisplayTest()
 }
 #endif
 
-/*
-// need to recreate this one, as it wouldn't work to just map where it starts.
-inline void VirtualMatrixPanel::drawIcon (int *ico, int16_t x, int16_t y, int16_t icon_cols, int16_t icon_rows) {
-  int i, j;
-  for (i = 0; i < icon_rows; i++) {
-    for (j = 0; j < icon_cols; j++) {
-      // This is a call to this libraries version of drawPixel
-      // which will map each pixel, which is what we want.
-      //drawPixelRGB565 (x + j, y + i, ico[i * module_cols + j]);
-    drawPixel (x + j, y + i, ico[i * icon_cols + j]);
-    }
-  }
-}
-*/
 
 #endif
