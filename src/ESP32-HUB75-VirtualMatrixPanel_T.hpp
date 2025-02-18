@@ -1,19 +1,28 @@
 /**
- * @file VirtualMatrixPanelT.hpp
- * @brief Templated Virtual Matrix Panel class for HUB75 displays.
+ * @file VirtualMatrixPanel_T.hpp
+ * @brief TEMPLATED Virtual Matrix Panel class for HUB75 displays. Hence the '_T'.
  *
- * This header defines the VirtualMatrixPanelT template class which maps virtual pixel
+ * This header defines the VirtualMatrixPanel_T template class which maps virtual pixel
  * coordinates to physical LED coordinates. It supports compile‐time configuration for:
  *   - Panel chain type (PANEL_CHAIN_TYPE)
- *   - Scan type mapping (via a policy class, default is y)
+ *   - Scan type mapping (via a class, default is STANDARD_TWO_SCAN)
  *   - A compile‐time scale factor (each virtual pixel is drawn as a block)
  *
  * Runtime rotation is supported via setRotation(). Depending on the build options,
  * the class conditionally inherits from Adafruit_GFX, GFX_Lite, or stands alone.
+ * 
+ * This class is used to accomplish two objectives:
+ *   1) Create a much larger display out of a number of physical LED panels
+ *      chained in a various pattern.
+ * 
+ *   2) Provide a way to deal with weird individual physical panels that 
+ *      do not have a simple linear X, Y pixel mapping.
+ *      i.e. Their DMA pixel mapping differs to the real world.
+ *      i.e. Weird four-scan outdoor panels etc.
  *
  * @tparam ChainType       Compile‐time panel chain configuration.
  * @tparam ScanType        Policy type implementing a static apply() function for mapping.
- *                         Default is DefaultScanType<STANDARD_TWO_SCAN>.
+ *                         Default is ScanTypeMapping<STANDARD_TWO_SCAN>.
  * @tparam ScaleFactor     Compile‐time zoom factor (each virtual pixel becomes a
  *                         ScaleFactor x ScaleFactor block).
  *
@@ -30,10 +39,10 @@
 
 #ifdef USE_GFX_LITE
   #include "GFX_Lite.h"
-  #include <Fonts/FreeSansBold12pt7b.h>
+//  #include <Fonts/FreeSansBold12pt7b.h>
 #elif !defined(NO_GFX)
   #include "Adafruit_GFX.h"
-  #include <Fonts/FreeSansBold12pt7b.h>
+//  #include <Fonts/FreeSansBold12pt7b.h>
 #endif
 
 // ----------------------------------------------------------------------
@@ -97,7 +106,30 @@ struct ScanTypeMapping {
 	{
         log_v("ScanTypeMapping: coords.x: %d, coords.y: %d, virt_y: %d, pixel_base: %d", coords.x, coords.y, virt_y, panel_pixel_base);
 
-        if constexpr (ScanType == FOUR_SCAN_64PX_HIGH || ScanType == FOUR_SCAN_32PX_HIGH) 
+        // FOUR_SCAN_16PX_HIGH
+        if constexpr (ScanType == FOUR_SCAN_16PX_HIGH) 
+        {
+            if ((coords.y & 4) == 0) {
+                coords.x += (((coords.x / panel_pixel_base) + 1) * panel_pixel_base);
+			} else {
+                coords.x += ((coords.x / panel_pixel_base) * panel_pixel_base);
+			}
+			
+            coords.y = (coords.y >> 3) * 4 + (coords.y & 0b00000011);
+        }
+        // FOUR_SCAN_40PX_HIGH
+        else if constexpr (ScanType == FOUR_SCAN_40PX_HIGH) 
+        {
+            
+            if (((coords.y) / 10) % 2 == 0) {				
+                coords.x += (((coords.x / panel_pixel_base) + 1) * panel_pixel_base);
+			} else {
+                coords.x += ((coords.x / panel_pixel_base) * panel_pixel_base);
+			}
+            coords.y = (coords.y / 20) * 10 + (coords.y % 10);
+        }
+        //  FOUR_SCAN_64PX_HIGH || FOUR_SCAN_32PX_HIGH
+        else if constexpr (ScanType == FOUR_SCAN_64PX_HIGH || ScanType == FOUR_SCAN_32PX_HIGH) 
 		{
             int adjusted_y = virt_y;
             if constexpr (ScanType == FOUR_SCAN_64PX_HIGH) 
@@ -115,31 +147,14 @@ struct ScanTypeMapping {
 			
             coords.y = (adjusted_y >> 4) * 8 + (adjusted_y & 0b00000111);
         }
-        else if constexpr (ScanType == FOUR_SCAN_16PX_HIGH) {
-            if ((coords.y & 4) == 0) {
-                coords.x += (((coords.x / panel_pixel_base) + 1) * panel_pixel_base);
-			} else {
-                coords.x += ((coords.x / panel_pixel_base) * panel_pixel_base);
-			}
-			
-            coords.y = (coords.y >> 3) * 4 + (coords.y & 0b00000011);
-        }
-        else if constexpr (ScanType == FOUR_SCAN_40PX_HIGH) {
-            
-            if (((coords.y) / 10) % 2 == 0) {				
-                coords.x += (((coords.x / panel_pixel_base) + 1) * panel_pixel_base);
-			} else {
-                coords.x += ((coords.x / panel_pixel_base) * panel_pixel_base);
-			}
-            coords.y = (coords.y / 20) * 10 + (coords.y % 10);
-        }
+
         // For STANDARD_TWO_SCAN / NORMAL_ONE_SIXTEEN no remapping is done.
         return coords;
     }
 };
 
 // ----------------------------------------------------------------------
-// VirtualMatrixPanelT Declaration
+// VirtualMatrixPanel_T Declaration
 //
 // Template parameters:
 //   - ChainScanType: compile–time panel chain configuration.
@@ -150,26 +165,26 @@ struct ScanTypeMapping {
 template <PANEL_CHAIN_TYPE ChainScanType,
           class ScanTypeMapping = ScanTypeMapping<STANDARD_TWO_SCAN>,
           int ScaleFactor = 1>
-class VirtualMatrixPanelT : public GFX {
+class VirtualMatrixPanel_T : public GFX {
 public:
 #elif !defined(NO_GFX)
 template <PANEL_CHAIN_TYPE ChainScanType,
           class ScanTypeMapping = ScanTypeMapping<STANDARD_TWO_SCAN>,
           int ScaleFactor = 1>
-class VirtualMatrixPanelT : public Adafruit_GFX {
+class VirtualMatrixPanel_T : public Adafruit_GFX {
 public:
 #else
 template <PANEL_CHAIN_TYPE ChainScanType,
           class ScanTypeMapping = ScanTypeMapping<STANDARD_TWO_SCAN>,
           int ScaleFactor = 1>
-class VirtualMatrixPanelT {
+class VirtualMatrixPanel_T {
 public:
 #endif
 
     // Constructor: pass the underlying MatrixPanel_I2S_DMA display,
     // virtual module dimensions, and physical panel resolution.
     // (Chain type is chosen at compile time.)
-    VirtualMatrixPanelT(uint8_t _vmodule_rows,
+    VirtualMatrixPanel_T(uint8_t _vmodule_rows,
                         uint8_t _vmodule_cols,
                         uint8_t _panel_res_x,
                         uint8_t _panel_res_y)
@@ -252,15 +267,19 @@ public:
 
 #ifndef NO_GFX
     inline void drawDisplayTest() {
-        display->setFont(&FreeSansBold12pt7b);
-        display->setTextColor(display->color565(255, 255, 0));
-        display->setTextSize(1);
+
+        // Call ourself as we need to re-map pixels if we're using our own ScanTypeMapping
+        // Note: Will mean this display test will be impacted by chaining approach etc.
+      //  this->setFont(&FreeSansBold12pt7b);
+        this->setTextColor(display->color565(255, 255, 0));
+     //   this->setTextSize(1);
         for (int panel = 0; panel < vmodule_cols * vmodule_rows; panel++) {
             int top_left_x = (panel == 0) ? 0 : (panel * panel_res_x);
-            display->drawRect(top_left_x, 0, panel_res_x, panel_res_y, display->color565(0, 255, 0));
-            display->setCursor((panel * panel_res_x) + 2, panel_res_y - 4);
-            display->print((vmodule_cols * vmodule_rows) - panel);
-        }
+            this->drawRect(top_left_x, 0, panel_res_x, panel_res_y, this->color565(0, 255, 0));
+            this->setCursor((panel * panel_res_x) + 2, panel_res_y - 10);
+            this->print((vmodule_cols * vmodule_rows) - panel);
+        }  
+        
     }
 #endif
 
@@ -410,8 +429,12 @@ public:
 
         //log_d("calcCoords post-chain: virt_x: %d, virt_y: %d", virt_x, virt_y);    
 
-        // --- Apply scan–type mapping ---
-        coords = ScanTypeMapping::apply(coords, virt_y, panel_pixel_base);
+        if constexpr (ScanTypeMapping != STANDARD_TWO_SCAN) {
+
+            // --- Apply physical LED panel scan–type mapping / fix ---
+            coords = ScanTypeMapping::apply(coords, virt_y, panel_pixel_base);
+
+        }
 
         //return coords;
     }
