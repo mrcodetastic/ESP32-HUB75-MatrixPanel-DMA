@@ -35,7 +35,7 @@
     #include <Fonts/FreeSansBold12pt7b.h>
 #endif
 
-#warning "VirtualMatrixPanel is depreciated. Please include 'ESP32-VirtualMatrixPanel_T.hpp' and use VirtualMatrixPanel_T instead. Refer to the documentation and VirtualMatrixPanel.ino example."
+#warning "VirtualMatrixPanel is depreciated. Please include 'ESP32-HUB75-VirtualMatrixPanel_T.hpp' and use VirtualMatrixPanel_T instead. Refer to the documentation and VirtualMatrixPanel.ino example."
 
 struct VirtualCoords
 {
