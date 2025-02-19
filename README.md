@@ -30,7 +30,7 @@ __[BUILD OPTIONS](/doc/BuildOptions.md) | [EXAMPLES](/examples/README.md)__ | [!
 # Introduction
 * This is an ESP32 Arduino/IDF library for HUB75 / HUB75E connection based RGB LED panels. 
 * This library 'out of the box' (mostly) supports HUB75 panels where simple TWO rows/lines are updated in parallel... referred to as 'two scan' panels within this documentation. 
-* 'Four scan' panels are also supported - but please refer to the Four Scan Panel example sketch.
+* 1/4 (aka. 'Four Scan') outdoor panels are also supported - but please refer to the VirtualMatrixPanel example.
 * The library uses the DMA functionality provided by the ESP32's 'LCD Mode' for fast data output.
 
 ## Features
