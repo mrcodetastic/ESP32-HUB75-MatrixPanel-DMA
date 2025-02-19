@@ -1,169 +1,218 @@
-/******************************************************************************
-    -------------------------------------------------------------------------
-    Steps to create a virtual display made up of a chain of panels in a grid
-    -------------------------------------------------------------------------
+/**
+ * @file VirtualMatrixPanel.ino
+ * @brief Example of using the VirtualMatrixPanel_T template class.
+ *
+ * The VirtualMatrixPanel_T class can be used for two purposes:
+ * 
+ *   1) Create a much larger display out of a number of physical LED panels 
+ *      chained in a Serpentine or Zig-Zag manner; 
+ *    
+ *   2) Provide a way to deal with weird individual physical panels that do not have a 
+ *      simple linear X, Y pixel mapping. For example, 1/4 scan panels, or outdoor panels.
+ * 
+ *   1) and 2) can be combined and utilsied together.
+ * 
+ *   There are THREE examples contained within this library. What example gets built depends
+ *   on the value of the "#define EXAMPLE_NUMBER X" value. Where X = Example number.
+ *   
+ *   Example 1:  STANDARD 1/2 Scan (i.e. 1/16, 1/32) LED matrix panels, 64x32 pixels each,
+ *               in a grid of 2x2 panels, chained in a Serpentine manner. 
+ * 
+ *   Example 2:  Non-Standard 1/4 Scan (i.e. Four-Scan 1/8) outdoor LED matrix panels, 64x32 pixels each,
+ *               in a grid of 2x2 panels, chained in a Serpentine manner. 
+ * 
+ *   Example 3:  A single non-standard 1/4 Scan (i.e. Four-Scan 1/8) outdoor LED matrix panel, 64x32 pixels.
+ */
 
-    Read the documentation!
-    https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-DMA/tree/master/examples/ChainedPanels
-
-    tl/dr:
-    
-    - Set values for NUM_ROWS, NUM_COLS, PANEL_RES_X, PANEL_RES_Y, PANEL_CHAIN_TYPE. 
-
-    - Other than where the matrix is defined and matrix.begin in the setup, you 
-      should now be using the virtual display for everything (drawing pixels, writing text etc).
-       You can do a find and replace of all calls if it's an existing sketch
-      (just make sure you don't replace the definition and the matrix.begin)
-
-    - If the sketch makes use of MATRIX_HEIGHT or MATRIX_WIDTH, these will need to be 
-      replaced with the width and height of your virtual screen. 
-      Either make new defines and use that, or you can use virtualDisp.width() or .height()
-
-*****************************************************************************/
-// 1) Include key virtual display library
-    #include <ESP32-VirtualMatrixPanel-I2S-DMA.h>
-
-// 2) Set configuration
-    #define PANEL_RES_X 64 // Number of pixels wide of each INDIVIDUAL panel module. 
-    #define PANEL_RES_Y 32 // Number of pixels tall of each INDIVIDUAL panel module.
-
-    #define NUM_ROWS 2 // Number of rows of chained INDIVIDUAL PANELS
-    #define NUM_COLS 2 // Number of INDIVIDUAL PANELS per ROW
-    #define PANEL_CHAIN NUM_ROWS*NUM_COLS    // total number of panels chained one to another
-
-    /* Configure the serpetine chaining approach. Options are:
-        CHAIN_TOP_LEFT_DOWN
-        CHAIN_TOP_RIGHT_DOWN
-        CHAIN_BOTTOM_LEFT_UP
-        CHAIN_BOTTOM_RIGHT_UP
-
-        The location (i.e. 'TOP_LEFT', 'BOTTOM_RIGHT') etc. refers to the starting point where 
-        the ESP32 is located, and how the chain of panels will 'roll out' from there.
-
-        In this example we're using 'CHAIN_BOTTOM_LEFT_UP' which would look like this in the real world:
-
-        Chain of 4 x 64x32 panels with the ESP at the BOTTOM_LEFT:
-
-        +---------+---------+
-        |    4    |    3    |
-        |         |         |
-        +---------+---------+
-        |    1    |    2    |
-        |  (ESP)  |         |
-        +---------+---------+      
-
+ #include <Arduino.h>
+ #include <ESP32-HUB75-VirtualMatrixPanel_T.hpp>
+ 
+ // Select example to compile!
+ #define EXAMPLE_NUMBER 1
+ //#define EXAMPLE_NUMBER 2
+ //#define EXAMPLE_NUMBER 3
+ 
+ /**
+  * Configuration of the LED matrix panels number and individual pixel resolution.
+  **/
+ #define PANEL_RES_X     64     // Number of pixels wide of each INDIVIDUAL panel module. 
+ #define PANEL_RES_Y     32     // Number of pixels tall of each INDIVIDUAL panel module.
+ 
+ #define VDISP_NUM_ROWS      2 // Number of rows of individual LED panels 
+ #define VDISP_NUM_COLS      2 // Number of individual LED panels per row
+ 
+ #define PANEL_CHAIN_LEN     (VDISP_NUM_ROWS*VDISP_NUM_COLS)  // Don't change
+ 
+ 
+ /**
+  * Configuration of the approach used to chain all the individual panels together.
+  * Refer to the documentation or check the enum 'PANEL_CHAIN_TYPE' in VirtualMatrixPanel_T.hpp for options.
+  **/
+ #define PANEL_CHAIN_TYPE CHAIN_TOP_RIGHT_DOWN
+ 
+ /**
+  * Optional config for the per-panel pixel mapping, for non-standard panels.
+  * i.e. 1/4 scan panels, or outdoor panels. They're a pain in the a-- and all
+  *      have their own weird pixel mapping that is not linear.
+  * 
+  * This is used for Examples 2 and 3.
+  * 
+  **/
+ #define PANEL_SCAN_TYPE  FOUR_SCAN_32PX_HIGH
+ 
+ /**
+  * Mandatory declaration of the dma_display. DO NOT CHANGE
+  **/
+ MatrixPanel_I2S_DMA *dma_display = nullptr;
+ 
+ 
+ /**
+  * Template instantiation for the VirtualMatrixPanel_T class, depending on use-case.
+  **/
+ #if EXAMPLE_NUMBER == 1
+ // --- Example 1: STANDARD 1/2 Scan ---
+ 
+ // Declare a pointer to the specific instantiation:
+ VirtualMatrixPanel_T<PANEL_CHAIN_TYPE>* virtualDisp = nullptr;
+ 
+ #endif
+ 
+ 
+ #if EXAMPLE_NUMBER == 2 
+ // --- Example 2: Non-Standard 1/4 Scan (Four-Scan 1/8) ---
+ 
+ // Use an existing library user-contributed Scan Type pixel mapping
+ using MyScanTypeMapping = ScanTypeMapping<PANEL_SCAN_TYPE>;
+ 
+ // Create a pointer to the specific instantiation of the VirtualMatrixPanel_T class
+ VirtualMatrixPanel_T<PANEL_CHAIN_TYPE, MyScanTypeMapping>* virtualDisp = nullptr;
+ 
+ #endif
+ 
+ #if EXAMPLE_NUMBER == 3
+ // --- Example 3: Single non-standard 1/4 Scan (Four-Scan 1/8) ---
+ 
+ // Use an existing library user-contributed Scan Type pixel mapping
+ using MyScanTypeMapping = ScanTypeMapping<PANEL_SCAN_TYPE>;
+ 
+ // Create a pointer to the specific instantiation of the VirtualMatrixPanel_T class
+ VirtualMatrixPanel_T<CHAIN_NONE, MyScanTypeMapping>* virtualDisp = nullptr;
+ 
+ #endif
+ 
+ 
+ 
+ // Bonus non-existnat example. Create your own per-panel custom pixel mapping!
+ #if EXAMPLE_NUMBER == 4
+ 
+ // --- Custom Scan–Type Pixel Mapping ---
+ // This policy adds a fixed offset to the coordinates.
+ struct CustomScanTypeMapping {
+   static constexpr VirtualCoords apply(VirtualCoords coords, int virt_y, int panel_pixel_base) {
+       // For demonstration, add a fixed offset of +5 to x and +3 to y.
+       coords.x += 5;
+       coords.y += 3;
+       return coords;
+   }
+ };
+ #endif 
+ 
+ void setup() 
+ {
+   Serial.begin(115200);
+   delay(2000);
+     
+   #if EXAMPLE_NUMBER == 3
+     /**
+      * HACK ALERT!
+      * For 1/4 scan panels (namely outdoor panels), electrically the pixels are connected in a chain that is
+      * twice the physical panel's pixel width, and half the pixel height. As such, we need to configure
+      * the underlying DMA library to match the same. Then we use the VirtualMatrixPanel_T class to map the
+      * physical pixels to the virtual pixels.
+     */
+   HUB75_I2S_CFG mxconfig(
+     PANEL_RES_X*2,              // DO NOT CHANGE THIS
+     PANEL_RES_Y/2,              // DO NOT CHANGE THIS
+     1 // A Single panel
+   );
+ 
+   #elif EXAMPLE_NUMBER == 2 
+ 
+     /**
+      * HACK ALERT!
+      * For 1/4 scan panels (namely outdoor panels), electrically the pixels are connected in a chain that is
+      * twice the physical panel's pixel width, and half the pixel height. As such, we need to configure
+      * the underlying DMA library to match the same. Then we use the VirtualMatrixPanel_T class to map the
+      * physical pixels to the virtual pixels.
+     */
+     HUB75_I2S_CFG mxconfig(
+       PANEL_RES_X*2,              // DO NOT CHANGE THIS
+       PANEL_RES_Y/2,              // DO NOT CHANGE THIS
+       PANEL_CHAIN_LEN
+     );
+ 
+   #else
+ 
+     // Standard panel type natively supported by this library (Example 1)
+     HUB75_I2S_CFG mxconfig(
+       PANEL_RES_X,   
+       PANEL_RES_Y,  
+       PANEL_CHAIN_LEN    
+     );
+ 
+   #endif
+ 
+   mxconfig.i2sspeed = HUB75_I2S_CFG::HZ_10M;
+   mxconfig.clkphase = false;
+   //mxconfig.driver = HUB75_I2S_CFG::FM6126A;
+ 
+   
+   /**
+    * Setup physical DMA LED display output.
     */
-    #define VIRTUAL_MATRIX_CHAIN_TYPE CHAIN_BOTTOM_LEFT_UP 
-
-// 3) Create the runtime objects to use
-
-    // placeholder for the matrix object
-    MatrixPanel_I2S_DMA *dma_display = nullptr;
-
-    // placeholder for the virtual display object
-    VirtualMatrixPanel  *virtualDisp = nullptr;
-
-
-/******************************************************************************
- * Setup!
- ******************************************************************************/
-void setup() {
-  
-  delay(2000);
-  Serial.begin(115200);
-  Serial.println(""); Serial.println(""); Serial.println("");
-  Serial.println("*****************************************************");
-  Serial.println(" HELLO !");
-  Serial.println("*****************************************************");
-
-
-  /******************************************************************************
-   * Create physical DMA panel class AND virtual (chained) display class.   
-   ******************************************************************************/
-
-  /*
-    The configuration for MatrixPanel_I2S_DMA object is held in HUB75_I2S_CFG structure,
-    All options has it's predefined default values. So we can create a new structure and redefine only the options we need
-
-	Please refer to the '2_PatternPlasma.ino' example for detailed example of how to use the MatrixPanel_I2S_DMA configuration
-  */
-
-  HUB75_I2S_CFG mxconfig(
-                PANEL_RES_X,   // module width
-                PANEL_RES_Y,   // module height
-                PANEL_CHAIN    // chain length
-  );
-
-  //mxconfig.driver = HUB75_I2S_CFG::FM6126A;     // in case that we use panels based on FM6126A chip, we can set it here before creating MatrixPanel_I2S_DMA object
-
-  // Sanity checks
-  if (NUM_ROWS <= 1) {
-    Serial.println(F("There is no reason to use the VirtualDisplay class for a single horizontal chain and row!"));
-  }
-
-  // OK, now we can create our matrix object
-  dma_display = new MatrixPanel_I2S_DMA(mxconfig);
-
-  // let's adjust default brightness to about 75%
-  dma_display->setBrightness8(192);    // range is 0-255, 0 - 0%, 255 - 100%
-
-  // Allocate memory and start DMA display
-  if( not dma_display->begin() )
-      Serial.println("****** !KABOOM! I2S memory allocation failed ***********");
-
-  // create VirtualDisplay object based on our newly created dma_display object
-  virtualDisp = new VirtualMatrixPanel((*dma_display), NUM_ROWS, NUM_COLS, PANEL_RES_X, PANEL_RES_Y, VIRTUAL_MATRIX_CHAIN_TYPE);
-
-  // So far so good, so continue
-  virtualDisp->fillScreen(virtualDisp->color444(0, 0, 0));
-  virtualDisp->drawDisplayTest(); // draw text numbering on each screen to check connectivity
-
- // delay(1000);
-
-  Serial.println("Chain of 4x 64x32 panels for this example:");
-  Serial.println("+---------+---------+");
-  Serial.println("|    4    |    3    |");
-  Serial.println("|         |         |");
-  Serial.println("+---------+---------+");
-  Serial.println("|    1    |    2    |");
-  Serial.println("| (ESP32) |         |");
-  Serial.println("+---------+---------+");
-
-   // draw blue text
-   virtualDisp->setFont(&FreeSansBold12pt7b);
-   virtualDisp->setTextColor(virtualDisp->color565(0, 0, 255));
-   virtualDisp->setTextSize(3); 
-   virtualDisp->setCursor(0, virtualDisp->height()- ((virtualDisp->height()-45)/2));    
-   virtualDisp->print("ABCD");
-
-   // Red text inside red rect (2 pix in from edge)
-   virtualDisp->drawRect(1,1, virtualDisp->width()-2, virtualDisp->height()-2, virtualDisp->color565(255,0,0));
-
-   // White line from top left to bottom right
-   virtualDisp->drawLine(0,0, virtualDisp->width()-1, virtualDisp->height()-1, virtualDisp->color565(255,255,255));
-
+   dma_display = new MatrixPanel_I2S_DMA(mxconfig);
+   dma_display->begin();
+   dma_display->setBrightness8(128); //0-255
+   dma_display->clearScreen();
+ 
+   /**
+    * Setup the VirtualMatrixPanel_T class to map the virtual pixels to the physical pixels.
+    */
+ 
+   #if EXAMPLE_NUMBER == 1
+     virtualDisp = new VirtualMatrixPanel_T<PANEL_CHAIN_TYPE>(VDISP_NUM_ROWS, VDISP_NUM_COLS, PANEL_RES_X, PANEL_RES_Y);
+   #elif EXAMPLE_NUMBER == 2
+     virtualDisp = new VirtualMatrixPanel_T<PANEL_CHAIN_TYPE, MyScanTypeMapping>(VDISP_NUM_ROWS, VDISP_NUM_COLS, PANEL_RES_X, PANEL_RES_Y);
+   #elif EXAMPLE_NUMBER == 3   
+     virtualDisp = new VirtualMatrixPanel_T<CHAIN_NONE, MyScanTypeMapping>(1, 1, PANEL_RES_X, PANEL_RES_Y); // Single 1/4 scan panel
+   #endif  
+ 
+   // Pass a reference to the DMA display to the VirtualMatrixPanel_T class
+   virtualDisp->setDisplay(*dma_display);
+ 
+   for (int y = 0; y < virtualDisp->height(); y++) {
+     for (int x = 0; x < virtualDisp->width(); x++) {
+ 
+       uint16_t color = virtualDisp->color565(96, 0, 0); // red
+ 
+       if (x == 0)   color = virtualDisp->color565(0, 255, 0); // g
+       if (x == (virtualDisp->width()-1)) color = virtualDisp->color565(0, 0, 255); // b
+ 
+       virtualDisp->drawPixel(x, y, color);
+       delay(2);
+     }
+   }
+   
+   delay(3000);
+   virtualDisp->clearScreen();
    virtualDisp->drawDisplayTest(); // re draw text numbering on each screen to check connectivity
    
-}
-
-void loop() {
-  
-
-} // end loop
-
-
-/*****************************************************************************
-
-    Thanks to:
-
-    * Brian Lough for the original example as raised in this issue:
-      https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/issues/26
-
-      YouTube: https://www.youtube.com/brianlough
-      Tindie: https://www.tindie.com/stores/brianlough/
-      Twitter: https://twitter.com/witnessmenow
-
-    * Galaxy-Man for the kind donation of panels make/test that this is possible:
-      https://github.com/Galaxy-Man
-
-*****************************************************************************/
+ }
+ 
+ 
+ void loop() {
+ 
+   // Do nothing here.
+   delay (100);
+ 
+ }
