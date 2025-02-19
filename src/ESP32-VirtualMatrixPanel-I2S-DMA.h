@@ -35,8 +35,7 @@
     #include <Fonts/FreeSansBold12pt7b.h>
 #endif
 
-
-// #include <iostream>
+#warning "VirtualMatrixPanel is depreciated. Please include 'ESP32-VirtualMatrixPanel_T.hpp' and use VirtualMatrixPanel_T instead. Refer to the documentation and VirtualMatrixPanel.ino example."
 
 struct VirtualCoords
 {
@@ -74,7 +73,9 @@ enum PANEL_CHAIN_TYPE
     CHAIN_BOTTOM_LEFT_UP_ZZ
 };
 
-[[deprecated("VirtualMatrixPanel is depreciated. Please include 'HUB75-VirtualMatrixPanelT.hpp' and use VirtualMatrixPanelT instead. Refer to the documentation.")]]
+
+
+//[[deprecated("VirtualMatrixPanel is depreciated. Please include 'ESP32-VirtualMatrixPanel_T.hpp' and use VirtualMatrixPanel_T instead. Refer to the documentation and VirtualMatrixPanel.ino example.")]]
 #ifdef USE_GFX_LITE
 class VirtualMatrixPanel : public GFX
 #elif !defined NO_GFX
