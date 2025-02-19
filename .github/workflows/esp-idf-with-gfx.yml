@@ -1,4 +1,4 @@
-name: esp-idf 5.3.1 with Adafruit GFX Library
+name: esp-idf with Adafruit GFX Library
 
 on:
   push:
@@ -12,7 +12,7 @@ on:
 
 jobs:
   build:
-    name: esp-idf 5.3.1 with Adafruit GFX
+    name: esp-idf 5.3.2 with Adafruit GFX
 
     runs-on: ubuntu-latest
 
@@ -43,6 +43,6 @@ jobs:
     - name: esp-idf build
       uses: espressif/esp-idf-ci-action@v1
       with:
-        esp_idf_version: v5.3.1
+        esp_idf_version: v5.3.2
         target: esp32
         path: 'examples/esp-idf/with-gfx'
