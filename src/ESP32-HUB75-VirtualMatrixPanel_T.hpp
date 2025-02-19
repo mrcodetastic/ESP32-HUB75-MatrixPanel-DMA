@@ -39,10 +39,8 @@
 
 #ifdef USE_GFX_LITE
   #include "GFX_Lite.h"
-//  #include <Fonts/FreeSansBold12pt7b.h>
 #elif !defined(NO_GFX)
   #include "Adafruit_GFX.h"
-//  #include <Fonts/FreeSansBold12pt7b.h>
 #endif
 
 // ----------------------------------------------------------------------
@@ -273,14 +271,40 @@ public:
       //  this->setFont(&FreeSansBold12pt7b);
         this->setTextColor(display->color565(255, 255, 0));
      //   this->setTextSize(1);
-        for (int panel = 0; panel < vmodule_cols * vmodule_rows; panel++) {
-            int top_left_x = (panel == 0) ? 0 : (panel * panel_res_x);
-            this->drawRect(top_left_x, 0, panel_res_x, panel_res_y, this->color565(0, 255, 0));
-            this->setCursor((panel * panel_res_x) + 2, panel_res_y - 10);
-            this->print((vmodule_cols * vmodule_rows) - panel);
+        for (int col = 0; col < vmodule_cols; col++) {
+            for (int row = 0; row < vmodule_rows; row++) {
+
+                int start_x = col * panel_res_x;
+                int start_y = row * panel_res_y;
+
+                int panel_id = col + (row * vmodule_cols) + 1;
+                //int top_left_x = panel * panel_res_x;
+                this->drawRect(start_x, start_y, panel_res_x, panel_res_y, this->color565(0, 255, 0));
+                this->setCursor(start_x + panel_res_x/2 - 2, start_y + panel_res_y/2 - 4);
+                this->print(panel_id);
+
+                log_d("drawDisplayTest() Panel: %d, start_x: %d, start_y: %d", panel_id, start_x, start_y);
+            }
         }  
         
     }
+
+    inline void drawDisplayTestDMA()
+    {
+        // Write to the underlying panels only via the dma_display instance.
+        // This only works on standard panels with a linear mapping (i.e. two-scan).
+        this->display->setTextColor(this->display->color565(255, 255, 0));
+        this->display->setTextSize(1);
+    
+        for (int panel = 0; panel < vmodule_cols * vmodule_rows; panel++)
+        {
+            int top_left_x = panel * panel_res_x;
+            this->display->drawRect(top_left_x, 0, panel_res_x, panel_res_y, this->display->color565(0, 255, 0));
+            this->display->setCursor((panel * panel_res_x) + 6, panel_res_y - 12);
+            this->display->print((vmodule_cols * vmodule_rows) - panel);
+        }
+    }
+
 #endif
 
     inline void clearScreen() { display->clearScreen(); }
@@ -427,16 +451,11 @@ public:
             coords.y = virt_y;
         }
 
-        //log_d("calcCoords post-chain: virt_x: %d, virt_y: %d", virt_x, virt_y);    
+        //log_d("calcCoords post-chain: virt_x: %d, virt_y: %d", virt_x, virt_y);  
 
-        if constexpr (ScanTypeMapping != STANDARD_TWO_SCAN) {
+        // --- Apply physical LED panel scan–type mapping / fix ---
+        coords = ScanTypeMapping::apply(coords, virt_y, panel_pixel_base);
 
-            // --- Apply physical LED panel scan–type mapping / fix ---
-            coords = ScanTypeMapping::apply(coords, virt_y, panel_pixel_base);
-
-        }
-
-        //return coords;
     }
 
 #ifdef NO_GFX
