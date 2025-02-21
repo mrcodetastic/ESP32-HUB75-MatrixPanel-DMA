@@ -48,7 +48,7 @@ jobs:
       with:
         python-version: '3.x'
     - name: Install Platformio
-      run: pip install --upgrade platformio==6.1.11
+      run: pip install --upgrade platformio==6.1.17
     - name: Run PlatformIO CI (Arduino)
       if: ${{ matrix.framework == 'Arduino'}}
       env: 
