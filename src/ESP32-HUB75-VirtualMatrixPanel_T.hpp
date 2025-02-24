@@ -129,55 +129,20 @@ struct ScanTypeMapping {
 		}
 		else if constexpr (ScanType == FOUR_SCAN_40_80PX_HFARCAN) 
 		{
-			
-		  /* 
-		   * Weird mapping: https://github.com/mrcodetastic/ESP32-HUB75-MatrixPanel-DMA/issues/759
-		   * Panel is annoyingly weird. When sent DMA signal as if it's a
-		   * 160px wide and 20px high. Then the DMA signal pixel (0,0) is
-		   * shown on row 10.
-		   * Then pixel 15 (i.e. 16 in real world), is at the physical of
-		   * 0,0 (i.e. top left pixel), which then goes for 32 pixel.
-		   * Then the next 32 pixel are at row 10 again. And so on and so forth.
-		   */			
-			
-			int panel_local_x = coords.x % 80; // compensate for chain of these panels 
-			int logical_dma_y = (coords.y % 10) + 10 * ((coords.y / 20) % 2); // not impacted by chaining
+			//  Weird mapping: https://github.com/mrcodetastic/ESP32-HUB75-MatrixPanel-DMA/issues/759
+			panel_pixel_base = 16;
 
-			int logical_dma_x = 0;
-			int logical_x_option = (coords.y/10)%2;
+            // Mapping logic
+            int panel_local_x = coords.x % 80; // Compensate for chain of panels
 
-			// Option 0 - phyiscal lines 0-9, 20-29
-			if (logical_x_option == 0) {
-				
-				if (panel_local_x < 32) {
-					logical_dma_x += 16;
-				}
-				else if (panel_local_x < 64) {
-					logical_dma_x += 48;  
-				}
-				else if (panel_local_x < 80) {
-					logical_dma_x += 80;  
-				}
-				
-			} else {
+            if ((((coords.y) / 10) % 2) ^ ((panel_local_x / panel_pixel_base) % 2)) {
+                coords.x += ((coords.x / panel_pixel_base) * panel_pixel_base);
+            } else {
+                coords.x += (((coords.x / panel_pixel_base) + 1) * panel_pixel_base);
+            }
 
-				// Option 1
-				if (panel_local_x < 16) {
-				}
-				else if (panel_local_x < 48) {
-					logical_dma_x += 32;  
-				}
-				else if (panel_local_x < 80) {
-					logical_dma_x += 64;  
-				}
-			}
+            coords.y = (coords.y % 10) + 10 * ((coords.y / 20) % 2);
 			
-			// What logical row are we addressing?
-			logical_dma_x += panel_local_x;
-			
-			coords.x = logical_dma_x;
-			coords.y = logical_dma_y;
-		
 		}		
 		//	FOUR_SCAN_64PX_HIGH || FOUR_SCAN_32PX_HIGH
 		else if constexpr (ScanType == FOUR_SCAN_64PX_HIGH || ScanType == FOUR_SCAN_32PX_HIGH) 

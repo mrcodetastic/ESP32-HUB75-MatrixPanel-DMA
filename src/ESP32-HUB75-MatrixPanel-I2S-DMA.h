@@ -640,11 +640,11 @@ public:
     }
 
     brightness = b;
-    brtCtrlOEv2(b, 0);
+    setBrightnessOE(b, 0);
 
     if (m_cfg.double_buff)
     {
-      brtCtrlOEv2(b, 1);
+      setBrightnessOE(b, 1);
     }
   }
 
@@ -731,12 +731,12 @@ protected:
   inline void resetbuffers()
   {
     clearFrameBuffer(0);        
-    brtCtrlOEv2(brightness, 0); 
+    setBrightnessOE(brightness, 0); 
 
     if (m_cfg.double_buff) {
 		
       clearFrameBuffer(1);        
-      brtCtrlOEv2(brightness, 1);
+      setBrightnessOE(brightness, 1);
 
     }
   }
@@ -806,7 +806,7 @@ private:
    * @param brt - brightness level from 0 to row_width
    * @param _buff_id - buffer id to control
    */
-  void brtCtrlOEv2(uint8_t brt, const int _buff_id = 0);
+  void setBrightnessOE(uint8_t brt, const int _buff_id = 0);
 
   /**
    * @brief - transforms coordinates according to orientation
