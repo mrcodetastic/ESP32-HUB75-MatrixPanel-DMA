@@ -13,7 +13,7 @@
 // #define getRowDataPtr(row, _dpth, buff_id) &(dma_buff.rowBits[row]->data[_dpth * dma_buff.rowBits[row]->width + buff_id*(dma_buff.rowBits[row]->width * dma_buff.rowBits[row]->colour_depth)])
 
 // BufferID is now ignored, seperate global pointer pointer!
-#define getRowDataPtr(row, _dpth, buff_id) &(fb->rowBits[row]->data[_dpth * fb->rowBits[row]->width])
+#define getRowDataPtr(row, _dpth) &(fb->rowBits[row]->data[_dpth * fb->rowBits[row]->width])
 
 /* We need to update the correct uint16_t in the rowBitStruct array, that gets sent out in parallel
  * 16 bit parallel mode - Save the calculated value to the bitplane memory in reverse order to account for I2S Tx FIFO mode1 ordering
@@ -32,46 +32,53 @@
  */
 #define PIXEL_COLOR_MASK_BIT(color_depth_index, mask_offset) (1 << (color_depth_index + mask_offset))
 
-bool MatrixPanel_I2S_DMA::allocateDMAmemory()
+bool MatrixPanel_I2S_DMA::setupDMA(const HUB75_I2S_CFG &_cfg)
 {
-
+  
+  /***
+   * Step 0: Allocate basic DMA framebuffer memory for the data we send out in parallel to the HUB75 panel.
+   *         Colour depth is the only consideration.
+   * 
+   */
   ESP_LOGI("I2S-DMA", "Free heap: %d", heap_caps_get_free_size(MALLOC_CAP_INTERNAL));
   ESP_LOGI("I2S-DMA", "Free SPIRAM: %d", heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
 
-  // Alright, theoretically we should be OK, so let us do this, so
-  // lets allocate a chunk of memory for each row (a row could span multiple panels if chaining is in place)
-  ESP_LOGI("I2S-DMA", "allocating rowBitStructs with pixel_color_depth_bits of %d", m_cfg.getPixelColorDepthBits());
-  // iterate through number of rows, allocate memory for each
   size_t allocated_fb_memory = 0;
 
   int fbs_required = (m_cfg.double_buff) ? 2 : 1;
+
   for (int fb = 0; fb < (fbs_required); fb++)
   {
     frame_buffer[fb].rowBits.reserve(ROWS_PER_FRAME);
 
     for (int malloc_num = 0; malloc_num < ROWS_PER_FRAME; malloc_num++)
     {
-      auto ptr = std::make_shared<rowBitStruct>(PIXELS_PER_ROW, m_cfg.getPixelColorDepthBits(), m_cfg.double_buff);
+      auto ptr = std::make_shared<rowBitStruct>(PIXELS_PER_ROW, m_cfg.getPixelColorDepthBits());
 
-      if (ptr->data == nullptr)
-      {
-        ESP_LOGE("I2S-DMA", "CRITICAL ERROR: Not enough memory for requested colour depth! Please reduce pixel_color_depth_bits value.\r\n");
-        ESP_LOGE("I2S-DMA", "Could not allocate rowBitStruct %d!.\r\n", malloc_num);
+      if (ptr->data == nullptr) {
+
+        ESP_LOGE("I2S-DMA", "CRITICAL ERROR: Not enough memory for requested colour depth of %d bits! Please reduce pixel_color_depth_bits value.\r\n", m_cfg.getPixelColorDepthBits());
 
         return false;
         // TODO: should we release all previous rowBitStructs here???
       }
 
-      allocated_fb_memory += ptr->getColorDepthSize(); // byte required to display all colour depths for the rows shown at the same time
+      allocated_fb_memory += ptr->getColorDepthSize(false); // byte required to display all colour depths for the two parallel rows
       frame_buffer[fb].rowBits.emplace_back(ptr); // save new rowBitStruct pointer into rows vector
       ++frame_buffer[fb].rows;
     }
   }
   ESP_LOGI("I2S-DMA", "Allocating %d bytes memory for DMA BCM framebuffer(s).", allocated_fb_memory);
 
-  // calculate the lowest LSBMSB_TRANSITION_BIT value that will fit in memory that will meet or exceed the configured refresh rate
-  
-//#define FORCE_COLOR_DEPTH 1
+
+  /***
+   * Step 1: Check what the minimum refresh rate is, and calculate the lsbMsbTransitionBit
+   *         which is the bit at which we can reduce the colour depth to achieve the minimum refresh rate.
+   * 
+   *         This also determines the number of DMA descriptors required per row.
+   */  
+   
+//#define FORCE_COLOR_DEPTH 1   
   
 #if !defined(FORCE_COLOR_DEPTH)
 
@@ -80,14 +87,16 @@ bool MatrixPanel_I2S_DMA::allocateDMAmemory()
   while (1)
   {
     int psPerClock = 1000000000000UL / m_cfg.i2sspeed;
-    int nsPerLatch = ((PIXELS_PER_ROW + CLKS_DURING_LATCH) * psPerClock) / 1000;
+    int nsPerLatch = ((PIXELS_PER_ROW + CLKS_DURING_LATCH) * psPerClock) / 1000; // time per row
 
     // add time to shift out LSBs + LSB-MSB transition bit - this ignores fractions...
     int nsPerRow = m_cfg.getPixelColorDepthBits() * nsPerLatch;
 
-    // add time to shift out MSBs
-    for (int i = lsbMsbTransitionBit + 1; i < m_cfg.getPixelColorDepthBits(); i++)
-      nsPerRow += (1 << (i - lsbMsbTransitionBit - 1)) * (m_cfg.getPixelColorDepthBits() - i) * nsPerLatch;
+    // Now add the time for the remaining bit depths
+    for (int i = lsbMsbTransitionBit + 1; i < m_cfg.getPixelColorDepthBits(); i++) {
+      //nsPerRow += (1 << (i - lsbMsbTransitionBit - 1)) * (m_cfg.getPixelColorDepthBits() - i) * nsPerLatch;
+	  nsPerRow += (1 << (i - lsbMsbTransitionBit - 1)) *  nsPerLatch;
+	}
 
     int nsPerFrame = nsPerRow * ROWS_PER_FRAME;
     int actualRefreshRate = 1000000000UL / (nsPerFrame);
@@ -114,154 +123,148 @@ bool MatrixPanel_I2S_DMA::allocateDMAmemory()
 #endif
 
   /***
-   * Step 2a: lsbMsbTransition bit is now finalised - recalculate the DMA descriptor count required, which is used for
-   *          memory allocation of the DMA linked list memory structure.
+   * Step 2:  Calculate the DMA descriptors required, which is used for memory allocation of the DMA linked list memory structure.
+   *          This determines the number of passes required to shift out the colour bits in the framebuffer.
+   *          We need to also take into consderation where a chain of panels (pixels) is so long, it requires more than one DMA payload,
+   *          give this library's DMA output memory allocation approach is by the row.
    */
-  int numDMAdescriptorsPerRow = 1;
-  for (int i = lsbMsbTransitionBit + 1; i < m_cfg.getPixelColorDepthBits(); i++)
-  {
-    numDMAdescriptorsPerRow += (1 << (i - lsbMsbTransitionBit - 1));
+	
+  int    dma_descs_per_row_1cdepth	 	= (frame_buffer[0].rowBits[0]->getColorDepthSize(true) + DMA_MAX - 1 ) / DMA_MAX;
+  size_t last_dma_desc_bytes_1cdepth   = (frame_buffer[0].rowBits[0]->getColorDepthSize(true) % DMA_MAX);
+  
+  int    dma_descs_per_row_all_cdepths	= (frame_buffer[0].rowBits[0]->getColorDepthSize(false) + DMA_MAX - 1 ) / DMA_MAX;
+  size_t last_dma_desc_bytes_all_cdepths  = (frame_buffer[0].rowBits[0]->getColorDepthSize(false) % DMA_MAX);
+
+  // Logging the calculated values
+  ESP_LOGV("I2S-DMA", "dma_descs_per_row_1cdepth: %d", dma_descs_per_row_1cdepth);
+  ESP_LOGV("I2S-DMA", "last_dma_desc_bytes_1cdepth: %zu", last_dma_desc_bytes_1cdepth);
+  ESP_LOGV("I2S-DMA", "dma_descs_per_row_all_cdepths: %d", dma_descs_per_row_all_cdepths);
+  ESP_LOGV("I2S-DMA", "last_dma_desc_bytes_all_cdepths: %zu", last_dma_desc_bytes_all_cdepths);
+  
+ 
+  // Calculate per-row number
+  int dma_descriptors_per_row = dma_descs_per_row_all_cdepths;
+
+  // Add descriptors for MSB bits after transition
+  for (int i = lsbMsbTransitionBit + 1; i < m_cfg.getPixelColorDepthBits(); i++) {
+    dma_descriptors_per_row += (1 << (i - lsbMsbTransitionBit - 1)) * dma_descs_per_row_1cdepth;
   }
+  
+  //dma_descriptors_per_row = 1;
 
-  ESP_LOGI("I2S-DMA", "Recalculated number of DMA descriptors per row: %d", numDMAdescriptorsPerRow);
-
-  // Refer to 'DMA_LL_PAYLOAD_SPLIT' code in configureDMA() below to understand why this exists.
-  // numDMAdescriptorsPerRow is also used to calculate descount which is super important in i2s_parallel_config_t SoC DMA setup.
-  if (frame_buffer[0].rowBits[0]->getColorDepthSize() > DMA_MAX)
-  {
-
-    ESP_LOGW("I2S-DMA", "rowBits struct is too large to fit in one DMA transfer payload, splitting required. Adding %d DMA descriptors\n", m_cfg.getPixelColorDepthBits() - 1);
-
-    numDMAdescriptorsPerRow += m_cfg.getPixelColorDepthBits() - 1;
-    // Note: If numDMAdescriptorsPerRow is even just one descriptor too large, DMA linked list will not correctly loop.
-  }
+  // Allocate DMA descriptors 
+  int dma_descriptions_required = dma_descriptors_per_row * ROWS_PER_FRAME;
+  
+  ESP_LOGV("I2S-DMA", "DMA descriptors per row: %d", dma_descriptors_per_row);  
+  ESP_LOGV("I2S-DMA", "DMA descriptors required in total: %d", dma_descriptions_required);    
 
   /***
-   * Step 3: Allocate memory for DMA linked list, linking up each framebuffer row in sequence for GPIO output.
+   * Step 3:  Allocate the DMA descriptor memory via. the relevant platform DMA implementation class.
    */
 
-  // malloc the DMA linked list descriptors that i2s_parallel will need
-  int desccount = numDMAdescriptorsPerRow * ROWS_PER_FRAME;
-
-  if (m_cfg.double_buff)
-  {
+  if (m_cfg.double_buff) {
     dma_bus.enable_double_dma_desc();
   }
 
-  dma_bus.allocate_dma_desc_memory(desccount);
-
-  // point FB we can write to, to 0 / dmadesc_a
-  fb = &frame_buffer[0];
-
-  // Just os we know
-  initialized = true;
-
-  return true;
-
-} // end allocateDMAmemory()
-
-
-
-/*
-// Version 2.0 March 2023 
-int MatrixPanel_I2S_DMA::create_descriptor_links(void *data, size_t size, bool dmadesc_b, bool countonly)
-{
-    int len = size;
-    uint8_t *data2 = (uint8_t *)data;
-
-    int n = 0;    
-    while (len)
-    {
-        int dmalen = len;
-        if (dmalen > DMA_MAX)
-            dmalen = DMA_MAX;
-
-          if (!countonly)
-            dma_bus.create_dma_desc_link(data2, dmalen, dmadesc_b);                
-
-        len -= dmalen;
-        data2 += dmalen;
-        n++;
-    }
-
-    return n;
-}
-*/
-void MatrixPanel_I2S_DMA::configureDMA(const HUB75_I2S_CFG &_cfg)
-{
-
-  //   lldesc_t *previous_dmadesc_a     = 0;
-  //   lldesc_t *previous_dmadesc_b     = 0;
-  int current_dmadescriptor_offset = 0;
-
-  // HACK: If we need to split the payload in 1/2 so that it doesn't breach DMA_MAX, lets do it by the colour_depth.
-  /*
-  int num_dma_payload_colour_depths = m_cfg.getPixelColorDepthBits();
-  if (frame_buffer[0].rowBits[0]->getColorDepthSize() > DMA_MAX)
+  if ( !dma_bus.allocate_dma_desc_memory(dma_descriptions_required) )
   {
-    num_dma_payload_colour_depths = 1;
+    return false;
   }
-  */
 
 
- // Fill DMA linked lists for both frames (as in, halves of the HUB75 panel) in sequence (top to bottom) 
-  for (int row = 0; row < ROWS_PER_FRAME; row++)
-  {
-    // first set of data is LSB through MSB, single pass (IF TOTAL SIZE < DMA_MAX) - all colour bits are displayed once, which takes care of everything below and including LSBMSB_TRANSITION_BIT
-    // NOTE: size must be less than DMA_MAX - worst case for library: 16-bpp with 256 pixels per row would exceed this, need to break into two
-    // link_dma_desc(&dmadesc_a[current_dmadescriptor_offset], previous_dmadesc_a, dma_buff.rowBits[row]->getDataPtr(), dma_buff.rowBits[row]->size(num_dma_payload_colour_depths));
-    //   previous_dmadesc_a = &dmadesc_a[current_dmadescriptor_offset];
+  /***
+   * Step 4:  Link up the DMA descriptors per the colour depth and rows.
+   */
+  int _dmadescriptor_count = 0; // for tracking
 
-    dma_bus.create_dma_desc_link(frame_buffer[0].rowBits[row]->getDataPtr(0, 0), frame_buffer[0].rowBits[row]->getColorDepthSize(), false);
-
-    if (m_cfg.double_buff)
+  fbs_required = 1; // (m_cfg.double_buff) ? 2 : 1;
+  for (int fb = 0; fb < (fbs_required); fb++)
+  {  
+    for (int row = 0; row < ROWS_PER_FRAME; row++)
     {
-      dma_bus.create_dma_desc_link(frame_buffer[1].rowBits[row]->getDataPtr(0, 1), frame_buffer[1].rowBits[row]->getColorDepthSize(), true);
-    }
+	  //ESP_LOGV("I2S-DMA", ">>> Linking DMA descriptors for output row %d", row);    	
+		
+	  // Link and send all colour data, all passes of everything in one hit. 1 bit colour at least...
+	  for (int dma_desc_all = 0; dma_desc_all < dma_descs_per_row_all_cdepths; dma_desc_all++) 
+	  {
+			size_t payload_bytes = (dma_desc_all == (dma_descs_per_row_all_cdepths-1)) ? last_dma_desc_bytes_all_cdepths:DMA_MAX;
+			
+			// Log the current descriptor number and the payload size being used.
+			//ESP_LOGV("I2S-DMA", "Processing dma_desc_all: %d, payload_bytes: %zu", dma_desc_all, payload_bytes);
+				
+		    dma_bus.create_dma_desc_link(frame_buffer[fb].rowBits[row]->getDataPtr(0)+(dma_desc_all*(DMA_MAX/sizeof(ESP32_I2S_DMA_STORAGE_TYPE))), payload_bytes);
+			_dmadescriptor_count++;
+			
+			// Log the updated descriptor count after each operation.
+			//ESP_LOGV("I2S-DMA", "Updated _dmadescriptor_count: %d", _dmadescriptor_count);			
+	  }
+	
+      // Step 2: Handle additional descriptors for bits beyond the lsbMsbTransitionBit 
+      for (int i = lsbMsbTransitionBit + 1; i < m_cfg.getPixelColorDepthBits(); i++) 
+	  {
+		  // binary time division setup: we need 2 of bit (LSBMSB_TRANSITION_BIT + 1) four of (LSBMSB_TRANSITION_BIT + 2), etc
+		  // because we sweep through to MSB each time, it divides the number of times we have to sweep in half (saving linked list RAM)
+		  // we need 2^(i - LSBMSB_TRANSITION_BIT - 1) == 1 << (i - LSBMSB_TRANSITION_BIT - 1) passes from i to MSB
 
-    current_dmadescriptor_offset++;
+		  for (int k = 0; k < (1 << (i - lsbMsbTransitionBit - 1)); k++)
+		  {		  
+			  // Link and send all colour data, all passes of everything in one hit.
+			  for (int dma_desc_1cdepth = 0; dma_desc_1cdepth < dma_descs_per_row_1cdepth; dma_desc_1cdepth++) 
+			  {		  
+				size_t payload_bytes = (dma_desc_1cdepth == (dma_descs_per_row_1cdepth-1)) ? last_dma_desc_bytes_1cdepth:DMA_MAX;
+				
+				// Log the current bit and the corresponding payload size.
+			//	ESP_LOGV("I2S-DMA", "Processing color depth bit: %d, payload_bytes: %zu", i, payload_bytes);
+		
+				dma_bus.create_dma_desc_link(frame_buffer[fb].rowBits[row]->getDataPtr(i)+(dma_desc_1cdepth*(DMA_MAX/sizeof(ESP32_I2S_DMA_STORAGE_TYPE))), payload_bytes);
+				_dmadescriptor_count++;
+				
+				// Log the updated descriptor count after each operation.
+			//	ESP_LOGV("I2S-DMA", "Updated _dmadescriptor_count: %d", _dmadescriptor_count);		
+			  }
+		  } // end K
+		
+      } // end all other colour depth bits
+	  
 
-    // If the number of pixels per row is too great for the size of a DMA payload, so we need to split what we were going to send above.
-    if (frame_buffer[0].rowBits[0]->getColorDepthSize() > DMA_MAX)
-    {
+    } // end all rows
+  } // end framebuffer loop
+	  
+	/*
+	#include <iostream>
+	#include <cmath> // For pow function (if needed, though bit shifts are better)
 
-      for (int cd = 1; cd < m_cfg.getPixelColorDepthBits(); cd++)
-      {
-        dma_bus.create_dma_desc_link(frame_buffer[0].rowBits[row]->getDataPtr(cd, 0), frame_buffer[0].rowBits[row]->getColorDepthSize(1), false);
+	int main() {
 
-        if (m_cfg.double_buff)
-        {
-          dma_bus.create_dma_desc_link(frame_buffer[1].rowBits[row]->getDataPtr(cd, 1), frame_buffer[1].rowBits[row]->getColorDepthSize(1), true);
-        }
+		int colorDepthBits = 8;
+		int lsbMsbTransitionBit = 0; // Assuming lsbMsbTransitionBit is 0
 
-        current_dmadescriptor_offset++;
+		// Step 2: Handle additional descriptors for bits beyond the lsbMsbTransitionBit
+		for (int i = lsbMsbTransitionBit + 1; i < colorDepthBits; i++) {
+			// Calculate the number of passes required
+			int passes = 1 << (i - lsbMsbTransitionBit - 1);
 
-      } // additional linked list items
-    }   // row depth struct
+			std::cout << "Bit Level: " << i << ", Passes Required: " << passes << std::endl;
 
-    for (int i = lsbMsbTransitionBit + 1; i < m_cfg.getPixelColorDepthBits(); i++)
-    {
-      // binary time division setup: we need 2 of bit (LSBMSB_TRANSITION_BIT + 1) four of (LSBMSB_TRANSITION_BIT + 2), etc
-      // because we sweep through to MSB each time, it divides the number of times we have to sweep in half (saving linked list RAM)
-      // we need 2^(i - LSBMSB_TRANSITION_BIT - 1) == 1 << (i - LSBMSB_TRANSITION_BIT - 1) passes from i to MSB
+			// Simulate the inner loop for the number of passes
+			for (int k = 0; k < passes; k++) {
+				std::cout << "  Pass " << k + 1 << " for bit " << i << std::endl;
+			}
+		}
 
-      for (int k = 0; k < (1 << (i - lsbMsbTransitionBit - 1)); k++)
-      {
-        dma_bus.create_dma_desc_link(frame_buffer[0].rowBits[row]->getDataPtr(i, 0), frame_buffer[0].rowBits[row]->getColorDepthSize(1), false);
+		return 0;
+	} 
+	*/
+  
 
-        if (m_cfg.double_buff)
-        {
-          dma_bus.create_dma_desc_link(frame_buffer[1].rowBits[row]->getDataPtr(i, 1), frame_buffer[1].rowBits[row]->getColorDepthSize(1), true);
-        }
+  ESP_LOGI("I2S-DMA", "%d DMA descriptors linked to buffer data vs %d required.", _dmadescriptor_count, dma_descriptions_required);
 
-        current_dmadescriptor_offset++;
+  /***
+   * Step 5:  Set default framebuffer to fb[0]
+   */  
 
-      } // end colour depth ^ 2 linked list
-    }   // end colour depth loop
-
-  } // end frame rows
-
-  ESP_LOGI("I2S-DMA", "%d DMA descriptors linked to buffer data.", current_dmadescriptor_offset);
+  fb = &frame_buffer[0];
+  
 
   //
   //    Setup DMA and Output to GPIO
@@ -295,16 +298,14 @@ void MatrixPanel_I2S_DMA::configureDMA(const HUB75_I2S_CFG &_cfg)
 
   dma_bus.config(bus_cfg);
 
-  dma_bus.init();
-
-  dma_bus.dma_transfer_start();
-
-  flipDMABuffer(); // display back buffer 0, draw to 1, ignored if double buffering isn't enabled.
-
   // i2s_parallel_send_dma(ESP32_I2S_DEVICE, &dmadesc_a[0]);
   ESP_LOGI("I2S-DMA", "DMA setup completed");
+  
+  initialized = true;
 
-} // end initMatrixDMABuff
+  return true;
+
+} // end setupDMA
 
 /* There are 'bits' set in the frameStruct that we simply don't need to set every single time we change a pixel / DMA buffer co-ordinate.
  *  For example, the bits that determine the address lines, we don't need to set these every time. Once they're in place, and assuming we
@@ -396,7 +397,7 @@ void IRAM_ATTR MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint16_t x_coord, uint
 
     // Get the contents at this address,
     // it would represent a vector pointing to the full row of pixels for the specified colour depth bit at Y coordinate
-    ESP32_I2S_DMA_STORAGE_TYPE *p = getRowDataPtr(y_coord, colour_depth_idx, back_buffer_id);
+    ESP32_I2S_DMA_STORAGE_TYPE *p = getRowDataPtr(y_coord, colour_depth_idx);
 
     // We need to update the correct uint16_t word in the rowBitStruct array pointing to a specific pixel at X - coordinate
     p[x_coord] &= _colourbitclear; // reset RGB bits
@@ -454,7 +455,7 @@ void MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint8_t red, uint8_t green, uint
       --matrix_frame_parallel_row;
 
       // The destination for the pixel row bitstream
-      ESP32_I2S_DMA_STORAGE_TYPE *p = getRowDataPtr(matrix_frame_parallel_row, colour_depth_idx, back_buffer_id);
+      ESP32_I2S_DMA_STORAGE_TYPE *p = getRowDataPtr(matrix_frame_parallel_row, colour_depth_idx);
 
       // iterate pixels in a row
       int x_coord = fb->rowBits[matrix_frame_parallel_row]->width;
@@ -495,7 +496,7 @@ void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id)
   {
     --row_idx;
 
-    ESP32_I2S_DMA_STORAGE_TYPE *row = fb->rowBits[row_idx]->getDataPtr(0, -1); // set pointer to the HEAD of a buffer holding data for the entire matrix row
+    ESP32_I2S_DMA_STORAGE_TYPE *row = fb->rowBits[row_idx]->getDataPtr(0); // set pointer to the HEAD of a buffer holding data for the entire matrix row
 
     ESP32_I2S_DMA_STORAGE_TYPE abcde = (ESP32_I2S_DMA_STORAGE_TYPE)row_idx;
     abcde <<= BITS_ADDR_OFFSET; // shift row y-coord to match ABCDE bits in vector from 8 to 12
@@ -584,7 +585,7 @@ void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id)
       --colouridx;
 
       // switch pointer to a row for a specific colour index
-      row = fb->rowBits[row_idx]->getDataPtr(colouridx, -1);
+      row = fb->rowBits[row_idx]->getDataPtr(colouridx);
 
       // DP3246 needs the latch high for 3 clock cycles, so start 2 cycles earlier
       if (m_cfg.driver == HUB75_I2S_CFG::DP3246_SM5368) 
@@ -657,7 +658,7 @@ void MatrixPanel_I2S_DMA::brtCtrlOEv2(uint8_t brt, const int _buff_id)
       brightness_in_x_pixels = (brightness_in_x_pixels >> 1) | (brightness_in_x_pixels & 1);
 
       // switch pointer to a row for a specific color index
-      ESP32_I2S_DMA_STORAGE_TYPE *row = fb->rowBits[row_idx]->getDataPtr(colouridx, _buff_id);
+      ESP32_I2S_DMA_STORAGE_TYPE *row = fb->rowBits[row_idx]->getDataPtr(colouridx);
 
       // define range of Output Enable on the center of the row
       int x_coord_max = (_width + brightness_in_x_pixels + 1) >> 1;
@@ -826,7 +827,7 @@ void MatrixPanel_I2S_DMA::hlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, 
 
     // Get the contents at this address,
     // it would represent a vector pointing to the full row of pixels for the specified colour depth bit at Y coordinate
-    ESP32_I2S_DMA_STORAGE_TYPE *p = fb->rowBits[y_coord]->getDataPtr(colour_depth_idx, back_buffer_id);
+    ESP32_I2S_DMA_STORAGE_TYPE *p = fb->rowBits[y_coord]->getDataPtr(colour_depth_idx);
     // inlined version works slower here, dunno why :(
     // ESP32_I2S_DMA_STORAGE_TYPE *p = getRowDataPtr(y_coord, colour_depth_idx, back_buffer_id);
 
@@ -934,7 +935,7 @@ void MatrixPanel_I2S_DMA::vlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, 
       // Get the contents at this address,
       // it would represent a vector pointing to the full row of pixels for the specified colour depth bit at Y coordinate
       // ESP32_I2S_DMA_STORAGE_TYPE *p = getRowDataPtr(_y, colour_depth_idx, back_buffer_id);
-      ESP32_I2S_DMA_STORAGE_TYPE *p = fb->rowBits[_y]->getDataPtr(colour_depth_idx, back_buffer_id);
+      ESP32_I2S_DMA_STORAGE_TYPE *p = fb->rowBits[_y]->getDataPtr(colour_depth_idx);
 
       p[x_coord] &= _colourbitclear; // reset RGB bits
       p[x_coord] |= RGB_output_bits; // set new RGB bits

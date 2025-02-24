@@ -130,25 +130,44 @@
  * Note: sizeof(data) must be multiple of 32 bits, as ESP32 DMA linked list buffer address pointer must be word-aligned
  */
 struct rowBitStruct
+/**
+ * @struct rowBitStruct
+ * @brief Structure to hold row data for HUB75 matrix panel DMA operations
+ * 
+ * @var width
+ * Width of the row in pixels
+ * 
+ * @var colour_depth
+ * Number of color depths (i.e. copies of each row for each colur bitmask)
+ * 
+ * @var data
+ * Pointer to DMA storage type array holding pixel data for the row
+ * 
+ * @note Memory allocation differs based on target platform and configuration:
+ * - For ESP32-S3 with SPIRAM: Allocates aligned memory in SPIRAM
+ * - For other configurations: Allocates DMA-capable internal memory
+ */
 {
   const size_t width;
   const uint8_t colour_depth;
-  const bool double_buff;
+  //const bool double_buff;
   ESP32_I2S_DMA_STORAGE_TYPE *data;
 
-  /** @brief 
-   * Returns size (in bytes) of row of data vectorfor a SINGLE buff for the number of colour depths requested
+  /** @brief Returns size (in bytes) of a colour depth row data array
    * 
-   * default - Returns full data vector size for a SINGLE buff. 
-   *           You should only pass either PIXEL_COLOR_DEPTH_BITS or '1' to this
-   *
+   * @param single_color_depth 
+   *        - if true, returns size for a single color depth layer
+   *        - if false, returns total size for all color depth layers for a row.
+   * 
+   * @returns size_t - Size in bytes required for DMA buffer allocation
+   * 
    */
-  size_t getColorDepthSize(uint8_t _dpth = 0)
+  size_t getColorDepthSize(bool single_color_depth)
   {
-    if (!_dpth)
-      _dpth = colour_depth;
-    return width * _dpth * sizeof(ESP32_I2S_DMA_STORAGE_TYPE);
+    int _cdepth = (single_color_depth) ? 1:colour_depth;
+    return width * _cdepth * sizeof(ESP32_I2S_DMA_STORAGE_TYPE);
   };
+
 
   /** @brief
    * Returns pointer to the row's data vector beginning at pixel[0] for _dpth colour bit
@@ -156,13 +175,11 @@ struct rowBitStruct
    * NOTE: this call might be very slow in loops. Due to poor instruction caching in esp32 it might be required a reread from flash
    * every loop cycle, better use inlined #define instead in such cases
    */
-  // inline ESP32_I2S_DMA_STORAGE_TYPE* getDataPtr(const uint8_t _dpth=0, const bool buff_id=0) { return &(data[_dpth*width + buff_id*(width*colour_depth)]); };
-
-  // BUFFER ID VALUE IS NOW IGNORED!!!!
-  inline ESP32_I2S_DMA_STORAGE_TYPE *getDataPtr(const uint8_t _dpth = 0, const bool buff_id = 0) { return &(data[_dpth * width]); };
+  inline ESP32_I2S_DMA_STORAGE_TYPE *getDataPtr(const uint8_t _dpth = 0) { return &(data[_dpth * width]); };
 
   // constructor - allocates DMA-capable memory to hold the struct data
-  rowBitStruct(const size_t _width, const uint8_t _depth, const bool _dbuff) : width(_width), colour_depth(_depth), double_buff(_dbuff)
+  //rowBitStruct(const size_t _width, const uint8_t _depth, const bool _dbuff) : width(_width), colour_depth(_depth), double_buff(_dbuff)
+  rowBitStruct(const size_t _width, const uint8_t _depth) : width(_width), colour_depth(_depth)
   {
 
     // #if defined(SPIRAM_FRAMEBUFFER) && defined (CONFIG_IDF_TARGET_ESP32S3)
@@ -170,12 +187,12 @@ struct rowBitStruct
 
     // data = (ESP32_I2S_DMA_STORAGE_TYPE *)heap_caps_aligned_alloc(64, size()+size()*double_buff, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
     // No longer have double buffer in the same struct - have a different struct
-    data = (ESP32_I2S_DMA_STORAGE_TYPE *)heap_caps_aligned_alloc(64, getColorDepthSize(), MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+    data = (ESP32_I2S_DMA_STORAGE_TYPE *)heap_caps_aligned_alloc(64, getColorDepthSize(false), MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
 #else
     // data = (ESP32_I2S_DMA_STORAGE_TYPE *)heap_caps_malloc( size()+size()*double_buff, MALLOC_CAP_INTERNAL | MALLOC_CAP_DMA);
 
     // No longer have double buffer in the same struct - have a different struct
-    data = (ESP32_I2S_DMA_STORAGE_TYPE *)heap_caps_malloc(getColorDepthSize(), MALLOC_CAP_INTERNAL | MALLOC_CAP_DMA);
+    data = (ESP32_I2S_DMA_STORAGE_TYPE *)heap_caps_malloc(getColorDepthSize(false), MALLOC_CAP_INTERNAL | MALLOC_CAP_DMA);
 
 #endif
   }
@@ -411,6 +428,7 @@ public:
 
     if (initialized)
       return true; // we don't do this twice or more!
+      
     if (!config_set)
       return false;
 
@@ -435,30 +453,32 @@ public:
 
 #if defined(SPIRAM_DMA_BUFFER)
     // Trick library into dropping colour depth slightly when using PSRAM.
-    // Actual output clockrate override occurs in configureDMA
     m_cfg.i2sspeed = HUB75_I2S_CFG::HZ_8M;
 #endif
 
     /* As DMA buffers are dynamically allocated, we must allocated in begin()
      * Ref: https://github.com/espressif/arduino-esp32/issues/831
      */
-    if (!allocateDMAmemory())
+    if (!setupDMA(m_cfg))
     {
       return false;
     } // couldn't even get the basic ram required.
-
-    // Flush the DMA buffers prior to configuring DMA - Avoid visual artefacts on boot.
-    resetbuffers(); // Must fill the DMA buffer with the initial output bit sequence or the panel will display garbage
-
-    // Setup the ESP32 DMA Engine. Sprite_TM built this stuff.
-    configureDMA(m_cfg); // DMA and I2S configuration and setup
-
-    // showDMABuffer(); // show backbuf_id of 0
-
+	
     if (!initialized)
     {
       ESP_LOGE("being()", "MatrixPanel_I2S_DMA::begin() failed!");
     }
+
+    // Flush the DMA buffers prior to configuring DMA - Avoid visual artefacts on boot.
+    resetbuffers(); // Must fill the DMA buffer with the initial output bit sequence or the panel will display garbage
+
+	flipDMABuffer(); // display back buffer 0, draw to 1, ignored if double buffering isn't enabled.		
+
+	// Start output output
+	dma_bus.init();
+	dma_bus.dma_transfer_start();
+
+
 
     return initialized;
   }
@@ -754,11 +774,9 @@ protected:
 
   // ------- PRIVATE -------
 private:
-  /* Calculate the memory available for DMA use, do some other stuff, and allocate accordingly */
-  bool allocateDMAmemory();
 
-  /* Setup the DMA Link List chain and initiate the ESP32 DMA engine */
-  void configureDMA(const HUB75_I2S_CFG &opts);
+  /* Setup the DMA Link List chain and configure the ESP32 DMA + I2S or LCD peripheral */
+  bool setupDMA(const HUB75_I2S_CFG &opts);
 
   /**
    * pre-init procedures for specific drivers
