@@ -177,7 +177,7 @@ bool MatrixPanel_I2S_DMA::setupDMA(const HUB75_I2S_CFG &_cfg)
    */
   int _dmadescriptor_count = 0; // for tracking
 
-  fbs_required = 1; // (m_cfg.double_buff) ? 2 : 1;
+  //fbs_required = 1; // (m_cfg.double_buff) ? 2 : 1;
   for (int fb = 0; fb < (fbs_required); fb++)
   {  
     for (int row = 0; row < ROWS_PER_FRAME; row++)
