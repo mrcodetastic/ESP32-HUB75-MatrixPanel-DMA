@@ -455,6 +455,8 @@ public:
     // Trick library into dropping colour depth slightly when using PSRAM.
     m_cfg.i2sspeed = HUB75_I2S_CFG::HZ_8M;
 #endif
+	
+    ESP_LOGI("begin()", "HUB75 effective display resolution of width: %dpx height: %dpx.", m_cfg.mx_width * m_cfg.chain_length, m_cfg.mx_height);
 
     /* As DMA buffers are dynamically allocated, we must allocated in begin()
      * Ref: https://github.com/espressif/arduino-esp32/issues/831

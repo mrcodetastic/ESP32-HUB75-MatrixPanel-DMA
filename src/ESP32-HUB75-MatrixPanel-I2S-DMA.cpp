@@ -130,9 +130,9 @@ bool MatrixPanel_I2S_DMA::setupDMA(const HUB75_I2S_CFG &_cfg)
    */
 	
   int    dma_descs_per_row_1cdepth	 	= (frame_buffer[0].rowBits[0]->getColorDepthSize(true) + DMA_MAX - 1 ) / DMA_MAX;
-  size_t last_dma_desc_bytes_1cdepth   = (frame_buffer[0].rowBits[0]->getColorDepthSize(true) % DMA_MAX);
+  size_t last_dma_desc_bytes_1cdepth    = (frame_buffer[0].rowBits[0]->getColorDepthSize(true) % DMA_MAX);
   
-  int    dma_descs_per_row_all_cdepths	= (frame_buffer[0].rowBits[0]->getColorDepthSize(false) + DMA_MAX - 1 ) / DMA_MAX;
+  int    dma_descs_per_row_all_cdepths	  = (frame_buffer[0].rowBits[0]->getColorDepthSize(false) + DMA_MAX - 1 ) / DMA_MAX;
   size_t last_dma_desc_bytes_all_cdepths  = (frame_buffer[0].rowBits[0]->getColorDepthSize(false) % DMA_MAX);
 
   // Logging the calculated values
@@ -190,7 +190,7 @@ bool MatrixPanel_I2S_DMA::setupDMA(const HUB75_I2S_CFG &_cfg)
 			size_t payload_bytes = (dma_desc_all == (dma_descs_per_row_all_cdepths-1)) ? last_dma_desc_bytes_all_cdepths:DMA_MAX;
 			
 			// Log the current descriptor number and the payload size being used.
-			//ESP_LOGV("I2S-DMA", "Processing dma_desc_all: %d, payload_bytes: %zu", dma_desc_all, payload_bytes);
+			//ESP_LOGV("I2S-DMA", "Processing dma_desc_all: %d, payload_bytes: %zu, memory location: %p", dma_desc_all, payload_bytes, (frame_buffer[fb].rowBits[row]->getDataPtr(0)+(dma_desc_all*(DMA_MAX/sizeof(ESP32_I2S_DMA_STORAGE_TYPE)))));
 				
 		    dma_bus.create_dma_desc_link(frame_buffer[fb].rowBits[row]->getDataPtr(0)+(dma_desc_all*(DMA_MAX/sizeof(ESP32_I2S_DMA_STORAGE_TYPE))), payload_bytes);
 			_dmadescriptor_count++;
@@ -214,7 +214,7 @@ bool MatrixPanel_I2S_DMA::setupDMA(const HUB75_I2S_CFG &_cfg)
 				size_t payload_bytes = (dma_desc_1cdepth == (dma_descs_per_row_1cdepth-1)) ? last_dma_desc_bytes_1cdepth:DMA_MAX;
 				
 				// Log the current bit and the corresponding payload size.
-			//	ESP_LOGV("I2S-DMA", "Processing color depth bit: %d, payload_bytes: %zu", i, payload_bytes);
+				//ESP_LOGV("I2S-DMA", "Processing dma_desc_1cdepth: %d, payload_bytes: %zu, memory location: %p", dma_desc_1cdepth, payload_bytes, (frame_buffer[fb].rowBits[row]->getDataPtr(i)+(dma_desc_1cdepth*(DMA_MAX/sizeof(ESP32_I2S_DMA_STORAGE_TYPE)))));
 		
 				dma_bus.create_dma_desc_link(frame_buffer[fb].rowBits[row]->getDataPtr(i)+(dma_desc_1cdepth*(DMA_MAX/sizeof(ESP32_I2S_DMA_STORAGE_TYPE))), payload_bytes);
 				_dmadescriptor_count++;
