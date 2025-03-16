@@ -118,7 +118,7 @@ bool MatrixPanel_I2S_DMA::setupDMA(const HUB75_I2S_CFG &_cfg)
     ESP_LOGW("I2S-DMA", "lsbMsbTransitionBit of %d used to achieve refresh rate of %d Hz. Percieved colour depth to the eye may be reduced.", lsbMsbTransitionBit, m_cfg.min_refresh_rate);
   }
 
-  ESP_LOGI("I2S-DMA", "DMA has pixel_color_depth_bits of %d", m_cfg.getPixelColorDepthBits() - lsbMsbTransitionBit);
+  ESP_LOGI("I2S-DMA", "DMA frame buffer color depths: %d", m_cfg.getPixelColorDepthBits());
 
 #endif
 
@@ -156,7 +156,7 @@ bool MatrixPanel_I2S_DMA::setupDMA(const HUB75_I2S_CFG &_cfg)
   int dma_descriptions_required = dma_descriptors_per_row * ROWS_PER_FRAME;
   
   ESP_LOGV("I2S-DMA", "DMA descriptors per row: %d", dma_descriptors_per_row);  
-  ESP_LOGV("I2S-DMA", "DMA descriptors required in total: %d", dma_descriptions_required);    
+  ESP_LOGV("I2S-DMA", "DMA descriptors required per buffer: %d", dma_descriptions_required);    
 
   /***
    * Step 3:  Allocate the DMA descriptor memory via. the relevant platform DMA implementation class.
@@ -175,11 +175,13 @@ bool MatrixPanel_I2S_DMA::setupDMA(const HUB75_I2S_CFG &_cfg)
   /***
    * Step 4:  Link up the DMA descriptors per the colour depth and rows.
    */
-  int _dmadescriptor_count = 0; // for tracking
 
   //fbs_required = 1; // (m_cfg.double_buff) ? 2 : 1;
   for (int fb = 0; fb < (fbs_required); fb++)
   {  
+	
+	int _dmadescriptor_count = 0; // for tracking
+	
     for (int row = 0; row < ROWS_PER_FRAME; row++)
     {
 	  //ESP_LOGV("I2S-DMA", ">>> Linking DMA descriptors for output row %d", row);    	
@@ -192,7 +194,7 @@ bool MatrixPanel_I2S_DMA::setupDMA(const HUB75_I2S_CFG &_cfg)
 			// Log the current descriptor number and the payload size being used.
 			//ESP_LOGV("I2S-DMA", "Processing dma_desc_all: %d, payload_bytes: %zu, memory location: %p", dma_desc_all, payload_bytes, (frame_buffer[fb].rowBits[row]->getDataPtr(0)+(dma_desc_all*(DMA_MAX/sizeof(ESP32_I2S_DMA_STORAGE_TYPE)))));
 				
-		    dma_bus.create_dma_desc_link(frame_buffer[fb].rowBits[row]->getDataPtr(0)+(dma_desc_all*(DMA_MAX/sizeof(ESP32_I2S_DMA_STORAGE_TYPE))), payload_bytes);
+		    dma_bus.create_dma_desc_link(frame_buffer[fb].rowBits[row]->getDataPtr(0)+(dma_desc_all*(DMA_MAX/sizeof(ESP32_I2S_DMA_STORAGE_TYPE))), payload_bytes, (fb==1));
 			_dmadescriptor_count++;
 			
 			// Log the updated descriptor count after each operation.
@@ -216,7 +218,7 @@ bool MatrixPanel_I2S_DMA::setupDMA(const HUB75_I2S_CFG &_cfg)
 				// Log the current bit and the corresponding payload size.
 				//ESP_LOGV("I2S-DMA", "Processing dma_desc_1cdepth: %d, payload_bytes: %zu, memory location: %p", dma_desc_1cdepth, payload_bytes, (frame_buffer[fb].rowBits[row]->getDataPtr(i)+(dma_desc_1cdepth*(DMA_MAX/sizeof(ESP32_I2S_DMA_STORAGE_TYPE)))));
 		
-				dma_bus.create_dma_desc_link(frame_buffer[fb].rowBits[row]->getDataPtr(i)+(dma_desc_1cdepth*(DMA_MAX/sizeof(ESP32_I2S_DMA_STORAGE_TYPE))), payload_bytes);
+				dma_bus.create_dma_desc_link(frame_buffer[fb].rowBits[row]->getDataPtr(i)+(dma_desc_1cdepth*(DMA_MAX/sizeof(ESP32_I2S_DMA_STORAGE_TYPE))), payload_bytes, (fb==1));
 				_dmadescriptor_count++;
 				
 				// Log the updated descriptor count after each operation.
@@ -228,6 +230,9 @@ bool MatrixPanel_I2S_DMA::setupDMA(const HUB75_I2S_CFG &_cfg)
 	  
 
     } // end all rows
+	
+    ESP_LOGI("I2S-DMA", "Created %d DMA descriptors for buffer %d.", _dmadescriptor_count, fb);	
+	
   } // end framebuffer loop
 	  
 	/*
@@ -257,7 +262,6 @@ bool MatrixPanel_I2S_DMA::setupDMA(const HUB75_I2S_CFG &_cfg)
 	*/
   
 
-  ESP_LOGI("I2S-DMA", "%d DMA descriptors linked to buffer data vs %d required.", _dmadescriptor_count, dma_descriptions_required);
 
   /***
    * Step 5:  Set default framebuffer to fb[0]
@@ -345,14 +349,14 @@ void IRAM_ATTR MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint16_t x_coord, uint
    * https://ledshield.wordpress.com/2012/11/13/led-brightness-to-your-eye-gamma-correction-no/
    */
   uint16_t red16, green16, blue16;
-#ifndef NO_CIE1931
+#ifdef NO_CIE1931
+  red16 	= red;
+  green16 	= green;
+  blue16 	= blue;
+#else  
   red16 = lumConvTab[red];
   green16 = lumConvTab[green];
   blue16 = lumConvTab[blue];
-#else
-  red16 = red << 8 | red;
-  green16 = green << 8 | green;
-  blue16 = blue << 8 | blue;
 #endif
 
   /* When using the drawPixel, we are obviously only changing the value of one x,y position,
@@ -383,7 +387,11 @@ void IRAM_ATTR MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint16_t x_coord, uint
   {
     --colour_depth_idx;
 
+#ifdef NO_CIE1931
+    uint16_t mask = colour_depth_idx;
+#else	
     uint16_t mask = PIXEL_COLOR_MASK_BIT(colour_depth_idx, MASK_OFFSET);
+#endif	
     uint16_t RGB_output_bits = 0;
 
     /* Per the .h file, the order of the output RGB bits is:
@@ -410,6 +418,7 @@ void IRAM_ATTR MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint16_t x_coord, uint
   } while (colour_depth_idx); // end of colour depth loop (8)
 } // updateMatrixDMABuffer (specific co-ords change)
 
+
 /* Update the entire buffer with a single specific colour - quicker */
 void MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint8_t red, uint8_t green, uint8_t blue)
 {
@@ -418,14 +427,14 @@ void MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint8_t red, uint8_t green, uint
 
   /* https://ledshield.wordpress.com/2012/11/13/led-brightness-to-your-eye-gamma-correction-no/ */
   uint16_t red16, green16, blue16;
-#ifndef NO_CIE1931
-  red16 	= lumConvTab[red];
-  green16 	= lumConvTab[green];
-  blue16 	= lumConvTab[blue];
-#else
-  red16 	= red << 8;
-  green16 	= green << 8;
-  blue16 	= blue << 8;
+#ifdef NO_CIE1931
+  red16 	= red;
+  green16 	= green;
+  blue16 	= blue;
+#else  
+  red16 = lumConvTab[red];
+  green16 = lumConvTab[green];
+  blue16 = lumConvTab[blue];
 #endif
 
   for (uint8_t colour_depth_idx = 0; colour_depth_idx < m_cfg.getPixelColorDepthBits(); colour_depth_idx++) // colour depth - 8 iterations
@@ -433,7 +442,11 @@ void MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint8_t red, uint8_t green, uint
     // let's precalculate RGB1 and RGB2 bits than flood it over the entire DMA buffer
     uint16_t RGB_output_bits = 0;
 
+#ifdef NO_CIE1931
+    uint16_t mask = colour_depth_idx;
+#else	
     uint16_t mask = PIXEL_COLOR_MASK_BIT(colour_depth_idx, MASK_OFFSET);
+#endif	
 
     /* Per the .h file, the order of the output RGB bits is:
      * BIT_B2, BIT_G2, BIT_R2,    BIT_B1, BIT_G1, BIT_R1      */
@@ -840,9 +853,9 @@ void MatrixPanel_I2S_DMA::hlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, 
   green16 = lumConvTab[green];
   blue16 = lumConvTab[blue];
 #else
-  red16 = red << 8;
-  green16 = green << 8;
-  blue16 = blue << 8;
+  red16 = red << MASK_OFFSET;
+  green16 = green << MASK_OFFSET;
+  blue16 = blue << MASK_OFFSET;
 #endif
 
   uint16_t _colourbitclear = BITMASK_RGB1_CLEAR, _colourbitoffset = 0;
@@ -937,9 +950,9 @@ void MatrixPanel_I2S_DMA::vlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, 
   green16 = lumConvTab[green];
   blue16 = lumConvTab[blue];
 #else
-  red16 = red << 8;
-  green16 = green << 8;
-  blue16 = blue << 8;
+  red16 = red << MASK_OFFSET;
+  green16 = green << MASK_OFFSET;
+  blue16 = blue << MASK_OFFSET;
 #endif
 
   /*
