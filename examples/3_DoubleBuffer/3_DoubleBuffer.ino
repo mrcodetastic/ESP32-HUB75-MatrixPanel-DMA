@@ -4,8 +4,9 @@
 
  Bounce squares around the screen, doing the re-drawing in the background back-buffer.
 
- Double buffering is usually required. It is most useful when you have a complex drawing routine
- that you want to quickly 'flip to' without being able to see the frame being drawn.
+ Double buffering is not usually required. It is only useful when you have a long (in duration)
+ drawing routine that you want to 'flip to' once complete without the drawing being visible to 
+ the naked eye when looking at the HUB75 panel.
 
  Please note that double buffering isn't a silver bullet, and may still result in flickering 
  if you end up 'flipping' the buffer quicker than the physical HUB75 refresh output rate. 
