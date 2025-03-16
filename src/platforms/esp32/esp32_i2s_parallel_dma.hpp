@@ -151,8 +151,10 @@ i2s_dev_t* getDev();
     HUB75_DMA_DESCRIPTOR_T* _dmadesc_a = nullptr;
     HUB75_DMA_DESCRIPTOR_T* _dmadesc_b = nullptr; 
 
+/*
     HUB75_DMA_DESCRIPTOR_T* _dmadesc_blank = nullptr;     
     uint16_t                _blank_data[1024] = {0};
+*/
 
     volatile i2s_dev_t* _dev;
     

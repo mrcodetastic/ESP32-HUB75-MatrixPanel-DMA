@@ -167,7 +167,6 @@
     HUB75_DMA_DESCRIPTOR_T* _dmadesc_b = nullptr;    
 
     bool    _double_dma_buffer = false;
-    //bool    _dmadesc_a_active   = true;    
 
     esp_lcd_i80_bus_handle_t _i80_bus = nullptr;
 

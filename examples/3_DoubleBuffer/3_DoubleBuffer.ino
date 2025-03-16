@@ -1,8 +1,24 @@
-// Example uses the following configuration:  mxconfig.double_buff = true;
-// to enable double buffering, which means display->flipDMABuffer(); is required.
+/**
+ Example uses the following configuration:  mxconfig.double_buff = true;
+ to enable double buffering, which means display->flipDMABuffer(); is required.
 
-// Bounce squares around the screen, doing the re-drawing in the background back-buffer.
-// Double buffering is not always required in reality.
+ Bounce squares around the screen, doing the re-drawing in the background back-buffer.
+
+ Double buffering is usually required. It is most useful when you have a complex drawing routine
+ that you want to quickly 'flip to' without being able to see the frame being drawn.
+
+ Please note that double buffering isn't a silver bullet, and may still result in flickering 
+ if you end up 'flipping' the buffer quicker than the physical HUB75 refresh output rate. 
+
+ Refer to the runtime debug output to see, i.e:
+
+[  2103][I][ESP32-HUB75-MatrixPanel-I2S-DMA.cpp:85] setupDMA(): [I2S-DMA] Minimum visual refresh rate (scan rate from panel top to bottom) requested: 60 Hz
+[  2116][W][ESP32-HUB75-MatrixPanel-I2S-DMA.cpp:105] setupDMA(): [I2S-DMA] lsbMsbTransitionBit of 0 gives 57 Hz refresh rate.
+[  2128][W][ESP32-HUB75-MatrixPanel-I2S-DMA.cpp:105] setupDMA(): [I2S-DMA] lsbMsbTransitionBit of 1 gives 110 Hz refresh rate.
+[  2139][W][ESP32-HUB75-MatrixPanel-I2S-DMA.cpp:118] setupDMA(): [I2S-DMA] lsbMsbTransitionBit of 1 used to achieve refresh rate of 60 Hz.
+
+**/
+
 
 #include <ESP32-HUB75-MatrixPanel-I2S-DMA.h>
 #include <array>
@@ -38,7 +54,7 @@ void setup()
   Serial.println("...Starting Display");
   HUB75_I2S_CFG mxconfig;
   mxconfig.double_buff = true; // <------------- Turn on double buffer
-  //mxconfig.clkphase = false;
+  //mxconfig.clkphase = false; // <------------- Turn off double buffer and it'll look flickery
 
   // OK, now we can create our matrix object
   display = new MatrixPanel_I2S_DMA(mxconfig);
@@ -68,11 +84,19 @@ void setup()
 
 void loop()
 {
-  
-  display->flipDMABuffer(); // Show the back buffer, set currently output buffer to the back (i.e. no longer being sent to LED panels)
-  display->clearScreen();   // Now clear the back-buffer
 
-  delay(16);  // <----------- Shouldn't see this clearscreen occur as it happens on the back buffer when double buffering is enabled.
+  // Flip all future drawPixel calls to write to the back buffer which is NOT being displayed.
+  display->flipDMABuffer(); 
+
+  // SUPER IMPORTANT: Wait at least long enough to ensure that a "frame" has been displayed on the LED Matrix Panel before the next flip!
+  delay(1000/display->calculated_refresh_rate);  
+
+  // Now clear the back-buffer we are drawing to.
+  display->clearScreen();   
+
+  // This is here to demonstrate flicker if double buffering is disabled. Emulates a long draw routine that would typically occur after a 'clearscreen'.
+  delay(25);
+ 
 
   for (int i = 0; i < numSquares; i++)
   {

@@ -473,12 +473,17 @@ public:
 
     // Flush the DMA buffers prior to configuring DMA - Avoid visual artefacts on boot.
     resetbuffers(); // Must fill the DMA buffer with the initial output bit sequence or the panel will display garbage
+    ESP_LOGV("being()", "Completed resetbuffers()");	
 
 	flipDMABuffer(); // display back buffer 0, draw to 1, ignored if double buffering isn't enabled.		
+    ESP_LOGV("being()", "Completed flipDMABuffer()");		
 
 	// Start output output
 	dma_bus.init();
+    ESP_LOGV("being()", "Completed dma_bus.init()");	
+	
 	dma_bus.dma_transfer_start();
+    ESP_LOGV("being()", "Completed dma_bus.dma_transfer_start()");		
 
 
 

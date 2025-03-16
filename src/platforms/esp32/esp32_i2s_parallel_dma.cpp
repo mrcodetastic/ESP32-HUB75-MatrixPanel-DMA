@@ -50,6 +50,7 @@ Modified heavily for the ESP32 HUB75 DMA library by:
 // Get CPU freq function.
 #include <soc/rtc.h>
 
+/*
 
 	volatile bool previousBufferFree = true;
 
@@ -68,7 +69,7 @@ Modified heavily for the ESP32 HUB75 DMA library by:
 	bool DRAM_ATTR i2s_parallel_is_previous_buffer_free() {
 		return previousBufferFree;
 	}
-
+*/
 
 	// Static
 	i2s_dev_t* getDev()
@@ -402,11 +403,14 @@ Modified heavily for the ESP32 HUB75 DMA library by:
     // If we have double buffering, then allocate an interrupt service routine function
     // that can be used for I2S0/I2S1 created interrupts.
 
+/*
     // Setup I2S Interrupt
     SET_PERI_REG_BITS(I2S_INT_ENA_REG(ESP32_I2S_DEVICE), I2S_OUT_EOF_INT_ENA_V, 1, I2S_OUT_EOF_INT_ENA_S);
 
     // Allocate a level 1 intterupt: lowest priority, as ISR isn't urgent and may take a long time to complete
     esp_intr_alloc(irq_source, (int)(ESP_INTR_FLAG_IRAM | ESP_INTR_FLAG_LEVEL1), i2s_isr, NULL, NULL);
+	
+*/
 
  
   #if defined (CONFIG_IDF_TARGET_ESP32S2)
@@ -481,6 +485,7 @@ Modified heavily for the ESP32 HUB75 DMA library by:
 
     ESP_LOGD("ESP32/S2", "Allocating %d bytes of memory for DMA descriptors.", (int)sizeof(HUB75_DMA_DESCRIPTOR_T) * len);       
 
+/*
     // New - Temporary blank descriptor for transitions between DMA buffer
     _dmadesc_blank = (HUB75_DMA_DESCRIPTOR_T*)heap_caps_malloc(sizeof(HUB75_DMA_DESCRIPTOR_T) * 1, MALLOC_CAP_DMA);
     _dmadesc_blank->size     = 1024*2;
@@ -491,6 +496,7 @@ Modified heavily for the ESP32 HUB75 DMA library by:
     _dmadesc_blank->owner    = 1;         
     _dmadesc_blank->qe.stqe_next = (lldesc_t*) _dmadesc_blank;         
     _dmadesc_blank->offset   = 0;         
+*/
 
     return true;
 
@@ -595,23 +601,24 @@ Modified heavily for the ESP32 HUB75 DMA library by:
   	  
       if ( buffer_id == 1) { 
 
-	      _dmadesc_a[_dmadesc_last].qe.stqe_next = &_dmadesc_b[0]; // Start sending out _dmadesc_b (or buffer 1)
+		//fix _dmadesc_ loop issue #407
+		//need to connect the up comming _dmadesc_ not the old one
+		_dmadesc_b[_dmadesc_last].qe.stqe_next = &_dmadesc_b[0];	  
 
-        //fix _dmadesc_ loop issue #407
-        //need to connect the up comming _dmadesc_ not the old one
-        _dmadesc_b[_dmadesc_last].qe.stqe_next = &_dmadesc_b[0];
+		_dmadesc_a[_dmadesc_last].qe.stqe_next = &_dmadesc_b[0]; // Start sending out _dmadesc_b (or buffer 1)
 		      
       } else { 
-	      
-        _dmadesc_b[_dmadesc_last].qe.stqe_next = &_dmadesc_a[0]; 
+
         _dmadesc_a[_dmadesc_last].qe.stqe_next = &_dmadesc_a[0];
+	      
+        _dmadesc_b[_dmadesc_last].qe.stqe_next = &_dmadesc_a[0]; // Start sending out _dmadesc_a (or buffer 0)
 		
       }
 
+/*
       previousBufferFree = false;  
-      //while (i2s_parallel_is_previous_buffer_free() == false) {}      
       while (!previousBufferFree);
-
+*/
            
 
 

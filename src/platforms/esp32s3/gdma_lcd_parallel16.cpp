@@ -29,12 +29,6 @@
   #include "esp_idf_version.h"
 
 /*
-  dma_descriptor_t desc;          // DMA descriptor for testing
-
-  uint8_t data[8][312];           // Transmit buffer (2496 bytes total)  
-  uint16_t* dmabuff2;
-*/
-
   DRAM_ATTR volatile bool previousBufferFree = true;
  
   // End-of-DMA-transfer callback
@@ -58,6 +52,7 @@
     
     return true;
   }  
+*/  
 
   lcd_cam_dev_t* getDev()
   {
@@ -87,8 +82,6 @@
     LCD_CAM.lcd_user.lcd_reset = 1;
     esp_rom_delay_us(1000);
 
-//    uint32_t lcd_clkm_div_num = ((160000000 + 1) / _cfg.bus_freq);
-//    ESP_LOGI("", "Clock divider is %d", lcd_clkm_div_num);     
 
     // Configure LCD clock. Since this program generates human-perceptible
     // output and not data for LED matrices or NeoPixels, use almost the
@@ -204,42 +197,11 @@
       }
     }
 
-    /*
-    const struct {
-      int8_t  pin;
-      uint8_t signal;
-    } mux[] = {
-      { 43,   LCD_DATA_OUT0_IDX }, // These are 8 consecutive pins down one
-      { 42,   LCD_DATA_OUT1_IDX }, // side of the ESP32-S3 Feather. The ESP32
-      { 2,   LCD_DATA_OUT2_IDX }, // has super flexible pin MUX capabilities,
-      { 9,   LCD_DATA_OUT3_IDX }, // so any signal can go to any pin!
-      { 10,  LCD_DATA_OUT4_IDX },
-      { 11,  LCD_DATA_OUT5_IDX },
-      { 12,  LCD_DATA_OUT6_IDX },
-      { 13,  LCD_DATA_OUT7_IDX },
-    };
-    for (int i = 0; i < 8; i++) {
-      esp_rom_gpio_connect_out_signal(mux[i].pin, LCD_DATA_OUT0_IDX + i, false, false);
-      gpio_hal_iomux_func_sel(GPIO_PIN_MUX_REG[mux[i].pin], PIN_FUNC_GPIO);
-      gpio_set_drive_capability((gpio_num_t)mux[i].pin, (gpio_drive_cap_t)3);
-    }
-*/
     // Clock
       esp_rom_gpio_connect_out_signal(_cfg.pin_wr,  LCD_PCLK_IDX, _cfg.invert_pclk, false);
       gpio_hal_iomux_func_sel(GPIO_PIN_MUX_REG[_cfg.pin_wr], PIN_FUNC_GPIO);
       gpio_set_drive_capability((gpio_num_t)_cfg.pin_wr, (gpio_drive_cap_t)3);  
 
-    // This program has a known fixed-size data buffer (2496 bytes) that fits
-    // in a single DMA descriptor (max 4095 bytes). Large transfers would
-    // require a linked list of descriptors, but here it's just one...
-
-/*
-    desc.dw0.owner = DMA_DESCRIPTOR_BUFFER_OWNER_DMA;
-    desc.dw0.suc_eof = 0; // Last descriptor
-    desc.next = &desc;     // No linked list
-*/
-   
-    // Remaining descriptor elements are initialized before each DMA transfer.
 
     // Allocate DMA channel and connect it to the LCD peripheral
     static gdma_channel_alloc_config_t dma_chan_config = {
@@ -276,13 +238,14 @@
     gdma_set_transfer_ability(dma_chan, &ability);
 #endif
 
+/*
     // Enable DMA transfer callback
     static gdma_tx_event_callbacks_t tx_cbs = {
        // .on_trans_eof is literally the only gdma tx event type available
       .on_trans_eof = gdma_on_trans_eof_callback 
     };
     gdma_register_tx_event_callbacks(dma_chan, &tx_cbs, NULL);
-
+*/
 
     // This uses a busy loop to wait for each DMA transfer to complete...
     // but the whole point of DMA is that one's code can do other work in
@@ -406,6 +369,7 @@
 
       if (_dmadesc_a_idx == _dmadesc_count-1) {
           _dmadesc_a[_dmadesc_a_idx].next =  (dma_descriptor_t *) &_dmadesc_a[0]; 
+			ESP_LOGV("S3", "Creating last _dmadesc_a descriptor which loops back to _dmadesc_a[0]!");     		  
       }
       else {
           _dmadesc_a[_dmadesc_a_idx].next =  (dma_descriptor_t *) &_dmadesc_a[_dmadesc_a_idx+1]; 
@@ -439,29 +403,21 @@
 
   void Bus_Parallel16::flip_dma_output_buffer(int back_buffer_id)
   {
-
-   // if ( _double_dma_buffer == false) return;
-
+	  
     if ( back_buffer_id == 1) // change across to everything 'b''
     {
-       _dmadesc_a[_dmadesc_count-1].next =  (dma_descriptor_t *) &_dmadesc_b[0];       
-       _dmadesc_b[_dmadesc_count-1].next =  (dma_descriptor_t *) &_dmadesc_b[0];       
+       _dmadesc_b[_dmadesc_count-1].next =  (dma_descriptor_t *) &_dmadesc_b[0];  // setup loop     
+       _dmadesc_a[_dmadesc_count-1].next =  (dma_descriptor_t *) &_dmadesc_b[0];  // flip across    
     }
     else
     {
-       _dmadesc_b[_dmadesc_count-1].next =  (dma_descriptor_t *) &_dmadesc_a[0];       
-       _dmadesc_a[_dmadesc_count-1].next =  (dma_descriptor_t *) &_dmadesc_a[0];   
+       _dmadesc_a[_dmadesc_count-1].next =  (dma_descriptor_t *) &_dmadesc_a[0];  // setup loop    
+       _dmadesc_b[_dmadesc_count-1].next =  (dma_descriptor_t *) &_dmadesc_a[0];  // flip across         
     }
-
-    //current_back_buffer_id ^= 1;
-    
+/*   
     previousBufferFree = false;  
-    
-    //while (i2s_parallel_is_previous_buffer_free() == false) {}      
     while (!previousBufferFree);
-
-        
-
+*/
     
   } // end flip
 
