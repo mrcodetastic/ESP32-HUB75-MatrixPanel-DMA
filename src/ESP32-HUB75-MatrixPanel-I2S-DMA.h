@@ -457,6 +457,11 @@ public:
 #endif
 	
     ESP_LOGI("begin()", "HUB75 effective display resolution of width: %dpx height: %dpx.", m_cfg.mx_width * m_cfg.chain_length, m_cfg.mx_height);
+	
+	if (m_cfg.mx_height % 2 != 0) {
+		ESP_LOGE("begin()", "Error: m_cfg.mx_height must be an even number!");
+		return false;
+	}
 
     /* As DMA buffers are dynamically allocated, we must allocated in begin()
      * Ref: https://github.com/espressif/arduino-esp32/issues/831
@@ -484,8 +489,6 @@ public:
 	
 	dma_bus.dma_transfer_start();
     ESP_LOGV("being()", "Completed dma_bus.dma_transfer_start()");		
-
-
 
     return initialized;
   }

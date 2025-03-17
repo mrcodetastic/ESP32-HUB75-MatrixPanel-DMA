@@ -512,38 +512,44 @@ void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id)
     ESP32_I2S_DMA_STORAGE_TYPE *row = fb->rowBits[row_idx]->getDataPtr(0); // set pointer to the HEAD of a buffer holding data for the entire matrix row
 
     ESP32_I2S_DMA_STORAGE_TYPE abcde = (ESP32_I2S_DMA_STORAGE_TYPE)row_idx;
-    abcde <<= BITS_ADDR_OFFSET; // shift row y-coord to match ABCDE bits in vector from 8 to 12
 
     // get last pixel index in a row of all colourdepths
     int x_pixel = fb->rowBits[row_idx]->width * fb->rowBits[row_idx]->colour_depth;
-    // Serial.printf(" from pixel %d, ", x_pixel);
+	
+	abcde <<= BITS_ADDR_OFFSET; // shift row y-coord to match ABCDE bits in vector from 8 to 12
+	do
+	{
+		--x_pixel;
 
-    // fill all x_pixels except colour_index[0] (LSB) ones, this also clears all colour data to 0's black
-    do
-    {
-      --x_pixel;
+		if (m_cfg.driver == HUB75_I2S_CFG::SM5266P)
+		{
+		// modifications here for row shift register type SM5266P
+		// https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/issues/164
+		row[x_pixel] = abcde & (0x18 << BITS_ADDR_OFFSET); // mask out the bottom 3 bits which are the clk di bk inputs
+		}
+		else if (m_cfg.driver == HUB75_I2S_CFG::DP3246_SM5368) 
+		{
+		row[ESP32_TX_FIFO_POSITION_ADJUST(x_pixel)] = 0x0000;
+		}
+		else
+		{
+		row[ESP32_TX_FIFO_POSITION_ADJUST(x_pixel)] = abcde;
+		}
 
-      if (m_cfg.driver == HUB75_I2S_CFG::SM5266P)
-      {
-        // modifications here for row shift register type SM5266P
-        // https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/issues/164
-        row[x_pixel] = abcde & (0x18 << BITS_ADDR_OFFSET); // mask out the bottom 3 bits which are the clk di bk inputs
-      }
-      else if (m_cfg.driver == HUB75_I2S_CFG::DP3246_SM5368) 
-      {
-        row[ESP32_TX_FIFO_POSITION_ADJUST(x_pixel)] = 0x0000;
-      }
-      else
-      {
-        row[ESP32_TX_FIFO_POSITION_ADJUST(x_pixel)] = abcde;
-      }
+	} while (x_pixel != fb->rowBits[row_idx]->width); // spare the first "width's" worth of pixels as they are the LSB pixels/colordepth
 
-    } while (x_pixel != fb->rowBits[row_idx]->width && x_pixel);
+	// colour_index[0] (LSB) x_pixels must be "marked" with a previous's row address, 'cause  it is used to display
+	// previous row while we pump in MSBs's for a new row
 
-    // colour_index[0] (LSB) x_pixels must be "marked" with a previous's row address, 'cause  it is used to display
-    //  previous row while we pump in LSB's for a new row
-    abcde = ((ESP32_I2S_DMA_STORAGE_TYPE)row_idx - 1) << BITS_ADDR_OFFSET;
-    do
+	if (row_idx == 0) { 
+		abcde = ROWS_PER_FRAME-1; // wrap around
+	} else {
+		abcde = row_idx-1;	
+	}
+	
+    abcde <<= BITS_ADDR_OFFSET; // shift row y-coord to match ABCDE bits in vector from 8 to 12		
+	
+	do
     {
       --x_pixel;
 
