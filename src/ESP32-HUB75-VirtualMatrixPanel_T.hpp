@@ -103,7 +103,7 @@ template <PANEL_SCAN_TYPE ScanType>
 struct ScanTypeMapping {
 	static constexpr VirtualCoords apply(VirtualCoords coords, int virt_y, int panel_pixel_base) 
 	{
-		log_v("ScanTypeMapping: coords.x: %d, coords.y: %d, virt_y: %d, pixel_base: %d", coords.x, coords.y, virt_y, panel_pixel_base);
+		//log_v("ScanTypeMapping: coords.x: %d, coords.y: %d, virt_y: %d, pixel_base: %d", coords.x, coords.y, virt_y, panel_pixel_base);
 
 		// FOUR_SCAN_16PX_HIGH
 		if constexpr (ScanType == FOUR_SCAN_16PX_HIGH) 
@@ -301,7 +301,7 @@ public:
 				this->setCursor(start_x + panel_res_x/2 - 2, start_y + panel_res_y/2 - 4);
 				this->print(panel_id);
 
-				log_d("drawDisplayTest() Panel: %d, start_x: %d, start_y: %d", panel_id, start_x, start_y);
+				//log_d("drawDisplayTest() Panel: %d, start_x: %d, start_y: %d", panel_id, start_x, start_y);
 			}
 		}  
 		

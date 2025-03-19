@@ -12,7 +12,7 @@
  * 
  *   1) and 2) can be combined and utilsied together.
  * 
- *   There are THREE examples contained within this library. What example gets built depends
+ *   There are FOUR examples contained within this library. What example gets built depends
  *   on the value of the "#define EXAMPLE_NUMBER X" value. Where X = Example number.
  *   
  *   Example 1:  STANDARD 1/2 Scan (i.e. 1/16, 1/32) LED matrix panels, 64x32 pixels each,
@@ -22,6 +22,9 @@
  *               in a grid of 2x2 panels, chained in a Serpentine manner. 
  * 
  *   Example 3:  A single non-standard 1/4 Scan (i.e. Four-Scan 1/8) outdoor LED matrix panel, 64x32 pixels.
+ *
+ *   Example 4:  Having your own panel pixel mapping logic of use only to a specific panel that isn't supported.
+ *               In this case we re-use this to map an individual pixel in a weird way.
  */
 
  #include <Arduino.h>
@@ -31,6 +34,7 @@
  #define EXAMPLE_NUMBER 1
  //#define EXAMPLE_NUMBER 2
  //#define EXAMPLE_NUMBER 3
+ //#define EXAMPLE_NUMBER 4 // Custom Special Effects example!
  
  /**
   * Configuration of the LED matrix panels number and individual pixel resolution.
@@ -64,80 +68,124 @@
   * Mandatory declaration of the dma_display. DO NOT CHANGE
   **/
  MatrixPanel_I2S_DMA *dma_display = nullptr;
+
+
+ // ------------------------------------------------------------------------------------------------------------
  
  
  /**
   * Template instantiation for the VirtualMatrixPanel_T class, depending on use-case.
   **/
  #if EXAMPLE_NUMBER == 1
- // --- Example 1: STANDARD 1/2 Scan ---
- 
- // Declare a pointer to the specific instantiation:
- VirtualMatrixPanel_T<PANEL_CHAIN_TYPE>* virtualDisp = nullptr;
- 
+
+  // --- Example 1: STANDARD 1/2 Scan ---
+  
+  // Declare a pointer to the specific instantiation:
+  VirtualMatrixPanel_T<PANEL_CHAIN_TYPE>* virtualDisp = nullptr;
+  
  #endif
  
- 
+  
  #if EXAMPLE_NUMBER == 2 
- // --- Example 2: Non-Standard 1/4 Scan (Four-Scan 1/8) ---
+
+  // --- Example 2: Non-Standard 1/4 Scan (Four-Scan 1/8) ---
  
- // Use an existing library user-contributed Scan Type pixel mapping
- using MyScanTypeMapping = ScanTypeMapping<PANEL_SCAN_TYPE>;
- 
- // Create a pointer to the specific instantiation of the VirtualMatrixPanel_T class
- VirtualMatrixPanel_T<PANEL_CHAIN_TYPE, MyScanTypeMapping>* virtualDisp = nullptr;
- 
+  // Use an existing library user-contributed Scan Type pixel mapping
+  using MyScanTypeMapping = ScanTypeMapping<PANEL_SCAN_TYPE>;
+  
+  // Create a pointer to the specific instantiation of the VirtualMatrixPanel_T class
+  VirtualMatrixPanel_T<PANEL_CHAIN_TYPE, MyScanTypeMapping>* virtualDisp = nullptr;
+  
  #endif
  
  #if EXAMPLE_NUMBER == 3
+
  // --- Example 3: Single non-standard 1/4 Scan (Four-Scan 1/8) ---
  
- // Use an existing library user-contributed Scan Type pixel mapping
- using MyScanTypeMapping = ScanTypeMapping<PANEL_SCAN_TYPE>;
- 
- // Create a pointer to the specific instantiation of the VirtualMatrixPanel_T class
- VirtualMatrixPanel_T<CHAIN_NONE, MyScanTypeMapping>* virtualDisp = nullptr;
- 
+  // Use an existing library user-contributed Scan Type pixel mapping
+  using MyScanTypeMapping = ScanTypeMapping<PANEL_SCAN_TYPE>;
+  
+  // Create a pointer to the specific instantiation of the VirtualMatrixPanel_T class
+  VirtualMatrixPanel_T<CHAIN_NONE, MyScanTypeMapping>* virtualDisp = nullptr;
+  
  #endif
- 
  
  
  // Bonus non-existnat example. Create your own per-panel custom pixel mapping!
  #if EXAMPLE_NUMBER == 4
- 
- // --- Custom Scan–Type Pixel Mapping ---
- // This policy adds a fixed offset to the coordinates.
- struct CustomScanTypeMapping {
-   static constexpr VirtualCoords apply(VirtualCoords coords, int virt_y, int panel_pixel_base) {
-       // For demonstration, add a fixed offset of +5 to x and +3 to y.
-       coords.x += 5;
-       coords.y += 3;
-       return coords;
-   }
- };
+  
+  // --- Custom Scan–Type Pixel Mapping ---
+  // This is not what you would use this for, but in any case it 
+  // makes a flipped mirror image
+  struct CustomMirrorScanTypeMapping {
+
+    static VirtualCoords apply(VirtualCoords coords, int vy, int pb) {
+
+      // coords are the input coords for adjusting
+
+      int width  = PANEL_RES_X;
+      int height = PANEL_RES_Y;	
+
+      // Flip / Mirror x 
+      coords.x = PANEL_RES_X - coords.x - 1;   
+    //  coords.y = PANEL_RES_Y - coords.y - 1;   
+      
+      return coords;
+
+    }
+
+  };
+
+    // Create a pointer to the specific instantiation of the VirtualMatrixPanel_T class
+  VirtualMatrixPanel_T<CHAIN_NONE, CustomMirrorScanTypeMapping>* virtualDisp = nullptr;
+  
  #endif 
  
+// ------------------------------------------------------------------------------------------------------------
+
  void setup() 
  {
    Serial.begin(115200);
    delay(2000);
-     
-   #if EXAMPLE_NUMBER == 3
-     /**
-      * HACK ALERT!
-      * For 1/4 scan panels (namely outdoor panels), electrically the pixels are connected in a chain that is
-      * twice the physical panel's pixel width, and half the pixel height. As such, we need to configure
-      * the underlying DMA library to match the same. Then we use the VirtualMatrixPanel_T class to map the
-      * physical pixels to the virtual pixels.
-     */
-   HUB75_I2S_CFG mxconfig(
-     PANEL_RES_X*2,              // DO NOT CHANGE THIS
-     PANEL_RES_Y/2,              // DO NOT CHANGE THIS
-     1 // A Single panel
-   );
+
+/*
+
+    #define RL1 18
+    #define GL1 17
+    #define BL1 16
+    #define RL2 15
+    #define GL2 7
+    #define BL2 6
+    #define CH_A 4
+    #define CH_B 10
+    #define CH_C 14
+    #define CH_D 21
+    #define CH_E 5 // assign to any available pin if using two panels or 64x64 panels with 1/32 scan
+    #define CLK 47
+    #define LAT 48
+    #define OE  38
+
+  // HUB75_I2S_CFG::i2s_pins _pins={RL1, GL1, BL1, RL2, GL2, BL2, CH_A, CH_B, CH_C, CH_D, CH_E, LAT, OE, CLK};
+
+*/  
+
+   #if EXAMPLE_NUMBER == 1
+     // A grid of normal (i.e. supported out of the box) 1/16, 1/32 (two scan) panels
+
+     // Standard panel type natively supported by this library (Example 1, 4)
+     HUB75_I2S_CFG mxconfig(
+       PANEL_RES_X,   
+       PANEL_RES_Y,  
+       PANEL_CHAIN_LEN
+       //, _pins
+     );
+
+   #endif
  
-   #elif EXAMPLE_NUMBER == 2 
- 
+   #if EXAMPLE_NUMBER == 2 
+   // A grid of 1/4 scan panels. This panel type is not supported 'out of the box' and require specific  
+   // ScanTypeMapping (pixel mapping) within the panel itself.
+
      /**
       * HACK ALERT!
       * For 1/4 scan panels (namely outdoor panels), electrically the pixels are connected in a chain that is
@@ -149,15 +197,41 @@
        PANEL_RES_X*2,              // DO NOT CHANGE THIS
        PANEL_RES_Y/2,              // DO NOT CHANGE THIS
        PANEL_CHAIN_LEN
+       //, _pins       
      );
  
-   #else
- 
-     // Standard panel type natively supported by this library (Example 1)
+   #endif
+
+   #if EXAMPLE_NUMBER == 3
+   // A single 1/4 scan panel. This panel type is not supported 'out of the box' and require specific  
+   // ScanTypeMapping (pixel mapping) within the panel itself.
+
+     /**
+      * HACK ALERT!
+      * For 1/4 scan panels (namely outdoor panels), electrically the pixels are connected in a chain that is
+      * twice the physical panel's pixel width, and half the pixel height. As such, we need to configure
+      * the underlying DMA library to match the same. Then we use the VirtualMatrixPanel_T class to map the
+      * physical pixels to the virtual pixels.
+     */
+   HUB75_I2S_CFG mxconfig(
+     PANEL_RES_X*2,              // DO NOT CHANGE THIS
+     PANEL_RES_Y/2,              // DO NOT CHANGE THIS
+     1 // A Single panel
+       //, _pins     
+   );
+   #endif
+
+   #if EXAMPLE_NUMBER == 4
+   // A single normal scan panel, but we're using a custom CustomScanTypeMapping in the 'wrong' 
+   // way to demonstrate how it can be used to create custom physical LED Matrix panel mapping.
+
+   HUB75_I2S_CFG::i2s_pins _pins={RL1, GL1, BL1, RL2, GL2, BL2, CH_A, CH_B, CH_C, CH_D, CH_E, LAT, OE, CLK};
+     // Standard panel type natively supported by this library (Example 1, 4)
      HUB75_I2S_CFG mxconfig(
        PANEL_RES_X,   
        PANEL_RES_Y,  
-       PANEL_CHAIN_LEN    
+       1          
+     //   , _pins
      );
  
    #endif
@@ -185,11 +259,13 @@
      virtualDisp = new VirtualMatrixPanel_T<PANEL_CHAIN_TYPE, MyScanTypeMapping>(VDISP_NUM_ROWS, VDISP_NUM_COLS, PANEL_RES_X, PANEL_RES_Y);
    #elif EXAMPLE_NUMBER == 3   
      virtualDisp = new VirtualMatrixPanel_T<CHAIN_NONE, MyScanTypeMapping>(1, 1, PANEL_RES_X, PANEL_RES_Y); // Single 1/4 scan panel
+   #elif EXAMPLE_NUMBER == 4   
+     virtualDisp = new VirtualMatrixPanel_T<CHAIN_NONE, CustomMirrorScanTypeMapping>(1, 1, PANEL_RES_X, PANEL_RES_Y); // Single 1/4 scan panel	 
    #endif  
  
    // Pass a reference to the DMA display to the VirtualMatrixPanel_T class
    virtualDisp->setDisplay(*dma_display);
- 
+  
    for (int y = 0; y < virtualDisp->height(); y++) {
      for (int x = 0; x < virtualDisp->width(); x++) {
  
@@ -199,20 +275,25 @@
        if (x == (virtualDisp->width()-1)) color = virtualDisp->color565(0, 0, 255); // b
  
        virtualDisp->drawPixel(x, y, color);
-       delay(2);
+       delay(1);
      }
    }
+
+   virtualDisp->drawLine(virtualDisp->width() - 1, virtualDisp->height() - 1, 0, 0, virtualDisp->color565(255, 255, 255));
    
+   virtualDisp->print("Virtual Matrix Panel");
+
    delay(3000);
    virtualDisp->clearScreen();
-   virtualDisp->drawDisplayTest(); // re draw text numbering on each screen to check connectivity
-   
+   virtualDisp->drawDisplayTest(); // re draw text numbering on each screen to check connectivity   
+
  }
+
+ // ------------------------------------------------------------------------------------------------------------
  
  
  void loop() {
  
    // Do nothing here.
-   delay (100);
- 
+
  }
