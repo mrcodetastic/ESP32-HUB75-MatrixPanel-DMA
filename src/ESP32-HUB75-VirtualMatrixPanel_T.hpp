@@ -101,7 +101,7 @@ enum PANEL_CHAIN_TYPE {
  */
 template <PANEL_SCAN_TYPE ScanType>
 struct ScanTypeMapping {
-	static constexpr VirtualCoords apply(VirtualCoords coords, int virt_y, int panel_pixel_base) 
+	static constexpr VirtualCoords apply(VirtualCoords coords, int panel_pixel_base) 
 	{
 		//log_v("ScanTypeMapping: coords.x: %d, coords.y: %d, virt_y: %d, pixel_base: %d", coords.x, coords.y, virt_y, panel_pixel_base);
 
@@ -147,12 +147,11 @@ struct ScanTypeMapping {
 		//	FOUR_SCAN_64PX_HIGH || FOUR_SCAN_32PX_HIGH
 		else if constexpr (ScanType == FOUR_SCAN_64PX_HIGH || ScanType == FOUR_SCAN_32PX_HIGH) 
 		{
-			int adjusted_y = virt_y;
-			if constexpr (ScanType == FOUR_SCAN_64PX_HIGH) 
-			{
+			if constexpr (ScanType == FOUR_SCAN_64PX_HIGH) {
 				// As in the original code (with extra remapping for 64px high panels)
-				if ((virt_y & 8) != ((virt_y & 16) >> 1))
-					adjusted_y = (((virt_y & 0b11000) ^ 0b11000) + (virt_y & 0b11100111));
+				if ((coords.y & 8) != ((coords.y & 16) >> 1)) {
+					coords.y = (((coords.y & 0b11000) ^ 0b11000) + (coords.y & 0b11100111));
+				}
 			}
 
 			if ((coords.y & 8) == 0) {
@@ -161,7 +160,7 @@ struct ScanTypeMapping {
 				coords.x += ((coords.x / panel_pixel_base) * panel_pixel_base);
 			}
 			
-			coords.y = (adjusted_y >> 4) * 8 + (adjusted_y & 0b00000111);
+			coords.y = (coords.y >> 4) * 8 + (coords.y & 0b00000111);
 		}
 
 		// For STANDARD_TWO_SCAN / NORMAL_ONE_SIXTEEN no remapping is done.
@@ -472,7 +471,7 @@ public:
 		//log_d("calcCoords post-chain: virt_x: %d, virt_y: %d", virt_x, virt_y);  
 
 		// --- Apply physical LED panel scan–type mapping / fix ---
-		coords = ScanTypeMapping::apply(coords, virt_y, panel_pixel_base);
+		coords = ScanTypeMapping::apply(coords, panel_pixel_base);
 
 	}
 

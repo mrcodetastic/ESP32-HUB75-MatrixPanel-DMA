@@ -119,16 +119,14 @@
   // makes a flipped mirror image
   struct CustomMirrorScanTypeMapping {
 
-    static VirtualCoords apply(VirtualCoords coords, int vy, int pb) {
+    static VirtualCoords apply(VirtualCoords coords, int pixel_base) {
 
       // coords are the input coords for adjusting
-
       int width  = PANEL_RES_X;
       int height = PANEL_RES_Y;	
 
       // Flip / Mirror x 
       coords.x = PANEL_RES_X - coords.x - 1;   
-    //  coords.y = PANEL_RES_Y - coords.y - 1;   
       
       return coords;
 
@@ -225,7 +223,7 @@
    // A single normal scan panel, but we're using a custom CustomScanTypeMapping in the 'wrong' 
    // way to demonstrate how it can be used to create custom physical LED Matrix panel mapping.
 
-   HUB75_I2S_CFG::i2s_pins _pins={RL1, GL1, BL1, RL2, GL2, BL2, CH_A, CH_B, CH_C, CH_D, CH_E, LAT, OE, CLK};
+    // HUB75_I2S_CFG::i2s_pins _pins={RL1, GL1, BL1, RL2, GL2, BL2, CH_A, CH_B, CH_C, CH_D, CH_E, LAT, OE, CLK};
      // Standard panel type natively supported by this library (Example 1, 4)
      HUB75_I2S_CFG mxconfig(
        PANEL_RES_X,   
