@@ -400,11 +400,7 @@ inline VirtualCoords VirtualMatrixPanel::getCoords(int16_t virt_x, int16_t virt_
             else
                 // 2nd, 4th 'block' of 8 rows of pixels, offset by panel width in DMA buffer
                 coords.x += (coords.x / panel_pixel_base) * panel_pixel_base;
-
-            // http://cpp.sh/4ak5u
-            // Real number of DMA y rows is half reality
-            // coords.y = (y / 16)*8 + (y & 0b00000111);
-            coords.y = (virt_y >> 4) * 8 + (virt_y & 0b00000111);
+	    	coords.y = (coords.y  >> 4) * 8 + (coords.y  & 0b00000111);
             break;
         case FOUR_SCAN_16PX_HIGH:
             if ((coords.y & 4) == 0)
