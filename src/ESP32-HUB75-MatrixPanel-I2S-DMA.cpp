@@ -629,69 +629,11 @@ void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id)
     } while (colouridx);
 
 #if defined(SPIRAM_DMA_BUFFER)
-    Cache_WriteBack_Addr((uint32_t)row, fb->rowBits[row_idx]->getColorDepthSize());
+    Cache_WriteBack_Addr((uint32_t)row, fb->rowBits[row_idx]->getColorDepthSize(false));
 #endif
 
   } while (row_idx);
 }
-
-/**
- * @brief - reset OE bits in DMA buffer in a way to control brightness
- * @param brt - brightness level from 0 to 255 - NOT MATRIX_WIDTH
- * @param _buff_id - buffer id to control
- */
-/*
-void MatrixPanel_I2S_DMA::setBrightnessOE(uint8_t brightness, const int buffer_id) {
-
-  if (!initialized)
-    return;
-
-  frameStruct *frameBuffer = &frame_buffer[buffer_id];
-
-  uint8_t blanking = m_cfg.latch_blanking; // Prevent overwriting during latch blanking
-  uint8_t colorDepth = frameBuffer->rowBits[0]->colour_depth;
-  uint16_t width = frameBuffer->rowBits[0]->width;
-
-  // Iterate through each row in the DMA buffer
-  for (int rowIdx = frameBuffer->rowBits.size() - 1; rowIdx >= 0; --rowIdx) {
-    
-    // Process each bitplane (color depth level)
-    for (int depthIdx = colorDepth - 1; depthIdx >= 0; --depthIdx) {
-      int bitPlane = (2 * colorDepth - depthIdx) % colorDepth;
-      int bitShift = (colorDepth - lsbMsbTransitionBit - 1) >> 1;
-      int rightShift = std::max(bitPlane - bitShift - 2, 0);
-
-      // Calculate the brightness range for OE control
-      int activePixelRange = ((width - blanking) * brightness) >> (7 + rightShift);
-      activePixelRange = (activePixelRange >> 1) | (activePixelRange & 1);
-
-      int xCoordMin = (width - activePixelRange) >> 1;
-      int xCoordMax = (width + activePixelRange + 1) >> 1;
-
-      // Get pointer to the specific row and bitplane
-      ESP32_I2S_DMA_STORAGE_TYPE *rowData = frameBuffer->rowBits[rowIdx]->getDataPtr(depthIdx);
-
-      // Set OE bits based on brightness thresholds
-      for (int x = width - 1; x >= 0; --x) {
-        if (x >= xCoordMin && x < xCoordMax) {
-          rowData[ESP32_TX_FIFO_POSITION_ADJUST(x)] &= BITMASK_OE_CLEAR; // Enable output
-        } else {
-          rowData[ESP32_TX_FIFO_POSITION_ADJUST(x)] |= BIT_OE; // Disable output
-        }
-      }
-    }
-	
-	// switch pointer to a row for a specific colour index
-	#if defined(SPIRAM_DMA_BUFFER)
-		ESP32_I2S_DMA_STORAGE_TYPE *row_hack = fb->rowBits[rowIdx]->getDataPtr(0);
-		//Cache_WriteBack_Addr((uint32_t)row_hack, sizeof(ESP32_I2S_DMA_STORAGE_TYPE) * ((fb->rowBits[row_idx]->width * fb->rowBits[row_idx]->colour_depth) - 1));
-		Cache_WriteBack_Addr((uint32_t)row_hack, fb->rowBits[rowIdx]->getColorDepthSize());
-	#endif
-	
-  }
-} 
-*/
-
 
 void MatrixPanel_I2S_DMA::setBrightnessOE(uint8_t brt, const int _buff_id)
 {
@@ -750,11 +692,11 @@ void MatrixPanel_I2S_DMA::setBrightnessOE(uint8_t brt, const int _buff_id)
 
     } while (colouridx);
 
-// switch pointer to a row for a specific colour index
 #if defined(SPIRAM_DMA_BUFFER)
-    ESP32_I2S_DMA_STORAGE_TYPE *row_hack = fb->rowBits[row_idx]->getDataPtr(0, _buff_id);
-    //Cache_WriteBack_Addr((uint32_t)row_hack, sizeof(ESP32_I2S_DMA_STORAGE_TYPE) * ((fb->rowBits[row_idx]->width * fb->rowBits[row_idx]->colour_depth) - 1));
-    Cache_WriteBack_Addr((uint32_t)row_hack, fb->rowBits[row_idx]->getColorDepthSize());
+	// Force the flush and update of the PSRAM for the memory address range of the 'row data' as
+	// data changes probably aren't being sent out via DMA as they're sitting in a hadrware 'cache' 
+    ESP32_I2S_DMA_STORAGE_TYPE *row_ptr = fb->rowBits[row_idx]->getDataPtr(0);
+    Cache_WriteBack_Addr((uint32_t)row_ptr, fb->rowBits[row_idx]->getColorDepthSize(false));
 #endif
   } while (row_idx);
 }
