@@ -945,7 +945,7 @@ void MatrixPanel_I2S_DMA::vlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, 
           _y -= ROWS_PER_FRAME;
           _colourbitclear = BITMASK_RGB2_CLEAR;
           RGB_output_bits <<= BITS_RGB2_OFFSET;
-        }
+        } 
       }
 
       // Get the contents at this address,
