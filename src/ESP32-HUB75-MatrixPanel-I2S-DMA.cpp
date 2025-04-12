@@ -372,13 +372,15 @@ void IRAM_ATTR MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint16_t x_coord, uint
    */
   x_coord = ESP32_TX_FIFO_POSITION_ADJUST(x_coord);
 
-  uint16_t _colourbitclear = BITMASK_RGB1_CLEAR, _colourbitoffset = 0;
+  uint16_t _colourbitclear = BITMASK_RGB1_CLEAR;
+  uint16_t _colourbitoffset = 0;
 
-  if (y_coord >= ROWS_PER_FRAME)
-  { // if we are drawing to the bottom part of the panel
-    _colourbitoffset = BITS_RGB2_OFFSET;
-    _colourbitclear = BITMASK_RGB2_CLEAR;
-    y_coord -= ROWS_PER_FRAME;
+  if (!m_cfg.single_scan) {
+    if (y_coord >= ROWS_PER_FRAME) {
+      _colourbitoffset = BITS_RGB2_OFFSET;
+      _colourbitclear = BITMASK_RGB2_CLEAR;
+      y_coord -= ROWS_PER_FRAME;
+    }
   }
 
   // Iterating through colour depth bits, which we assume are 8 bits per RGB subpixel (24bpp)
@@ -804,11 +806,12 @@ void MatrixPanel_I2S_DMA::hlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, 
 
   uint16_t _colourbitclear = BITMASK_RGB1_CLEAR, _colourbitoffset = 0;
 
-  if (y_coord >= ROWS_PER_FRAME)
-  { // if we are drawing to the bottom part of the panel
-    _colourbitoffset = BITS_RGB2_OFFSET;
-    _colourbitclear = BITMASK_RGB2_CLEAR;
-    y_coord -= ROWS_PER_FRAME;
+  if (!m_cfg.single_scan) {
+    if (y_coord >= ROWS_PER_FRAME) {
+      _colourbitoffset = BITS_RGB2_OFFSET;
+      _colourbitclear = BITMASK_RGB2_CLEAR;
+      y_coord -= ROWS_PER_FRAME;
+    }
   }
 
   // Iterating through colour depth bits (8 iterations)
@@ -936,11 +939,13 @@ void MatrixPanel_I2S_DMA::vlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, 
     do
     { // iterate pixels in a column
 
-      if (_y >= ROWS_PER_FRAME)
-      { // if y-coord overlapped bottom-half panel
-        _y -= ROWS_PER_FRAME;
-        _colourbitclear = BITMASK_RGB2_CLEAR;
-        RGB_output_bits <<= BITS_RGB2_OFFSET;
+      if (!m_cfg.single_scan) {
+        if (_y >= ROWS_PER_FRAME)
+        { // if y-coord overlapped bottom-half panel
+          _y -= ROWS_PER_FRAME;
+          _colourbitclear = BITMASK_RGB2_CLEAR;
+          RGB_output_bits <<= BITS_RGB2_OFFSET;
+        }
       }
 
       // Get the contents at this address,
