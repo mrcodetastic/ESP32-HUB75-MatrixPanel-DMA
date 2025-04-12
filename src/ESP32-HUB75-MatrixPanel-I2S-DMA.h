@@ -59,11 +59,13 @@
 /***************************************************************************************/
 /* Do not change definitions below unless you pretty sure you know what you are doing! */
 
-// keeping a check sine it was possibe to set it previously
-#ifdef MATRIX_ROWS_IN_PARALLEL
-#pragma message "You are not supposed to set MATRIX_ROWS_IN_PARALLEL. Setting it back to default."
-#undef MATRIX_ROWS_IN_PARALLEL
-#endif
+// // keeping a check sine it was possibe to set it previously
+// #ifdef MATRIX_ROWS_IN_PARALLEL
+// #pragma message "You are not supposed to set MATRIX_ROWS_IN_PARALLEL. Setting it back to default."
+// #undef MATRIX_ROWS_IN_PARALLEL
+// #endif
+
+// My panel is 64x32 32s panel, so I want to change this definition
 #define MATRIX_ROWS_IN_PARALLEL 2
 
 // 8bit per RGB color = 24 bit/per pixel,
