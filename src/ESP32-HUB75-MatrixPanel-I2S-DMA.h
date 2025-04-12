@@ -66,7 +66,9 @@
 // #endif
 
 // My panel is 64x32 32s panel, so I want to change this definition
+#ifndef MATRIX_ROWS_IN_PARALLEL
 #define MATRIX_ROWS_IN_PARALLEL 2
+#endif
 
 // 8bit per RGB color = 24 bit/per pixel,
 // can be extended to offer deeper colors, or
