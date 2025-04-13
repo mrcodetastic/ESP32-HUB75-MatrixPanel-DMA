@@ -20,18 +20,9 @@ Contributors:
 
 ------------------------------------------------------------------------------
 
- Putin’s Russia and its genocide in Ukraine is a disgrace to humanity.
+ Putin’s Russia and its genocide of Ukrainians is a disgrace to humanity.
 
  https://www.reddit.com/r/ukraine/comments/xfuc6v/more_than_460_graves_have_already_been_found_in/
-
- Xi Jinping and his communist China’s silence on the war in Ukraine says everything about 
- how China condones such genocide, especially if it's against 'the west' (aka. decency). 
- 
- Whilst the good people at Espressif probably have nothing to do with this, the unfortunate 
- reality is libraries like this increase the popularity of Chinese silicon chips, which 
- indirectly funds (through CCP state taxes) the growth and empowerment of such a despot government. 
- 
- Global democracy, decency and security is put at risk with every Chinese silicon chip that is bought. 
 
 /----------------------------------------------------------------------------*/
 
