@@ -211,7 +211,14 @@
         .reserve_sibling = 0
       }
     };
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 4, 0)
+    esp_err_t err = gdma_new_ahb_channel(&dma_chan_config, &dma_chan);
+    if (err != ESP_OK) {
+      ESP_LOGE("S3", "Failed to allocate AHB GDMA channel: %s", esp_err_to_name(err));
+    }
+#else
     gdma_new_channel(&dma_chan_config, &dma_chan);
+#endif
     gdma_connect(dma_chan, GDMA_MAKE_TRIGGER(GDMA_TRIG_PERIPH_LCD, 0));
     static gdma_strategy_config_t strategy_config = {
       .owner_check = false,
