@@ -28,7 +28,7 @@ or (rough approximation)
 So, how to find optimum balance for all of these? Obviously you can't change *resolution* and *chain length*, it is physical characteristics and there is not much you can do about it except cutting off your chain or pushing it to the memory limits.
 
 There are 3 parameters you can choose from (actually two:)
- - **Color Depth** - predefined at [build-time]((/doc/BuildOptions.md)) option
+ - **Color Depth** - predefined at [build-time](/doc/BuildOptions.md) option
 
  -   I2S clock speed - run-time tunable with a very limited options
 
