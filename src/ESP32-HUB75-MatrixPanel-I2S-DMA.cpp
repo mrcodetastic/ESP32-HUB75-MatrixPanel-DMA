@@ -47,6 +47,9 @@ bool MatrixPanel_I2S_DMA::setupDMA(const HUB75_I2S_CFG &_cfg)
 
   int fbs_required = (m_cfg.double_buff) ? 2 : 1;
 
+  // Adjust for triple buffering
+  fbs_required = (m_cfg.triple_buff) ? 3 : fbs_required;
+
   for (int fb = 0; fb < (fbs_required); fb++)
   {
     frame_buffer[fb].rowBits.reserve(ROWS_PER_FRAME);
@@ -162,7 +165,7 @@ bool MatrixPanel_I2S_DMA::setupDMA(const HUB75_I2S_CFG &_cfg)
    * Step 3:  Allocate the DMA descriptor memory via. the relevant platform DMA implementation class.
    */
 
-  if (m_cfg.double_buff) {
+  if (m_cfg.double_buff || m_cfg.triple_buff) {
     dma_bus.enable_double_dma_desc();
   }
 

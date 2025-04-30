@@ -301,3 +301,27 @@ Of course, now Generative AI is everywhere. What happens when you ask AI to gene
 ## Support
 
 This library has been developed in my own time as a personal project. If you find it useful and wish to support the ongoing development, feel free to [support me](https://github.com/mrcodetastic/ESP32-HUB75-MatrixPanel-DMA). I'll end up using any funds to potentially buy more panels to test against.
+
+## Triple Buffering
+
+The library now supports triple buffering, which can help to reduce flickering and improve the smoothness of animations. To enable triple buffering, set the `triple_buff` flag in the `HUB75_I2S_CFG` structure to `true`. Here is an example:
+
+```cpp
+HUB75_I2S_CFG mxconfig(
+  64, // Module width
+  32, // Module height
+  2,  // Chain length
+  _pins, // Pin mapping
+  HUB75_I2S_CFG::SHIFTREG, // Driver
+  false, // Double buffer
+  HUB75_I2S_CFG::HZ_10M, // I2S speed
+  1, // Latch blanking
+  true, // Clock phase
+  60, // Minimum refresh rate
+  8, // Pixel color depth bits
+  true // Triple buffer
+);
+dma_display = new MatrixPanel_I2S_DMA(mxconfig);
+```
+
+Triple buffering can help to improve the performance of your display, especially when dealing with complex animations or high refresh rates.
