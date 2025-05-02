@@ -64,7 +64,11 @@
 #pragma message "You are not supposed to set MATRIX_ROWS_IN_PARALLEL. Setting it back to default."
 #undef MATRIX_ROWS_IN_PARALLEL
 #endif
+#ifdef MATRIX_ONE_SCAN
+#define MATRIX_ROWS_IN_PARALLEL 1
+#else
 #define MATRIX_ROWS_IN_PARALLEL 2
+#endif
 
 // 8bit per RGB color = 24 bit/per pixel,
 // can be extended to offer deeper colors, or

@@ -412,7 +412,8 @@ void IRAM_ATTR MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint16_t x_coord, uint
     p[x_coord] |= RGB_output_bits; // set new RGB bits
 
 #if defined(SPIRAM_DMA_BUFFER)
-    Cache_WriteBack_Addr((uint32_t)&p[x_coord], sizeof(ESP32_I2S_DMA_STORAGE_TYPE));
+    // Cache_WriteBack_Addr((uint32_t)&p[x_coord], sizeof(ESP32_I2S_DMA_STORAGE_TYPE));
+    esp_cache_msync( (void*)&p[x_coord], length, ESP_CACHE_MSYNC_FLAG_DIR_C2M | ESP_CACHE_MSYNC_FLAG_TYPE_DATA | ESP_CACHE_MSYNC_FLAG_UNALIGNED );
 #endif
 
   } while (colour_depth_idx); // end of colour depth loop (8)
@@ -479,7 +480,8 @@ void MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint8_t red, uint8_t green, uint
         p[x_coord] |= RGB_output_bits;     // set new colour bits
 
 #if defined(SPIRAM_DMA_BUFFER)
-        Cache_WriteBack_Addr((uint32_t)&p[x_coord], sizeof(ESP32_I2S_DMA_STORAGE_TYPE));
+        // Cache_WriteBack_Addr((uint32_t)&p[x_coord], sizeof(ESP32_I2S_DMA_STORAGE_TYPE));
+        esp_cache_msync( (void*)&p[x_coord], length, ESP_CACHE_MSYNC_FLAG_DIR_C2M | ESP_CACHE_MSYNC_FLAG_TYPE_DATA | ESP_CACHE_MSYNC_FLAG_UNALIGNED );
 #endif
 
       } while (x_coord);
@@ -629,7 +631,8 @@ void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id)
     } while (colouridx);
 
 #if defined(SPIRAM_DMA_BUFFER)
-    Cache_WriteBack_Addr((uint32_t)row, fb->rowBits[row_idx]->getColorDepthSize(false));
+    // Cache_WriteBack_Addr((uint32_t)row, fb->rowBits[row_idx]->getColorDepthSize(false));
+    esp_cache_msync( (void*)row, fb->rowBits[row_idx]->getColorDepthSize(false), ESP_CACHE_MSYNC_FLAG_DIR_C2M | ESP_CACHE_MSYNC_FLAG_TYPE_DATA | ESP_CACHE_MSYNC_FLAG_UNALIGNED );
 #endif
 
   } while (row_idx);
@@ -696,7 +699,8 @@ void MatrixPanel_I2S_DMA::setBrightnessOE(uint8_t brt, const int _buff_id)
 	// Force the flush and update of the PSRAM for the memory address range of the 'row data' as
 	// data changes probably aren't being sent out via DMA as they're sitting in a hadrware 'cache' 
     ESP32_I2S_DMA_STORAGE_TYPE *row_ptr = fb->rowBits[row_idx]->getDataPtr(0);
-    Cache_WriteBack_Addr((uint32_t)row_ptr, fb->rowBits[row_idx]->getColorDepthSize(false));
+    // Cache_WriteBack_Addr((uint32_t)row_ptr, fb->rowBits[row_idx]->getColorDepthSize(false));
+    esp_cache_msync( (void*)row_ptr, fb->rowBits[row_idx]->getColorDepthSize(false)), ESP_CACHE_MSYNC_FLAG_DIR_C2M | ESP_CACHE_MSYNC_FLAG_TYPE_DATA | ESP_CACHE_MSYNC_FLAG_UNALIGNED );
 #endif
   } while (row_idx);
 }

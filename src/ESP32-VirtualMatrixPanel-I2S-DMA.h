@@ -382,7 +382,7 @@ inline VirtualCoords VirtualMatrixPanel::getCoords(int16_t virt_x, int16_t virt_
         case FOUR_SCAN_64PX_HIGH:
             // https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-DMA/issues/345#issuecomment-1510401192
             if ((virt_y & 8) != ((virt_y & 16) >> 1))
-                virt_y = (virt_y & 0b11000) ^ 0b11000 + (virt_y & 0b11100111);
+                virt_y = ((virt_y & 0b11000) ^ 0b11000) + (virt_y & 0b11100111);
             // no break, rest of code is the same for 64 and 32px high screens
         case FOUR_SCAN_32PX_HIGH:
             /* Convert Real World 'VirtualMatrixPanel' co-ordinates (i.e. Real World pixel you're looking at
