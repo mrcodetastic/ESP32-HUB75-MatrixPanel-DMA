@@ -413,7 +413,7 @@ void IRAM_ATTR MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint16_t x_coord, uint
 
 #if defined(SPIRAM_DMA_BUFFER)
     // Cache_WriteBack_Addr((uint32_t)&p[x_coord], sizeof(ESP32_I2S_DMA_STORAGE_TYPE));
-    esp_cache_msync( (void*)&p[x_coord], length, ESP_CACHE_MSYNC_FLAG_DIR_C2M | ESP_CACHE_MSYNC_FLAG_TYPE_DATA | ESP_CACHE_MSYNC_FLAG_UNALIGNED );
+    esp_cache_msync( (void*)&p[x_coord], sizeof(ESP32_I2S_DMA_STORAGE_TYPE), ESP_CACHE_MSYNC_FLAG_DIR_C2M | ESP_CACHE_MSYNC_FLAG_TYPE_DATA | ESP_CACHE_MSYNC_FLAG_UNALIGNED );
 #endif
 
   } while (colour_depth_idx); // end of colour depth loop (8)
@@ -481,7 +481,7 @@ void MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint8_t red, uint8_t green, uint
 
 #if defined(SPIRAM_DMA_BUFFER)
         // Cache_WriteBack_Addr((uint32_t)&p[x_coord], sizeof(ESP32_I2S_DMA_STORAGE_TYPE));
-        esp_cache_msync( (void*)&p[x_coord], length, ESP_CACHE_MSYNC_FLAG_DIR_C2M | ESP_CACHE_MSYNC_FLAG_TYPE_DATA | ESP_CACHE_MSYNC_FLAG_UNALIGNED );
+        esp_cache_msync( (void*)&p[x_coord], sizeof(ESP32_I2S_DMA_STORAGE_TYPE), ESP_CACHE_MSYNC_FLAG_DIR_C2M | ESP_CACHE_MSYNC_FLAG_TYPE_DATA | ESP_CACHE_MSYNC_FLAG_UNALIGNED );
 #endif
 
       } while (x_coord);
