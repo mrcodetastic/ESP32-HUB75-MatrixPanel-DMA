@@ -112,10 +112,15 @@
      *  enough it leads to corruption. Also keep in mind that worst case scenario, the gdma can only use half of 
      *  the bandwidth of the psram peripheral (as it's round-robin shared with the CPUs).
      */ 
+	 
+	bool psram_clkspeed_limit = false;
+#if defined(SPIRAM_DMA_BUFFER)
+		 psram_clkspeed_limit = true;
+#endif	 
      
     // Fastest speed I can get with Octoal PSRAM to work before nothing shows. Based on manual testing.
     // If using an ESP32-S3 with slower (half the bandwidth) Q-SPI (Quad), then the divisor will need to be '20' (8Mhz) which wil be flickery! 
-    if (_cfg.psram_clk_override) 
+    if (psram_clkspeed_limit) 
     {
         ESP_LOGI("S3", "DMA buffer is on PSRAM. Limiting clockspeed....");   
         //LCD_CAM.lcd_clock.lcd_clkm_div_num = 10; //16mhz is the fasted the Octal PSRAM can support it seems from faptastic's testing using an N8R8 variant (Octal SPI PSRAM).
@@ -127,10 +132,7 @@
     }
     else
     {
-
-#if defined(S3_LCD_DIV_NUM)      
-      auto _div_num = S3_LCD_DIV_NUM;
-#else      
+     
       auto  freq     = (_cfg.bus_freq);
       auto  _div_num = 16; // 10Mhz 
       if (freq <= 10000000L) {      
@@ -139,8 +141,11 @@
       } else {
             _div_num = 7; // 22Mhz --- likely to have noise without a good connection         
       }     
-
+	  
+#if defined(S3_LCD_DIV_NUM)      
+      _div_num = S3_LCD_DIV_NUM;
 #endif      
+
       LCD_CAM.lcd_clock.lcd_clkm_div_num = _div_num;     
 
     }

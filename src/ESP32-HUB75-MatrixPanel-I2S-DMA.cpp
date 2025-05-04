@@ -296,13 +296,8 @@ bool MatrixPanel_I2S_DMA::setupDMA(const HUB75_I2S_CFG &_cfg)
   bus_cfg.pin_d14 = -1;
   bus_cfg.pin_d15 = -1;
 
-#if defined(SPIRAM_DMA_BUFFER)
-  bus_cfg.psram_clk_override = true;
-#endif
-
   dma_bus.config(bus_cfg);
 
-  // i2s_parallel_send_dma(ESP32_I2S_DEVICE, &dmadesc_a[0]);
   ESP_LOGI("I2S-DMA", "DMA setup completed");
   
   initialized = true;
