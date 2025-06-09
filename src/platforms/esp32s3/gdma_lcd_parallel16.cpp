@@ -27,6 +27,7 @@
   #include "gdma_lcd_parallel16.hpp"
   #include "esp_attr.h"
   #include "esp_idf_version.h"
+  #include "hal/gpio_ll.h"
 
 /*
   DRAM_ATTR volatile bool previousBufferFree = true;
@@ -197,14 +198,14 @@
     {
       if (pins[i] >= 0) { // -1 value will CRASH the ESP32!
         esp_rom_gpio_connect_out_signal(pins[i], LCD_DATA_OUT0_IDX + i, false, false);
-        gpio_hal_iomux_func_sel(GPIO_PIN_MUX_REG[pins[i]], PIN_FUNC_GPIO);
+        gpio_ll_func_sel(GPIO_LL_GET_HW(GPIO_PORT_0), pins[i], PIN_FUNC_GPIO);
         gpio_set_drive_capability((gpio_num_t)pins[i], (gpio_drive_cap_t)3);    
       }
     }
 
     // Clock
       esp_rom_gpio_connect_out_signal(_cfg.pin_wr,  LCD_PCLK_IDX, _cfg.invert_pclk, false);
-      gpio_hal_iomux_func_sel(GPIO_PIN_MUX_REG[_cfg.pin_wr], PIN_FUNC_GPIO);
+      gpio_ll_func_sel(GPIO_LL_GET_HW(GPIO_PORT_0), _cfg.pin_wr, PIN_FUNC_GPIO);
       gpio_set_drive_capability((gpio_num_t)_cfg.pin_wr, (gpio_drive_cap_t)3);  
 
 
