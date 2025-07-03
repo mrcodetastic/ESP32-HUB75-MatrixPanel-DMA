@@ -300,4 +300,4 @@ Of course, now Generative AI is everywhere. What happens when you ask AI to gene
 
 ## Support
 
-This library has been developed in my own time as a personal project. If you find it useful and wish to support the ongoing development, feel free to [support me](https://github.com/mrcodetastic/ESP32-HUB75-MatrixPanel-DMA). I'll end up using any funds to potentially buy more panels to test against.
+This library has been developed in my own time as a personal project. If you find it useful and wish to support the ongoing development, feel free to [support me](https://github.com/mrcodetastic/). I'll end up using any funds to potentially buy more panels to test against.
