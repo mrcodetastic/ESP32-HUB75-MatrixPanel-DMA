@@ -63,7 +63,7 @@ class PatternStarfield : public Drawable {
 
             //  Draw the star (if it is visible in the screen).
             // Distant stars are smaller than closer stars.
-            if ((0 <= x and x < VPANEL_H) 
+            if ((0 <= x and x < VPANEL_W) 
                 and (0 <= y and y < VPANEL_H)) {
 
                 CRGB tmp = stars[i].colour;
