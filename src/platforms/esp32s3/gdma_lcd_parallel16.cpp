@@ -28,6 +28,10 @@
   #include "esp_attr.h"
   #include "esp_idf_version.h"
 
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 4, 0)		
+  #include "esp_private/gpio.h"
+#endif  
+
 /*
   DRAM_ATTR volatile bool previousBufferFree = true;
  
@@ -197,14 +201,25 @@
     {
       if (pins[i] >= 0) { // -1 value will CRASH the ESP32!
         esp_rom_gpio_connect_out_signal(pins[i], LCD_DATA_OUT0_IDX + i, false, false);
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 4, 0)		
+        // https://github.com/mrcodetastic/ESP32-HUB75-MatrixPanel-DMA/issues/803
+		gpio_func_sel((gpio_num_t)pins[i], PIN_FUNC_GPIO);
+#else
         gpio_hal_iomux_func_sel(GPIO_PIN_MUX_REG[pins[i]], PIN_FUNC_GPIO);
+#endif		
         gpio_set_drive_capability((gpio_num_t)pins[i], (gpio_drive_cap_t)3);    
       }
     }
 
     // Clock
       esp_rom_gpio_connect_out_signal(_cfg.pin_wr,  LCD_PCLK_IDX, _cfg.invert_pclk, false);
+	  
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 4, 0)
+	  // https://github.com/mrcodetastic/ESP32-HUB75-MatrixPanel-DMA/issues/803
+	  gpio_func_sel((gpio_num_t)_cfg.pin_wr, PIN_FUNC_GPIO);
+#else	  
       gpio_hal_iomux_func_sel(GPIO_PIN_MUX_REG[_cfg.pin_wr], PIN_FUNC_GPIO);
+#endif  
       gpio_set_drive_capability((gpio_num_t)_cfg.pin_wr, (gpio_drive_cap_t)3);  
 
 
