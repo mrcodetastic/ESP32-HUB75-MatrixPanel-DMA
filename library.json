@@ -1,6 +1,6 @@
 {
     "name": "ESP32 HUB75 LED MATRIX PANEL DMA Display",
-    "version": "3.0.12",
+    "version": "3.0.13",
     "description": "An Adafruit GFX compatible library for LED matrix modules which uses DMA for ultra-fast refresh rates and therefore very low CPU usage.",
     "keywords": "hub75, esp32, esp32s2, esp32s3, display, dma, rgb matrix",
     "repository": {
