@@ -28,7 +28,7 @@ void MatrixPanel_I2S_DMA::shiftDriver(const HUB75_I2S_CFG& _cfg){
     case HUB75_I2S_CFG::FM6126A:
         fm6124init(_cfg);
         break;
-    case HUB75_I2S_CFG::DP3246_SM5368:
+    case HUB75_I2S_CFG::DP3246:
         dp3246init(_cfg);
         break;
     case HUB75_I2S_CFG::MBI5124:

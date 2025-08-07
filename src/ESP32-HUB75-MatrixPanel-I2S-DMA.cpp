@@ -514,13 +514,13 @@ void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id)
 	do
 	{
 		--x_pixel;
-		if (m_cfg.driver == HUB75_I2S_CFG::SM5266P)
+		if (m_cfg.line_decoder == HUB75_I2S_CFG::SM5266P)
 		{
 			// modifications here for row shift register type SM5266P
 			// https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/issues/164
 			row[x_pixel] = abcde & (0x18 << BITS_ADDR_OFFSET); // mask out the bottom 3 bits which are the clk di bk inputs
 		}
-		else if (m_cfg.driver == HUB75_I2S_CFG::DP3246_SM5368) 
+		else if (m_cfg.line_decoder  == HUB75_I2S_CFG::SM5368) 
 		{
 			row[ESP32_TX_FIFO_POSITION_ADJUST(x_pixel)] = 0x0000;
 		}
@@ -544,13 +544,13 @@ void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id)
     {
       --x_pixel;
 
-      if (m_cfg.driver == HUB75_I2S_CFG::SM5266P)
+      if (m_cfg.line_decoder == HUB75_I2S_CFG::SM5266P)
       {
         // modifications here for row shift register type SM5266P
         // https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/issues/164
         row[x_pixel] = abcde & (0x18 << BITS_ADDR_OFFSET); // mask out the bottom 3 bits which are the clk di bk inputs
       }
-      else if (m_cfg.driver == HUB75_I2S_CFG::DP3246_SM5368) 
+      else if (m_cfg.line_decoder  == HUB75_I2S_CFG::SM5368) 
       {
         row[ESP32_TX_FIFO_POSITION_ADJUST(x_pixel)] = 0x0000;
       }
@@ -563,7 +563,7 @@ void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id)
 
     // modifications here for row shift register type SM5266P
     // https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/issues/164
-    if (m_cfg.driver == HUB75_I2S_CFG::SM5266P)
+    if (m_cfg.line_decoder == HUB75_I2S_CFG::SM5266P)
     {
       uint16_t serialCount;
       uint16_t latch;
@@ -579,11 +579,11 @@ void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id)
     } // end SM5266P
 
     // row selection for SM5368 shift regs with ABC-only addressing. A is row clk, B is BK and C is row data
-    if (m_cfg.driver == HUB75_I2S_CFG::DP3246_SM5368) 
+    if (m_cfg.line_decoder == HUB75_I2S_CFG::SM5368) 
     {
       x_pixel = fb->rowBits[row_idx]->width - 1;                                                                        // last pixel in first block)
       uint16_t c = (row_idx == 0) ? BIT_C : 0x0000;                                                                     // set row data (C) when row==0, then push through shift regs for all other rows
-      row[ESP32_TX_FIFO_POSITION_ADJUST(x_pixel - 1)] |= c;                                                             // set row data
+      row[ESP32_TX_FIFO_POSITION_ADJUST(x_pixel - 1)] |= c | BIT_B;                                                            // set row data
       row[ESP32_TX_FIFO_POSITION_ADJUST(x_pixel + 0)] |= c | BIT_A | BIT_B;                                             // set row clk and bk, carry row data
     } // end DP3246_SM5368
 
@@ -598,7 +598,7 @@ void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id)
       row = fb->rowBits[row_idx]->getDataPtr(colouridx);
 
       // DP3246 needs the latch high for 3 clock cycles, so start 2 cycles earlier
-      if (m_cfg.driver == HUB75_I2S_CFG::DP3246_SM5368) 
+      if (m_cfg.driver == HUB75_I2S_CFG::DP3246) 
       {
         row[ESP32_TX_FIFO_POSITION_ADJUST(fb->rowBits[row_idx]->width - 3)] |= BIT_LAT;   // DP3246 needs 3 clock cycle latch 
         row[ESP32_TX_FIFO_POSITION_ADJUST(fb->rowBits[row_idx]->width - 2)] |= BIT_LAT;   // DP3246 needs 3 clock cycle latch 
