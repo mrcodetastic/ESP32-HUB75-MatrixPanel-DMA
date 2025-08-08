@@ -255,10 +255,17 @@ struct HUB75_I2S_CFG
     FM6126A,
     ICN2038S,
     MBI5124,
-    SM5266P,
-    DP3246_SM5368
+    DP3246
   };
 
+  enum line_driver
+  {
+    TYPE138 = 0,    // 3-to-8 decoder
+    TYPE595,        // shift register decoder
+    TYPE_DIRECT,    // direct row control 
+    SM5266P,        // shift register decoder with DE control
+    SM5368 = TYPE595
+  };
   /**
    * I2S clock speed selector
    */
@@ -292,6 +299,7 @@ struct HUB75_I2S_CFG
 
   // Matrix driver chip type - default is a plain shift register
   shift_driver driver;
+  line_driver line_decoder;
 
   // use DMA double buffer (twice as much RAM required)
   bool double_buff;
@@ -332,6 +340,7 @@ struct HUB75_I2S_CFG
           A_PIN_DEFAULT, B_PIN_DEFAULT, C_PIN_DEFAULT, D_PIN_DEFAULT, E_PIN_DEFAULT,
           LAT_PIN_DEFAULT, OE_PIN_DEFAULT, CLK_PIN_DEFAULT},
       shift_driver _drv = SHIFTREG, 
+      line_driver _line_drv = TYPE138,
       bool _dbuff = false, 
       clk_speed _i2sspeed = HZ_8M,
       uint8_t _latblk = DEFAULT_LAT_BLANKING, // Anything > 1 seems to cause artefacts on ICS panels
