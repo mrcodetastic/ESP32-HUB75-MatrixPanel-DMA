@@ -506,6 +506,11 @@ void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id)
 
     ESP32_I2S_DMA_STORAGE_TYPE *row = fb->rowBits[row_idx]->getDataPtr(0); // set pointer to the HEAD of a buffer holding data for the entire matrix row
     ESP32_I2S_DMA_STORAGE_TYPE abcde = (ESP32_I2S_DMA_STORAGE_TYPE)row_idx;
+   
+    if (m_cfg.line_decoder == HUB75_I2S_CFG::TYPE_DIRECT)
+		{ 
+      abcde = 1 << abcde; 
+    }
 
     // get last pixel index in a row of all colourdepths
     int x_pixel = fb->rowBits[row_idx]->width * fb->rowBits[row_idx]->colour_depth;
@@ -539,6 +544,11 @@ void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id)
 		abcde = row_idx-1;	
 	}
 
+  if (m_cfg.line_decoder == HUB75_I2S_CFG::TYPE_DIRECT)
+  { 
+    abcde = 1 << abcde; 
+  }
+  
     abcde <<= BITS_ADDR_OFFSET; // shift row y-coord to match ABCDE bits in vector from 8 to 12		
 	do
     {
