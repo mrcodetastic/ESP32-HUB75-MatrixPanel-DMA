@@ -509,7 +509,7 @@ void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id)
    
     if (m_cfg.line_decoder == HUB75_I2S_CFG::TYPE_DIRECT)
 		{ 
-      abcde = 1 << abcde; 
+      abcde = 0x1f & (~(1 << abcde)); 
     }
 
     // get last pixel index in a row of all colourdepths
@@ -546,7 +546,7 @@ void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id)
 
   if (m_cfg.line_decoder == HUB75_I2S_CFG::TYPE_DIRECT)
   { 
-    abcde = 1 << abcde; 
+    abcde = 0x1f & (~(1 << abcde)); 
   }
   
     abcde <<= BITS_ADDR_OFFSET; // shift row y-coord to match ABCDE bits in vector from 8 to 12		
