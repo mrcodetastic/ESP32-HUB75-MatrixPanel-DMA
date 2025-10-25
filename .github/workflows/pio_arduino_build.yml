@@ -2,7 +2,7 @@
 # For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
 # https://docs.platformio.org/en/latest/integration/ci/github-actions.html
 
-name: PlatformIO 6.1.17 Arduino CI
+name: PlatformIO 6.1.18 Arduino CI
 
 on:
   push:
@@ -36,19 +36,18 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v5
-    - name: Cache pip and platformio
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.cache/pip
-          ~/.platformio/.cache
-        key: ${{ runner.os }}-pio
     - name: Set up Python 3.x
       uses: actions/setup-python@v6
       with:
-        python-version: '3.x'
-    - name: Install Platformio
-      run: pip install --upgrade platformio==6.1.17
+        python-version: '3.13'
+    - name: Install uv
+      uses: astral-sh/setup-uv@v6
+      with:
+        version: "latest"
+        enable-cache: false
+    - name: Install dependencies
+      run: |
+        uv pip install --system platformio
     - name: Run PlatformIO CI (Arduino)
       if: ${{ matrix.framework == 'Arduino'}}
       env: 
