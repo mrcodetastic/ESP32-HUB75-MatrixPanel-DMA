@@ -658,9 +658,25 @@ void MatrixPanel_I2S_DMA::setBrightnessOE(uint8_t brt, const int _buff_id)
       char bitshift = (_depth - lsbMsbTransitionBit - 1) >> 1;
 
       char rightshift = std::max(bitplane - bitshift - 2, 0);
-      // calculate the OE disable period by brightness, and also blanking
-      int brightness_in_x_pixels = ((_width - _blank) * brt) >> (7 + rightshift);
-      brightness_in_x_pixels = (brightness_in_x_pixels >> 1) | (brightness_in_x_pixels & 1);
+
+      // Calculate the OE disable period by brightness and latch blanking.
+      // First, determine the maximum pixels for this specific bitplane (accounting for PWM time weighting).
+      // Then scale that maximum by brightness (0-255).
+      // This ensures all bitplanes scale proportionally and reach their maximums simultaneously.
+      int max_pixels_for_bitplane = (_width - _blank) >> rightshift;
+      int brightness_in_x_pixels = (max_pixels_for_bitplane * brt) >> 8;
+
+      // Ensure at least 1 pixel is enabled for any brightness > 0
+      if (brt > 0 && brightness_in_x_pixels == 0) {
+        brightness_in_x_pixels = 1;
+      }
+
+      // Safety margin: Ensure we never exceed max_pixels - 1 to maintain blanking headroom.
+      // At extreme brightness (252-255), we need at least (_blank + 1) total blanking pixels
+      // to prevent ghosting and artifacts, especially with high pixel density (many white pixels).
+      if (brightness_in_x_pixels > max_pixels_for_bitplane - 1) {
+        brightness_in_x_pixels = max_pixels_for_bitplane - 1;
+      }
 
       // switch pointer to a row for a specific color index
       ESP32_I2S_DMA_STORAGE_TYPE *row = fb->rowBits[row_idx]->getDataPtr(colouridx);
