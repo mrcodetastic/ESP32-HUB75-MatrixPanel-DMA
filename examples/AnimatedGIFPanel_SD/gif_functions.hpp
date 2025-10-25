@@ -1,4 +1,4 @@
-// Code copied from AnimatedGIF examples, adjusted to respect frame X offset (pDraw->iX)
+// Code copied from AnimatedGIF examples
 
 #ifndef M5STACK_SD
  // for custom ESP32 builds
@@ -62,7 +62,7 @@ void GIFDraw(GIFDRAW *pDraw)
   int x, y, iWidth;
 
   // Respect frame X offset
-  int baseX = pDraw->iX;   // <-- 修复：将帧的 X 偏移作为基准
+  int baseX = pDraw->iX;   // Use the frame's X offset as a reference
   iWidth = pDraw->iWidth;
   if (iWidth > PANEL_RES_X)
       iWidth = PANEL_RES_X;
@@ -101,7 +101,7 @@ void GIFDraw(GIFDRAW *pDraw)
 
       if (iCount) { // any opaque pixels?
           for(int xOffset = 0; xOffset < iCount; xOffset++ ){
-            dma_display->drawPixel(baseX + x + xOffset, y, usTemp[xOffset]); // 565 Color Format, 加上 baseX
+            dma_display->drawPixel(baseX + x + xOffset, y, usTemp[xOffset]); // 565 Color Format, add baseX
           }
         x += iCount;
         iCount = 0;
@@ -122,6 +122,6 @@ void GIFDraw(GIFDRAW *pDraw)
     s = pDraw->pPixels;
     // Translate the 8-bit pixels through the RGB565 palette (already byte reversed)
     for (x=0; x<iWidth; x++)
-      dma_display->drawPixel(baseX + x, y, usPalette[*s++]); // color 565, 加上 baseX
+      dma_display->drawPixel(baseX + x, y, usPalette[*s++]); // color 565, add baseX
   }
 } /* GIFDraw() */
