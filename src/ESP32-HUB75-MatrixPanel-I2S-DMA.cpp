@@ -108,7 +108,7 @@ bool MatrixPanel_I2S_DMA::setupDMA(const HUB75_I2S_CFG &_cfg)
 
     ESP_LOGW("I2S-DMA", "lsbMsbTransitionBit of %d gives %d Hz refresh rate.", lsbMsbTransitionBit, actualRefreshRate);
 
-    if (actualRefreshRate > m_cfg.min_refresh_rate)
+    if (actualRefreshRate >= m_cfg.min_refresh_rate)
       break;
 
     if (lsbMsbTransitionBit < m_cfg.getPixelColorDepthBits() - 1)
