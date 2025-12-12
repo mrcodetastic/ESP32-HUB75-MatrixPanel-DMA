@@ -23,6 +23,52 @@
 #include <stdint.h>
 
 
+#if !defined(PIXEL_COLOR_DEPTH_BITS) || PIXEL_COLOR_DEPTH_BITS == 4
+// 4-bit CIE 1931 lookup table
+// Maps 8-bit input (0-255) to 4-bit output (0-15)
+static const uint8_t lumConvTab_4bit[256] = {
+      0,     0,     0,     0,     0,     0,     0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+      0,     0,     0,     0,     0,     0,     0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+      0,     0,     0,     0,     0,     0,     0,     0,     0,     0,     1,     1,     1,     1,     1,     1,
+      1,     1,     1,     1,     1,     1,     1,     1,     1,     1,     1,     1,     1,     1,     1,     1,
+      1,     1,     1,     1,     1,     1,     2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+      2,     2,     2,     2,     3,     3,     3,     3,     3,     3,     3,     3,     3,     3,     3,     4,
+      4,     4,     4,     4,     4,     4,     4,     4,     5,     5,     5,     5,     5,     5,     5,     5,
+      6,     6,     6,     6,     6,     6,     6,     7,     7,     7,     7,     7,     7,     8,     8,     8,
+      8,     8,     8,     9,     9,     9,     9,     9,    10,    10,    10,    10,    10,    11,    11,    11,
+     11,    11,    12,    12,    12,    12,    12,    13,    13,    13,    13,    14,    14,    14,    14,    14,
+     14,    14,    14,    14,    14,    14,    14,    14,    14,    14,    14,    14,    14,    14,    14,    14,
+     14,    14,    14,    14,    14,    14,    14,    14,    14,    14,    14,    14,    14,    14,    14,    14,
+     14,    14,    14,    14,    14,    14,    14,    14,    14,    14,    14,    14,    14,    14,    15,    15,
+     15,    15,    15,    15,    15,    15,    15,    15,    15,    15,    15,    15,    15,    15,    15,    15,
+     15,    15,    15,    15,    15,    15,    15,    15,    15,    15,    15,    15,    15,    15,    15,    15,
+     15,    15,    15,    15,    15,    15,    15,    15,    15,    15,    15,    15,    15,    15,    15,    15,
+};
+#endif
+
+#if !defined(PIXEL_COLOR_DEPTH_BITS) || PIXEL_COLOR_DEPTH_BITS == 5
+// 5-bit CIE 1931 lookup table
+// Maps 8-bit input (0-255) to 5-bit output (0-31)
+static const uint8_t lumConvTab_5bit[256] = {
+      0,     0,     0,     0,     0,     0,     0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+      0,     0,     0,     0,     0,     0,     0,     0,     0,     0,     0,     0,     0,     0,     1,     1,
+      1,     1,     1,     1,     1,     1,     1,     1,     1,     1,     1,     1,     1,     1,     1,     1,
+      1,     1,     1,     1,     1,     1,     2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+      2,     2,     2,     2,     2,     3,     3,     3,     3,     3,     3,     3,     3,     3,     3,     4,
+      4,     4,     4,     4,     4,     4,     4,     4,     5,     5,     5,     5,     5,     5,     5,     5,
+      6,     6,     6,     6,     6,     6,     6,     7,     7,     7,     7,     7,     7,     8,     8,     8,
+      8,     8,     9,     9,     9,     9,     9,    10,    10,    10,    10,    10,    11,    11,    11,    11,
+     12,    12,    12,    12,    13,    13,    13,    13,    14,    14,    14,    14,    15,    15,    15,    15,
+     16,    16,    16,    17,    17,    17,    17,    18,    18,    18,    19,    19,    19,    20,    20,    20,
+     21,    21,    21,    22,    22,    22,    23,    23,    23,    24,    24,    24,    25,    25,    26,    26,
+     26,    27,    27,    28,    28,    28,    29,    29,    30,    30,    30,    31,    31,    31,    31,    31,
+     31,    31,    31,    31,    31,    31,    31,    31,    31,    31,    31,    31,    31,    31,    31,    31,
+     31,    31,    31,    31,    31,    31,    31,    31,    31,    31,    31,    31,    31,    31,    31,    31,
+     31,    31,    31,    31,    31,    31,    31,    31,    31,    31,    31,    31,    31,    31,    31,    31,
+     31,    31,    31,    31,    31,    31,    31,    31,    31,    31,    31,    31,    31,    31,    31,    31,
+};
+#endif
+
 #if !defined(PIXEL_COLOR_DEPTH_BITS) || PIXEL_COLOR_DEPTH_BITS == 6
 // 6-bit CIE 1931 lookup table
 // Maps 8-bit input (0-255) to 6-bit output (0-63)
@@ -146,7 +192,13 @@ static const uint16_t lumConvTab_12bit[256] = {
   #define PIXEL_COLOR_DEPTH_BITS 8
 #endif
 
-#if PIXEL_COLOR_DEPTH_BITS == 6
+#if PIXEL_COLOR_DEPTH_BITS == 4
+  #define lumConvTab lumConvTab_4bit
+  #define LUT_NATIVE_BIT_DEPTH 1
+#elif PIXEL_COLOR_DEPTH_BITS == 5
+  #define lumConvTab lumConvTab_5bit
+  #define LUT_NATIVE_BIT_DEPTH 1
+#elif PIXEL_COLOR_DEPTH_BITS == 6
   #define lumConvTab lumConvTab_6bit
   #define LUT_NATIVE_BIT_DEPTH 1
 #elif PIXEL_COLOR_DEPTH_BITS == 7
@@ -162,7 +214,7 @@ static const uint16_t lumConvTab_12bit[256] = {
   #define lumConvTab lumConvTab_12bit
   #define LUT_NATIVE_BIT_DEPTH 1
 #else
-  // Fallback for non-standard bit depths (5, 9, 11, etc.)
+  // Fallback for non-standard bit depths (9, 11, etc.)
   // Uses 12-bit LUT with runtime shift+round conversion
   #define lumConvTab lumConvTab_12bit
   #define LUT_NATIVE_BIT_DEPTH 0
