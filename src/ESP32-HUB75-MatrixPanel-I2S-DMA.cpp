@@ -25,6 +25,59 @@
 #define ESP32_TX_FIFO_POSITION_ADJUST(x_coord) x_coord
 #endif
 
+
+
+
+
+
+  /* LED Brightness Compensation */                                                               
+#ifndef NO_CIE1931                                                                                
+  /* CIE 1931 correction with bit-depth-optimized LUTs*/                                            
+  #ifdef LUT_NATIVE_BIT_DEPTH
+
+
+    // Optimized path: LUT maps 8-bit input (0-255) directly to target bit depth output
+    #define DO_BRIGHTNESS_COMPENSATION()                                                              \
+      auto red_val   = lumConvTab[red];                                                               \
+      auto green_val = lumConvTab[green];                                                             \
+      auto blue_val  = lumConvTab[blue];                                                              
+
+
+  #else
+    // Fallback for non-standard bit depths: 12-bit LUT with shift+round to target depth
+
+    #define DO_BRIGHTNESS_COMPENSATION()                                                              \
+      uint16_t red16   = lumConvTab[red];                                                             \
+      uint16_t green16 = lumConvTab[green];                                                           \
+      uint16_t blue16  = lumConvTab[blue];                                                            \
+                                                                                                      \
+      uint8_t shift_amount = 12 - m_cfg.getPixelColorDepthBits();                                     \
+      uint16_t rounding = 1 << (shift_amount - 1);                                                    \
+      auto red_val   = (red16 + rounding) >> shift_amount;                                            \
+      auto green_val = (green16 + rounding) >> shift_amount;                                          \
+      auto blue_val  = (blue16 + rounding) >> shift_amount;                                             
+  #endif
+#else
+  // NO_CIE1931: linear scaling with rounding
+  #define DO_BRIGHTNESS_COMPENSATION()                                                               \
+    uint16_t red16   = red * 256u;                                                                   \
+    uint16_t green16 = green * 256u;                                                                 \
+    uint16_t blue16  = blue * 256u;                                                                  \
+                                                                                                     \
+    uint8_t shift_amount = 16 - m_cfg.getPixelColorDepthBits();                                      \
+    uint16_t rounding = (1 << (shift_amount - 1))-1;                                                 \
+    uint16_t max_val = (1 << m_cfg.getPixelColorDepthBits()) -1;                                     \
+    uint16_t red_val   = (red16 + rounding) >> shift_amount;                                         \
+    uint16_t green_val = (green16 + rounding) >> shift_amount;                                       \
+    uint16_t blue_val  = (blue16 + rounding) >> shift_amount;                                        \
+    red_val = red_val > max_val ? max_val : red_val;                                                 \
+    green_val = green_val > max_val ? max_val : green_val;                                           \
+    blue_val = blue_val > max_val ? max_val : blue_val;                                              
+#endif
+
+
+
+
 /* This library is designed to take an 8 bit / 1 byte value (0-255) for each R G B colour sub-pixel.
  *
  * When CIE1931 correction is enabled, input values are passed through a perceptually-linear
@@ -347,37 +400,7 @@ void IRAM_ATTR MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint16_t x_coord, uint
    * i.e. It's almost impossible for colour_depth_idx of 0 to be sent out to the MATRIX unless the 'value' of a colour is exactly '1'
    * https://ledshield.wordpress.com/2012/11/13/led-brightness-to-your-eye-gamma-correction-no/
    */
-#ifndef NO_CIE1931
-  // CIE 1931 correction with bit-depth-optimized LUTs
-  #ifdef LUT_NATIVE_BIT_DEPTH
-    // Optimized path: LUT maps 8-bit input (0-255) directly to target bit depth output
-    auto red_val   = lumConvTab[red];
-    auto green_val = lumConvTab[green];
-    auto blue_val  = lumConvTab[blue];
-  #else
-    // Fallback for non-standard bit depths: 12-bit LUT with shift+round to target depth
-    uint16_t red16   = lumConvTab[red];
-    uint16_t green16 = lumConvTab[green];
-    uint16_t blue16  = lumConvTab[blue];
-
-    uint8_t shift_amount = 12 - m_cfg.getPixelColorDepthBits();
-    uint16_t rounding = 1 << (shift_amount - 1);
-    auto red_val   = (red16 + rounding) >> shift_amount;
-    auto green_val = (green16 + rounding) >> shift_amount;
-    auto blue_val  = (blue16 + rounding) >> shift_amount;
-  #endif
-#else
-  // NO_CIE1931: linear scaling with rounding
-  uint16_t red16   = red * 257U;
-  uint16_t green16 = green * 257U;
-  uint16_t blue16  = blue * 257U;
-
-  uint8_t shift_amount = 16 - m_cfg.getPixelColorDepthBits();
-  uint16_t rounding = 1 << (shift_amount - 1);
-  auto red_val   = (red16 + rounding) >> shift_amount;
-  auto green_val = (green16 + rounding) >> shift_amount;
-  auto blue_val  = (blue16 + rounding) >> shift_amount;
-#endif
+  DO_BRIGHTNESS_COMPENSATION() 
 
   /* When using the drawPixel, we are obviously only changing the value of one x,y position,
    * however, the two-scan panels paint TWO lines at the same time
@@ -443,37 +466,7 @@ void MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint8_t red, uint8_t green, uint
     return;
 
   /* https://ledshield.wordpress.com/2012/11/13/led-brightness-to-your-eye-gamma-correction-no/ */
-#ifndef NO_CIE1931
-  // CIE 1931 correction with bit-depth-optimized LUTs
-  #ifdef LUT_NATIVE_BIT_DEPTH
-    // Optimized path: LUT maps 8-bit input (0-255) directly to target bit depth output
-    auto red_val   = lumConvTab[red];
-    auto green_val = lumConvTab[green];
-    auto blue_val  = lumConvTab[blue];
-  #else
-    // Fallback for non-standard bit depths: 12-bit LUT with shift+round to target depth
-    uint16_t red16   = lumConvTab[red];
-    uint16_t green16 = lumConvTab[green];
-    uint16_t blue16  = lumConvTab[blue];
-
-    uint8_t shift_amount = 12 - m_cfg.getPixelColorDepthBits();
-    uint16_t rounding = 1 << (shift_amount - 1);
-    auto red_val   = (red16 + rounding) >> shift_amount;
-    auto green_val = (green16 + rounding) >> shift_amount;
-    auto blue_val  = (blue16 + rounding) >> shift_amount;
-  #endif
-#else
-  // NO_CIE1931: linear scaling with rounding
-  uint16_t red16   = red * 257U;
-  uint16_t green16 = green * 257U;
-  uint16_t blue16  = blue * 257U;
-
-  uint8_t shift_amount = 16 - m_cfg.getPixelColorDepthBits();
-  uint16_t rounding = 1 << (shift_amount - 1);
-  auto red_val   = (red16 + rounding) >> shift_amount;
-  auto green_val = (green16 + rounding) >> shift_amount;
-  auto blue_val  = (blue16 + rounding) >> shift_amount;
-#endif
+  DO_BRIGHTNESS_COMPENSATION()  
 
   for (uint8_t colour_depth_idx = 0; colour_depth_idx < m_cfg.getPixelColorDepthBits(); colour_depth_idx++) // colour depth - 8 iterations
   {
@@ -842,37 +835,7 @@ void MatrixPanel_I2S_DMA::hlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, 
   //    l = PIXELS_PER_ROW - x_coord + 1;     // reset width to end of row
 
   /* LED Brightness Compensation */
-#ifndef NO_CIE1931
-  // CIE 1931 correction with bit-depth-optimized LUTs
-  #ifdef LUT_NATIVE_BIT_DEPTH
-    // Optimized path: LUT maps 8-bit input (0-255) directly to target bit depth output
-    auto red_val   = lumConvTab[red];
-    auto green_val = lumConvTab[green];
-    auto blue_val  = lumConvTab[blue];
-  #else
-    // Fallback for non-standard bit depths: 12-bit LUT with shift+round to target depth
-    uint16_t red16   = lumConvTab[red];
-    uint16_t green16 = lumConvTab[green];
-    uint16_t blue16  = lumConvTab[blue];
-
-    uint8_t shift_amount = 12 - m_cfg.getPixelColorDepthBits();
-    uint16_t rounding = 1 << (shift_amount - 1);
-    auto red_val   = (red16 + rounding) >> shift_amount;
-    auto green_val = (green16 + rounding) >> shift_amount;
-    auto blue_val  = (blue16 + rounding) >> shift_amount;
-  #endif
-#else
-  // NO_CIE1931: linear scaling with rounding
-  uint16_t red16   = red * 257U;
-  uint16_t green16 = green * 257U;
-  uint16_t blue16  = blue * 257U;
-
-  uint8_t shift_amount = 16 - m_cfg.getPixelColorDepthBits();
-  uint16_t rounding = 1 << (shift_amount - 1);
-  auto red_val   = (red16 + rounding) >> shift_amount;
-  auto green_val = (green16 + rounding) >> shift_amount;
-  auto blue_val  = (blue16 + rounding) >> shift_amount;
-#endif
+DO_BRIGHTNESS_COMPENSATION() 
 
   uint16_t _colourbitclear = BITMASK_RGB1_CLEAR, _colourbitoffset = 0;
 
@@ -955,38 +918,7 @@ void MatrixPanel_I2S_DMA::vlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, 
   // if (y_coord + l > m_cfg.mx_height)
   ///    l = m_cfg.mx_height - y_coord + 1;     // reset width to end of col
 
-  /* LED Brightness Compensation */
-#ifndef NO_CIE1931
-  // CIE 1931 correction with bit-depth-optimized LUTs
-  #ifdef LUT_NATIVE_BIT_DEPTH
-    // Optimized path: LUT maps 8-bit input (0-255) directly to target bit depth output
-    auto red_val   = lumConvTab[red];
-    auto green_val = lumConvTab[green];
-    auto blue_val  = lumConvTab[blue];
-  #else
-    // Fallback for non-standard bit depths: 12-bit LUT with shift+round to target depth
-    uint16_t red16   = lumConvTab[red];
-    uint16_t green16 = lumConvTab[green];
-    uint16_t blue16  = lumConvTab[blue];
-
-    uint8_t shift_amount = 12 - m_cfg.getPixelColorDepthBits();
-    uint16_t rounding = 1 << (shift_amount - 1);
-    auto red_val   = (red16 + rounding) >> shift_amount;
-    auto green_val = (green16 + rounding) >> shift_amount;
-    auto blue_val  = (blue16 + rounding) >> shift_amount;
-  #endif
-#else
-  // NO_CIE1931: linear scaling with rounding
-  uint16_t red16   = red * 257U;
-  uint16_t green16 = green * 257U;
-  uint16_t blue16  = blue * 257U;
-
-  uint8_t shift_amount = 16 - m_cfg.getPixelColorDepthBits();
-  uint16_t rounding = 1 << (shift_amount - 1);
-  auto red_val   = (red16 + rounding) >> shift_amount;
-  auto green_val = (green16 + rounding) >> shift_amount;
-  auto blue_val  = (blue16 + rounding) >> shift_amount;
-#endif
+  DO_BRIGHTNESS_COMPENSATION() 
 
   /*
   #if defined(ESP32_THE_ORIG)
