@@ -458,6 +458,11 @@ public:
 		return false;
 	}
 
+  if (m_cfg.line_decoder == HUB75_I2S_CFG::TYPE_DIRECT && (m_cfg.mx_height != 4 && m_cfg.mx_height != 8)) {
+	 ESP_LOGE("begin()", "Error: panel must be 2S or 4S to use TYPE_DIRECT line decoder! ");
+		return false;
+	}
+
     /* As DMA buffers are dynamically allocated, we must allocated in begin()
      * Ref: https://github.com/espressif/arduino-esp32/issues/831
      */

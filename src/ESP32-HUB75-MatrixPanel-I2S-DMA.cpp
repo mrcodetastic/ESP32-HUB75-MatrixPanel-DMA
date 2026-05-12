@@ -538,6 +538,12 @@ void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id)
 
   // we start with iterating all rows in dma_buff structure
   int row_idx = fb->rowBits.size();
+  
+  // abcde bitmask for TYPE_DIRECT line decoder
+  ESP32_I2S_DMA_STORAGE_TYPE abcde_mask;
+  if (row_idx == 2) abcde_mask = 0x3;  
+  else abcde_mask = 0xf;
+
   do
   {
     --row_idx;
@@ -547,7 +553,7 @@ void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id)
    
     if (m_cfg.line_decoder == HUB75_I2S_CFG::TYPE_DIRECT)
 		{ 
-      abcde = 0x1f & (~(1 << abcde)); 
+      abcde = abcde_mask & (~(1 << abcde)); 
     }
 
     // get last pixel index in a row of all colourdepths
@@ -584,7 +590,7 @@ void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id)
 
   if (m_cfg.line_decoder == HUB75_I2S_CFG::TYPE_DIRECT)
   { 
-    abcde = 0x1f & (~(1 << abcde)); 
+     abcde = abcde_mask & (~(1 << abcde)); 
   }
   
     abcde <<= BITS_ADDR_OFFSET; // shift row y-coord to match ABCDE bits in vector from 8 to 12		
