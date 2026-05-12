@@ -77,7 +77,7 @@ Modified heavily for the ESP32 HUB75 DMA library by:
   #include "esp32/esp32_i2s_parallel_dma.hpp"  
   #include "esp32/esp32-default-pins.hpp"
 
-#elif defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32H2)
+#elif defined(CONFIG_IDF_TARGET_ESP32C2) || defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32H2)
 
 	#error "ESP32 C2 C3 and H2 devices are not supported by this library."
 
