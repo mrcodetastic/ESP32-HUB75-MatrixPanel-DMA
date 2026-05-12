@@ -73,6 +73,22 @@ inline VirtualCoords CustomPxBasePanel ::getCoords(int16_t x, int16_t y) {
     }
     coords.y = (coords.y >> 3) * 4 + (coords.y & 0b00000011);
   }
+  // mapper for panels with any other heights
+  else {
+    uint8_t half_height = panelResY / 2;
+   
+    if ((coords.y  % half_height ) < half_height/2)
+    {
+     coords.x += (coords.x / pxbase + 1) * pxbase;
+    }
+    else
+    {
+     coords.x += (coords.x / pxbase) * pxbase; // 2nd, 4th 'block' of 8 rows of pixels, offset by panel width in DMA buffer
+     }
+     
+     coords.y = (coords.y / half_height ) * (half_height/2) + (coords.y % (half_height/2));
+
+  }
   return coords;
 }
 
@@ -107,7 +123,11 @@ void setup()
     //,_pins            // Uncomment to enable custom pins
   );
 
-  mxconfig.clkphase = false; // Change this if you see pixels showing up shifted wrongly by one column the left or right.
+  // Change this if you see pixels showing up shifted wrongly by one column the left or right.
+  mxconfig.clkphase = false; 
+  
+  // Uncomment this to use a TYPE595 decoder like DP32020/SM5368/TC75xx
+  //mxconfig.line_decoder = HUB75_I2S_CFG::TYPE595;
 
   // OK, now we can create our matrix object
   dma_display = new MatrixPanel_I2S_DMA(mxconfig);

@@ -1,4 +1,3 @@
-
 // Code copied from AnimatedGIF examples
 
 #ifndef M5STACK_SD
@@ -62,54 +61,57 @@ void GIFDraw(GIFDRAW *pDraw)
   uint16_t *d, *usPalette, usTemp[320];
   int x, y, iWidth;
 
+  // Respect frame X offset
+  int baseX = pDraw->iX;   // Use the frame's X offset as a reference
   iWidth = pDraw->iWidth;
   if (iWidth > PANEL_RES_X)
       iWidth = PANEL_RES_X;
   usPalette = pDraw->pPalette;
-  y = pDraw->iY + pDraw->y; // current line
+  y = pDraw->iY + pDraw->y; // current line (frame top + line offset)
 
   s = pDraw->pPixels;
-  if (pDraw->ucDisposalMethod == 2) {// restore to background color
+  if (pDraw->ucDisposalMethod == 2) { // restore to background color
     for (x=0; x<iWidth; x++) {
       if (s[x] == pDraw->ucTransparent)
           s[x] = pDraw->ucBackground;
     }
     pDraw->ucHasTransparency = 0;
   }
+
   // Apply the new pixels to the main image
   if (pDraw->ucHasTransparency) { // if transparency used
     uint8_t *pEnd, c, ucTransparent = pDraw->ucTransparent;
-    int x, iCount;
+    int iCount;
     pEnd = s + iWidth;
     x = 0;
     iCount = 0; // count non-transparent pixels
     while(x < iWidth) {
-      c = ucTransparent-1;
+      c = ucTransparent - 1;
       d = usTemp;
+      // 收集连续的非透明像素到 usTemp
       while (c != ucTransparent && s < pEnd) {
         c = *s++;
-        if (c == ucTransparent) { // done, stop
-          s--; // back up to treat it like transparent
+        if (c == ucTransparent) { // hit transparent, back up pointer
+          s--;
         } else { // opaque
             *d++ = usPalette[c];
             iCount++;
         }
       } // while looking for opaque pixels
+
       if (iCount) { // any opaque pixels?
           for(int xOffset = 0; xOffset < iCount; xOffset++ ){
-            dma_display->drawPixel(x + xOffset, y, usTemp[xOffset]); // 565 Color Format
+            dma_display->drawPixel(baseX + x + xOffset, y, usTemp[xOffset]); // 565 Color Format, add baseX
           }
         x += iCount;
         iCount = 0;
       }
-      // no, look for a run of transparent pixels
-      c = ucTransparent;
-      while (c == ucTransparent && s < pEnd) {
-        c = *s++;
-        if (c == ucTransparent)
-            iCount++;
-        else
-            s--;
+
+      // look for a run of transparent pixels and skip them
+      iCount = 0;
+      while (s < pEnd && *s == ucTransparent) {
+        s++;
+        iCount++;
       }
       if (iCount) {
         x += iCount; // skip these
@@ -120,13 +122,6 @@ void GIFDraw(GIFDRAW *pDraw)
     s = pDraw->pPixels;
     // Translate the 8-bit pixels through the RGB565 palette (already byte reversed)
     for (x=0; x<iWidth; x++)
-      dma_display->drawPixel(x, y, usPalette[*s++]); // color 565
-      /*
-      usTemp[x] = usPalette[*s++];
-
-      for (x=0; x<pDraw->iWidth; x++) {
-        dma_display->drawPixel(x, y, usTemp[*s++]); // color 565
-      } */     
-
+      dma_display->drawPixel(baseX + x, y, usPalette[*s++]); // color 565, add baseX
   }
 } /* GIFDraw() */

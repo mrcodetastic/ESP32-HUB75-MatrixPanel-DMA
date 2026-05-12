@@ -207,6 +207,8 @@ public:
 	  : GFX(_vmodule_cols * _panel_res_x, _vmodule_rows * _panel_res_y),
 #elif !defined(NO_GFX)
 	  : Adafruit_GFX(_vmodule_cols * _panel_res_x, _vmodule_rows * _panel_res_y),
+#else
+	  :
 #endif
 		panel_res_x(_panel_res_x),
 		panel_res_y(_panel_res_y),
@@ -246,7 +248,7 @@ public:
 			display->drawPixel(coords.x, coords.y, color);			
 		}
 
-		log_v("x: %d, y: %d -> coords.x: %d, coords.y: %d", x, y, coords.x, coords.y);
+		//log_v("x: %d, y: %d -> coords.x: %d, coords.y: %d", x, y, coords.x, coords.y);
 	}
 
 	inline void fillScreen(uint16_t color) {
