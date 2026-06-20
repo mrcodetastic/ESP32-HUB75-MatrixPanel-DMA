@@ -707,13 +707,24 @@ public:
   }
 
   /**
-   * Stop the ESP32 DMA Engine. Screen will forever be black until next ESP reboot.
+   * Stop the ESP32 DMA Engine, keeping buffers and config intact so output can be
+   * resumed later via resumeDMAoutput(). Useful to reduce power draw / 'turn off' the
+   * panel when not in use, or to quiet its RF emissions during WiFi transfers.
    */
   void stopDMAoutput()
   {
     resetbuffers();
     // i2s_parallel_stop_dma(ESP32_I2S_DEVICE);
     dma_bus.dma_transfer_stop();
+  }
+
+  /**
+   * Resume DMA output after a stopDMAoutput() call.
+   * Note: stopDMAoutput() blanks the framebuffer (brightness is preserved), so redraw after.
+   */
+  void resumeDMAoutput()
+  {
+    dma_bus.dma_transfer_start();
   }
 
   // ------- PROTECTED -------
