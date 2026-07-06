@@ -71,6 +71,7 @@ It is impossible to provide a comprehensive list of what panels are supported (o
 * 'Four scan' panels where **four** rows/lines are updated in parallel.
     * 32x16 pixel 1/4 Scan LED Matrix 'Indoor' Panel using an ingenious workaround as demonstrated in the Four_Scan_Panel example.
     * 126x64 [SM5266P](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/issues/164)
+    * 80x40 pixel 1/10 Scan LED Matrix panel with 8-pixel-segment column reversal - see [80x40 4-scan (ZIGZAG8)](/doc/Panel_80x40_4Scan_ZigZag8.md)
 
 Ones interested in internals of such matrices could find [this article](https://www.sparkfun.com/news/2650) useful.
 
@@ -82,6 +83,7 @@ Ones interested in internals of such matrices could find [this article](https://
 * FM6126A AKA ICN2038S, [FM6124](https://datasheet4u.com/datasheet-pdf/FINEMADELECTRONICS/FM6124/pdf.php?id=1309677) (Refer to [PatternPlasma](/examples/2_PatternPlasma) example on how to use.)
 * SM5266P
 * DP3246 with SM5368 row addressing registers
+* SM16208 (constant-current; latches on the inverted shift clock - use `driver = SM16208`)
 
 ## Specific chips found NOT TO work
 * ANY panel that has S-PWM or PWM based chips (such as the RUL6024, MBI6024, HX6158SP, MBI5051, MBI5052, MBI5053, ICND2055CP etc.). There are LOTS of panels now which are 'self PWM generating'. Essentially these panel aren't just a dumb array of LEDs and a series of shift registers, but have a framebuffer that pixel colour data is sent to, and they generate the relevant PWM output for each LED, independantly. A more advanced LED panel technology, but not what this library supports.

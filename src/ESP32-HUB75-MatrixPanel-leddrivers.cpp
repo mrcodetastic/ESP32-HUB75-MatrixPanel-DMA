@@ -38,6 +38,12 @@ void MatrixPanel_I2S_DMA::shiftDriver(const HUB75_I2S_CFG& _cfg){
         */
         m_cfg.clkphase=true;
         break;
+    case HUB75_I2S_CFG::SM16208:
+        /* SM16208 constant-current shift registers latch data on the
+        * inverted clock edge (found on an 80x40 4-scan panel).
+        */
+        m_cfg.clkphase=false;
+        break;
     case HUB75_I2S_CFG::SHIFTREG:
     default:
         break;

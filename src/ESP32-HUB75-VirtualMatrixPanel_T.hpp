@@ -68,6 +68,7 @@ enum PANEL_SCAN_TYPE {
 	FOUR_SCAN_32PX_HIGH,			///< Four-scan mode, 32-pixel high panels.
 	FOUR_SCAN_40PX_HIGH,			///< Four-scan mode, 40-pixel high panels.	
 	FOUR_SCAN_40_80PX_HFARCAN,		///< Four-scan mode, 40-pixel high, 80px wide panel. Weird mapping: https://github.com/mrcodetastic/ESP32-HUB75-MatrixPanel-DMA/issues/759
+	FOUR_SCAN_40_80PX_ZIGZAG8,		///< Four-scan, 40px high, 80px wide; 8-pixel-segment column reversal (e.g. SM16208-class panels).
 	FOUR_SCAN_64PX_HIGH,			///< Four-scan mode, 64-pixel high panels.
 };
 
@@ -144,6 +145,27 @@ struct ScanTypeMapping {
             coords.y = (coords.y % 10) + 10 * ((coords.y / 20) % 2);
 			
 		}		
+		else if constexpr (ScanType == FOUR_SCAN_40_80PX_ZIGZAG8)
+		{
+			// Custom 4-scan 80x40 panel with 8-pixel-segment column reversal.
+			// The physical shift register takes 160 clocks per address row; for
+			// each 8-pixel column group the panel expects 8 clocks of one sub-row
+			// in reversed column order (7->0) then 8 clocks of the paired sub-row
+			// in normal order (0->7). Configure the DMA as 160 wide x 20 high
+			// (HUB75_I2S_CFG(160, 20, 1)); the VirtualMatrixPanel presents 80x40.
+			int row_group  = coords.y / 10;   // 0..3
+			int col_group  = coords.x / 8;    // 8-pixel segment 0..9
+			int col_within = coords.x % 8;    // offset within segment 0..7
+
+			if (row_group % 2 == 0) {
+				coords.x = col_group * 16 + (7 - col_within);   // reversed phase
+			} else {
+				coords.x = col_group * 16 + 8 + col_within;     // forward phase
+			}
+
+			// Fold 40 logical rows into 20 DMA rows (RGB1: 0-9, RGB2: 10-19).
+			coords.y = (coords.y / 20) * 10 + (coords.y % 10);
+		}
 		//	FOUR_SCAN_64PX_HIGH || FOUR_SCAN_32PX_HIGH
 		else if constexpr (ScanType == FOUR_SCAN_64PX_HIGH || ScanType == FOUR_SCAN_32PX_HIGH) 
 		{
