@@ -240,8 +240,7 @@ struct HUB75_I2S_CFG
     FM6126A,
     ICN2038S,
     MBI5124,
-    DP3246,
-    SM16208     ///< SM16208 constant-current driver; latches on inverted shift clock (clkphase=false)
+    DP3246
   };
 
   enum line_driver

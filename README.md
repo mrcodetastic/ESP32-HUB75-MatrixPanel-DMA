@@ -83,7 +83,6 @@ Ones interested in internals of such matrices could find [this article](https://
 * FM6126A AKA ICN2038S, [FM6124](https://datasheet4u.com/datasheet-pdf/FINEMADELECTRONICS/FM6124/pdf.php?id=1309677) (Refer to [PatternPlasma](/examples/2_PatternPlasma) example on how to use.)
 * SM5266P
 * DP3246 with SM5368 row addressing registers
-* SM16208 (constant-current; latches on the inverted shift clock - use `driver = SM16208`)
 
 ## Specific chips found NOT TO work
 * ANY panel that has S-PWM or PWM based chips (such as the RUL6024, MBI6024, HX6158SP, MBI5051, MBI5052, MBI5053, ICND2055CP etc.). There are LOTS of panels now which are 'self PWM generating'. Essentially these panel aren't just a dumb array of LEDs and a series of shift registers, but have a framebuffer that pixel colour data is sent to, and they generate the relevant PWM output for each LED, independantly. A more advanced LED panel technology, but not what this library supports.

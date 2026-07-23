@@ -5,11 +5,13 @@ fold two logical rows into one 160-long shift register per colour lane and
 mirror the column order inside every 8-LED block. Standard HUB75 scan types will
 not drive it, so the library provides:
 
-- scan type **`FOUR_SCAN_40_80PX_ZIGZAG8`** (`VirtualMatrixPanel_T`) — the
-  coordinate remap described below;
-- shift driver **`SM16208`** (`HUB75_I2S_CFG::driver`) — this panel's SM16208
-  constant-current chips latch on the inverted shift clock, so selecting the
-  driver sets `clkphase = false` for you.
+- scan type **`FOUR_SCAN_40PX_HIGH_ZIGZAG`** (`VirtualMatrixPanel_T`) — the
+  coordinate remap described below.
+
+This panel's SM16208 constant-current driver ICs latch data on the inverted
+shift clock. There's no dedicated `SM16208` driver entry, so set
+`mxconfig.clkphase = false;` directly — the same effect the `MBI5124` case
+gets from selecting that driver.
 
 All diagrams are SVG in this folder.
 
@@ -17,20 +19,27 @@ All diagrams are SVG in this folder.
 
 ```cpp
 HUB75_I2S_CFG mxconfig(160, 20, 1);            // NOTE: 160×20, not 80×40 (see below)
-mxconfig.driver = HUB75_I2S_CFG::SM16208;      // sets clkphase = false
+mxconfig.clkphase = false;                     // SM16208 latches on the inverted shift clock
 
 auto *dma = new MatrixPanel_I2S_DMA(mxconfig);
 dma->begin();
 
-VirtualMatrixPanel_T<CHAIN_NONE, ScanTypeMapping<FOUR_SCAN_40_80PX_ZIGZAG8>, 1>
+VirtualMatrixPanel_T<CHAIN_NONE, ScanTypeMapping<FOUR_SCAN_40PX_HIGH_ZIGZAG>, 1>
     panel(1, 1, 80, 40);
 panel.setDisplay(*dma);
+panel.setPixelBase(8);                         // this panel's segment width
 panel.drawPixel(x, y, color);                  // logical 80×40 coordinates
 ```
 
 > **Configure the DMA as 160×20, not 80×40.** The mapping targets a folded
 > 160×20 surface; an 80×40 config silently drops every mapped `x ≥ 80` (the right
 > half of every row) and never lights the second RGB lane (rows 20–39 stay dark).
+
+> **Call `setPixelBase(8)` before drawing.** `FOUR_SCAN_40PX_HIGH_ZIGZAG` is a
+> generic 40px-high segment-reversal mapping — the 8-pixel segment size is a
+> property of this panel's driver ICs, not the scan type, so it isn't set for
+> you. The default pixel base (panel width, 80) is wrong here and will scramble
+> the image.
 
 ---
 
@@ -50,7 +59,7 @@ This is a common "outdoor module" arrangement: a physically 80×40 panel whose
 driver ICs fold **two logical rows into one 160-long shift register per colour
 lane**, and mirror the column order inside every 8-LED block. None of this is
 standard 1/16-scan HUB75, which is why the pixel order has to be remapped — the
-job of the `FOUR_SCAN_40_80PX_ZIGZAG8` mapping (see *Pixel ordering* below).
+job of the `FOUR_SCAN_40PX_HIGH_ZIGZAG` mapping (see *Pixel ordering* below).
 
 ---
 
@@ -90,5 +99,5 @@ one forward. So within one 8-pixel group the chain carries `row k` reversed
 The reversal is asymmetric (one sub-row reversed, the other forward) because the
 panel wires its two multiplexed sub-rows in mirror-image order inside each 8-LED
 module; compensating in software makes both scan left-to-right on screen. This is
-exactly the transform implemented by `FOUR_SCAN_40_80PX_ZIGZAG8` in
+exactly the transform implemented by `FOUR_SCAN_40PX_HIGH_ZIGZAG` in
 [`src/ESP32-HUB75-VirtualMatrixPanel_T.hpp`](../src/ESP32-HUB75-VirtualMatrixPanel_T.hpp).
