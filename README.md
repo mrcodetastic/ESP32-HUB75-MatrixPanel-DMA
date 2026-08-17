@@ -71,6 +71,7 @@ It is impossible to provide a comprehensive list of what panels are supported (o
 * 'Four scan' panels where **four** rows/lines are updated in parallel.
     * 32x16 pixel 1/4 Scan LED Matrix 'Indoor' Panel using an ingenious workaround as demonstrated in the Four_Scan_Panel example.
     * 126x64 [SM5266P](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/issues/164)
+    * 80x40 pixel 1/10 Scan LED Matrix panel with 8-pixel-segment column reversal - see [80x40 4-scan (ZIGZAG8)](/doc/Panel_80x40_4Scan_ZigZag8.md)
 
 Ones interested in internals of such matrices could find [this article](https://www.sparkfun.com/news/2650) useful.
 

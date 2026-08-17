@@ -68,6 +68,7 @@ enum PANEL_SCAN_TYPE {
 	FOUR_SCAN_32PX_HIGH,			///< Four-scan mode, 32-pixel high panels.
 	FOUR_SCAN_40PX_HIGH,			///< Four-scan mode, 40-pixel high panels.	
 	FOUR_SCAN_40_80PX_HFARCAN,		///< Four-scan mode, 40-pixel high, 80px wide panel. Weird mapping: https://github.com/mrcodetastic/ESP32-HUB75-MatrixPanel-DMA/issues/759
+	FOUR_SCAN_40PX_HIGH_ZIGZAG,	///< Four-scan mode, 40-pixel high panels; N-pixel-segment column reversal instead of a straight shift (segment width set via setPixelBase(), e.g. SM16208-class panels).
 	FOUR_SCAN_64PX_HIGH,			///< Four-scan mode, 64-pixel high panels.
 };
 
@@ -144,6 +145,28 @@ struct ScanTypeMapping {
             coords.y = (coords.y % 10) + 10 * ((coords.y / 20) % 2);
 			
 		}		
+		else if constexpr (ScanType == FOUR_SCAN_40PX_HIGH_ZIGZAG)
+		{
+			// 4-scan, 40px-high panel whose driver IC interleaves two sub-rows
+			// every panel_pixel_base columns: one phase clocked in reversed
+			// column order, the paired phase forward. Segment width is
+			// panel-specific - call setPixelBase(N) before drawing (e.g.
+			// setPixelBase(8) for SM16208-class panels). Configure the DMA at
+			// 2x the logical width and half the logical height (e.g. an 80x40
+			// panel -> HUB75_I2S_CFG(160, 20, 1)).
+			int row_group  = coords.y / 10;                // 0..3
+			int col_group  = coords.x / panel_pixel_base;  // segment index
+			int col_within = coords.x % panel_pixel_base;  // offset within segment
+
+			if (row_group % 2 == 0) {
+				coords.x = col_group * (panel_pixel_base * 2) + (panel_pixel_base - 1 - col_within);  // reversed phase
+			} else {
+				coords.x = col_group * (panel_pixel_base * 2) + panel_pixel_base + col_within;         // forward phase
+			}
+
+			// Fold 40 logical rows into 20 DMA rows (RGB1: 0-9, RGB2: 10-19).
+			coords.y = (coords.y / 20) * 10 + (coords.y % 10);
+		}
 		//	FOUR_SCAN_64PX_HIGH || FOUR_SCAN_32PX_HIGH
 		else if constexpr (ScanType == FOUR_SCAN_64PX_HIGH || ScanType == FOUR_SCAN_32PX_HIGH) 
 		{

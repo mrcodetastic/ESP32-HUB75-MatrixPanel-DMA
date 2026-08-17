@@ -1,0 +1,123 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 420" font-family="'Segoe UI', Helvetica, Arial, sans-serif">
+  <rect x="0" y="0" width="960" height="420" fill="#ffffff"/>
+  <rect x="1" y="1" width="958" height="418" fill="none" stroke="#e2e8f0" stroke-width="2"/>
+
+  <text x="480" y="30" text-anchor="middle" font-size="20" font-weight="700" fill="#0f172a">Pixel ordering inside one scan address &#8212; RGB1 lane (160 clocks)</text>
+  <text x="480" y="49" text-anchor="middle" font-size="12.5" fill="#475569">Two sub-rows are interleaved every 8 pixels; the &#8220;row k&#8221; block is clocked in reversed column order.</text>
+
+  <!-- Col group brackets -->
+  <g font-size="9.5" fill="#475569">
+    <text x="82"  y="72" text-anchor="middle">Col 0</text>
+    <text x="166" y="72" text-anchor="middle">Col 1</text>
+    <text x="250" y="72" text-anchor="middle">Col 2</text>
+    <text x="334" y="72" text-anchor="middle">Col 3</text>
+    <text x="418" y="72" text-anchor="middle">Col 4</text>
+    <text x="502" y="72" text-anchor="middle">Col 5</text>
+    <text x="586" y="72" text-anchor="middle">Col 6</text>
+    <text x="670" y="72" text-anchor="middle">Col 7</text>
+    <text x="754" y="72" text-anchor="middle">Col 8</text>
+    <text x="838" y="72" text-anchor="middle">Col 9</text>
+  </g>
+  <g stroke="#cbd5e1" stroke-width="1">
+    <line x1="40"  y1="78" x2="124" y2="78"/><line x1="124" y1="78" x2="208" y2="78"/>
+    <line x1="208" y1="78" x2="292" y2="78"/><line x1="292" y1="78" x2="376" y2="78"/>
+    <line x1="376" y1="78" x2="460" y2="78"/><line x1="460" y1="78" x2="544" y2="78"/>
+    <line x1="544" y1="78" x2="628" y2="78"/><line x1="628" y1="78" x2="712" y2="78"/>
+    <line x1="712" y1="78" x2="796" y2="78"/><line x1="796" y1="78" x2="880" y2="78"/>
+  </g>
+
+  <!-- 20 blocks: even=row k reversed (blue), odd=row k+10 forward (green) -->
+  <g>
+    <!-- g0 -->
+    <rect x="40"  y="86" width="42" height="52" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+    <rect x="82"  y="86" width="42" height="52" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+    <!-- g1 -->
+    <rect x="124" y="86" width="42" height="52" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+    <rect x="166" y="86" width="42" height="52" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+    <!-- g2 -->
+    <rect x="208" y="86" width="42" height="52" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+    <rect x="250" y="86" width="42" height="52" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+    <!-- g3 -->
+    <rect x="292" y="86" width="42" height="52" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+    <rect x="334" y="86" width="42" height="52" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+    <!-- g4 -->
+    <rect x="376" y="86" width="42" height="52" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+    <rect x="418" y="86" width="42" height="52" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+    <!-- g5 -->
+    <rect x="460" y="86" width="42" height="52" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+    <rect x="502" y="86" width="42" height="52" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+    <!-- g6 -->
+    <rect x="544" y="86" width="42" height="52" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+    <rect x="586" y="86" width="42" height="52" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+    <!-- g7 -->
+    <rect x="628" y="86" width="42" height="52" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+    <rect x="670" y="86" width="42" height="52" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+    <!-- g8 -->
+    <rect x="712" y="86" width="42" height="52" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+    <rect x="754" y="86" width="42" height="52" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+    <!-- g9 -->
+    <rect x="796" y="86" width="42" height="52" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+    <rect x="838" y="86" width="42" height="52" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+  </g>
+
+  <!-- row + arrow labels on the first two Col groups, then a representative pattern -->
+  <g font-size="8" fill="#1e3a8a" text-anchor="middle">
+    <text x="61"  y="104">row k</text><text x="145" y="104">row k</text><text x="229" y="104">row k</text>
+  </g>
+  <g font-size="8" fill="#166534" text-anchor="middle">
+    <text x="103" y="104">row k+10</text><text x="187" y="104">row k+10</text><text x="271" y="104">row k+10</text>
+  </g>
+  <g font-size="15" text-anchor="middle" font-weight="700">
+    <text x="61"  y="128" fill="#2563eb">&#9664;</text><text x="145" y="128" fill="#2563eb">&#9664;</text><text x="229" y="128" fill="#2563eb">&#9664;</text>
+    <text x="313" y="128" fill="#2563eb">&#9664;</text><text x="397" y="128" fill="#2563eb">&#9664;</text><text x="481" y="128" fill="#2563eb">&#9664;</text>
+    <text x="565" y="128" fill="#2563eb">&#9664;</text><text x="649" y="128" fill="#2563eb">&#9664;</text><text x="733" y="128" fill="#2563eb">&#9664;</text><text x="817" y="128" fill="#2563eb">&#9664;</text>
+    <text x="103" y="128" fill="#16a34a">&#9654;</text><text x="187" y="128" fill="#16a34a">&#9654;</text><text x="271" y="128" fill="#16a34a">&#9654;</text>
+    <text x="355" y="128" fill="#16a34a">&#9654;</text><text x="439" y="128" fill="#16a34a">&#9654;</text><text x="523" y="128" fill="#16a34a">&#9654;</text>
+    <text x="607" y="128" fill="#16a34a">&#9654;</text><text x="691" y="128" fill="#16a34a">&#9654;</text><text x="775" y="128" fill="#16a34a">&#9654;</text><text x="859" y="128" fill="#16a34a">&#9654;</text>
+  </g>
+
+  <!-- clock axis -->
+  <line x1="40" y1="150" x2="880" y2="150" stroke="#94a3b8" stroke-width="1"/>
+  <g stroke="#94a3b8" stroke-width="1">
+    <line x1="40" y1="147" x2="40" y2="155"/><line x1="124" y1="147" x2="124" y2="155"/>
+    <line x1="208" y1="147" x2="208" y2="155"/><line x1="292" y1="147" x2="292" y2="155"/>
+    <line x1="376" y1="147" x2="376" y2="155"/><line x1="460" y1="147" x2="460" y2="155"/>
+    <line x1="544" y1="147" x2="544" y2="155"/><line x1="628" y1="147" x2="628" y2="155"/>
+    <line x1="712" y1="147" x2="712" y2="155"/><line x1="796" y1="147" x2="796" y2="155"/><line x1="880" y1="147" x2="880" y2="155"/>
+  </g>
+  <g font-size="9" fill="#64748b" text-anchor="middle">
+    <text x="40" y="167">clk 0</text><text x="124" y="167">16</text><text x="208" y="167">32</text><text x="292" y="167">48</text>
+    <text x="376" y="167">64</text><text x="460" y="167">80</text><text x="544" y="167">96</text><text x="628" y="167">112</text>
+    <text x="712" y="167">128</text><text x="796" y="167">144</text><text x="880" y="167">160</text>
+  </g>
+
+  <!-- detail: one 8-pixel block internal column order -->
+  <text x="40" y="205" font-size="13" font-weight="700" fill="#0f172a">Inside one 8-pixel block (Col g):</text>
+  <g font-size="10">
+    <text x="40" y="228" fill="#1e3a8a" font-weight="700">row k   (reversed):</text>
+    <g fill="#dbeafe" stroke="#3b82f6" stroke-width="1">
+      <rect x="180" y="216" width="26" height="20"/><rect x="206" y="216" width="26" height="20"/><rect x="232" y="216" width="26" height="20"/><rect x="258" y="216" width="26" height="20"/>
+      <rect x="284" y="216" width="26" height="20"/><rect x="310" y="216" width="26" height="20"/><rect x="336" y="216" width="26" height="20"/><rect x="362" y="216" width="26" height="20"/>
+    </g>
+    <g fill="#1e3a8a" text-anchor="middle" font-size="9.5"><text x="193" y="230">c7</text><text x="219" y="230">c6</text><text x="245" y="230">c5</text><text x="271" y="230">c4</text><text x="297" y="230">c3</text><text x="323" y="230">c2</text><text x="349" y="230">c1</text><text x="375" y="230">c0</text></g>
+    <text x="400" y="230" fill="#64748b">clocked first &#8594; last</text>
+
+    <text x="40" y="260" fill="#166534" font-weight="700">row k+10 (forward):</text>
+    <g fill="#dcfce7" stroke="#22c55e" stroke-width="1">
+      <rect x="180" y="248" width="26" height="20"/><rect x="206" y="248" width="26" height="20"/><rect x="232" y="248" width="26" height="20"/><rect x="258" y="248" width="26" height="20"/>
+      <rect x="284" y="248" width="26" height="20"/><rect x="310" y="248" width="26" height="20"/><rect x="336" y="248" width="26" height="20"/><rect x="362" y="248" width="26" height="20"/>
+    </g>
+    <g fill="#166534" text-anchor="middle" font-size="9.5"><text x="193" y="262">c0</text><text x="219" y="262">c1</text><text x="245" y="262">c2</text><text x="271" y="262">c3</text><text x="297" y="262">c4</text><text x="323" y="262">c5</text><text x="349" y="262">c6</text><text x="375" y="262">c7</text></g>
+    <text x="400" y="262" fill="#64748b">c = Col&#215;8 + offset</text>
+  </g>
+
+  <!-- legend / notes -->
+  <rect x="40" y="288" width="880" height="112" rx="6" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="56" y="310" font-size="12.5" font-weight="700" fill="#0f172a">How to read it</text>
+  <g font-size="11.5" fill="#334155">
+    <text x="56" y="330"><tspan fill="#2563eb" font-weight="700">&#9664; blue</tspan> = the 8 pixels of <tspan font-weight="700">row k</tspan>, shifted in reversed column order (offset 7,6,&#8230;,0 within the group).</text>
+    <text x="56" y="350"><tspan fill="#16a34a" font-weight="700">&#9654; green</tspan> = the 8 pixels of <tspan font-weight="700">row k+10</tspan>, shifted in forward column order (offset 0,1,&#8230;,7).</text>
+    <text x="56" y="370">The two sub-rows alternate every 8 clocks &#8212; 10 Col groups &#215; 16 clocks = 160 clocks fill the lane. The RGB2 lane is fed the</text>
+    <text x="56" y="390">exact same way in lock-step, carrying <tspan font-weight="700">row k+20</tspan> (reversed) and <tspan font-weight="700">row k+30</tspan> (forward). This matches the panel&#8217;s internal wiring.</text>
+  </g>
+</svg>
