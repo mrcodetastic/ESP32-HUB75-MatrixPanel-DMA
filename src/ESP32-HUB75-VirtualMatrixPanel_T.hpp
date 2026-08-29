@@ -69,6 +69,8 @@ enum PANEL_SCAN_TYPE {
 	FOUR_SCAN_40PX_HIGH,			///< Four-scan mode, 40-pixel high panels.	
 	FOUR_SCAN_40_80PX_HFARCAN,		///< Four-scan mode, 40-pixel high, 80px wide panel. Weird mapping: https://github.com/mrcodetastic/ESP32-HUB75-MatrixPanel-DMA/issues/759
 	FOUR_SCAN_64PX_HIGH,			///< Four-scan mode, 64-pixel high panels.
+	FOUR_SCAN_P8_40_x_20PX_HIGH,	///< P8 outdoor 40x20 module, 1/5 scan.A/B/C address only
+	FOUR_SCAN_5PX_64X32HIGH,		///< P5 outdoor 64x32 1/8-scan, A/B/C address only (HRLOP-P5-1921/V2.0).
 };
 
 /**
@@ -115,6 +117,73 @@ struct ScanTypeMapping {
 			}
 			
 			coords.y = (coords.y >> 3) * 4 + (coords.y & 0b00000011);
+		}
+		// FOUR_SCAN_P8_40_x_20PX_HIGH
+		//
+		// 40x20 outdoor P8 module, 1/5 scan. This mapping was derived by
+		// probing the DMA buffer pixel by pixel on real hardware, because the
+		// panel does not follow the usual four-scan fold.
+		//
+		// One DMA row drives two physical rows five apart (at one scan address
+		// dma_y and dma_y+5 each light two rows - four rows lit at once). Along
+		// a DMA row the pixels are handed to those two rows in segments of 4
+		// and 8 columns, in a palindromic order: DMA column x and column 79-x
+		// always feed the same physical row.
+		//
+		// Inverted, that collapses to the two expressions below: each physical
+		// row takes its columns in groups of 8 that advance 16 DMA columns at a
+		// time, the two rows of the pair being offset four columns in opposite
+		// directions.
+		else if constexpr (ScanType == FOUR_SCAN_P8_40_x_20PX_HIGH)
+		{
+			const int panel = coords.x / panel_pixel_base;	// module in the chain
+			const int col	= coords.x % panel_pixel_base;	// column within it
+			const int row	= coords.y;						// row within it (0..19)
+
+			// Which row of the scan pair: 0..4 and 10..14 are the upper row,
+			// 5..9 and 15..19 the lower one.
+			const int is_lower = (row / 5) % 2;
+
+			const int u		= is_lower ? col : col + 4;
+			const int dma_x	= 16 * (u / 8) + (u % 8) + (is_lower ? 4 : -4);
+
+			coords.x = panel * (panel_pixel_base * 2) + dma_x;
+			coords.y = (row % 5) + 5 * (row / 10);
+		}
+		// FOUR_SCAN_5PX_64X32HIGH
+		//
+		// P5 outdoor 64x32 module, 1/8 scan (HRLOP-P5-1921/V2.0, silkscreen
+		// P5out-728T-2311-1A-240 / P5-smd1921-8S-2). Derived by probing the
+		// DMA buffer pixel by pixel on real hardware.
+		//
+		// This panel exposes A, B and C only - no D line - so the scan gives
+		// 8 addresses x R1/R2 = 16 rows, and the other 16 rows are reached
+		// through the doubled DMA width. It does NOT use the big left/right
+		// halves fold that FOUR_SCAN_32PX_HIGH assumes: the wiring has a
+		// period of 8 in x, each group of 8 DMA columns feeding 4 physical
+		// columns across two row bands.
+		//
+		// Measured forward mapping (dma -> physical):
+		//	   physX = 4*(dma_x/8) + (dma_x%4)
+		//	   band  = (dma_x/4)%2   // 0 -> rows 8..15 / 24..31
+		//							 // 1 -> rows 0..7  / 16..23
+		//	   physY = dma_y + 8*(dma_y/8) + 8*(1-band)
+		//
+		// 16 groups x 4 columns = 64 columns and 16 DMA rows x 2 bands = 32
+		// rows, so 128*16 == 64*32 - an exact bijection. Below is the inverse.
+		else if constexpr (ScanType == FOUR_SCAN_5PX_64X32HIGH)
+		{
+			const int panel = coords.x / panel_pixel_base;	// module in the chain
+			const int col	= coords.x % panel_pixel_base;	// physical column 0..63
+			const int q		= coords.y / 8;					// row block 0..3
+			const int r		= coords.y % 8;					// row within the block
+
+			// Row blocks 0 and 2 (phys rows 0..7 / 16..23) live in band 1,
+			// blocks 1 and 3 (phys rows 8..15 / 24..31) in band 0.
+			const int band = 1 - (q % 2);
+
+			coords.x = panel * (panel_pixel_base * 2) + 8 * (col / 4) + 4 * band + (col % 4);
+			coords.y = r + 8 * (q / 2);
 		}
 		// FOUR_SCAN_40PX_HIGH
 		else if constexpr (ScanType == FOUR_SCAN_40PX_HIGH) 
