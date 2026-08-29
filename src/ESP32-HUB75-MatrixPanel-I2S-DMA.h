@@ -12,6 +12,26 @@
 // #include <Arduino.h>
 #include "platforms/platform_detect.hpp"
 
+// MATRIX_WIDTH and MATRIX_HEIGHT are legacy defines that were meant (here)
+// to define the panel dimensions when the same defines are used in many other
+// places to specify the entire matrix size (made out of multiple panels chained)
+// Also, one shouldn't really use those anymore anyway and define the panel size
+// when the object is created.
+// But for compat reasons and not breaking anyone, this will default back to the
+// old names, and a code that needs to use MATRIX_WIDTH/MATRIX_HEIGHT and cannot
+// afford the name conflict, needs to define NEW_MATRIXPANEL_API before including 
+// the library.
+// This includes https://github.com/marcmerlin/FastLED_ESP32-HUB75-MatrixPanel_FrameBuffer_GFX/
+#ifndef NEW_MATRIXPANEL_API
+#ifdef MATRIX_WIDTH
+#define RGB_PANEL_WIDTH MATRIX_WIDTH
+#endif
+#ifdef MATRIX_HEIGHT
+#define RGB_PANEL_HEIGHT MATRIX_HEIGHT
+#endif
+#endif
+
+
 #ifdef USE_GFX_LITE
   // Slimmed version of Adafruit GFX + FastLED: https://github.com/mrcodetastic/GFX_Lite
   #include "GFX_Lite.h" 
@@ -36,17 +56,17 @@
  * If you want to chain two or more of these horizontally to make a 128x32 panel
  * you can do so with the cable and then set the CHAIN_LENGTH to '2'.
  *
- * Also, if you use a 64x64 panel, then set the MATRIX_HEIGHT to '64' and an E_PIN; it will work!
+ * Also, if you use a 64x64 panel, then set the RGB_PANEL_HEIGHT to '64' and an E_PIN; it will work!
  *
  * All of this is memory permitting of course (dependant on your sketch etc.) ...
  *
  */
-#ifndef MATRIX_WIDTH
-#define MATRIX_WIDTH 64 // Single panel of 64 pixel width
+#ifndef RGB_PANEL_WIDTH
+#define RGB_PANEL_WIDTH 64 // Single panel of 64 pixel width
 #endif
 
-#ifndef MATRIX_HEIGHT
-#define MATRIX_HEIGHT 32 // CHANGE THIS VALUE to 64 IF USING 64px HIGH panel(s) with E PIN
+#ifndef RGB_PANEL_HEIGHT
+#define RGB_PANEL_HEIGHT 32 // CHANGE THIS VALUE to 64 IF USING 64px HIGH panel(s) with E PIN
 #endif
 
 #ifndef CHAIN_LENGTH
@@ -196,7 +216,7 @@ struct rowBitStruct
 
 #endif
   }
-  ~rowBitStruct() { heap_caps_free(data); }
+  ~rowBitStruct() { delete data; }
 };
 
 /* frameStruct
@@ -317,8 +337,8 @@ struct HUB75_I2S_CFG
 
   // struct constructor
   HUB75_I2S_CFG(
-      uint16_t _w = MATRIX_WIDTH,
-      uint16_t _h = MATRIX_HEIGHT,
+      uint16_t _w = RGB_PANEL_WIDTH,
+      uint16_t _h = RGB_PANEL_HEIGHT,
       uint16_t _chain = CHAIN_LENGTH,
       i2s_pins _pinmap = {
           R1_PIN_DEFAULT, G1_PIN_DEFAULT, B1_PIN_DEFAULT, R2_PIN_DEFAULT, G2_PIN_DEFAULT, B2_PIN_DEFAULT,
@@ -332,7 +352,7 @@ struct HUB75_I2S_CFG
       bool _clockphase = true, 
       uint16_t _min_refresh_rate = 60, 
       uint8_t _pixel_color_depth_bits = PIXEL_COLOR_DEPTH_BITS_DEFAULT) 
-      : mx_width(_w), mx_height(_h), chain_length(_chain), gpio(_pinmap), driver(_drv), line_decoder(_line_drv), double_buff(_dbuff), i2sspeed(_i2sspeed), latch_blanking(_latblk), clkphase(_clockphase), min_refresh_rate(_min_refresh_rate)
+      : mx_width(_w), mx_height(_h), chain_length(_chain), gpio(_pinmap), driver(_drv), double_buff(_dbuff), i2sspeed(_i2sspeed), latch_blanking(_latblk), clkphase(_clockphase), min_refresh_rate(_min_refresh_rate)
   {
     setPixelColorDepthBits(_pixel_color_depth_bits);
   }
@@ -394,9 +414,9 @@ public:
    */
   MatrixPanel_I2S_DMA()
 #ifdef USE_GFX_LITE
-      : GFX(MATRIX_WIDTH, MATRIX_HEIGHT)
+      : GFX(RGB_PANEL_WIDTH, RGB_PANEL_HEIGHT)
 #elif !defined NO_GFX
-      : Adafruit_GFX(MATRIX_WIDTH, MATRIX_HEIGHT)
+      : Adafruit_GFX(RGB_PANEL_WIDTH, RGB_PANEL_HEIGHT)
 #endif
   {
   }
@@ -455,11 +475,6 @@ public:
 	
 	if (m_cfg.mx_height % 2 != 0) {
 		ESP_LOGE("begin()", "Error: m_cfg.mx_height must be an even number!");
-		return false;
-	}
-
-  if (m_cfg.line_decoder == HUB75_I2S_CFG::TYPE_DIRECT && (m_cfg.mx_height != 4 && m_cfg.mx_height != 8)) {
-	 ESP_LOGE("begin()", "Error: panel must be 2S or 4S to use TYPE_DIRECT line decoder! ");
 		return false;
 	}
 
@@ -707,24 +722,13 @@ public:
   }
 
   /**
-   * Stop the ESP32 DMA Engine, keeping buffers and config intact so output can be
-   * resumed later via resumeDMAoutput(). Useful to reduce power draw / 'turn off' the
-   * panel when not in use, or to quiet its RF emissions during WiFi transfers.
+   * Stop the ESP32 DMA Engine. Screen will forever be black until next ESP reboot.
    */
   void stopDMAoutput()
   {
     resetbuffers();
     // i2s_parallel_stop_dma(ESP32_I2S_DEVICE);
     dma_bus.dma_transfer_stop();
-  }
-
-  /**
-   * Resume DMA output after a stopDMAoutput() call.
-   * Note: stopDMAoutput() blanks the framebuffer (brightness is preserved), so redraw after.
-   */
-  void resumeDMAoutput()
-  {
-    dma_bus.dma_transfer_start();
   }
 
   // ------- PROTECTED -------
