@@ -69,6 +69,7 @@ enum PANEL_SCAN_TYPE {
 	FOUR_SCAN_40PX_HIGH,			///< Four-scan mode, 40-pixel high panels.	
 	FOUR_SCAN_40_80PX_HFARCAN,		///< Four-scan mode, 40-pixel high, 80px wide panel. Weird mapping: https://github.com/mrcodetastic/ESP32-HUB75-MatrixPanel-DMA/issues/759
 	FOUR_SCAN_64PX_HIGH,			///< Four-scan mode, 64-pixel high panels.
+	FOUR_SCAN_20PX_HIGH,
 };
 
 /**
@@ -115,6 +116,42 @@ struct ScanTypeMapping {
 			}
 			
 			coords.y = (coords.y >> 3) * 4 + (coords.y & 0b00000011);
+		}
+		// FOUR_SCAN_20PX_HIGH
+		//
+		// 40x20 outdoor P8 module, 1/5 scan. This mapping was derived by
+		// probing the DMA buffer pixel by pixel on real hardware, because the
+		// panel does not follow the usual four-scan fold.
+		//
+		// One DMA row drives two physical rows five apart (at one scan address
+		// dma_y and dma_y+5 each light two rows - four rows lit at once). Along
+		// a DMA row the pixels are handed to those two rows in segments of 4
+		// and 8 columns, in a palindromic order: DMA column x and column 79-x
+		// always feed the same physical row.
+		//
+		// Inverted, that collapses to the two expressions below: each physical
+		// row takes its columns in groups of 8 that advance 16 DMA columns at a
+		// time, the two rows of the pair being offset four columns in opposite
+		// directions.
+		//
+		// BEHAVIOUR CHANGE: this replaces the previous FOUR_SCAN_20PX_HIGH
+		// formula, which was the generic four-scan fold and did not drive this
+		// panel correctly.
+		else if constexpr (ScanType == FOUR_SCAN_20PX_HIGH)
+		{
+			const int panel = coords.x / panel_pixel_base;	// module in the chain
+			const int col	= coords.x % panel_pixel_base;	// column within it
+			const int row	= coords.y;						// row within it (0..19)
+
+			// Which row of the scan pair: 0..4 and 10..14 are the upper row,
+			// 5..9 and 15..19 the lower one.
+			const int is_lower = (row / 5) % 2;
+
+			const int u		= is_lower ? col : col + 4;
+			const int dma_x	= 16 * (u / 8) + (u % 8) + (is_lower ? 4 : -4);
+
+			coords.x = panel * (panel_pixel_base * 2) + dma_x;
+			coords.y = (row % 5) + 5 * (row / 10);
 		}
 		// FOUR_SCAN_40PX_HIGH
 		else if constexpr (ScanType == FOUR_SCAN_40PX_HIGH) 
