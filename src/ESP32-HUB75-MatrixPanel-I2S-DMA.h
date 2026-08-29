@@ -216,7 +216,7 @@ struct rowBitStruct
 
 #endif
   }
-  ~rowBitStruct() { delete data; }
+  ~rowBitStruct() { heap_caps_free(data); }
 };
 
 /* frameStruct
@@ -352,7 +352,7 @@ struct HUB75_I2S_CFG
       bool _clockphase = true, 
       uint16_t _min_refresh_rate = 60, 
       uint8_t _pixel_color_depth_bits = PIXEL_COLOR_DEPTH_BITS_DEFAULT) 
-      : mx_width(_w), mx_height(_h), chain_length(_chain), gpio(_pinmap), driver(_drv), double_buff(_dbuff), i2sspeed(_i2sspeed), latch_blanking(_latblk), clkphase(_clockphase), min_refresh_rate(_min_refresh_rate)
+      : mx_width(_w), mx_height(_h), chain_length(_chain), gpio(_pinmap), driver(_drv), line_decoder(_line_drv), double_buff(_dbuff), i2sspeed(_i2sspeed), latch_blanking(_latblk), clkphase(_clockphase), min_refresh_rate(_min_refresh_rate)
   {
     setPixelColorDepthBits(_pixel_color_depth_bits);
   }
@@ -475,6 +475,11 @@ public:
 	
 	if (m_cfg.mx_height % 2 != 0) {
 		ESP_LOGE("begin()", "Error: m_cfg.mx_height must be an even number!");
+		return false;
+	}
+    
+	if (m_cfg.line_decoder == HUB75_I2S_CFG::TYPE_DIRECT && (m_cfg.mx_height != 4 && m_cfg.mx_height != 8)) {
+	 ESP_LOGE("begin()", "Error: panel must be 2S or 4S to use TYPE_DIRECT line decoder! ");
 		return false;
 	}
 
@@ -722,13 +727,24 @@ public:
   }
 
   /**
-   * Stop the ESP32 DMA Engine. Screen will forever be black until next ESP reboot.
+   * Stop the ESP32 DMA Engine, keeping buffers and config intact so output can be
+   * resumed later via resumeDMAoutput(). Useful to reduce power draw / 'turn off' the
+   * panel when not in use, or to quiet its RF emissions during WiFi transfers.
    */
   void stopDMAoutput()
   {
     resetbuffers();
     // i2s_parallel_stop_dma(ESP32_I2S_DEVICE);
     dma_bus.dma_transfer_stop();
+  }
+
+  /**
+   * Resume DMA output after a stopDMAoutput() call.
+   * Note: stopDMAoutput() blanks the framebuffer (brightness is preserved), so redraw after.
+   */
+  void resumeDMAoutput()
+  {
+    dma_bus.dma_transfer_start();
   }
 
   // ------- PROTECTED -------
