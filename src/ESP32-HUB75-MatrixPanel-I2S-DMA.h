@@ -477,9 +477,9 @@ public:
 		ESP_LOGE("begin()", "Error: m_cfg.mx_height must be an even number!");
 		return false;
 	}
-    
+
 	if (m_cfg.line_decoder == HUB75_I2S_CFG::TYPE_DIRECT && (m_cfg.mx_height != 4 && m_cfg.mx_height != 8)) {
-	 ESP_LOGE("begin()", "Error: panel must be 2S or 4S to use TYPE_DIRECT line decoder! ");
+	    ESP_LOGE("begin()", "Error: panel must be 2S or 4S to use TYPE_DIRECT line decoder! ");
 		return false;
 	}
 
