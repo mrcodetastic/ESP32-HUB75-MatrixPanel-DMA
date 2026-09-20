@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 470" font-family="'Segoe UI', Helvetica, Arial, sans-serif">
+  <rect x="0" y="0" width="980" height="470" fill="#ffffff"/>
+  <rect x="1" y="1" width="978" height="468" fill="none" stroke="#e2e8f0" stroke-width="2"/>
+
+  <text x="490" y="30" text-anchor="middle" font-size="21" font-weight="700" fill="#0f172a">80 &#215; 40 HUB75 panel &#8212; 1/10 scan, 4-row multiplex</text>
+  <text x="490" y="50" text-anchor="middle" font-size="13" fill="#475569">The 40 rows are split into four 10-row bands; two RGB data lanes each drive two bands.</text>
+
+  <!-- column header -->
+  <text x="490" y="82" text-anchor="middle" font-size="12.5" fill="#334155">80 columns  (col 0 &#8594; col 79)</text>
+  <text x="210" y="97" text-anchor="start" font-size="11" fill="#64748b">col 0</text>
+  <text x="770" y="97" text-anchor="end" font-size="11" fill="#64748b">col 79</text>
+
+  <!-- lane bars -->
+  <rect x="120" y="104" width="12" height="140" fill="#2563eb"/>
+  <rect x="120" y="244" width="12" height="140" fill="#d97706"/>
+  <g font-size="12.5" font-weight="700" fill="#ffffff">
+    <text transform="rotate(-90 111 174)" x="111" y="174" text-anchor="middle" fill="#1e3a8a">RGB1 lane</text>
+    <text transform="rotate(-90 111 314)" x="111" y="314" text-anchor="middle" fill="#92400e">RGB2 lane</text>
+  </g>
+  <g font-size="10.5" fill="#64748b">
+    <text transform="rotate(-90 100 174)" x="100" y="174" text-anchor="middle">top half</text>
+    <text transform="rotate(-90 100 314)" x="100" y="314" text-anchor="middle">bottom half</text>
+  </g>
+
+  <!-- band labels -->
+  <g font-size="12.5" fill="#0f172a">
+    <text x="176" y="143" text-anchor="middle">rows 0&#8211;9</text>
+    <text x="176" y="213" text-anchor="middle">rows 10&#8211;19</text>
+    <text x="176" y="283" text-anchor="middle">rows 20&#8211;29</text>
+    <text x="176" y="353" text-anchor="middle">rows 30&#8211;39</text>
+  </g>
+
+  <!-- panel bands: x 210..770 (560 wide), y 104..384 (280 tall, cell 7px) -->
+  <rect x="210" y="104" width="560" height="70" fill="#dbeafe"/>
+  <rect x="210" y="174" width="560" height="70" fill="#bfdbfe"/>
+  <rect x="210" y="244" width="560" height="70" fill="#fef3c7"/>
+  <rect x="210" y="314" width="560" height="70" fill="#fde68a"/>
+
+  <!-- highlighted scan address k=3: rows 3,13,23,33 (y = band_top + 3*7) -->
+  <rect x="210" y="125" width="560" height="7" fill="#2563eb"/>
+  <rect x="210" y="195" width="560" height="7" fill="#2563eb"/>
+  <rect x="210" y="265" width="560" height="7" fill="#d97706"/>
+  <rect x="210" y="335" width="560" height="7" fill="#d97706"/>
+  <g font-size="9" fill="#ffffff" font-weight="700">
+    <text x="216" y="131">row 3</text>
+    <text x="216" y="201">row 13</text>
+    <text x="216" y="271">row 23</text>
+    <text x="216" y="341">row 33</text>
+  </g>
+
+  <rect x="210" y="104" width="560" height="280" fill="none" stroke="#334155" stroke-width="2"/>
+  <line x1="210" y1="174" x2="770" y2="174" stroke="#94a3b8" stroke-width="1" stroke-dasharray="3 3"/>
+  <line x1="210" y1="244" x2="770" y2="244" stroke="#334155" stroke-width="1.5"/>
+  <line x1="210" y1="314" x2="770" y2="314" stroke="#94a3b8" stroke-width="1" stroke-dasharray="3 3"/>
+
+  <!-- right annotation -->
+  <rect x="792" y="108" width="178" height="152" rx="6" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="801" y="128" font-size="12.5" font-weight="700" fill="#0f172a">Scan address k = 3</text>
+  <text x="801" y="145" font-size="11" fill="#475569">A=1 B=1 C=0 D=0</text>
+  <text x="801" y="166" font-size="11" fill="#475569">Lights 4 rows at once:</text>
+  <g font-size="11" fill="#334155">
+    <circle cx="806" cy="181" r="4" fill="#2563eb"/><text x="816" y="185">row 3   (RGB1)</text>
+    <circle cx="806" cy="199" r="4" fill="#2563eb"/><text x="816" y="203">row 13  (RGB1)</text>
+    <circle cx="806" cy="217" r="4" fill="#d97706"/><text x="816" y="221">row 23  (RGB2)</text>
+    <circle cx="806" cy="235" r="4" fill="#d97706"/><text x="816" y="239">row 33  (RGB2)</text>
+  </g>
+  <text x="801" y="254" font-size="10" fill="#64748b">k + 0, +10, +20, +30</text>
+
+  <!-- bottom caption -->
+  <text x="24" y="416" font-size="12.5" fill="#0f172a" font-weight="600">Multiplex rule</text>
+  <text x="24" y="434" font-size="12" fill="#334155">Each of the 10 scan addresses (k = 0&#8230;9, chosen by address lines A&#8211;D) lights one row from every 10-row band at the same time:</text>
+  <text x="24" y="452" font-size="12" fill="#334155">rows k and k+10 on the RGB1 (top) data lane, rows k+20 and k+30 on the RGB2 (bottom) lane.  10 addresses &#215; 4 rows = 40 rows.</text>
+</svg>

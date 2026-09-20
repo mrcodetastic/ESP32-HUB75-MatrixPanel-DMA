@@ -11,4 +11,5 @@
 |ChainedPanelsScreenBuffer  |Using the same 'VirtualMatrixPanel' class but also implementing a FastLED off-screen pixel buffer to do cool stuff. |
 |One_Quarter_1_4_ScanPanel  |Using this library with a 32w x 16h 1/4 Scan LED Matrix Panel. Custom co-ordinate remapping logic required.  NOT WORKING.                             |
 |One_Eighth_1_8_ScanPanel   |Using this library with a 64w x 32h 1/8 Scan LED Matrix Panel. Custom co-ordinate remapping logic required.
+|Panel_80x40_ZigZag8|PlatformIO project: using this library unmodified (released version) with an 80w x 40h 4-scan SM16208 "ZIGZAG8" outdoor panel, via a sketch-local scan-type mapping policy. See the README within this example's folder! |
 |PIO_TestPatterns           |Non-Arduino example of how to display basic shapes.                                                                    |
