@@ -1,0 +1,224 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 500" font-family="'Segoe UI', Helvetica, Arial, sans-serif">
+  <rect x="0" y="0" width="1000" height="500" fill="#ffffff"/>
+  <rect x="1" y="1" width="998" height="498" fill="none" stroke="#e2e8f0" stroke-width="2"/>
+
+  <defs>
+    <marker id="arrowBlue" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="#3b82f6"/></marker>
+    <marker id="arrowGreen" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="#16a34a"/></marker>
+    <marker id="arrowJump" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="#ea580c"/></marker>
+  </defs>
+
+  <text x="500" y="28" text-anchor="middle" font-size="19" font-weight="700" fill="#0f172a">How a single pixel's clock travels through the panel &#8212; ZIGZAG8</text>
+  <text x="500" y="47" text-anchor="middle" font-size="12" fill="#475569">One scan-address pair shown (row k &amp; row k+10) &#8212; a quarter of the four interleaved sub-rows. Numbers = shift-clock index.</text>
+
+  <text x="238" y="72" text-anchor="middle" font-size="11" font-weight="700" fill="#334155">Segment 0  (physical col 0&#8211;7)</text>
+  <text x="494" y="72" text-anchor="middle" font-size="11" font-weight="700" fill="#334155">Segment 1  (physical col 8&#8211;15)</text>
+  <line x1="366" y1="82" x2="366" y2="286" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4,3"/>
+  <text x="750" y="72" text-anchor="middle" font-size="11" font-weight="700" fill="#334155">Segment 2  (physical col 16&#8211;23)</text>
+  <line x1="622" y1="82" x2="622" y2="286" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4,3"/>
+  <line x1="110" y1="82" x2="878" y2="82" stroke="#94a3b8" stroke-width="1"/>
+
+  <text x="20" y="128" font-size="12" font-weight="700" fill="#1e3a8a">Row k</text>
+  <text x="20" y="252" font-size="12" font-weight="700" fill="#166534">Row k+10</text>
+
+  <!-- Row k cells (reversed phase) -->
+  <g>
+    <rect x="110" y="100" width="32" height="48" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.3"/>
+    <text x="126" y="128" text-anchor="middle" font-size="12" fill="#1e3a8a" font-weight="700">7</text>
+    <rect x="142" y="100" width="32" height="48" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.3"/>
+    <text x="158" y="128" text-anchor="middle" font-size="12" fill="#1e3a8a" font-weight="700">6</text>
+    <rect x="174" y="100" width="32" height="48" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.3"/>
+    <text x="190" y="128" text-anchor="middle" font-size="12" fill="#1e3a8a" font-weight="700">5</text>
+    <rect x="206" y="100" width="32" height="48" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.3"/>
+    <text x="222" y="128" text-anchor="middle" font-size="12" fill="#1e3a8a" font-weight="700">4</text>
+    <rect x="238" y="100" width="32" height="48" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.3"/>
+    <text x="254" y="128" text-anchor="middle" font-size="12" fill="#1e3a8a" font-weight="700">3</text>
+    <rect x="270" y="100" width="32" height="48" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.3"/>
+    <text x="286" y="128" text-anchor="middle" font-size="12" fill="#1e3a8a" font-weight="700">2</text>
+    <rect x="302" y="100" width="32" height="48" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.3"/>
+    <text x="318" y="128" text-anchor="middle" font-size="12" fill="#1e3a8a" font-weight="700">1</text>
+    <rect x="334" y="100" width="32" height="48" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.3"/>
+    <text x="350" y="128" text-anchor="middle" font-size="12" fill="#1e3a8a" font-weight="700">0</text>
+    <rect x="366" y="100" width="32" height="48" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.3"/>
+    <text x="382" y="128" text-anchor="middle" font-size="12" fill="#1e3a8a" font-weight="700">23</text>
+    <rect x="398" y="100" width="32" height="48" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.3"/>
+    <text x="414" y="128" text-anchor="middle" font-size="12" fill="#1e3a8a" font-weight="700">22</text>
+    <rect x="430" y="100" width="32" height="48" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.3"/>
+    <text x="446" y="128" text-anchor="middle" font-size="12" fill="#1e3a8a" font-weight="700">21</text>
+    <rect x="462" y="100" width="32" height="48" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.3"/>
+    <text x="478" y="128" text-anchor="middle" font-size="12" fill="#1e3a8a" font-weight="700">20</text>
+    <rect x="494" y="100" width="32" height="48" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.3"/>
+    <text x="510" y="128" text-anchor="middle" font-size="12" fill="#1e3a8a" font-weight="700">19</text>
+    <rect x="526" y="100" width="32" height="48" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.3"/>
+    <text x="542" y="128" text-anchor="middle" font-size="12" fill="#1e3a8a" font-weight="700">18</text>
+    <rect x="558" y="100" width="32" height="48" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.3"/>
+    <text x="574" y="128" text-anchor="middle" font-size="12" fill="#1e3a8a" font-weight="700">17</text>
+    <rect x="590" y="100" width="32" height="48" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.3"/>
+    <text x="606" y="128" text-anchor="middle" font-size="12" fill="#1e3a8a" font-weight="700">16</text>
+    <rect x="622" y="100" width="32" height="48" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.3"/>
+    <text x="638" y="128" text-anchor="middle" font-size="12" fill="#1e3a8a" font-weight="700">39</text>
+    <rect x="654" y="100" width="32" height="48" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.3"/>
+    <text x="670" y="128" text-anchor="middle" font-size="12" fill="#1e3a8a" font-weight="700">38</text>
+    <rect x="686" y="100" width="32" height="48" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.3"/>
+    <text x="702" y="128" text-anchor="middle" font-size="12" fill="#1e3a8a" font-weight="700">37</text>
+    <rect x="718" y="100" width="32" height="48" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.3"/>
+    <text x="734" y="128" text-anchor="middle" font-size="12" fill="#1e3a8a" font-weight="700">36</text>
+    <rect x="750" y="100" width="32" height="48" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.3"/>
+    <text x="766" y="128" text-anchor="middle" font-size="12" fill="#1e3a8a" font-weight="700">35</text>
+    <rect x="782" y="100" width="32" height="48" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.3"/>
+    <text x="798" y="128" text-anchor="middle" font-size="12" fill="#1e3a8a" font-weight="700">34</text>
+    <rect x="814" y="100" width="32" height="48" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.3"/>
+    <text x="830" y="128" text-anchor="middle" font-size="12" fill="#1e3a8a" font-weight="700">33</text>
+    <rect x="846" y="100" width="32" height="48" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.3"/>
+    <text x="862" y="128" text-anchor="middle" font-size="12" fill="#1e3a8a" font-weight="700">32</text>
+  </g>
+
+  <!-- Row k+10 cells (forward phase) -->
+  <g>
+    <rect x="110" y="224" width="32" height="48" fill="#dcfce7" stroke="#22c55e" stroke-width="1.3"/>
+    <text x="126" y="252" text-anchor="middle" font-size="12" fill="#166534" font-weight="700">8</text>
+    <rect x="142" y="224" width="32" height="48" fill="#dcfce7" stroke="#22c55e" stroke-width="1.3"/>
+    <text x="158" y="252" text-anchor="middle" font-size="12" fill="#166534" font-weight="700">9</text>
+    <rect x="174" y="224" width="32" height="48" fill="#dcfce7" stroke="#22c55e" stroke-width="1.3"/>
+    <text x="190" y="252" text-anchor="middle" font-size="12" fill="#166534" font-weight="700">10</text>
+    <rect x="206" y="224" width="32" height="48" fill="#dcfce7" stroke="#22c55e" stroke-width="1.3"/>
+    <text x="222" y="252" text-anchor="middle" font-size="12" fill="#166534" font-weight="700">11</text>
+    <rect x="238" y="224" width="32" height="48" fill="#dcfce7" stroke="#22c55e" stroke-width="1.3"/>
+    <text x="254" y="252" text-anchor="middle" font-size="12" fill="#166534" font-weight="700">12</text>
+    <rect x="270" y="224" width="32" height="48" fill="#dcfce7" stroke="#22c55e" stroke-width="1.3"/>
+    <text x="286" y="252" text-anchor="middle" font-size="12" fill="#166534" font-weight="700">13</text>
+    <rect x="302" y="224" width="32" height="48" fill="#dcfce7" stroke="#22c55e" stroke-width="1.3"/>
+    <text x="318" y="252" text-anchor="middle" font-size="12" fill="#166534" font-weight="700">14</text>
+    <rect x="334" y="224" width="32" height="48" fill="#dcfce7" stroke="#22c55e" stroke-width="1.3"/>
+    <text x="350" y="252" text-anchor="middle" font-size="12" fill="#166534" font-weight="700">15</text>
+    <rect x="366" y="224" width="32" height="48" fill="#dcfce7" stroke="#22c55e" stroke-width="1.3"/>
+    <text x="382" y="252" text-anchor="middle" font-size="12" fill="#166534" font-weight="700">24</text>
+    <rect x="398" y="224" width="32" height="48" fill="#dcfce7" stroke="#22c55e" stroke-width="1.3"/>
+    <text x="414" y="252" text-anchor="middle" font-size="12" fill="#166534" font-weight="700">25</text>
+    <rect x="430" y="224" width="32" height="48" fill="#dcfce7" stroke="#22c55e" stroke-width="1.3"/>
+    <text x="446" y="252" text-anchor="middle" font-size="12" fill="#166534" font-weight="700">26</text>
+    <rect x="462" y="224" width="32" height="48" fill="#dcfce7" stroke="#22c55e" stroke-width="1.3"/>
+    <text x="478" y="252" text-anchor="middle" font-size="12" fill="#166534" font-weight="700">27</text>
+    <rect x="494" y="224" width="32" height="48" fill="#dcfce7" stroke="#22c55e" stroke-width="1.3"/>
+    <text x="510" y="252" text-anchor="middle" font-size="12" fill="#166534" font-weight="700">28</text>
+    <rect x="526" y="224" width="32" height="48" fill="#dcfce7" stroke="#22c55e" stroke-width="1.3"/>
+    <text x="542" y="252" text-anchor="middle" font-size="12" fill="#166534" font-weight="700">29</text>
+    <rect x="558" y="224" width="32" height="48" fill="#dcfce7" stroke="#22c55e" stroke-width="1.3"/>
+    <text x="574" y="252" text-anchor="middle" font-size="12" fill="#166534" font-weight="700">30</text>
+    <rect x="590" y="224" width="32" height="48" fill="#dcfce7" stroke="#22c55e" stroke-width="1.3"/>
+    <text x="606" y="252" text-anchor="middle" font-size="12" fill="#166534" font-weight="700">31</text>
+    <rect x="622" y="224" width="32" height="48" fill="#dcfce7" stroke="#22c55e" stroke-width="1.3"/>
+    <text x="638" y="252" text-anchor="middle" font-size="12" fill="#166534" font-weight="700">40</text>
+    <rect x="654" y="224" width="32" height="48" fill="#dcfce7" stroke="#22c55e" stroke-width="1.3"/>
+    <text x="670" y="252" text-anchor="middle" font-size="12" fill="#166534" font-weight="700">41</text>
+    <rect x="686" y="224" width="32" height="48" fill="#dcfce7" stroke="#22c55e" stroke-width="1.3"/>
+    <text x="702" y="252" text-anchor="middle" font-size="12" fill="#166534" font-weight="700">42</text>
+    <rect x="718" y="224" width="32" height="48" fill="#dcfce7" stroke="#22c55e" stroke-width="1.3"/>
+    <text x="734" y="252" text-anchor="middle" font-size="12" fill="#166534" font-weight="700">43</text>
+    <rect x="750" y="224" width="32" height="48" fill="#dcfce7" stroke="#22c55e" stroke-width="1.3"/>
+    <text x="766" y="252" text-anchor="middle" font-size="12" fill="#166534" font-weight="700">44</text>
+    <rect x="782" y="224" width="32" height="48" fill="#dcfce7" stroke="#22c55e" stroke-width="1.3"/>
+    <text x="798" y="252" text-anchor="middle" font-size="12" fill="#166534" font-weight="700">45</text>
+    <rect x="814" y="224" width="32" height="48" fill="#dcfce7" stroke="#22c55e" stroke-width="1.3"/>
+    <text x="830" y="252" text-anchor="middle" font-size="12" fill="#166534" font-weight="700">46</text>
+    <rect x="846" y="224" width="32" height="48" fill="#dcfce7" stroke="#22c55e" stroke-width="1.3"/>
+    <text x="862" y="252" text-anchor="middle" font-size="12" fill="#166534" font-weight="700">47</text>
+  </g>
+
+  <!-- Highlight: virtual (0,0) / first pixel clocked -->
+  <rect x="332" y="98" width="36" height="52" fill="none" stroke="#f59e0b" stroke-width="3" rx="3"/>
+  <text x="363" y="113" text-anchor="end" font-size="13" fill="#b45309">&#9733;</text>
+  <line x1="350" y1="148" x2="350" y2="170" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="3,2"/>
+  <text x="350" y="184" text-anchor="middle" font-size="10.5" font-weight="700" fill="#b45309">&#9733; virt (0,0)</text>
+  <text x="350" y="198" text-anchor="middle" font-size="9.5" fill="#b45309">first pixel clocked</text>
+
+  <!-- physical column axis -->
+  <line x1="110" y1="282" x2="878" y2="282" stroke="#94a3b8" stroke-width="1"/>
+  <line x1="110" y1="279" x2="110" y2="285" stroke="#94a3b8" stroke-width="1"/>
+  <text x="110" y="298" text-anchor="middle" font-size="9" fill="#64748b">col 0</text>
+  <line x1="238" y1="279" x2="238" y2="285" stroke="#94a3b8" stroke-width="1"/>
+  <text x="238" y="298" text-anchor="middle" font-size="9" fill="#64748b">col 4</text>
+  <line x1="366" y1="279" x2="366" y2="285" stroke="#94a3b8" stroke-width="1"/>
+  <text x="366" y="298" text-anchor="middle" font-size="9" fill="#64748b">col 8</text>
+  <line x1="494" y1="279" x2="494" y2="285" stroke="#94a3b8" stroke-width="1"/>
+  <text x="494" y="298" text-anchor="middle" font-size="9" fill="#64748b">col 12</text>
+  <line x1="622" y1="279" x2="622" y2="285" stroke="#94a3b8" stroke-width="1"/>
+  <text x="622" y="298" text-anchor="middle" font-size="9" fill="#64748b">col 16</text>
+  <line x1="750" y1="279" x2="750" y2="285" stroke="#94a3b8" stroke-width="1"/>
+  <text x="750" y="298" text-anchor="middle" font-size="9" fill="#64748b">col 20</text>
+  <line x1="878" y1="279" x2="878" y2="285" stroke="#94a3b8" stroke-width="1"/>
+  <text x="878" y="298" text-anchor="middle" font-size="9" fill="#64748b">col 24</text>
+
+  <!-- Rounded skip arrows: Row k, adjacent-column hops (leftward within a segment) -->
+  <g fill="none" stroke="#3b82f6" stroke-width="1.6">
+    <path d="M 350,100 Q 334,84 318,100" marker-end="url(#arrowBlue)"/>
+    <path d="M 318,100 Q 302,84 286,100" marker-end="url(#arrowBlue)"/>
+    <path d="M 286,100 Q 270,84 254,100" marker-end="url(#arrowBlue)"/>
+    <path d="M 254,100 Q 238,84 222,100" marker-end="url(#arrowBlue)"/>
+    <path d="M 222,100 Q 206,84 190,100" marker-end="url(#arrowBlue)"/>
+    <path d="M 190,100 Q 174,84 158,100" marker-end="url(#arrowBlue)"/>
+    <path d="M 158,100 Q 142,84 126,100" marker-end="url(#arrowBlue)"/>
+    <path d="M 606,100 Q 590,84 574,100" marker-end="url(#arrowBlue)"/>
+    <path d="M 574,100 Q 558,84 542,100" marker-end="url(#arrowBlue)"/>
+    <path d="M 542,100 Q 526,84 510,100" marker-end="url(#arrowBlue)"/>
+    <path d="M 510,100 Q 494,84 478,100" marker-end="url(#arrowBlue)"/>
+    <path d="M 478,100 Q 462,84 446,100" marker-end="url(#arrowBlue)"/>
+    <path d="M 446,100 Q 430,84 414,100" marker-end="url(#arrowBlue)"/>
+    <path d="M 414,100 Q 398,84 382,100" marker-end="url(#arrowBlue)"/>
+    <path d="M 862,100 Q 846,84 830,100" marker-end="url(#arrowBlue)"/>
+    <path d="M 830,100 Q 814,84 798,100" marker-end="url(#arrowBlue)"/>
+    <path d="M 798,100 Q 782,84 766,100" marker-end="url(#arrowBlue)"/>
+    <path d="M 766,100 Q 750,84 734,100" marker-end="url(#arrowBlue)"/>
+    <path d="M 734,100 Q 718,84 702,100" marker-end="url(#arrowBlue)"/>
+    <path d="M 702,100 Q 686,84 670,100" marker-end="url(#arrowBlue)"/>
+    <path d="M 670,100 Q 654,84 638,100" marker-end="url(#arrowBlue)"/>
+  </g>
+
+  <!-- Rounded skip arrows: Row k+10, adjacent-column hops (rightward within a segment) -->
+  <g fill="none" stroke="#16a34a" stroke-width="1.6">
+    <path d="M 126,272 Q 142,288 158,272" marker-end="url(#arrowGreen)"/>
+    <path d="M 158,272 Q 174,288 190,272" marker-end="url(#arrowGreen)"/>
+    <path d="M 190,272 Q 206,288 222,272" marker-end="url(#arrowGreen)"/>
+    <path d="M 222,272 Q 238,288 254,272" marker-end="url(#arrowGreen)"/>
+    <path d="M 254,272 Q 270,288 286,272" marker-end="url(#arrowGreen)"/>
+    <path d="M 286,272 Q 302,288 318,272" marker-end="url(#arrowGreen)"/>
+    <path d="M 318,272 Q 334,288 350,272" marker-end="url(#arrowGreen)"/>
+    <path d="M 382,272 Q 398,288 414,272" marker-end="url(#arrowGreen)"/>
+    <path d="M 414,272 Q 430,288 446,272" marker-end="url(#arrowGreen)"/>
+    <path d="M 446,272 Q 462,288 478,272" marker-end="url(#arrowGreen)"/>
+    <path d="M 478,272 Q 494,288 510,272" marker-end="url(#arrowGreen)"/>
+    <path d="M 510,272 Q 526,288 542,272" marker-end="url(#arrowGreen)"/>
+    <path d="M 542,272 Q 558,288 574,272" marker-end="url(#arrowGreen)"/>
+    <path d="M 574,272 Q 590,288 606,272" marker-end="url(#arrowGreen)"/>
+    <path d="M 638,272 Q 654,288 670,272" marker-end="url(#arrowGreen)"/>
+    <path d="M 670,272 Q 686,288 702,272" marker-end="url(#arrowGreen)"/>
+    <path d="M 702,272 Q 718,288 734,272" marker-end="url(#arrowGreen)"/>
+    <path d="M 734,272 Q 750,288 766,272" marker-end="url(#arrowGreen)"/>
+    <path d="M 766,272 Q 782,288 798,272" marker-end="url(#arrowGreen)"/>
+    <path d="M 798,272 Q 814,288 830,272" marker-end="url(#arrowGreen)"/>
+    <path d="M 830,272 Q 846,288 862,272" marker-end="url(#arrowGreen)"/>
+  </g>
+
+  <!-- Straight jump arrows: different row (vertical) or next segment (diagonal) - NOT adjacent cells -->
+  <g fill="none" stroke="#ea580c" stroke-width="2.2">
+    <line x1="126" y1="148" x2="126" y2="224" marker-end="url(#arrowJump)"/>
+    <path d="M 350,272 C 350,306 606,306 606,100" marker-end="url(#arrowJump)"/>
+    <line x1="382" y1="148" x2="382" y2="224" marker-end="url(#arrowJump)"/>
+    <path d="M 606,272 C 606,306 862,306 862,100" marker-end="url(#arrowJump)"/>
+    <line x1="638" y1="148" x2="638" y2="224" marker-end="url(#arrowJump)"/>
+    <path d="M 862,272 C 862,306 918,306 918,110" marker-end="url(#arrowJump)" stroke-dasharray="3,3"/>
+  </g>
+  <text x="886" y="94" font-size="9.5" fill="#9a3412">continues&#8230;</text>
+  <text x="886" y="106" font-size="9.5" fill="#9a3412">(col 24, clk 48)</text>
+
+  <rect x="40" y="306" width="920" height="140" rx="6" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="56" y="328" font-size="12.5" font-weight="700" fill="#0f172a">How to read it</text>
+  <path d="M 56,344 Q 80,332 104,344" fill="none" stroke="#3b82f6" stroke-width="1.8" marker-end="url(#arrowBlue)"/>
+  <text x="116" y="348" font-size="11.5" fill="#334155">Rounded arrow = a &#8220;skip&#8221; to the <tspan font-weight="700">next adjacent physical column</tspan>, same row. This is the reversed/forward shift within one 8-pixel segment.</text>
+  <line x1="56" y1="364" x2="104" y2="364" stroke="#ea580c" stroke-width="2.2" marker-end="url(#arrowJump)"/>
+  <text x="116" y="370" font-size="11.5" fill="#334155">Straight arrow = a &#8220;jump&#8221; to a <tspan font-weight="700">different physical row</tspan> (vertical) or to the <tspan font-weight="700">start of the next segment</tspan> (curved-diagonal) &#8212; never an adjacent cell.</text>
+  <rect x="56" y="380" width="16" height="14" fill="#dbeafe" stroke="#3b82f6"/><text x="80" y="392" font-size="11.5" fill="#334155">Row k &#8212; clocked in <tspan font-weight="700">reversed</tspan> column order (7,6,&#8230;,0 within each segment).</text>
+  <rect x="56" y="400" width="16" height="14" fill="#dcfce7" stroke="#22c55e"/><text x="80" y="412" font-size="11.5" fill="#334155">Row k+10 &#8212; clocked in <tspan font-weight="700">forward</tspan> column order (0,1,&#8230;,7 within each segment).</text>
+  <text x="56" y="420" font-size="13" fill="#b45309">&#9733;</text><text x="80" y="432" font-size="11.5" fill="#334155"><tspan font-weight="700">virt (0,0)</tspan> &#8212; the logical top-left pixel &#8212; lands on DMA col 7 of Row k, which is also <tspan font-weight="700">clk 0</tspan>: the very first pixel shifted into the chain.</text>
+  <text x="56" y="452" font-size="11" fill="#64748b">Rows k and k+10 are physically 10 rows apart (drawn adjacent for clarity). The identical pattern repeats for row k+20/k+30 (RGB2 lane) and for all 10 scan addresses, clocks 0&#8211;159.</text>
+</svg>
