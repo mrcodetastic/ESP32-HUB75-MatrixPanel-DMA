@@ -313,7 +313,7 @@ struct HUB75_I2S_CFG
 
   // Minimum refresh / scan rate needs to be configured on start due to LSBMSB_TRANSITION_BIT calculation in allocateDMAmemory()
   // Set this to '1' to get all colour depths displayed with correct BCM time weighting.
-  uint8_t min_refresh_rate;
+  uint16_t min_refresh_rate;
 
   // struct constructor
   HUB75_I2S_CFG(
