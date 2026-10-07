@@ -63,7 +63,8 @@ Modified heavily for the ESP32 HUB75 DMA library by:
 
  #elif defined(CONFIG_IDF_TARGET_ESP32P4)
 
-   #pragma message "You are ahead of your time. ESP32P4 support is planned"
+  #pragma message "Compiling for ESP32-P4 with PARLIO support"
+  #include "esp32p4/esp32p4_parlio_gdma.hpp"
 
  #elif defined (CONFIG_IDF_TARGET_ESP32) || defined(ESP32)
 
