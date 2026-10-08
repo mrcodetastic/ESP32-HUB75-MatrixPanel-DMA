@@ -120,9 +120,24 @@ void MatrixPanel_I2S_DMA::dp3246init(const HUB75_I2S_CFG& _cfg) {
     m_cfg.clkphase = true;
 
     // Register 1 config: OE widening, current gain settings
+    
+    // 15:13   3   000        reserved
+    // 12:9    4   0000       OE widening (= OE_ADD * 6ns)
+    // 8       1   0          reserved
+    // 7:0     8   11111111   Iout = (Igain+1)/256 * 17.6 / Rext
+
     const bool REG1[16] = { 0,0,0, 0,0,0,0, 0, 1,1,1,1,1,1,1,1 };  // MSB first
 
     // Register 2 config: Blanking potential selection, dead pixel removal, fading options
+
+    // 15:11   5   11111      Blanking potential selection, step 77mV, 00000: VDD-0.8V
+    // 10:8    3   111        Constant current source output inflection point selection
+    // 7       1   0          Disable dead pixel removel, 1: Enable
+    // 6       1   0          0->1: (OPEN_DET rising edge) start detection, 0: reset to ready-to-detect state
+    // 5       1   0          0: Enable black screen power saving, 1: Turn off the black screen to save energy
+    // 4       1   0          0: Do not enable the fading function, 1: Enable the fade function
+    // 3       1   0          Reserved
+    // 2:0     3   000        000: single edge pass, others: double edge transfer    
     const bool REG2[16] = { 1,1,1,1,1, 1,1,1, 0, 0, 0, 0, 0, 0,0,0 };  // MSB first
 
     const gpio_num_t pins[] = {(gpio_num_t)_cfg.gpio.r1, (gpio_num_t)_cfg.gpio.r2, (gpio_num_t)_cfg.gpio.g1, (gpio_num_t)_cfg.gpio.g2, (gpio_num_t)_cfg.gpio.b1, (gpio_num_t)_cfg.gpio.b2, (gpio_num_t)_cfg.gpio.clk, (gpio_num_t)_cfg.gpio.lat, (gpio_num_t)_cfg.gpio.oe};
