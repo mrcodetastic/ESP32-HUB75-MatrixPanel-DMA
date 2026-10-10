@@ -1,8 +1,48 @@
 #include "ESP32-HUB75-MatrixPanel-I2S-DMA.h"
 
-#if defined(SPIRAM_DMA_BUFFER)
-// Sprite_TM memory caching utilities: https://www.esp32.com/viewtopic.php?f=2&t=30584
+
+/*
+ * Hardware Cache Synchronization Utilities
+ * 
+ * On targets with cached memory subsystems (such as ESP32-S3 using PSRAM or ESP32-P4
+ * with L1/L2 caches covering SRAM/PSRAM), CPU writes pass through data caches before
+ * reaching physical memory. Explicit cache writebacks are required so GDMA peripherals
+ * read updated frame buffer data directly from RAM without stale artifacts.
+ * 
+ * For ESP32-P4:
+ *   Uses esp_cache_msync() aligned to 64-byte hardware cache line boundaries.
+ * 
+ * For Legacy Targets (e.g., ESP32-S3 PSRAM):
+ *   Uses ROM Cache_WriteBack_Addr() driver utilities.
+ */
+#if defined(CONFIG_IDF_TARGET_ESP32P4)
+#include <esp_cache.h>
+
+/**
+ * @brief Performs 64-byte aligned cache writeback for ESP32-P4 L1/L2 cache controller.
+ * @param addr Starting memory address modified by the CPU.
+ * @param size Size in bytes of the modified payload block.
+ */
+static inline void p4_cache_writeback_aligned(void* addr, size_t size) {
+    uint32_t align = 64; // ESP32-P4 cache line size is 64 bytes
+    uint32_t start = (uint32_t)addr;
+    uint32_t end   = start + size;
+
+    uint32_t aligned_start = start & ~(align - 1);
+    uint32_t aligned_end   = (end + align - 1) & ~(align - 1);
+    size_t aligned_size    = aligned_end - aligned_start;
+
+    esp_cache_msync((void*)aligned_start, aligned_size, 
+                    ESP_CACHE_MSYNC_FLAG_DIR_C2M | ESP_CACHE_MSYNC_FLAG_TYPE_DATA);
+}
+
+#define DMA_CACHE_WRITEBACK(addr, size) p4_cache_writeback_aligned((void*)(addr), (size))
+
+#elif defined(SPIRAM_DMA_BUFFER)
 #include "rom/cache.h"
+#define DMA_CACHE_WRITEBACK(addr, size) Cache_WriteBack_Addr((uint32_t)(addr), (size))
+#else
+#define DMA_CACHE_WRITEBACK(addr, size)
 #endif
 
 
@@ -282,7 +322,19 @@ void MatrixPanel_I2S_DMA::configureBusParallel16() {
 bool MatrixPanel_I2S_DMA::setupDMA(const HUB75_I2S_CFG &_cfg) {
     int fbs_required = (m_cfg.double_buff) ? 2 : 1;
 
+    // 1. Prepare configuration struct (pin mapping, clock speeds)
+    configureBusParallel16();
+
+    // 2. Allocate frame buffers in RAM; fail early if memory allocation fails
     if (!allocateFrameBuffers(fbs_required)) return false;
+
+    // =========================================================================
+    // FIX FOR ESP32-P4: Initialize hardware bus BEFORE allocating DMA descriptors
+    // =========================================================================
+    if (!dma_bus.init()) {
+        ESP_LOGE("I2S-DMA", "Failed to initialize DMA bus hardware!");
+        return false;
+    }
 
     calculateRefreshRateAndTransitionBit();
 
@@ -299,16 +351,17 @@ bool MatrixPanel_I2S_DMA::setupDMA(const HUB75_I2S_CFG &_cfg) {
         dma_bus.enable_double_dma_desc();
     }
 
+    // 3. Allocate DMA descriptor memory (channel is now initialized for PARLIO)
     if (!dma_bus.allocate_dma_desc_memory(dma_descriptions_required)) {
+        ESP_LOGE("I2S-DMA", "Failed to allocate DMA descriptor memory!");
         return false;
     }
 
+    // 4. Build and link DMA descriptor chains
     buildDmaDescriptorLinks(fbs_required, dma_descs_per_row_all_cdepths, 
                              last_dma_desc_bytes_all_cdepths, 
                              dma_descs_per_row_1cdepth, 
                              last_dma_desc_bytes_1cdepth);
-
-    configureBusParallel16();
 
     fb = &frame_buffer[0];
     initialized = true;
@@ -357,9 +410,13 @@ void IRAM_ATTR MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint16_t x_coord, uint
 
     p[x_coord] = (p[x_coord] & _colourbitclear) | RGB_output_bits;
 
-#if defined(SPIRAM_DMA_BUFFER)
-    Cache_WriteBack_Addr((uint32_t)&p[x_coord], sizeof(ESP32_I2S_DMA_STORAGE_TYPE));
-#endif
+//#if defined(SPIRAM_DMA_BUFFER)
+//    Cache_WriteBack_Addr((uint32_t)&p[x_coord], sizeof(ESP32_I2S_DMA_STORAGE_TYPE));
+//#endif
+
+	// Target-aware cache writeback
+    DMA_CACHE_WRITEBACK(&p[x_coord], sizeof(ESP32_I2S_DMA_STORAGE_TYPE));
+	
   } while (colour_depth_idx);
   
   
@@ -421,9 +478,13 @@ void MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint8_t red, uint8_t green, uint
                 p[x_coord] &= BITMASK_RGB12_CLEAR;
                 p[x_coord] |= RGB_output_bits;
 
-#if defined(SPIRAM_DMA_BUFFER)
-                Cache_WriteBack_Addr((uint32_t)&p[x_coord], sizeof(ESP32_I2S_DMA_STORAGE_TYPE));
-#endif
+//#if defined(SPIRAM_DMA_BUFFER)
+//                Cache_WriteBack_Addr((uint32_t)&p[x_coord], sizeof(ESP32_I2S_DMA_STORAGE_TYPE));
+//#endif
+
+			// Target-aware cache writeback
+			DMA_CACHE_WRITEBACK(&p[x_coord], sizeof(ESP32_I2S_DMA_STORAGE_TYPE));	
+			
             } while (x_coord);
         } while (matrix_frame_parallel_row);
     }
@@ -529,9 +590,12 @@ void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id) {
         applyShiftRegisterLineDecoderFixes(target_fb, row_idx);
         applyRowControlPulses(target_fb, row_idx);
 
-#if defined(SPIRAM_DMA_BUFFER)
-        Cache_WriteBack_Addr((uint32_t)row, target_fb->rowBits[row_idx]->getColorDepthSize(false));
-#endif
+//#if defined(SPIRAM_DMA_BUFFER)
+//        Cache_WriteBack_Addr((uint32_t)row, target_fb->rowBits[row_idx]->getColorDepthSize(false));
+//#endif
+
+		DMA_CACHE_WRITEBACK(row, target_fb->rowBits[row_idx]->getColorDepthSize(false));
+
     } while (row_idx);
 }
 
@@ -592,10 +656,14 @@ void MatrixPanel_I2S_DMA::setBrightnessOE(uint8_t brt, const int _buff_id)
 
     } while (colouridx);
 
-#if defined(SPIRAM_DMA_BUFFER)
-    ESP32_I2S_DMA_STORAGE_TYPE *row_ptr = target_fb->rowBits[row_idx]->getDataPtr(0);
-    Cache_WriteBack_Addr((uint32_t)row_ptr, target_fb->rowBits[row_idx]->getColorDepthSize(false));
-#endif
+//#if defined(SPIRAM_DMA_BUFFER)
+//    ESP32_I2S_DMA_STORAGE_TYPE *row_ptr = target_fb->rowBits[row_idx]->getDataPtr(0);
+//    Cache_WriteBack_Addr((uint32_t)row_ptr, target_fb->rowBits[row_idx]->getColorDepthSize(false));
+//#endif
+
+	ESP32_I2S_DMA_STORAGE_TYPE *row_ptr = target_fb->rowBits[row_idx]->getDataPtr(0);
+    DMA_CACHE_WRITEBACK(row_ptr, target_fb->rowBits[row_idx]->getColorDepthSize(false));
+	
   } while (row_idx);
 }
 
@@ -643,12 +711,13 @@ bool MatrixPanel_I2S_DMA::begin() {
     m_cfg.i2sspeed = HUB75_I2S_CFG::clk_speed::HZ_8M;
 #endif
 
+    // Memory allocation + dma_bus.init() are handled inside setupDMA
     if (!setupDMA(m_cfg)) return false;
 
     resetbuffers();
     flipDMABuffer();
 
-    dma_bus.init();
+    // Start hardware transmission
     dma_bus.dma_transfer_start();
 
     return initialized;

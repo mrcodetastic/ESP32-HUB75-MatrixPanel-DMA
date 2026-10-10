@@ -64,9 +64,10 @@ Modified heavily for the ESP32 HUB75 DMA library by:
  #elif defined(CONFIG_IDF_TARGET_ESP32P4)
 
   #pragma message "Compiling for ESP32-P4 with PARLIO support"
-  #include "esp32p4/esp32p4_parlio_gdma.hpp"
+  #include "esp32p4/esp32_parlio_parallel_dma.hpp"
+  #include "esp32p4/esp32p4-default-pins.hpp"     
 
- #elif defined (CONFIG_IDF_TARGET_ESP32) || defined(ESP32)
+ #elif defined(CONFIG_IDF_TARGET_ESP32) || (defined(ESP32) && !defined(CONFIG_IDF_TARGET_ESP32S3) && !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32P4) && !defined(CONFIG_IDF_TARGET_ESP32C6))
 
   // Assume an ESP32 (the original 2015 version)
   // Same include as ESP32S3  

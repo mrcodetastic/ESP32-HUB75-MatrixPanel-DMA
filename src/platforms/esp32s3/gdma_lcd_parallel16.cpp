@@ -16,6 +16,10 @@
 
   Please support Adafruit and open-source hardware development!
  ********************************************************************************************/
+ 
+#include <sdkconfig.h>
+#if defined(CONFIG_IDF_TARGET_ESP32S3)
+ 
 #if __has_include (<hal/lcd_ll.h>)
   #pragma message "Compiling for ESP32-S3"
 
@@ -361,4 +365,5 @@
     }
   }
 
+#endif
 #endif
