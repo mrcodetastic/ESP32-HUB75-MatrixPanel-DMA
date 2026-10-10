@@ -173,15 +173,19 @@
       .flags = { .reserve_sibling = 0 }
     };
 
-#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 4, 0)
-    esp_err_t err = gdma_new_ahb_channel(&dma_chan_config, &dma_chan);
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(6, 0, 0)
+  // Direction is selected implicitly or via new parameters in IDF 6.0+
+  esp_err_t err = gdma_new_ahb_channel(&dma_alloc_config, &dma_chan_, nullptr);
+#elif ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 2, 0)
+  esp_err_t err = gdma_new_ahb_channel(&dma_alloc_config, &dma_chan_);
+#else
+  esp_err_t err = gdma_new_channel(&dma_alloc_config, &dma_chan_);
+#endif
+
     if (err != ESP_OK) {
       ESP_LOGE(TAG, "Failed to allocate AHB GDMA channel: %s", esp_err_to_name(err));
       return false;
     }
-#else
-    gdma_new_channel(&dma_chan_config, &dma_chan);
-#endif
 
     gdma_connect(dma_chan, GDMA_MAKE_TRIGGER(GDMA_TRIG_PERIPH_LCD, 0));
     
@@ -354,15 +358,38 @@
   /**
    * @brief Seamlessly switches the repeating DMA linked-list loop between primary and secondary framebuffers.
    */
-  void Bus_Parallel16::flip_dma_output_buffer(int back_buffer_id)
+int Bus_Parallel16::flip_dma_output_buffer()
   {
-    if (back_buffer_id == 1) {
+    if (!_double_dma_buffer || !_dmadesc_a || !_dmadesc_b) {
+      return _draw_buffer_id;
+    }
+
+    const int displayed_buffer_id = _draw_buffer_id;
+
+    // Ensure prior CPU writes to descriptor structures are committed
+    __asm__ __volatile__("" ::: "memory");
+
+    if (displayed_buffer_id == 1) {
        _dmadesc_b[_dmadesc_count - 1].next = (dma_descriptor_t*)&_dmadesc_b[0]; // Maintain Buffer B loop
+       
+       // Barrier between pointer updates
+       __asm__ __volatile__("" ::: "memory");
+       
        _dmadesc_a[_dmadesc_count - 1].next = (dma_descriptor_t*)&_dmadesc_b[0]; // Cross-link Buffer A -> Buffer B
     } else {
        _dmadesc_a[_dmadesc_count - 1].next = (dma_descriptor_t*)&_dmadesc_a[0]; // Maintain Buffer A loop
+       
+       // Barrier between pointer updates
+       __asm__ __volatile__("" ::: "memory");
+       
        _dmadesc_b[_dmadesc_count - 1].next = (dma_descriptor_t*)&_dmadesc_a[0]; // Cross-link Buffer B -> Buffer A
     }
+
+    // Final barrier to guarantee visibility before function exit
+    __asm__ __volatile__("" ::: "memory");
+
+    _draw_buffer_id ^= 1;
+    return _draw_buffer_id;
   }
 
 #endif

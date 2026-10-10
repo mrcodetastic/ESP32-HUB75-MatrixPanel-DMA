@@ -20,18 +20,34 @@
   #pragma message "Compiling for original ESP32 (released 2016)"  
 #endif
 
+
+#include <sdkconfig.h>
+#include <esp_idf_version.h>
 #include <driver/gpio.h>
-#if (ESP_IDF_VERSION_MAJOR == 5)
+#include <esp_rom_gpio.h>
+
+// Version-safe peripheral control header
+#if (ESP_IDF_VERSION_MAJOR >= 5)
 #include <esp_private/periph_ctrl.h>
 #else
 #include <driver/periph_ctrl.h>
 #endif
+
 #include <soc/gpio_sig_map.h>
-#include <soc/i2s_periph.h> 
+
+// Version-safe I2S header inclusion matching i2s_dma.cpp
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(6, 0, 0)
+#include <driver/i2s_std.h>
+#include <soc/i2s_reg.h>
+#else
+#include <soc/i2s_periph.h>
+#endif
 
 #if defined (ARDUINO_ARCH_ESP32)
 #include <Arduino.h>
 #endif
+
+
 
 #include <esp_err.h>
 #include <esp_log.h>
@@ -104,6 +120,19 @@ bool Bus_Parallel16::init(void)
       ESP_LOGE(TAG, "Error: Parallel bus width must be configured to 16 bits!");
       return false;
     }   
+	
+	#if ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(6, 0, 0)
+		// Peripheral module reset & enable (IDF < 6.0 only - auto-managed in 6.0+)
+		if (ESP32_I2S_DEVICE == I2S_NUM_0) {
+			periph_module_reset(PERIPH_I2S0_MODULE);
+			periph_module_enable(PERIPH_I2S0_MODULE);
+		} else {
+			#if !defined (CONFIG_IDF_TARGET_ESP32S2)  
+			periph_module_reset(PERIPH_I2S1_MODULE);
+			periph_module_enable(PERIPH_I2S1_MODULE);
+			#endif 
+		}
+	#endif	
 
     auto dev = _dev;
     volatile int iomux_signal_base;
@@ -111,8 +140,6 @@ bool Bus_Parallel16::init(void)
 
     // Peripheral module reset & enable
     if (ESP32_I2S_DEVICE == I2S_NUM_0) {
-        periph_module_reset(PERIPH_I2S0_MODULE);
-        periph_module_enable(PERIPH_I2S0_MODULE);
 
         iomux_clock = I2S0O_WS_OUT_IDX;
 
@@ -130,8 +157,7 @@ bool Bus_Parallel16::init(void)
     } 
     #if !defined (CONFIG_IDF_TARGET_ESP32S2)  
     else {
-        periph_module_reset(PERIPH_I2S1_MODULE);
-        periph_module_enable(PERIPH_I2S1_MODULE);
+
         iomux_clock = I2S1O_WS_OUT_IDX;
 
         switch(_cfg.parallel_width) {
@@ -419,17 +445,39 @@ void Bus_Parallel16::dma_transfer_stop()
 /**
  * @brief Flips the circular DMA link chain between Buffer A and Buffer B for double buffering.
  */
-void Bus_Parallel16::flip_dma_output_buffer(int buffer_id)
+int Bus_Parallel16::flip_dma_output_buffer()
 {
-    if (buffer_id == 1) { 
+    if (!_double_dma_buffer || !_dmadesc_a || !_dmadesc_b) {
+      return _draw_buffer_id;
+    }
+
+    const int displayed_buffer_id = _draw_buffer_id;
+
+    // Ensure prior CPU writes to descriptor chain are committed to memory
+    __asm__ __volatile__("" ::: "memory");
+
+    if (displayed_buffer_id == 1) { 
       // Point EOF of Buffer B to repeat Buffer B, and transition Buffer A's EOF over to Buffer B
-      _dmadesc_b[_dmadesc_last].qe.stqe_next = (lldesc_t*)&_dmadesc_b[0];	  
+      _dmadesc_b[_dmadesc_last].qe.stqe_next = (lldesc_t*)&_dmadesc_b[0];  
+      
+      // Memory barrier between pointer updates
+      __asm__ __volatile__("" ::: "memory");
+      
       _dmadesc_a[_dmadesc_last].qe.stqe_next = (lldesc_t*)&_dmadesc_b[0]; 
     } else { 
       // Point EOF of Buffer A to repeat Buffer A, and transition Buffer B's EOF over to Buffer A
       _dmadesc_a[_dmadesc_last].qe.stqe_next = (lldesc_t*)&_dmadesc_a[0];
+
+      // Memory barrier between pointer updates
+      __asm__ __volatile__("" ::: "memory");
+
       _dmadesc_b[_dmadesc_last].qe.stqe_next = (lldesc_t*)&_dmadesc_a[0]; 
     }
-}
 
+    // Final memory barrier to guarantee visibility before returning
+    __asm__ __volatile__("" ::: "memory");
+
+    _draw_buffer_id ^= 1;
+    return _draw_buffer_id;
+}
 #endif

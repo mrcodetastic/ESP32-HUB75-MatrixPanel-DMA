@@ -84,7 +84,7 @@ public:
     void dma_transfer_start();
     void dma_transfer_stop();
 
-    void flip_dma_output_buffer(int buffer_id);
+    int flip_dma_output_buffer();
 
 private:
     void configure_pins(void);
@@ -102,6 +102,7 @@ private:
     size_t   _cache_alignment       = 0;
 
     bool     _double_dma_buffer     = false;
+    int      _draw_buffer_id        = 0;
     size_t   _total_payload_bytes_a = 0;
     size_t   _total_payload_bytes_b = 0;
 

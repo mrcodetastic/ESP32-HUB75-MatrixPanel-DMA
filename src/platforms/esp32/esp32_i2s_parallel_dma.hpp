@@ -37,15 +37,22 @@ Contributors:
 //#include <driver/i2s.h>
 #include <rom/lldesc.h>
 #include <rom/gpio.h>
+
+// Version-safe I2S header inclusions for struct definitions
+#include <esp_idf_version.h>
+
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(6, 0, 0)
+#include <driver/i2s_std.h>
+#include <soc/i2s_reg.h>
+#else
 #if (ESP_IDF_VERSION_MAJOR == 5)
-#include <driver/i2s_types.h> //includes struct and reg
+#include <driver/i2s_types.h>
 #else
 #include <driver/i2s.h>
-#include <soc/i2s_struct.h>
 #endif
-
-#include <soc/i2s_periph.h> //includes struct and reg
-
+#include <soc/i2s_struct.h>
+#include <soc/i2s_periph.h>
+#endif
 
 #define DMA_MAX (4096-4)
 
@@ -122,7 +129,7 @@ i2s_dev_t* getDev();
     void dma_transfer_start();
     void dma_transfer_stop();
 
-    void flip_dma_output_buffer(int buffer_id);
+    int flip_dma_output_buffer();
   
   private:
 
@@ -131,6 +138,7 @@ i2s_dev_t* getDev();
     config_t _cfg;
 
     bool    _double_dma_buffer  = false;
+    int     _draw_buffer_id     = 0;
     //bool    _dmadesc_a_active   = true;
 
     uint32_t _dmadesc_count  = 0;   // number of dma decriptors

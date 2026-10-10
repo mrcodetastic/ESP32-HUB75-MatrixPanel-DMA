@@ -463,9 +463,7 @@ public:
 
     inline void flipDMABuffer() {
         if (!m_cfg.double_buff) return;
-        dma_bus.flip_dma_output_buffer(back_buffer_id);
-        back_buffer_id ^= 1;
-        fb = &frame_buffer[back_buffer_id];  
+        fb = &frame_buffer[dma_bus.flip_dma_output_buffer()];
     }
 
     void setBrightness(const uint8_t b) {
@@ -600,7 +598,6 @@ private:
     frameStruct frame_buffer[2];
     frameStruct *fb = nullptr;
 
-    volatile int back_buffer_id = 0;      
     int brightness = 128;        
     int lsbMsbTransitionBit = 0; 
 

@@ -148,7 +148,7 @@
     void dma_transfer_start();
     void dma_transfer_stop();
 
-     void flip_dma_output_buffer(int back_buffer_id);
+    int flip_dma_output_buffer();
 
   private:
 
@@ -166,9 +166,7 @@
     HUB75_DMA_DESCRIPTOR_T* _dmadesc_b = nullptr;    
 
     bool    _double_dma_buffer = false;
-
-    esp_lcd_i80_bus_handle_t _i80_bus = nullptr;
-
+    int     _draw_buffer_id    = 0;
 
   };
 
