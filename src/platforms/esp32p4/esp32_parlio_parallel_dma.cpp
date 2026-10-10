@@ -419,21 +419,32 @@ void Bus_Parallel16::dma_transfer_stop()
 }
 
 /**
- * @brief Flip active output buffer index for double-buffered rendering.
+ * @brief Select the active output buffer for double-buffered rendering.
  * @param buffer_id Target buffer ID (0 or 1).
  */
-void Bus_Parallel16::flip_dma_output_buffer(int buffer_id)
+void Bus_Parallel16::set_dma_output_buffer(int buffer_id)
 {
     if (!_double_dma_buffer || !_gdma_link_list_b) {
         return;
     }
 
-    _active_buffer_id = buffer_id;
+    gdma_link_list_handle_t target_list = (buffer_id == 1) ? _gdma_link_list_b : _gdma_link_list_a;
+    gdma_link_list_handle_t other_list = (buffer_id == 1) ? _gdma_link_list_a : _gdma_link_list_b;
 
-    if (_is_transmitting) {
-        gdma_link_list_handle_t active_list = (_active_buffer_id == 1) ? _gdma_link_list_b : _gdma_link_list_a;
-        gdma_start(_gdma_channel, gdma_link_get_head_addr(active_list));
+    esp_err_t ret = gdma_link_concat(target_list, (int)_dmadesc_last, target_list, 0);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to loop DMA buffer %d: %s", buffer_id, esp_err_to_name(ret));
+        return;
     }
+
+    ret = gdma_link_concat(other_list, (int)_dmadesc_last, target_list, 0);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to link DMA buffer %d to buffer %d: %s",
+                 buffer_id == 1 ? 0 : 1, buffer_id, esp_err_to_name(ret));
+        return;
+    }
+
+    _active_buffer_id = buffer_id;
 }
 
 #endif // CONFIG_IDF_TARGET_ESP32P4 || CONFIG_IDF_TARGET_ESP32S31

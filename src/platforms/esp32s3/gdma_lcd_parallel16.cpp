@@ -352,9 +352,9 @@
   }
 
   /**
-   * @brief Seamlessly switches the repeating DMA linked-list loop between primary and secondary framebuffers.
+  * @brief Selects the repeating DMA linked-list loop for the requested framebuffer.
    */
-  void Bus_Parallel16::flip_dma_output_buffer(int back_buffer_id)
+  void Bus_Parallel16::set_dma_output_buffer(int back_buffer_id)
   {
     if (back_buffer_id == 1) {
        _dmadesc_b[_dmadesc_count - 1].next = (dma_descriptor_t*)&_dmadesc_b[0]; // Maintain Buffer B loop

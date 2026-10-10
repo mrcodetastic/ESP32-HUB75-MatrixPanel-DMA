@@ -462,8 +462,11 @@ public:
     static void color565to888(const uint16_t color, uint8_t &r, uint8_t &g, uint8_t &b);
 
     inline void flipDMABuffer() {
-        if (!m_cfg.double_buff) return;
-        dma_bus.flip_dma_output_buffer(back_buffer_id);
+        if (!m_cfg.double_buff) {
+			ESP_LOGW("MatrixPanel_I2S_DMA", "Requested buffer change, but double buffering not enabled.");     
+			return;
+		}
+        dma_bus.set_dma_output_buffer(back_buffer_id);
         back_buffer_id ^= 1;
         fb = &frame_buffer[back_buffer_id];  
     }

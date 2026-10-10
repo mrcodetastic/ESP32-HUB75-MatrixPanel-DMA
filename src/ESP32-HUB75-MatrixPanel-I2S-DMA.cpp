@@ -770,6 +770,10 @@ void MatrixPanel_I2S_DMA::hlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, 
             uint16_t &v = p[ESP32_TX_FIFO_POSITION_ADJUST(_x)];
             v &= _colourbitclear;
             v |= RGB_output_bits;
+			
+			// Target-aware cache writeback
+            DMA_CACHE_WRITEBACK(&v, sizeof(ESP32_I2S_DMA_STORAGE_TYPE));
+			
         } while (_l);
     } while (colour_depth_idx);
 }
@@ -819,6 +823,10 @@ void MatrixPanel_I2S_DMA::vlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, 
 
             p[x_coord] &= _colourbitclear;
             p[x_coord] |= current_rgb_bits;
+			
+			// Target-aware cache writeback
+            DMA_CACHE_WRITEBACK(&p[x_coord], sizeof(ESP32_I2S_DMA_STORAGE_TYPE));
+			
             ++_y;
         } while (++_l != l);
     } while (colour_depth_idx);

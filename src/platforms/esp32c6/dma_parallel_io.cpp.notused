@@ -346,7 +346,7 @@ void Bus_Parallel16::dma_transfer_stop()
 
 } // end
 
-void Bus_Parallel16::flip_dma_output_buffer(int back_buffer_id)
+void Bus_Parallel16::set_dma_output_buffer(int back_buffer_id)
 {
 
     // if ( _double_dma_buffer == false) return;

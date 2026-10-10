@@ -84,7 +84,7 @@ public:
     void dma_transfer_start();
     void dma_transfer_stop();
 
-    void flip_dma_output_buffer(int buffer_id);
+    void set_dma_output_buffer(int buffer_id);
 
 private:
     void configure_pins(void);

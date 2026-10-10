@@ -417,9 +417,9 @@ void Bus_Parallel16::dma_transfer_stop()
 }
 
 /**
- * @brief Flips the circular DMA link chain between Buffer A and Buffer B for double buffering.
+ * @brief Selects the circular DMA chain for the requested output buffer.
  */
-void Bus_Parallel16::flip_dma_output_buffer(int buffer_id)
+void Bus_Parallel16::set_dma_output_buffer(int buffer_id)
 {
     if (buffer_id == 1) { 
       // Point EOF of Buffer B to repeat Buffer B, and transition Buffer A's EOF over to Buffer B
