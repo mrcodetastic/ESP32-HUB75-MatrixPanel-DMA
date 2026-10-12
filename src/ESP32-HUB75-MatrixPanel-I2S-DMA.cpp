@@ -654,16 +654,11 @@ void MatrixPanel_I2S_DMA::setBrightnessOE(uint8_t brt, const int _buff_id)
         }
       } while (x_coord);
 
-    } while (colouridx);
+	   // Cache invalidation
+	   DMA_CACHE_WRITEBACK(row, target_fb->rowBits[row_idx]->getColorDepthSize(false));
+		
 
-//#if defined(SPIRAM_DMA_BUFFER)
-//    ESP32_I2S_DMA_STORAGE_TYPE *row_ptr = target_fb->rowBits[row_idx]->getDataPtr(0);
-//    Cache_WriteBack_Addr((uint32_t)row_ptr, target_fb->rowBits[row_idx]->getColorDepthSize(false));
-//#endif
-
-	ESP32_I2S_DMA_STORAGE_TYPE *row_ptr = target_fb->rowBits[row_idx]->getDataPtr(0);
-    DMA_CACHE_WRITEBACK(row_ptr, target_fb->rowBits[row_idx]->getColorDepthSize(false));
-	
+    } while (colouridx);	
   } while (row_idx);
 }
 
