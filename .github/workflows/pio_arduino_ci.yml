@@ -1,0 +1,56 @@
+name: PlatformIO CI
+
+on:
+  push:
+    branches: [ master, dev ]
+    paths-ignore:
+      - '**.md'
+      - 'doc/**'
+  pull_request:
+    branches: [ master, dev ]
+    paths-ignore:
+      - '**.md'
+      - 'doc/**'
+
+jobs:
+  build:
+    name: Build (${{ matrix.framework }} / GFX: ${{ matrix.no_gfx == '' }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        framework: ["Arduino", "IDF"]
+        no_gfx: ["", "-DNO_GFX"]
+        example:
+          - "examples/PIO_TestPatterns"
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Set up Python 3.x
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
+      with:
+        enable-cache: false
+
+    - name: Install PlatformIO using uv
+      run: |
+        uv pip install --system platformio
+
+    - name: Run PlatformIO CI (Arduino)
+      if: matrix.framework == 'Arduino'
+      env: 
+        PLATFORMIO_BUILD_FLAGS: ${{ matrix.no_gfx }}
+        PLATFORMIO_CI_SRC: ${{ matrix.example }}
+      run: pio ci -e esp32 -c ${{ matrix.example }}/platformio.ini
+
+    - name: Run PlatformIO CI (ESP-IDF Framework)
+      if: matrix.framework == 'IDF'
+      env: 
+        PLATFORMIO_BUILD_FLAGS: -DIDF_BUILD ${{ matrix.no_gfx }}
+      run: pio run -d ${{ matrix.example }} -e esp32idf
