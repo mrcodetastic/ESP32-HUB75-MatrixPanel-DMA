@@ -39,7 +39,7 @@ jobs:
       uses: actions/checkout@v7
       with:
         repository: 'espressif/arduino-esp32'
-        ref: '3.3.11'
+        ref: '3.3.10'
         path: 'examples/esp-idf/with-gfx/components/arduino'
     - name: Edit Adafruit_BusIO CMakeLists.txt
       run: sed -i 's/arduino-esp32)/arduino)/g' examples/esp-idf/with-gfx/components/Adafruit_BusIO/CMakeLists.txt
