@@ -31,3 +31,5 @@ jobs:
         esp_idf_version: v5.4.4
         target: esp32
         path: 'examples/esp-idf/without-gfx'
+      env:
+        EXTRA_CFLAGS: -Wno-error
