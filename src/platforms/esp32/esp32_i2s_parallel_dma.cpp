@@ -36,6 +36,7 @@
 #include <esp_err.h>
 #include <esp_log.h>
 #include <soc/rtc.h>
+#include <inttypes.h>
 
 static const char* TAG = "Bus_Parallel16_I2S";
 
@@ -205,7 +206,7 @@ bool Bus_Parallel16::init(void)
     dev->clkm_conf.clkm_div_b = 0;      
 
     unsigned int _div_num = (freq > 8000000) ? 2 : 4; // 20 MHz or 10 MHz output
-    ESP_LOGD(TAG, "I2S pll_d2_clock clkm_div_num set to: %u", _div_num);    		
+    ESP_LOGD(TAG, "I2S pll_d2_clock clkm_div_num set to: %" PRIu32, (uint32_t)_div_num);    		
     dev->clkm_conf.clkm_div_num = _div_num;  
 #endif
 
@@ -320,7 +321,7 @@ bool Bus_Parallel16::allocate_dma_desc_memory(size_t len)
     _dmadesc_count = len; 
     _dmadesc_last  = len - 1; 
 
-    ESP_LOGI(TAG, "Allocating memory for %u DMA descriptors.", (unsigned int)len);    
+    ESP_LOGI(TAG, "Allocating memory for %" PRIu32 " DMA descriptors.", (uint32_t)len);    
 
     _dmadesc_a = (HUB75_DMA_DESCRIPTOR_T*)heap_caps_malloc(sizeof(HUB75_DMA_DESCRIPTOR_T) * len, MALLOC_CAP_DMA);
     if (_dmadesc_a == nullptr) {
@@ -360,8 +361,8 @@ void Bus_Parallel16::create_dma_desc_link(void *data, size_t size, bool dmadesc_
     // Bounds safety guard: Prevents buffer overflow if descriptor allocation count is exceeded
     uint32_t current_idx = dmadesc_b ? _dmadesc_b_idx : _dmadesc_a_idx;
     if (current_idx >= _dmadesc_count) {
-      ESP_LOGE(TAG, "Attempted to populate descriptor %u beyond allocated length %u (Buffer %c)",
-               current_idx, _dmadesc_count, dmadesc_b ? 'B' : 'A');
+      ESP_LOGE(TAG, "Attempted to populate descriptor %" PRIu32 " beyond allocated length %" PRIu32 " (Buffer %c)",
+               current_idx, (uint32_t)_dmadesc_count, dmadesc_b ? 'B' : 'A');
       return;
     }
 
@@ -373,7 +374,7 @@ void Bus_Parallel16::create_dma_desc_link(void *data, size_t size, bool dmadesc_
     volatile lldesc_t* next = is_last ? target_array : &target_array[current_idx + 1];
 
     if (is_last) {
-      ESP_LOGW(TAG, "Final DMA descriptor [%u] populated; linking back to head [0].", current_idx);             
+      ESP_LOGW(TAG, "Final DMA descriptor [%" PRIu32 "] populated; linking back to head [0].", current_idx);             
     } 
 
     dmadesc->size     = size;
