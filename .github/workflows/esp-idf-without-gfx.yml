@@ -12,7 +12,7 @@ on:
 
 jobs:
   build:
-    name: esp-idf v5.4.4 without Adafruit GFX
+    name: esp-idf v5.5.4 without Adafruit GFX
 
     runs-on: ubuntu-latest
 
@@ -28,7 +28,7 @@ jobs:
     - name: esp-idf build
       uses: espressif/esp-idf-ci-action@v1
       with:
-        esp_idf_version: v5.5.5
+        esp_idf_version: v5.5.4
         target: esp32
         path: 'examples/esp-idf/without-gfx'
       env:
