@@ -12,7 +12,7 @@ on:
 
 jobs:
   build:
-    name: esp-idf v5.4.4 with Adafruit GFX
+    name: esp-idf v5.5.5 with Adafruit GFX
 
     runs-on: ubuntu-latest
 
