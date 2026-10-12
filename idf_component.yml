@@ -2,10 +2,11 @@ version: "1.0.0"
 description: "ESP32 HUB75 LED matrix panel library using DMA"
 url: "https://github.com/mrcodetastic/ESP32-HUB75-MatrixPanel-DMA"
 files:
-  - "src/*.h"
-  - "src/*.cpp"
-  - "src/platforms/**/*"
-  - "Kconfig.projbuild"
+  src:
+    - "*.h"
+    - "*.cpp"
+  platforms:
+    - "**/*"
 
 dependencies:
   idf:
