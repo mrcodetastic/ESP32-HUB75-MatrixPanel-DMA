@@ -44,8 +44,12 @@
 #ifdef USE_GFX_LITE
   // Slimmed version of Adafruit GFX + FastLED: https://github.com/mrcodetastic/GFX_Lite
   #include "GFX_Lite.h" 
+  #define _HUB75_GFX_OVERRIDE override
 #elif !defined NO_GFX
   #include "Adafruit_GFX.h" // Adafruit class with graphics utilities
+  #define _HUB75_GFX_OVERRIDE override
+#else
+  #define _HUB75_GFX_OVERRIDE
 #endif
 
 /*******************************************************************************************
@@ -391,13 +395,13 @@ public:
     bool begin(const HUB75_I2S_CFG &cfg);
 
     // Adafruit GFX API draw methods
-    virtual void drawPixel(int16_t x, int16_t y, uint16_t color); 
-    virtual void fillScreen(uint16_t color);                      
+    virtual void drawPixel(int16_t x, int16_t y, uint16_t color) _HUB75_GFX_OVERRIDE;
+    virtual void fillScreen(uint16_t color) _HUB75_GFX_OVERRIDE;
 
     inline void clearScreen() { updateMatrixDMABuffer(0, 0, 0); }
 
 #ifndef NO_FAST_FUNCTIONS
-    virtual void drawFastVLine(int16_t x, int16_t y, int16_t h, uint16_t color) {
+    virtual void drawFastVLine(int16_t x, int16_t y, int16_t h, uint16_t color) _HUB75_GFX_OVERRIDE {
         uint8_t r, g, b;
         color565to888(color, r, g, b);
         int16_t w = 1;
@@ -413,7 +417,7 @@ public:
         else hlineDMA(x, y, w, r, g, b);
     }
 
-    virtual void drawFastHLine(int16_t x, int16_t y, int16_t w, uint16_t color)  {
+    virtual void drawFastHLine(int16_t x, int16_t y, int16_t w, uint16_t color) _HUB75_GFX_OVERRIDE {
         uint8_t r, g, b;
         color565to888(color, r, g, b);
         int16_t h = 1;
@@ -429,7 +433,7 @@ public:
         else hlineDMA(x, y, w, r, g, b);
     }
 
-    virtual void fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color) {
+    virtual void fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color) _HUB75_GFX_OVERRIDE {
         uint8_t r, g, b;
         color565to888(color, r, g, b);
         transform(x, y, w, h);

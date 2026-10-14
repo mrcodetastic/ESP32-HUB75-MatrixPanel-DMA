@@ -21,22 +21,21 @@
 #endif
 
 #include <driver/gpio.h>
-#if (ESP_IDF_VERSION_MAJOR == 5)
+#include <esp_err.h>
+#include <esp_log.h>
 #include <esp_private/periph_ctrl.h>
-#else
-#include <driver/periph_ctrl.h>
-#endif
+#include <esp_rom_gpio.h>
+#include <soc/dport_reg.h>
 #include <soc/gpio_sig_map.h>
-#include <soc/i2s_periph.h> 
+#include <soc/rtc.h>
+#include <inttypes.h>
+#if defined (CONFIG_IDF_TARGET_ESP32S2)
+#include <soc/system_reg.h>  // DPORT_PERIP_*_REG / DPORT_I2S0_* for the ESP32-S2 path
+#endif
 
 #if defined (ARDUINO_ARCH_ESP32)
 #include <Arduino.h>
 #endif
-
-#include <esp_err.h>
-#include <esp_log.h>
-#include <soc/rtc.h>
-#include <inttypes.h>
 
 static const char* TAG = "Bus_Parallel16_I2S";
 
@@ -58,7 +57,7 @@ i2s_dev_t* getDev()
 void _gpio_pin_init(int pin)
 {
     if (pin >= 0) {
-      gpio_pad_select_gpio(pin);
+      esp_rom_gpio_pad_select_gpio(pin);
       gpio_set_direction((gpio_num_t)pin, GPIO_MODE_OUTPUT);
       gpio_set_drive_capability((gpio_num_t)pin, (gpio_drive_cap_t)3); // Max drive strength     
     }
@@ -112,8 +111,17 @@ bool Bus_Parallel16::init(void)
 
     // Peripheral module reset & enable
     if (ESP32_I2S_DEVICE == I2S_NUM_0) {
+#if defined (CONFIG_IDF_TARGET_ESP32S2)
+        // IDF6's ESP32-S2 periph_defs.h only exposes shared_periph_module_t
+        // (TIMG/UHCI/SPI/RNG/WIFI/...) and no longer has PERIPH_I2S0_MODULE,
+        // so gate I2S0's clock/reset directly via the DPORT/system registers.
+        DPORT_SET_PERI_REG_MASK(DPORT_PERIP_RST_EN0_REG, DPORT_I2S0_RST);
+        DPORT_CLEAR_PERI_REG_MASK(DPORT_PERIP_RST_EN0_REG, DPORT_I2S0_RST);
+        DPORT_SET_PERI_REG_MASK(DPORT_PERIP_CLK_EN_REG, DPORT_I2S0_CLK_EN);
+#else
         periph_module_reset(PERIPH_I2S0_MODULE);
         periph_module_enable(PERIPH_I2S0_MODULE);
+#endif
 
         iomux_clock = I2S0O_WS_OUT_IDX;
 
@@ -131,8 +139,13 @@ bool Bus_Parallel16::init(void)
     } 
     #if !defined (CONFIG_IDF_TARGET_ESP32S2)  
     else {
-        periph_module_reset(PERIPH_I2S1_MODULE);
-        periph_module_enable(PERIPH_I2S1_MODULE);
+        // IDF6 dropped PERIPH_I2S1_MODULE from periph_defs.h (classic ESP32 keeps
+        // only PERIPH_I2S0_MODULE), so drive I2S1's clock/reset via the DPORT
+        // registers directly. These are also what the old periph_module_*() I2S1
+        // helpers touched on IDF5, so this works across IDF5/IDF6.
+        DPORT_SET_PERI_REG_MASK(DPORT_PERIP_RST_EN_REG, DPORT_I2S1_RST);
+        DPORT_CLEAR_PERI_REG_MASK(DPORT_PERIP_RST_EN_REG, DPORT_I2S1_RST);
+        DPORT_SET_PERI_REG_MASK(DPORT_PERIP_CLK_EN_REG, DPORT_I2S1_CLK_EN);
         iomux_clock = I2S1O_WS_OUT_IDX;
 
         switch(_cfg.parallel_width) {
@@ -162,11 +175,11 @@ bool Bus_Parallel16::init(void)
     }
 
     // Connect clock signal to write clock pin via GPIO matrix
-    gpio_matrix_out(_cfg.pin_wr, iomux_clock, _cfg.invert_pclk, 0); 
+    esp_rom_gpio_connect_out_signal(_cfg.pin_wr, iomux_clock, _cfg.invert_pclk, 0); 
   
     for (size_t i = 0; i < bus_width; i++) {
       if (pins[i] >= 0) {
-        gpio_matrix_out(pins[i], iomux_signal_base + i, false, false);
+        esp_rom_gpio_connect_out_signal(pins[i], iomux_signal_base + i, false, false);
       }
     }
 

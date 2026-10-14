@@ -49,7 +49,7 @@ Modified heavily for the ESP32 HUB75 DMA library by:
 
  #elif defined(CONFIG_IDF_TARGET_ESP32C6)
 
-  #pragma message "ESP32C6 is not supported, as this silicon does not support continuous DMA transfer."
+  #error "ESP32-C6 is not supported: this silicon cannot control its transaction length via DMA, so the LED screen cannot be flushed continuously in a hardware loop."
   
   /* 
    * Refer to: https://github.com/espressif/esp-idf/tree/master/examples/peripherals/parlio/parlio_tx/simple_rgb_led_matrix
@@ -79,9 +79,9 @@ Modified heavily for the ESP32 HUB75 DMA library by:
   #include "esp32/esp32_i2s_parallel_dma.hpp"  
   #include "esp32/esp32-default-pins.hpp"
 
-#elif defined(CONFIG_IDF_TARGET_ESP32C2) || defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32H2)
+#elif defined(CONFIG_IDF_TARGET_ESP32C2) || defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32C5) || defined(CONFIG_IDF_TARGET_ESP32H2)
 
-	#error "ESP32 C2 C3 and H2 devices are not supported by this library."
+	#error "ESP32 C2, C3, C5 and H2 devices are not supported by this library."
 
  
  #else
