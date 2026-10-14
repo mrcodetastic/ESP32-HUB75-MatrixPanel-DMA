@@ -34,17 +34,12 @@ Contributors:
 
 #include <sys/types.h>
 #include <freertos/FreeRTOS.h>
-//#include <driver/i2s.h>
 #include <rom/lldesc.h>
 #include <rom/gpio.h>
-#if (ESP_IDF_VERSION_MAJOR == 5)
-#include <driver/i2s_types.h> //includes struct and reg
-#else
-#include <driver/i2s.h>
-#include <soc/i2s_struct.h>
-#endif
 
-#include <soc/i2s_periph.h> //includes struct and reg
+#include <driver/i2s_types.h>   // Declares I2S_NUM_0, I2S_NUM_1
+#include <soc/i2s_struct.h>     // Declares i2s_dev_t, I2S0, I2S1
+#include <soc/i2s_reg.h>        // Declares I2S_OUT_DATA_BURST_EN,
 
 
 #define DMA_MAX (4096-4)

@@ -37,7 +37,11 @@
 #include "hal/hal_utils.h"
 #include "hal/parlio_ll.h"
 #include "soc/parl_io_struct.h"
-#include "soc/parlio_periph.h"
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(6, 0, 0)
+  #include "hal/parlio_periph.h"   // IDF6 moved <soc/parlio_periph.h> into esp_hal_parlio
+#else
+  #include "soc/parlio_periph.h"
+#endif
 
 
 #define DMA_MAX (4096 - 4)

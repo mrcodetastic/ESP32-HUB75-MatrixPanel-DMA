@@ -1,0 +1,22 @@
+# PlatformIO build directories
+.pio/
+.pio_/
+
+# ESP-IDF / CMake build output
+build/
+
+# ESP-IDF Component Manager artifacts (generated)
+managed_components/
+dependencies.lock
+sdkconfig
+sdkconfig.esp32*
+
+# Hand-written defaults must stay tracked
+!sdkconfig.defaults
+
+# pioarduino Arduino-as-IDF-component compile harness (auto-generated)
+.dummy/
+
+# Editor swp files
+*.swp
+*.swo

@@ -167,19 +167,32 @@
     gpio_set_drive_capability((gpio_num_t)_cfg.pin_wr, (gpio_drive_cap_t)3);  
 
     // Allocate GDMA channel and attach it to the LCD_CAM peripheral
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(6, 0, 0)
+    // IDF6 dropped sibling_chan/direction from the alloc config and made
+    // gdma_new_ahb_channel() take explicit TX/RX output handles.
+    gdma_channel_alloc_config_t dma_chan_config = {};
+    esp_err_t err = gdma_new_ahb_channel(&dma_chan_config, &dma_chan, NULL);
+    if (err != ESP_OK) {
+      ESP_LOGE(TAG, "Failed to allocate AHB GDMA channel: %s", esp_err_to_name(err));
+      return false;
+    }
+#elif ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 4, 0)
     static gdma_channel_alloc_config_t dma_chan_config = {
       .sibling_chan = NULL,
       .direction = GDMA_CHANNEL_DIRECTION_TX,
       .flags = { .reserve_sibling = 0 }
     };
-
-#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 4, 0)
     esp_err_t err = gdma_new_ahb_channel(&dma_chan_config, &dma_chan);
     if (err != ESP_OK) {
       ESP_LOGE(TAG, "Failed to allocate AHB GDMA channel: %s", esp_err_to_name(err));
       return false;
     }
 #else
+    static gdma_channel_alloc_config_t dma_chan_config = {
+      .sibling_chan = NULL,
+      .direction = GDMA_CHANNEL_DIRECTION_TX,
+      .flags = { .reserve_sibling = 0 }
+    };
     gdma_new_channel(&dma_chan_config, &dma_chan);
 #endif
 

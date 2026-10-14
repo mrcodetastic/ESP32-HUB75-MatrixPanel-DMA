@@ -18,8 +18,20 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        framework: ["Arduino"]
-        no_gfx: ["", "-DNO_GFX"]
+        # Each env encodes its framework (arduino vs arduino+espidf) and GFX
+        # flavor; see examples/PIO_TestPatterns/platformio.ini. The _no_gfx
+        # twins build with -DNO_GFX. envs cover every supported SoC -- esp32
+        # and esp32s2 use esp32_i2s_parallel_dma.cpp, esp32s3 uses
+        # gdma_lcd_parallel16.cpp.
+        env:
+          - esp32
+          - esp32_no_gfx
+          - esp32s2
+          - esp32s2_no_gfx
+          - esp32s3
+          - esp32s3_no_gfx
+          - esp32idf
+          - esp32idf_no_gfx
         example:
           - "examples/PIO_TestPatterns"
 
@@ -37,15 +49,5 @@ jobs:
         python -m pip install --upgrade pip
         pip install platformio
 
-    - name: Run PlatformIO CI (Arduino)
-      if: matrix.framework == 'Arduino'
-      env: 
-        PLATFORMIO_BUILD_FLAGS: ${{ matrix.no_gfx }}
-        PLATFORMIO_CI_SRC: ${{ matrix.example }}
-      run: pio ci -e esp32 -c ${{ matrix.example }}/platformio.ini
-
-    - name: Run PlatformIO CI (ESP-IDF Framework)
-      if: matrix.framework == 'IDF'
-      env: 
-        PLATFORMIO_BUILD_FLAGS: -DIDF_BUILD ${{ matrix.no_gfx }}
-      run: pio run -d ${{ matrix.example }} -e esp32idf
+    - name: Run PlatformIO CI (${{ matrix.env }})
+      run: pio run -e ${{ matrix.env }} -d ${{ matrix.example }}
