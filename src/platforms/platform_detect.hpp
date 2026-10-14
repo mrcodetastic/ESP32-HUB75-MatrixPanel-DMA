@@ -61,9 +61,12 @@ Modified heavily for the ESP32 HUB75 DMA library by:
   //#include "esp32c6/dma_parallel_io.hpp"
   //#include "esp32c6/esp32c6-default-pins.hpp"
 
- #elif defined(CONFIG_IDF_TARGET_ESP32P4)
+ #elif defined(CONFIG_IDF_TARGET_ESP32P4) || defined(CONFIG_IDF_TARGET_ESP32S31)
 
-  #pragma message "Compiling for ESP32-P4 with PARLIO support"
+  // ESP32-S31 has the same PARLIO block as the P4 and is assumed to share its
+  // pin defaults for now (pending hardware bring-up). The PARLIO driver is
+  // already guarded for CONFIG_IDF_TARGET_ESP32S31.
+  #pragma message "Compiling for ESP32-P4/S31 with PARLIO support"
   #include "esp32p4/esp32_parlio_parallel_dma.hpp"
   #include "esp32p4/esp32p4-default-pins.hpp"     
 
