@@ -696,7 +696,11 @@ bool MatrixPanel_I2S_DMA::validateConfiguration() const {
 
 bool MatrixPanel_I2S_DMA::begin() {
     if (initialized) return true;
-    if (!config_set || !validateConfiguration()) return false;
+    if (!config_set || !validateConfiguration())
+    {
+        ESP_LOGE("begin()", "Error: Invalid configuration! Please check your HUB75_I2S_CFG settings.");
+        return false;
+    } 
 
     if (m_cfg.driver != HUB75_I2S_CFG::shift_driver::SHIFTREG) {
         shiftDriver(m_cfg);
@@ -707,7 +711,11 @@ bool MatrixPanel_I2S_DMA::begin() {
 #endif
 
     // Memory allocation + dma_bus.init() are handled inside setupDMA
-    if (!setupDMA(m_cfg)) return false;
+    if (!setupDMA(m_cfg)) 
+    {
+        ESP_LOGE("begin()", "Error: Failed to setupDMA for HUB75 panel!");
+        return false;
+    }
 
     resetbuffers();
     flipDMABuffer();

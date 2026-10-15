@@ -395,13 +395,13 @@ public:
     bool begin(const HUB75_I2S_CFG &cfg);
 
     // Adafruit GFX API draw methods
-    virtual void drawPixel(int16_t x, int16_t y, uint16_t color) _HUB75_GFX_OVERRIDE;
-    virtual void fillScreen(uint16_t color) _HUB75_GFX_OVERRIDE;
+    virtual void drawPixel(int16_t x, int16_t y, uint16_t color) ;
+    virtual void fillScreen(uint16_t color) ;
 
     inline void clearScreen() { updateMatrixDMABuffer(0, 0, 0); }
 
 #ifndef NO_FAST_FUNCTIONS
-    virtual void drawFastVLine(int16_t x, int16_t y, int16_t h, uint16_t color) _HUB75_GFX_OVERRIDE {
+    virtual void drawFastVLine(int16_t x, int16_t y, int16_t h, uint16_t color)  {
         uint8_t r, g, b;
         color565to888(color, r, g, b);
         int16_t w = 1;
@@ -417,7 +417,7 @@ public:
         else hlineDMA(x, y, w, r, g, b);
     }
 
-    virtual void drawFastHLine(int16_t x, int16_t y, int16_t w, uint16_t color) _HUB75_GFX_OVERRIDE {
+    virtual void drawFastHLine(int16_t x, int16_t y, int16_t w, uint16_t color)  {
         uint8_t r, g, b;
         color565to888(color, r, g, b);
         int16_t h = 1;
