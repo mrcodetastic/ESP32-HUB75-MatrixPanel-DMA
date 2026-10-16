@@ -55,14 +55,14 @@ class PatternFlock : public Drawable {
 
     void start() {
       for (int i = 0; i < boidCount; i++) {
-        boids[i] = Boid(15, 15);
+        boids[i] = Boid(random(VPANEL_W), random(VPANEL_H));
         boids[i].maxspeed = 0.380;
         boids[i].maxforce = 0.015;
       }
 
       predatorPresent = random(0, 2) >= 1;
       if (predatorPresent) {
-        predator = Boid(31, 31);
+        predator = Boid(effects.getCenterX(), effects.getCenterY());
         predatorPresent = true;
         predator.maxspeed = 0.385;
         predator.maxforce = 0.020;

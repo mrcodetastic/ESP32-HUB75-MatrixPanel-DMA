@@ -44,7 +44,6 @@ class PatternSimplexNoise : public Drawable {
     }
 
     unsigned int drawFrame() {
-#if FASTLED_VERSION >= 3001000
       // a new parameter set every 15 seconds
       if(millis() - last_update_ms > 15000) {
         last_update_ms = millis();
@@ -52,8 +51,6 @@ class PatternSimplexNoise : public Drawable {
         effects.noise_y = random16();
         effects.noise_z = random16();
       }
-#endif
-
       uint32_t speed = 100;
 
       effects.FillNoise();
@@ -70,6 +67,7 @@ class PatternSimplexNoise : public Drawable {
 
     // show just one layer
     void ShowNoiseLayer(byte layer, byte colorrepeat, byte colorshift) {
+      if (!effects.noise || !effects.leds) return;
       for (uint16_t i = 0; i < VPANEL_W; i++) {
         for (uint16_t j = 0; j < VPANEL_H; j++) {
           uint8_t pixel = effects.noise[i][j];

@@ -25,6 +25,7 @@
  */
 
 #ifndef PatternElectricMandala_H
+#define PatternElectricMandala_H
 
 class PatternElectricMandala : public Drawable {
   private:
@@ -71,7 +72,6 @@ class PatternElectricMandala : public Drawable {
     }
 
     unsigned int drawFrame() {
-#if FASTLED_VERSION >= 3001000
       // a new parameter set every 15 seconds
       if(millis() - last_parameter_change_ms > 15000) {
         last_parameter_change_ms = millis();
@@ -82,8 +82,6 @@ class PatternElectricMandala : public Drawable {
         effects.noise_scale_x = random16(10000) + 2000;
         effects.noise_scale_y = random16(10000) + 2000;
       }
-#endif
-
       effects.noise_y += dy;
       effects.noise_x += dx;
       effects.noise_z += dz;
@@ -101,6 +99,7 @@ class PatternElectricMandala : public Drawable {
 
     // show just one layer
     void ShowNoiseLayer(byte layer, byte colorrepeat, byte colorshift) {
+      if (!effects.noise || !effects.leds) return;
       for (uint16_t i = 0; i < VPANEL_W; i++) {
         for (uint16_t j = 0; j < VPANEL_H; j++) {
 

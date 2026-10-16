@@ -9,44 +9,40 @@
 #ifndef Patterns_H
 #define Patterns_H
 
-#define ARRAY_SIZE(A) (sizeof(A) / sizeof((A)[0]))
+#include <array>
 
 #include "Vector2.hpp"
 #include "Boid.hpp"
 #include "Attractor.hpp"
 
-/* 
- *  Note from mrfaptastic:
- *  
- *  Commented out patterns are due to the fact they either didn't work properly with a non-square display,
- *  or from my personal opinion, are crap. 
- */
+// Pattern implementations share the effects framebuffer and use load()/unload()
+// only for sizable optional state; pattern objects themselves remain static.
 #include "PatternStarfield.hpp" // new 2024
 #include "PatternAttract.hpp"
-#include "PatternBounce.hpp" // Doesn't seem to work, omitting.
-#include "PatternCube.hpp" // Doesn't seem to work, omitting.
+#include "PatternBounce.hpp"
+#include "PatternCube.hpp"
 #include "PatternElectricMandala.hpp"
-#include "PatternFireKoz.hpp" // Doesn't seem to work, omitting.
+#include "PatternFireKoz.hpp"
 #include "PatternFlock.hpp"
 #include "PatternFlowField.hpp"
 #include "PatternIncrementalDrift.hpp"
-#include "PatternIncrementalDrift2.hpp" // Doesn't seem to work, omitting.
+#include "PatternIncrementalDrift2.hpp"
 #include "PatternInfinity.hpp"
-#include "PatternMaze.hpp" // ??
+#include "PatternMaze.hpp"
 #include "PatternMunch.hpp"
+#include "PatternGameOfLife.hpp"
 //#include "PatternNoiseSmearing.hpp"
 #include "PatternPendulumWave.hpp"
 #include "PatternPlasma.hpp"
 #include "PatternRadar.hpp"
 #include "PatternSimplexNoise.hpp"
-#include "PatternSnake.hpp"
 #include "PatternSpiral.hpp"
 #include "PatternSpiro.hpp"
 #include "PatternWave.hpp" 
 #include "PatternRain.hpp"
 #include "PatternJuliaSetFractal.hpp"
-#include "PatternRain.hpp"
 #include "PatternFireworks.hpp"
+#include "PatternVoronoi.hpp"
 
 
 
@@ -66,11 +62,11 @@ class Patterns {
     PatternInfinity infinity;
     PatternMaze maze;    
     PatternMunch munch;
+    PatternGameOfLife gameOfLife;
     PatternPendulumWave pendwave;
     PatternPlasma plasma;
     PatternRadar radar;
     PatternSimplexNoise simpnoise;
-    PatternSnake snake;
     PatternSpiral spiral;
     PatternSpiro spiro;
     PatternWave wave;
@@ -78,9 +74,10 @@ class Patterns {
     
     PatternRain rain;
     PatternFirework fireworks;
+    PatternVoronoi voronoi;
     
 
-    std::vector<Drawable*> availablePatterns = {
+    std::array<Drawable*, 25> availablePatterns = {{
       &juliaSet,
       &starfield,
       &attract,
@@ -97,46 +94,60 @@ class Patterns {
       &infinity,
       &maze,
       &munch,
+      &gameOfLife,
       &pendwave,
       &plasma,
-      &radar,
       &simpnoise,
-      &spiro,
+      &spiral,
       &wave,
       &rain,
-      &fireworks
-    };    
+      &fireworks,
+      &voronoi
+    }};
 
     int currentIndex = 0;
-    Drawable* currentItem;
+    Drawable* currentItem = nullptr;
+    bool currentLoaded = false;
 
-    int getCurrentIndex() {
-      return currentIndex;
+    void deactivateCurrent() {
+      if (!currentItem || !currentLoaded) return;
+      currentItem->stop();
+      currentItem->unload();
+      currentLoaded = false;
+    }
+
+    bool activateCurrent() {
+      if (!currentItem || currentLoaded) return currentLoaded;
+      if (!currentItem->load()) {
+        Serial.print(F("Failed to load pattern: "));
+        Serial.println(currentItem->name);
+        return false;
+      }
+      currentLoaded = true;
+      currentItem->start();
+      return true;
     }
 
 
   public:
-    Patterns() {
-      this->currentItem = availablePatterns[0];
-      this->currentItem->start();
-    }
+    Patterns() : currentItem(availablePatterns[0]) {}
 
     void stop() {
-      if (currentItem)
-        currentItem->stop();
+      deactivateCurrent();
     }
 
     void start() {
-      if (currentItem)
-        currentItem->start();
+      activateCurrent();
     }
 
     void moveTo(int index) 
     {
-      index = ((index >= availablePatterns.size()) || (index < 0)) ? 0 : index;
+      const int count = static_cast<int>(availablePatterns.size());
+      if (count == 0) return;
+      index %= count;
+      if (index < 0) index += count;
 
-      if (currentItem)
-        currentItem->stop();
+      deactivateCurrent();
 
       currentIndex = index;
       currentItem = availablePatterns[currentIndex];
@@ -144,29 +155,27 @@ class Patterns {
       Serial.print("Changing pattern to:  ");
       Serial.println(getCurrentPatternName());      
 
-      if (currentItem)
-        currentItem->start();
+      activateCurrent();
 
     } // index   
 
 
     void move(int step) {
 
-      currentIndex += step;
-
-      if (currentIndex >= availablePatterns.size()) currentIndex = 0;
-      else if (currentIndex < 0) currentIndex = 0;
-
-      moveTo(currentIndex);
+      const int count = static_cast<int>(availablePatterns.size());
+      if (count == 0) return;
+      moveTo((currentIndex + step % count + count) % count);
     }
 
-    void moveRandom(int step) {
-      int rand_index =  random(0, availablePatterns.size()-1);
+    void moveRandom(int step = 0) {
+      (void)step;
+      if (availablePatterns.empty()) return;
+      int rand_index = random(static_cast<long>(availablePatterns.size()));
       moveTo(rand_index);
     }
 
     unsigned int drawFrame() {
-      return currentItem->drawFrame();
+      return (currentLoaded && currentItem) ? currentItem->drawFrame() : 100;
     }
 
     void listPatterns() {
@@ -191,9 +200,9 @@ class Patterns {
       Serial.println("}");
     }
 
-    char * getCurrentPatternName()
+    const char * getCurrentPatternName()
     {
-      return currentItem->name;      
+      return currentItem ? currentItem->name : "None";
     }
 /*
     bool setPattern(String name) {
@@ -210,7 +219,7 @@ class Patterns {
 
 */
     bool setPattern(int index) {
-      if (index >= availablePatterns.size() || index < 0)
+      if (index >= static_cast<int>(availablePatterns.size()) || index < 0)
         return false;
 
       moveTo(index);

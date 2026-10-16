@@ -21,6 +21,7 @@
  */
 
 #ifndef PatternRadar_H
+#define PatternRadar_H
 
 class PatternRadar : public Drawable {
   private:
@@ -34,23 +35,30 @@ class PatternRadar : public Drawable {
     }
 
     unsigned int drawFrame() {
-      effects.DimAll(254); effects.ShowFrame();
+      effects.DimAll(254);
 
-      for (int offset = 0; offset < effects.getCenterX(); offset++) {
+      const int squareSize = max(VPANEL_W, VPANEL_H);
+      const int radiusLimit = squareSize / 2;
+      const int centerX = VPANEL_W / 2;
+      const int centerY = VPANEL_H / 2;
+      for (int offset = 0; offset <= radiusLimit; offset++) {
         byte hue = 255 - (offset * 16 + hueoffset);
         CRGB color = effects.ColorFromCurrentPalette(hue);
-        uint8_t x = effects.mapcos8(theta, offset, (VPANEL_W - 1) - offset);
-        uint8_t y = effects.mapsin8(theta, offset, (VPANEL_H - 1) - offset);
-        uint16_t xy = XY16(x, y);
-        effects.leds[xy] = color;
-
-        if (millis() - last_update_hue_ms > 25) {
-          last_update_hue_ms = millis();
-          theta += 2;
-          hueoffset += 1;
-        }
+        const int radius = radiusLimit - offset;
+        const int x = centerX + (static_cast<int>(cos8(theta)) - 128) * radius / 127;
+        const int y = centerY + (static_cast<int>(sin8(theta)) - 128) * radius / 127;
+        // setPixel clips against the real panel bounds, leaving the radar square
+        // centered on a rectangular display and naturally cropping its edges.
+        effects.setPixel(x, y, color);
       }
 
+      if (millis() - last_update_hue_ms > 25) {
+        last_update_hue_ms = millis();
+        theta += 2;
+        hueoffset += 1;
+      }
+
+      effects.ShowFrame();
       return 0;
     }
 };

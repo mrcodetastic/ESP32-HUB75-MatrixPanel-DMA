@@ -31,12 +31,15 @@
 
 class PatternCube : public Drawable {
   private:
-    float focal = 30; // Focal of the camera
-    int cubeWidth = 28; // Cube size
+    // Build against a virtual square based on the longer display dimension.
+    // A non-square output intentionally clips the oversize square composition.
+    const int virtualSquareSize = max(VPANEL_W, VPANEL_H);
+    float focal = virtualSquareSize; // Focal length in virtual-square pixels
+    int cubeWidth = max(1, virtualSquareSize / 2);
     float Angx = 20.0, AngxSpeed = 0.05; // rotation (angle+speed) around X-axis
     float Angy = 10.0, AngySpeed = 0.05; // rotation (angle+speed) around Y-axis
     float Ox = VPANEL_W/2, Oy = VPANEL_H/2; // position (x,y) of the frame center
-    int zCamera = 110; // distance from cube to the eye of the camera
+    int zCamera = max(8, virtualSquareSize * 18 / 10);
 
     // Local vertices
     Vertex  local[8];
@@ -151,19 +154,15 @@ class PatternCube : public Drawable {
   public:
     PatternCube() {
       name = (char *)"Cube";
-      make(VPANEL_W);
+      make(cubeWidth);
     }
 
     unsigned int drawFrame() {
       uint8_t blurAmount = beatsin8(2, 10, 128);
 
-#if FASTLED_VERSION >= 3001000
       blur2d(effects.leds, VPANEL_W, VPANEL_H, blurAmount);
-#else
-      effects.DimAll(blurAmount); effects.ShowFrame();
-#endif
 
-      zCamera = beatsin8(2, 100, 140);
+      zCamera = max(8, virtualSquareSize * (18 + beatsin8(2, 0, 2)) / 10);
       AngxSpeed = beatsin8(3, 1, 6) / 100.0f;
       AngySpeed = effects.beatcos8(5, 1, 6) / 100.0f;
 

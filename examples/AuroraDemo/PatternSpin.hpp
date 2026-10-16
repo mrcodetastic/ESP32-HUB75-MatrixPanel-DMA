@@ -21,6 +21,7 @@
 */
 
 #ifndef PatternSpin_H
+#define PatternSpin_H
 
 
 

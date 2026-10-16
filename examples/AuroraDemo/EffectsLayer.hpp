@@ -31,6 +31,8 @@
 #ifndef Effects_H
 #define Effects_H
 
+#include <limits.h>
+#include <stdlib.h>
 
 
   /**
@@ -71,11 +73,12 @@ public:
   uint32_t noise_scale_x;
   uint32_t noise_scale_y;
 
-  uint8_t **noise = nullptr;  // we will allocate mem later
+  uint8_t **noise = nullptr;  // column pointers into one contiguous noise allocation
+  uint8_t *noiseStorage = nullptr;
   uint8_t noisesmoothing;
 
 
-  CRGB *leds;
+  CRGB *leds = nullptr;
   int width;
   int height;
   int num_leds = 0;
@@ -83,31 +86,38 @@ public:
   EffectsLayer(int w, int h) : GFX(w, h), width(w), height(h) {
 
     // we do dynamic allocation for leds buffer, otherwise esp32 toolchain can't link static arrays of such a big size for 256+ matrices
-    leds = (CRGB *)malloc((width * height + 1) * sizeof(CRGB));
-    num_leds = width * height;
+    const size_t pixelCount = (w > 0 && h > 0) ? static_cast<size_t>(w) * static_cast<size_t>(h) : 0;
+    num_leds = (pixelCount <= INT_MAX) ? static_cast<int>(pixelCount) : 0;
+    leds = (num_leds > 0) ? static_cast<CRGB *>(calloc(pixelCount, sizeof(CRGB))) : nullptr;
 
     // allocate mem for noise effect
-    // (there should be some guards for malloc errors eventually)
-    noise = (uint8_t **)malloc(width * sizeof(uint8_t *));
-    for (int i = 0; i < width; ++i) {
-      noise[i] = (uint8_t *)malloc(height * sizeof(uint8_t));
+    noise = (num_leds > 0) ? static_cast<uint8_t **>(calloc(width, sizeof(uint8_t *))) : nullptr;
+    noiseStorage = (num_leds > 0) ? static_cast<uint8_t *>(calloc(pixelCount, sizeof(uint8_t))) : nullptr;
+    if (noise && noiseStorage) {
+      for (int i = 0; i < width; ++i)
+        noise[i] = noiseStorage + static_cast<size_t>(i) * height;
+    } else {
+      free(noise);
+      free(noiseStorage);
+      noise = nullptr;
+      noiseStorage = nullptr;
     }
 
     // Set starting palette
     currentPalette = RainbowColors_p;
     loadPalette(0);
-    NoiseVariablesSetup();    
+    NoiseVariablesSetup();
 
     ClearFrame();
   }
 
   ~EffectsLayer(){
     free(leds);
-    for (int i = 0; i < width; ++i) {
-      free(noise[i]);
-    }
     free(noise);
+    free(noiseStorage);
   }
+
+  bool isReady() const { return leds != nullptr; }
 
   /* The only 'framebuffer' we have is what is contained in the leds and leds2 variables.
    * We don't store what the color a particular pixel might be, other than when it's turned
@@ -118,17 +128,20 @@ public:
    */
   void setPixel(int16_t x, int16_t y, CRGB color)
   {
-	  leds[XY16(x, y)] = color;
+      if (!leds || x < 0 || y < 0 || x >= width || y >= height) return;
+      leds[static_cast<size_t>(y) * width + x] = color;
   }
 
   // write one pixel with the specified color from the current palette to coordinates
   void setPixelFromPaletteIndex(int x, int y, uint8_t colorIndex) {
-    leds[XY16(x, y)] = ColorFromCurrentPalette(colorIndex);
+    if (x < 0 || y < 0 || x >= width || y >= height || !leds) return;
+    leds[static_cast<size_t>(y) * width + x] = ColorFromCurrentPalette(colorIndex);
   }
   
  void PrepareFrame() { }
 
   void ShowFrame() { // send to display
+    if (!leds || !virtualDisp) return;
     currentPalette = targetPalette;
   
     for (int y=0; y<height; ++y){
@@ -150,11 +163,13 @@ public:
 
   // scale the brightness of the screenbuffer down
   void DimAll(byte value)  {
+      if (!leds) return;
       for (int i = 0; i < num_leds; i++)
         leds[i].nscale8(value);
   }  
 
   void ClearFrame() {
+      if (!leds) return;
       for (int i = 0; i < num_leds; i++)
         leds[i]= CRGB(0,0,0);
 
@@ -711,6 +726,7 @@ public:
   }
 
   void FillNoise() {
+    if (!noise) return;
     for (uint16_t i = 0; i < width; i++) {
       uint32_t ioffset = noise_scale_x * (i - width / 2);
 

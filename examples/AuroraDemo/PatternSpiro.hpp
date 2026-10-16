@@ -21,6 +21,7 @@
  */
 
 #ifndef PatternSpiro_H
+#define PatternSpiro_H
 
 class PatternSpiro : public Drawable {
   private:
@@ -28,14 +29,10 @@ class PatternSpiro : public Drawable {
     byte theta2 = 0;
     byte hueoffset = 0;
 
-    uint8_t radiusx = VPANEL_W / 4;
-    uint8_t radiusy = VPANEL_H / 4;
-    uint8_t minx = effects.getCenterX() - radiusx;
-    uint8_t maxx = effects.getCenterX() + radiusx + 1;
-    uint8_t miny = effects.getCenterY() - radiusy;
-    uint8_t maxy = effects.getCenterY() + radiusy + 1;
+    uint16_t radiusx = VPANEL_W / 4;
+    uint16_t radiusy = VPANEL_H / 4;
 
-    uint8_t spirocount = 64;
+    uint8_t spirocount = min(64, max(1, min(VPANEL_W, VPANEL_H)));
     uint8_t spirooffset = 256 / spirocount;
     boolean spiroincrement = true;
 
@@ -55,22 +52,25 @@ class PatternSpiro : public Drawable {
     };
 
     unsigned int drawFrame() {
-      blur2d(effects.leds, VPANEL_W > 255 ? 255 : VPANEL_W, VPANEL_H > 255 ? 255 : VPANEL_H, 64);
+      blur2d(effects.leds, VPANEL_W, VPANEL_H, 64);
 
       boolean change = false;
       
       for (int i = 0; i < spirocount; i++) {
-        uint8_t x = effects.mapsin8(theta1 + i * spirooffset, minx, maxx);
-        uint8_t y = effects.mapcos8(theta1 + i * spirooffset, miny, maxy);
+        uint16_t x = effects.getCenterX() - radiusx + (static_cast<uint32_t>(sin8(theta1 + i * spirooffset)) * (2 * radiusx)) / 255;
+        uint16_t y = effects.getCenterY() - radiusy + (static_cast<uint32_t>(cos8(theta1 + i * spirooffset)) * (2 * radiusy)) / 255;
 
-        uint8_t x2 = effects.mapsin8(theta2 + i * spirooffset, x - radiusx, x + radiusx);
-        uint8_t y2 = effects.mapcos8(theta2 + i * spirooffset, y - radiusy, y + radiusy);
+        int xMin = max(0, static_cast<int>(x) - static_cast<int>(radiusx));
+        int yMin = max(0, static_cast<int>(y) - static_cast<int>(radiusy));
+        int xMax = min(VPANEL_W - 1, static_cast<int>(x) + static_cast<int>(radiusx));
+        int yMax = min(VPANEL_H - 1, static_cast<int>(y) + static_cast<int>(radiusy));
+        uint16_t x2 = xMin + (static_cast<uint32_t>(sin8(theta2 + i * spirooffset)) * (xMax - xMin)) / 255;
+        uint16_t y2 = yMin + (static_cast<uint32_t>(cos8(theta2 + i * spirooffset)) * (yMax - yMin)) / 255;
 
         CRGB color = effects.ColorFromCurrentPalette(hueoffset + i * spirooffset, 128);
         effects.leds[XY16(x2, y2)] += color;
         
-        if((x2 == effects.getCenterX() && y2 == effects.getCenterY()) ||
-           (x2 == effects.getCenterX() && y2 == effects.getCenterY())) change = true;
+        if (x2 == effects.getCenterX() && y2 == effects.getCenterY()) change = true;
       }
 
       theta2 += 1;
@@ -86,7 +86,7 @@ class PatternSpiro : public Drawable {
         if (change && !handledChange) {
           handledChange = true;
           
-          if (spirocount >= VPANEL_W || spirocount == 1) spiroincrement = !spiroincrement;
+          if (spirocount >= min(64, min(VPANEL_W, VPANEL_H)) || spirocount == 1) spiroincrement = !spiroincrement;
 
           if (spiroincrement) {
             if(spirocount >= 4)

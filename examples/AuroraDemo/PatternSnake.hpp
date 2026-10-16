@@ -38,8 +38,8 @@ private:
     };
 
     struct Pixel {
-        uint8_t x;
-        uint8_t y;
+        uint16_t x;
+        uint16_t y;
     };
 
     struct Snake {
@@ -78,6 +78,7 @@ private:
         }
 
         void move() {
+            if (VPANEL_W == 0 || VPANEL_H == 0) return;
             switch (direction) {
                 case UP:
                     pixels[0].y = (pixels[0].y + 1) % VPANEL_H;
@@ -115,12 +116,18 @@ public:
 
     void start()
     {
-              effects.ClearFrame();
+        effects.ClearFrame();
+        for (int i = 0; i < snakeCount; ++i) {
+            snakes[i].reset();
+            snakes[i].pixels[0].x = (i * VPANEL_W) / snakeCount;
+            snakes[i].pixels[0].y = (i * VPANEL_H) / snakeCount;
+        }
     }
 
     unsigned int drawFrame() {
 
          
+        if (VPANEL_W == 0 || VPANEL_H == 0) return 100;
         fill_palette(colors, SNAKE_LENGTH, initialHue++, 5, effects.currentPalette, 255, LINEARBLEND);
 
         for (int i = 0; i < snakeCount; i++) {

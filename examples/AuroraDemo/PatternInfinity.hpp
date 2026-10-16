@@ -21,6 +21,7 @@
  */
 
 #ifndef PatternInfinity_H
+#define PatternInfinity_H
 
 class PatternInfinity : public Drawable {
 public:
@@ -45,17 +46,24 @@ public:
 
         // the horizontal position of the head of the infinity sign
         // oscillates from 0 to the maximum horizontal and back
-        int x = (VPANEL_W - 4) - effects.p[1];
+        const int usableWidth = max(0, VPANEL_W - 3);
+        // MoveOscillators() already scales p[] to the actual display width.
+        // Preserve that full range while reserving space for the 3-pixel mark.
+        const int xRange = max(1, VPANEL_W - 1);
+        int x = (static_cast<uint32_t>(effects.p[1]) * usableWidth) / xRange;
 
         // the vertical position of the head oscillates
-        // from 8 to 23 and back (hard-coded for a 32x32 matrix)
-        int y = map8(sin8(effects.osci[3]), 8, VPANEL_H - 8);
+        const int usableHeight = max(0, VPANEL_H - 3);
+        int y = (static_cast<uint32_t>(sin8(effects.osci[3])) * usableHeight) / 255;
 
         // the hue oscillates from 0 to 255, overflowing back to 0
         byte hue = sin8(effects.osci[5]);
 
         // draw a pixel at x,y using a color from the current palette
-        effects.drawTriangle(x,y,x+1,y+1,x+2,y+2,effects.ColorFromCurrentPalette(hue));
+        if (VPANEL_W >= 3 && VPANEL_H >= 3)
+          effects.drawTriangle(x, y, x + 1, y + 1, x + 2, y + 2, effects.ColorFromCurrentPalette(hue));
+        else
+          effects.setPixel(x, y, effects.ColorFromCurrentPalette(hue));
         ////effects.setPixelFromPaletteIndex(x, y, hue);
 
         effects.ShowFrame();

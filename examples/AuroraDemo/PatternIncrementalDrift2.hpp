@@ -32,31 +32,20 @@ class PatternIncrementalDrift2 : public Drawable {
 
     unsigned int drawFrame() {
       uint8_t dim = beatsin8(2, 170, 250);
-      effects.DimAll(dim); effects.ShowFrame();
+      effects.DimAll(dim);
 
-      for (int i = 2; i < VPANEL_H / 2; ++i)
-      //for (uint8_t i = 0; i < 32; i++)
+      const int maxRadius = (min(VPANEL_W, VPANEL_H) - 1) / 2;
+      for (int i = 1; i <= maxRadius; ++i)
       {
-        CRGB color;
-
-        uint8_t x = 0;
-        uint8_t y = 0;
-
-        if (i < 16) {
-          x = effects.beatcos8((i + 1) * 2, i, VPANEL_W - i);
-          y = beatsin8((i + 1) * 2, i, VPANEL_H - i);
-          color = effects.ColorFromCurrentPalette(i * 14);
-        }
-        else
-        {
-          x = beatsin8((32 - i) * 2, VPANEL_W - i, i + 1);
-          y = effects.beatcos8((32 - i) * 2, VPANEL_H - i, i + 1);
-          color = effects.ColorFromCurrentPalette((31 - i) * 14);
-        }
+        CRGB color = effects.ColorFromCurrentPalette((i - 1) * 240 / max(1, maxRadius));
+        const uint8_t phase = beatsin8(max(1, 2 * i));
+        const uint16_t x = i + (static_cast<uint32_t>(sin8(phase)) * (VPANEL_W - 1 - 2 * i)) / 255;
+        const uint16_t y = i + (static_cast<uint32_t>(cos8(phase)) * (VPANEL_H - 1 - 2 * i)) / 255;
 
         effects.setPixel(x, y, color);
       }
 
+      effects.ShowFrame();
       return 0;
     }
 };

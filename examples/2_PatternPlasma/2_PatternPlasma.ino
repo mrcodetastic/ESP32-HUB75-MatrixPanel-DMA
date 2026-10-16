@@ -56,12 +56,16 @@
 
 
 #include <ESP32-HUB75-MatrixPanel-I2S-DMA.h>
-#include <FastLED.h>
+
+// https://github.com/mrcodetastic/GFX_Lite/tree/main
+#include <GFX_Lite.h>
+
+#include <math.h>
 
 // Configure for your panel(s) as appropriate!
 #define PANEL_WIDTH 64
-#define PANEL_HEIGHT 64  	// Panel height of 64 will required PIN_E to be defined.
-#define PANELS_NUMBER 2 	// Number of chained panels, if just a single panel, obviously set to 1
+#define PANEL_HEIGHT 32  	// Panel height of 64 will required PIN_E to be defined.
+#define PANELS_NUMBER 1 	// Number of chained panels, if just a single panel, obviously set to 1
 #define PIN_E 32
 
 #define PANE_WIDTH PANEL_WIDTH * PANELS_NUMBER
@@ -78,6 +82,8 @@ unsigned long fps_timer;
 CRGB currentColor;
 CRGBPalette16 palettes[] = {HeatColors_p, LavaColors_p, RainbowColors_p, RainbowStripeColors_p, CloudColors_p};
 CRGBPalette16 currentPalette = palettes[0];
+uint8_t paletteShift = 0;
+uint8_t paletteNumber = 2;
 
 
 CRGB ColorFromCurrentPalette(uint8_t index = 0, uint8_t brightness = 255, TBlendType blendType = LINEARBLEND) {
@@ -113,9 +119,7 @@ void setup() {
     For example we have two 64x64 panels chained, so we need to customize our setup like this
 
   */
-  HUB75_I2S_CFG mxconfig;
-  mxconfig.mx_height = PANEL_HEIGHT;      // we have 64 pix heigh panels
-  mxconfig.chain_length = PANELS_NUMBER;  // we have 2 panels chained
+  HUB75_I2S_CFG mxconfig(PANEL_WIDTH, PANEL_HEIGHT, PANELS_NUMBER);
   mxconfig.gpio.e = PIN_E;                // we MUST assign pin e to some free pin on a board to drive 64 pix height panels with 1/32 scan
   //mxconfig.driver = HUB75_I2S_CFG::FM6126A;     // in case that we use panels based on FM6126A chip, we can change that
 
@@ -146,15 +150,15 @@ void setup() {
  
   // well, hope we are OK, let's draw some colors first :)
   Serial.println("Fill screen: RED");
-  dma_display->fillScreenRGB888(255, 0, 0);
+  dma_display->fillScreenRGB888(192, 0, 0);
   delay(1000);
 
   Serial.println("Fill screen: GREEN");
-  dma_display->fillScreenRGB888(0, 255, 0);
+  dma_display->fillScreenRGB888(0, 192, 0);
   delay(1000);
 
   Serial.println("Fill screen: BLUE");
-  dma_display->fillScreenRGB888(0, 0, 255);
+  dma_display->fillScreenRGB888(0, 0, 192);
   delay(1000);
 
   Serial.println("Fill screen: Neutral White");
@@ -173,28 +177,57 @@ void setup() {
 }
 
 void loop() {
-  
-    for (int x = 0; x < PANE_WIDTH; x++) {
-            for (int y = 0; y <  PANE_HEIGHT; y++) {
-                int16_t v = 128;
-                uint8_t wibble = sin8(time_counter);
-                v += sin16(x * wibble * 3 + time_counter);
-                v += cos16(y * (128 - wibble)  + time_counter);
-                v += sin16(y * x * cos8(-time_counter) / 8);
 
-                currentColor = ColorFromPalette(currentPalette, (v >> 8)); //, brightness, currentBlendType);
-                dma_display->drawPixelRGB888(x, y, currentColor.r, currentColor.g, currentColor.b);
-            }
+    // Use the configured display dimensions rather than the example's panel
+    // constants, so chained panels and different panel heights use the full area.
+    const int16_t width = dma_display->width();
+    const int16_t height = dma_display->height();
+    const int16_t minDimension = min(width, height);
+
+    // Coordinates are aspect-correct and normalized to the short screen edge.
+    // This keeps the rings round and their size consistent on 64x32, 64x64,
+    // 128x64, and other display sizes.
+    const int16_t driftX = (int32_t)sin16((uint16_t)(time_counter * 18)) * 28 / 32767;
+    const int16_t driftY = (int32_t)cos16((uint16_t)(time_counter * 18)) * 20 / 32767;
+    const int16_t phase = time_counter;
+
+    for (int16_t y = 0; y < height; ++y) {
+        const int16_t yCoord = ((2 * y - (height - 1)) * 128) / minDimension;
+        for (int16_t x = 0; x < width; ++x) {
+            const int16_t xCoord = ((2 * x - (width - 1)) * 128) / minDimension;
+            const int16_t px = xCoord + driftX;
+            const int16_t py = yCoord + driftY;
+
+            // Several differently directed waves create an organic plasma field;
+            // the radial term supplies the moving rings instead of a single
+            // product of x and y that tends to pin the pattern to the origin.
+            const int16_t waveX = sin16((uint16_t)(px * 600 + phase * 6));
+            const int16_t waveY = sin16((uint16_t)(py * 600 - phase * 5));
+            const int16_t waveDiagonal = sin16((uint16_t)((px + py) * 360 + phase * 4));
+            const uint16_t radius = (uint16_t)sqrtf((float)px * px + (float)py * py);
+            const int16_t waveRings = sin16((uint16_t)(radius * 1100 - phase * 8));
+
+            const int32_t field = (int32_t)waveX + waveY + waveDiagonal + waveRings;
+            const uint8_t colorIndex = (uint8_t)(((field + 131072) >> 10) + paletteShift);
+            currentColor = ColorFromPalette(currentPalette, colorIndex);
+            dma_display->drawPixelRGB888(x, y, currentColor.r, currentColor.g, currentColor.b);
+        }
     }
 
     ++time_counter;
     ++cycles;
     ++fps;
 
-    if (cycles >= 1024) {
-        time_counter = 0;
+    // Slowly move the whole palette through its colors independently of the
+    // spatial waves, so the plasma keeps evolving even when the field repeats.
+    if ((cycles % 3) == 0) {
+      ++paletteShift;
+    }
+
+    if (cycles >= 2026) {
         cycles = 0;
-        currentPalette = palettes[random(0,sizeof(palettes)/sizeof(palettes[0]))];
+        paletteNumber = (paletteNumber + 1) % (sizeof(palettes) / sizeof(palettes[0]));
+        currentPalette = palettes[paletteNumber];
     }
 
     // print FPS rate every 5 seconds

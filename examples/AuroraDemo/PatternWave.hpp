@@ -35,11 +35,6 @@ private:
 
     byte rotation = 0;
 
-    uint8_t scale = 256 / VPANEL_W;
-
-    uint8_t maxX = VPANEL_W - 1;
-    uint8_t maxY = VPANEL_H - 1;
-
     uint8_t waveCount = 1;
 
 public:
@@ -54,12 +49,14 @@ public:
     }
 
     unsigned int drawFrame() {
+        const int maxX = VPANEL_W - 1;
+        const int maxY = VPANEL_H - 1;
         int n = 0;
 
         switch (rotation) {
             case 0:
                 for (int x = 0; x < VPANEL_W; x++) {
-                    n = quadwave8(x * 2 + theta) / scale;
+                    n = (static_cast<uint16_t>(quadwave8(x * 256UL / max(1, VPANEL_W) + theta)) * maxY) / 255;
                     effects.setPixel(x, n, effects.ColorFromCurrentPalette(x + hue));
                     if (waveCount == 2)
                         effects.setPixel(x, maxY - n, effects.ColorFromCurrentPalette(x + hue));
@@ -68,7 +65,7 @@ public:
 
             case 1:
                 for (int y = 0; y < VPANEL_H; y++) {
-                    n = quadwave8(y * 2 + theta) / scale;
+                    n = (static_cast<uint16_t>(quadwave8(y * 256UL / max(1, VPANEL_H) + theta)) * maxX) / 255;
                     effects.setPixel(n, y, effects.ColorFromCurrentPalette(y + hue));
                     if (waveCount == 2)
                         effects.setPixel(maxX - n, y, effects.ColorFromCurrentPalette(y + hue));
@@ -77,7 +74,7 @@ public:
 
             case 2:
                 for (int x = 0; x < VPANEL_W; x++) {
-                    n = quadwave8(x * 2 - theta) / scale;
+                    n = (static_cast<uint16_t>(quadwave8(x * 256UL / max(1, VPANEL_W) - theta)) * maxY) / 255;
                     effects.setPixel(x, n, effects.ColorFromCurrentPalette(x + hue));
                     if (waveCount == 2)
                         effects.setPixel(x, maxY - n, effects.ColorFromCurrentPalette(x + hue));
@@ -86,7 +83,7 @@ public:
 
             case 3:
                 for (int y = 0; y < VPANEL_H; y++) {
-                    n = quadwave8(y * 2 - theta) / scale;
+                    n = (static_cast<uint16_t>(quadwave8(y * 256UL / max(1, VPANEL_H) - theta)) * maxX) / 255;
                     effects.setPixel(n, y, effects.ColorFromCurrentPalette(y + hue));
                     if (waveCount == 2)
                         effects.setPixel(maxX - n, y, effects.ColorFromCurrentPalette(y + hue));

@@ -34,8 +34,8 @@ private:
         unsigned long lastMillis;
         unsigned long count;
         int delta;
-        byte up;
-        byte down;
+        uint16_t up;
+        uint16_t down;
     };
     timer multiTimer[5];
 
@@ -121,7 +121,8 @@ public:
         // --> NOTE: Affects always a SQUARE with an odd length
      //   effects.SpiralStream(15, 15, 10, 128);
 
-        effects.SpiralStream(31, 15, 64, 128);        // for 64 pixel wide matrix!
+        const int radius = max(0, (min(VPANEL_W, VPANEL_H) - 2) / 2);
+        effects.SpiralStream(effects.getCenterX(), effects.getCenterY(), radius, 128);
       //  effects.SpiralStream(47, 15, 10, 128);        // for 64 pixel wide matrix!
 
         // why not several times?!

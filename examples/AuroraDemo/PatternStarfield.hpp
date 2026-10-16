@@ -1,6 +1,8 @@
 #ifndef PatternStarfield_H
 #define PatternStarfield_H
 
+#include <new>
+
 struct Star
 {
     Star() {
@@ -25,10 +27,11 @@ class PatternStarfield : public Drawable {
 
     // the star field - starCount stars represented as x, y and z co-ordinates
     // https://www.cplusplus.com/doc/tutorial/dynamic/
-    Star * stars;
+    Star * stars = nullptr;
     //CRGBPalette16 currentPalette;
 
     unsigned int drawFrame() { // aka drawStars
+        if (!stars) return 100;
 
         // Dim routine
         
@@ -51,8 +54,8 @@ class PatternStarfield : public Drawable {
             // with random x and y positions.
             if (stars[i].z <= 0) 
             {
-                stars[i].x = getRandom(-25, 25);
-                stars[i].y = getRandom(-25, 25);
+                stars[i].x = getRandom(-max(1, VPANEL_W / 4), max(1, VPANEL_W / 4));
+                stars[i].y = getRandom(-max(1, VPANEL_H / 4), max(1, VPANEL_H / 4));
                 stars[i].z = maxDepth;                
             }
 
@@ -106,21 +109,27 @@ class PatternStarfield : public Drawable {
         //currentPalette = RainbowColors_p;
         //currentPalette = CloudColors_p;
 
-        // Allocate memory
-        stars = new Star[starCount];
+        if (!stars && !load()) return;
 
         // Initialise the star field with random stars
         for (int i = 0; i < starCount; i++) {
-            stars[i].x = getRandom(-25, 25);
-            stars[i].y = getRandom(-25, 25);
+            stars[i].x = getRandom(-max(1, VPANEL_W / 4), max(1, VPANEL_W / 4));
+            stars[i].y = getRandom(-max(1, VPANEL_H / 4), max(1, VPANEL_H / 4));
             stars[i].z = getRandom(0, maxDepth);
             //stars[i].colour = ColorFromCurrentPalette(random(0, 128));
             stars[i].colour = effects.ColorFromCurrentPalette(random(0, 128));
         }
     } // end start
 
-    void stop() {
-        delete[] stars;       
+    bool load() override {
+        if (stars) return true;
+        stars = new (std::nothrow) Star[starCount];
+        return stars != nullptr;
+    }
+
+    void unload() override {
+        delete[] stars;
+        stars = nullptr;
     }
 
 

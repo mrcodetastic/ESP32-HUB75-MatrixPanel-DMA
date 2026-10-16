@@ -55,7 +55,7 @@ class PatternPendulumWave : public Drawable {
         uint16_t amp = beatsin16(AMP_BPM, VPANEL_H/8, VPANEL_H-1);
         uint16_t offset = (VPANEL_H - beatsin16(AMP_BPM, 0, VPANEL_H))/2;
 
-        uint8_t y = beatsin16(WAVE_BPM, 0, amp, x*beatsin16(SKEW_BPM, WAVE_TIMEMINSKEW, WAVE_TIMEMAXSKEW)) + offset;
+        uint16_t y = beatsin16(WAVE_BPM, 0, amp, x*beatsin16(SKEW_BPM, WAVE_TIMEMINSKEW, WAVE_TIMEMAXSKEW)) + offset;
 
         effects.setPixel(x, y, effects.ColorFromCurrentPalette(x * 7));
       }

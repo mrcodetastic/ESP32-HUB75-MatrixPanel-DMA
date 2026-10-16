@@ -11,7 +11,6 @@ const int FIREWORK_PARTICLES = 32;  // Number of particles per firework
 
 const float GRAVITY = 0.03f;
 const float baselineSpeed = -1.2f;
-const float maxSpeed = -2.0f;
 
 class Firework
 {
@@ -53,8 +52,8 @@ void Firework::initialise()
 {
     // Pick an initial x location and  random x/y speeds
     float xLoc = (rand() % VPANEL_W);
-    float xSpeedVal = baselineSpeed + (rand() % (int)maxSpeed);
-    float ySpeedVal = baselineSpeed + (rand() % (int)maxSpeed);
+    float xSpeedVal = (static_cast<int>(rand() % 101) - 50) / 100.0f;
+    float ySpeedVal = baselineSpeed - (rand() % 101) / 100.0f;
 
     // Set initial x/y location and speeds
     for (int loop = 0; loop < FIREWORK_PARTICLES; loop++)

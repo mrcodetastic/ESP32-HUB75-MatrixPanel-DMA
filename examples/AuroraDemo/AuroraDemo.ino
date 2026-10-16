@@ -19,7 +19,7 @@
        acting as one big display.
 
     - "GFX_Lite" to provide a simple graphics library for drawing on the virtual display.
-       GFX_Lite is a fork of AdaFruitGFX and FastLED library combined together, with a focus on simplicity and ease of use.
+        GFX_Lite provides the drawing and RGB/palette primitives used by this demo.
 
  Instructions:
   * Use the serial input to advance through the patterns, or to toggle auto advance. Sending 'n' will advance to the next
@@ -27,7 +27,7 @@
 
 */
 
-#define USE_GFX_LITE 1
+#include <GFX_Lite.h>
 #include <ESP32-VirtualMatrixPanel-I2S-DMA.h>
 
 /***************************************************************************************************************************/
@@ -47,15 +47,11 @@
 // Refer to: https://github.com/mrcodetastic/ESP32-HUB75-MatrixPanel-DMA/tree/master/examples/VirtualMatrixPanel
 //      and: https://github.com/mrcodetastic/ESP32-HUB75-MatrixPanel-DMA/blob/master/doc/VirtualMatrixPanel.pdf
 
-// Virtual Panel dimensions - our combined panel would be a square 4x4 modules with a combined resolution of 128x128 pixels
+// Virtual display dimensions, derived from the physical panel arrangement.
 #define VPANEL_W PANEL_RES_X*NUM_COLS // Kosso: All Pattern files have had the MATRIX_WIDTH and MATRIX_HEIGHT replaced by these.
 #define VPANEL_H PANEL_RES_Y*NUM_ROWS //
 
 /***************************************************************************************************************************/
-
-// The palettes are set to change every 60 seconds. 
-int lastPattern = 0;
-
 
 // placeholder for the matrix object
 MatrixPanel_I2S_DMA *matrix = nullptr;
@@ -64,7 +60,7 @@ MatrixPanel_I2S_DMA *matrix = nullptr;
 VirtualMatrixPanel  *virtualDisp = nullptr;
 
 
-#include "EffectsLayer.hpp" // FastLED CRGB Pixel Buffer for which the patterns are drawn
+#include "EffectsLayer.hpp" // GFX_Lite-compatible RGB pixel buffer used by patterns
 EffectsLayer effects(VPANEL_W, VPANEL_H);
 
 #include "Drawable.hpp"
@@ -77,7 +73,7 @@ Patterns patterns;
 unsigned long ms_current  = 0;
 unsigned long ms_previous = 0;
 unsigned long ms_previous_palette = 0;
-unsigned long ms_animation_max_duration = 30000; // 10 seconds
+unsigned long ms_animation_max_duration = 30000; // 30 seconds
 unsigned long next_frame = 0;
 
 void listPatterns();
@@ -106,19 +102,26 @@ void setup()
   matrix = new MatrixPanel_I2S_DMA(mxconfig);
 
   // Allocate memory and start DMA display
-  if( not matrix->begin() )
+  if (!matrix->begin())
+  {
       Serial.println("****** !KABOOM! I2S memory allocation failed ***********");
+      return;
+  }
 
   // let's adjust default brightness to about 75%
   matrix->setBrightness8(192);    // range is 0-255, 0 - 0%, 255 - 100%
 
   // create VirtualDisplay object based on our newly created dma_display object
   virtualDisp = new VirtualMatrixPanel((*matrix), NUM_ROWS, NUM_COLS, PANEL_RES_X, PANEL_RES_Y, PANEL_CHAIN_TYPE);
+  if (!virtualDisp || !effects.isReady()) {
+    Serial.println("Display or effects framebuffer allocation failed");
+    return;
+  }
 
   Serial.println("**************** Starting Aurora Effects Demo ****************");
 
-  Serial.print("MATRIX_WIDTH: ");  Serial.println(PANEL_RES_X*PANEL_CHAIN);
-  Serial.print("MATRIX_HEIGHT: "); Serial.println(PANEL_RES_Y);
+  Serial.print("MATRIX_WIDTH: ");  Serial.println(VPANEL_W);
+  Serial.print("MATRIX_HEIGHT: "); Serial.println(VPANEL_H);
 
 #ifdef VPANEL_W
   Serial.println("VIRTUAL PANEL WIDTH " + String(VPANEL_W));
@@ -128,7 +131,6 @@ void setup()
 
   listPatterns();
 
-  patterns.setPattern(0);
   patterns.start();     
 
   ms_previous = millis();

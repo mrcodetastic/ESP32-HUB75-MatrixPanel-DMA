@@ -23,9 +23,11 @@
 #ifndef Drawable_H
 #define Drawable_H
 
+#include <Arduino.h>
+
 class Drawable{
 public:
-    char* name;
+    const char* name = "Unnamed pattern";
 
     virtual bool isRunnable() {
         return false;
@@ -38,8 +40,6 @@ public:
     // a single frame should be drawn as fast as possible, without any delay or blocking
     // return how many millisecond delay is requested before the next call to drawFrame()
     virtual unsigned int drawFrame() {
-		matrix->fillScreen(0);
-        //backgroundLayer.fillScreen({ 0, 0, 0 });
         return 0;
     };
 
@@ -48,8 +48,14 @@ public:
       Serial.println("Testing...");
     }
 
-    virtual void start() {};
-    virtual void stop() {};
+    // Allocate/release optional pattern-owned state. Keep allocations in load()
+    // so repeated pattern changes don't allocate in constructors or frames.
+    virtual bool load() { return true; }
+    virtual void unload() {}
+
+    // Runtime hooks are deliberately separate from resource ownership.
+    virtual void start() {}
+    virtual void stop() {}
 };
 
 #endif

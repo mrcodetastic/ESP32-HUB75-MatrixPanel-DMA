@@ -21,10 +21,11 @@
  */
 
 #ifndef PatternBounce_H
+#define PatternBounce_H
 
 class PatternBounce : public Drawable {
 private:
-    static const int count = VPANEL_W-1;
+    static const int count = VPANEL_W > 1 ? VPANEL_W - 1 : 1;
     PVector gravity = PVector(0, 0.0125);
 
 public:
@@ -33,7 +34,7 @@ public:
     }
 
     void start() {
-        unsigned int colorWidth = 256 / count;
+        unsigned int colorWidth = max(1, 256 / count);
         for (int i = 0; i < count; i++) {
             Boid boid = Boid(i, 0);
             boid.velocity.x = 0;

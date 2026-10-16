@@ -21,6 +21,7 @@
  */
 
 #ifndef PatternAttract_H
+#define PatternAttract_H
 
 class PatternAttract : public Drawable {
 private:
