@@ -68,10 +68,6 @@
 #define PANELS_NUMBER 1 	// Number of chained panels, if just a single panel, obviously set to 1
 #define PIN_E 32
 
-#define PANE_WIDTH PANEL_WIDTH * PANELS_NUMBER
-#define PANE_HEIGHT PANEL_HEIGHT
-
-
 // placeholder for the matrix object
 MatrixPanel_I2S_DMA *dma_display = nullptr;
 
@@ -79,16 +75,11 @@ MatrixPanel_I2S_DMA *dma_display = nullptr;
 uint16_t time_counter = 0, cycles = 0, fps = 0;
 unsigned long fps_timer;
 
-CRGB currentColor;
-CRGBPalette16 palettes[] = {HeatColors_p, LavaColors_p, RainbowColors_p, RainbowStripeColors_p, CloudColors_p};
+CRGBPalette16 palettes[] = {HeatColors_p, LavaColors_p, RainbowColors_p, CloudColors_p};
 CRGBPalette16 currentPalette = palettes[0];
 uint8_t paletteShift = 0;
-uint8_t paletteNumber = 2;
+uint8_t paletteNumber = 0;
 
-
-CRGB ColorFromCurrentPalette(uint8_t index = 0, uint8_t brightness = 255, TBlendType blendType = LINEARBLEND) {
-  return ColorFromPalette(currentPalette, index, brightness, blendType);
-}
 
 void setup() {
   
@@ -165,13 +156,7 @@ void setup() {
   dma_display->fillScreenRGB888(64, 64, 64);
   delay(1000);
 
-  Serial.println("Fill screen: black");
-  dma_display->fillScreenRGB888(0, 0, 0);
-  delay(1000);
-
-
-  // Set current FastLED palette
-  currentPalette = RainbowColors_p;
+   // Set current FastLED palette
   Serial.println("Starting plasma effect...");
   fps_timer = millis();
 }
@@ -187,16 +172,30 @@ void loop() {
     // Coordinates are aspect-correct and normalized to the short screen edge.
     // This keeps the rings round and their size consistent on 64x32, 64x64,
     // 128x64, and other display sizes.
-    const int16_t driftX = (int32_t)sin16((uint16_t)(time_counter * 18)) * 28 / 32767;
-    const int16_t driftY = (int32_t)cos16((uint16_t)(time_counter * 18)) * 20 / 32767;
+    // Orbit the plasma centre, while slowly varying both the orbit angle and
+    // radius with separate oscillators. The result is broadly circular but
+    // avoids a perfectly repetitive, fixed-radius camera path.
+    const int16_t angleWobble = (int32_t)sin16((uint16_t)(time_counter * 31)) * 6500 / 32767
+                              + (int32_t)cos16((uint16_t)(time_counter * 47)) * 2200 / 32767;
+    const uint16_t orbitAngle = (uint16_t)(time_counter * 80 + angleWobble);
+    const int16_t orbitRadius = 82
+                              + (int32_t)sin16((uint16_t)(time_counter * 19)) * 17 / 32767
+                              + (int32_t)cos16((uint16_t)(time_counter * 29)) * 11 / 32767;
+    const int16_t driftX = (int32_t)sin16(orbitAngle) * orbitRadius / 32767;
+    const int16_t driftY = (int32_t)cos16(orbitAngle) * orbitRadius / 32767;
     const int16_t phase = time_counter;
 
     for (int16_t y = 0; y < height; ++y) {
         const int16_t yCoord = ((2 * y - (height - 1)) * 128) / minDimension;
         for (int16_t x = 0; x < width; ++x) {
             const int16_t xCoord = ((2 * x - (width - 1)) * 128) / minDimension;
-            const int16_t px = xCoord + driftX;
-            const int16_t py = yCoord + driftY;
+            // Gently warp the coordinates with moving perpendicular waves.
+            // This makes the rings bulge and flow like bubbles, not just
+            // translate as rigid circles.
+            const int16_t warpX = sin16((uint16_t)(yCoord * 180 + phase * 5)) / 1500;
+            const int16_t warpY = cos16((uint16_t)(xCoord * 150 - phase * 4)) / 1700;
+            const int16_t px = xCoord + driftX + warpX;
+            const int16_t py = yCoord + driftY + warpY;
 
             // Several differently directed waves create an organic plasma field;
             // the radial term supplies the moving rings instead of a single
@@ -205,12 +204,14 @@ void loop() {
             const int16_t waveY = sin16((uint16_t)(py * 600 - phase * 5));
             const int16_t waveDiagonal = sin16((uint16_t)((px + py) * 360 + phase * 4));
             const uint16_t radius = (uint16_t)sqrtf((float)px * px + (float)py * py);
-            const int16_t waveRings = sin16((uint16_t)(radius * 1100 - phase * 8));
+            // Lower spatial frequency widens the bands, giving the rings a
+            // larger scale like the earlier version of the effect.
+            const int16_t waveRings = sin16((uint16_t)(radius * 650 - phase * 14));
 
             const int32_t field = (int32_t)waveX + waveY + waveDiagonal + waveRings;
             const uint8_t colorIndex = (uint8_t)(((field + 131072) >> 10) + paletteShift);
-            currentColor = ColorFromPalette(currentPalette, colorIndex);
-            dma_display->drawPixelRGB888(x, y, currentColor.r, currentColor.g, currentColor.b);
+            const CRGB color = ColorFromPalette(currentPalette, colorIndex);
+            dma_display->drawPixelRGB888(x, y, color.r, color.g, color.b);
         }
     }
 
