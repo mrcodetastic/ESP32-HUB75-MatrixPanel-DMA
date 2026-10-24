@@ -30,8 +30,10 @@
 #include <sdkconfig.h>
 #include <esp_lcd_panel_io.h>
 
-//#include <freertos/portmacro.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
 #include <esp_intr_alloc.h>
+#include <esp_attr.h>
 
 #include <esp_err.h>
 #include <esp_log.h>
@@ -148,9 +150,18 @@
     void dma_transfer_start();
     void dma_transfer_stop();
 
-      void set_dma_output_buffer(int back_buffer_id);
+    void set_dma_output_buffer(int back_buffer_id);
+
+    // PSRAM starvation recovery (only active when SPIRAM_DMA_BUFFER is defined)
+    void dma_recover(void);
+    void dma_watchdog_start(void);
+    void dma_watchdog_stop(void);
 
   private:
+
+    static bool IRAM_ATTR on_tx_eof(gdma_channel_handle_t chan, gdma_event_data_t *evt, void *user);
+    static bool IRAM_ATTR on_tx_descr_err(gdma_channel_handle_t chan, gdma_event_data_t *evt, void *user);
+    static void dma_watchdog_task(void *arg);
 
     config_t _cfg;
 
@@ -169,6 +180,12 @@
 
     esp_lcd_i80_bus_handle_t _i80_bus = nullptr;
 
+    // --- PSRAM starvation watchdog state ---
+    volatile uint32_t _eof_count = 0;     // incremented by the GDMA EOF ISR (heartbeat)
+    volatile bool     _dma_fault = false; // set by the GDMA descriptor-error ISR
+    volatile bool     _running   = false; // true between dma_transfer_start/stop
+    HUB75_DMA_DESCRIPTOR_T* _active_head = nullptr; // buffer currently being scanned out
+    TaskHandle_t      _watchdog_task = nullptr;
 
   };
 
