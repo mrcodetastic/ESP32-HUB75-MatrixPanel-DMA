@@ -471,7 +471,7 @@ public:
 			return;
 		}
         dma_bus.set_dma_output_buffer(back_buffer_id);
-        back_buffer_id ^= 1;
+        back_buffer_id = back_buffer_id ^ 1;
         fb = &frame_buffer[back_buffer_id];  
     }
 
