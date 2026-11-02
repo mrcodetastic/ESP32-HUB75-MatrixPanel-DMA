@@ -32,6 +32,7 @@
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
+#include <freertos/semphr.h>
 #include <esp_intr_alloc.h>
 #include <esp_attr.h>
 
@@ -99,6 +100,8 @@
 
     }
 
+    ~Bus_Parallel16();
+
     struct config_t
     {
       // LCD_CAM peripheral number. No need to change (only 0 for ESP32-S3.)
@@ -165,8 +168,8 @@
 
     config_t _cfg;
 
-    volatile lcd_cam_dev_t* _dev;   
-    gdma_channel_handle_t dma_chan; 
+    volatile lcd_cam_dev_t* _dev = nullptr;
+    gdma_channel_handle_t dma_chan = nullptr;
 
     uint32_t _dmadesc_count  = 0;   // number of dma decriptors
 	
@@ -180,11 +183,19 @@
 
     esp_lcd_i80_bus_handle_t _i80_bus = nullptr;
 
-    // --- PSRAM starvation watchdog state ---
-    volatile uint32_t _eof_count = 0;     // incremented by the GDMA EOF ISR (heartbeat)
-    volatile bool     _dma_fault = false; // set by the GDMA descriptor-error ISR
-    volatile bool     _running   = false; // true between dma_transfer_start/stop
-    HUB75_DMA_DESCRIPTOR_T* _active_head = nullptr; // buffer currently being scanned out
+    // Task-side hardware operations are serialized, but the flip waiter MUST
+    // release this mutex so stop/recovery can make progress. Drawing/flipping
+    // is single-producer; release/destruction requires exclusive ownership.
+    SemaphoreHandle_t _dma_mutex = nullptr;
+    SemaphoreHandle_t _flip_done = nullptr;
+    portMUX_TYPE _state_lock = portMUX_INITIALIZER_UNLOCKED;
+    // ISR/task shared state: all accesses protected by _state_lock.
+    HUB75_DMA_DESCRIPTOR_T* _pending_tail = nullptr;
+    uint32_t _eof_count = 0;
+    bool _dma_fault = false;
+    bool _running = false;
+    // Requested restart/initial chain, NOT a claim about the live DMA pointer.
+    HUB75_DMA_DESCRIPTOR_T* _active_head = nullptr;
     TaskHandle_t      _watchdog_task = nullptr;
 
   };

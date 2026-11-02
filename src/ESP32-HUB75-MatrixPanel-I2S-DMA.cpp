@@ -140,20 +140,28 @@ bool MatrixPanel_I2S_DMA::allocateFrameBuffers(int fbs_required) {
 void MatrixPanel_I2S_DMA::calculateRefreshRateAndTransitionBit() {
 #if !defined(FORCE_COLOR_DEPTH)
     ESP_LOGI("I2S-DMA", "Minimum visual refresh rate requested: %d Hz", m_cfg.min_refresh_rate);
+#endif
 
     while (true) {
-        int psPerClock = 1000000000000UL / static_cast<uint32_t>(m_cfg.i2sspeed);
-        int nsPerLatch = ((PIXELS_PER_ROW + CLKS_DURING_LATCH) * psPerClock) / 1000;
-        int nsPerRow = m_cfg.getPixelColorDepthBits() * nsPerLatch;
+        const uint64_t psPerClock = 1000000000000ULL / static_cast<uint32_t>(m_cfg.i2sspeed);
+        const uint64_t nsPerLatch = ((PIXELS_PER_ROW + CLKS_DURING_LATCH) * psPerClock) / 1000;
+        uint64_t nsPerRow = m_cfg.getPixelColorDepthBits() * nsPerLatch;
 
         for (int i = lsbMsbTransitionBit + 1; i < m_cfg.getPixelColorDepthBits(); i++) {
-            nsPerRow += (1 << (i - lsbMsbTransitionBit - 1)) * nsPerLatch;
+            // Each repetition sends ALL remaining bitplanes, just as in
+            // buildDmaDescriptorLinks(), not only bitplane i.
+            nsPerRow += (m_cfg.getPixelColorDepthBits() - i)
+                        * (1ULL << (i - lsbMsbTransitionBit - 1)) * nsPerLatch;
         }
 
-        int nsPerFrame = nsPerRow * ROWS_PER_FRAME;
-        int actualRefreshRate = 1000000000UL / nsPerFrame;
+        const uint64_t nsPerFrame = nsPerRow * ROWS_PER_FRAME;
+        const uint32_t actualRefreshRate = 1000000000ULL / nsPerFrame;
         calculated_refresh_rate = actualRefreshRate;
 
+#if defined(FORCE_COLOR_DEPTH)
+        // Still report the true schedule rate, but retain the forced transition.
+        break;
+#else
         if (actualRefreshRate >= m_cfg.min_refresh_rate) break;
 
         if (lsbMsbTransitionBit < m_cfg.getPixelColorDepthBits() - 1) {
@@ -161,8 +169,10 @@ void MatrixPanel_I2S_DMA::calculateRefreshRateAndTransitionBit() {
         } else {
             break;
         }
+#endif
     }
 
+#if !defined(FORCE_COLOR_DEPTH)
     if (lsbMsbTransitionBit > 0) {
         ESP_LOGW("I2S-DMA", "lsbMsbTransitionBit of %d used to achieve refresh rate of %d Hz.", lsbMsbTransitionBit, m_cfg.min_refresh_rate);
     }
@@ -240,7 +250,8 @@ void MatrixPanel_I2S_DMA::buildDmaDescriptorLinks(int fbs_required,
             // Displays all color depth layers once to establish base bit timing.
             // -----------------------------------------------------------------
             for (int dma_desc_all = 0; dma_desc_all < dma_descs_per_row_all_cdepths; dma_desc_all++) {
-                size_t payload_bytes = (dma_desc_all == (dma_descs_per_row_all_cdepths - 1)) 
+                size_t payload_bytes = (dma_desc_all == (dma_descs_per_row_all_cdepths - 1)
+                                        && last_dma_desc_bytes_all_cdepths > 0)
                                         ? last_dma_desc_bytes_all_cdepths 
                                         : DMA_MAX;
                 

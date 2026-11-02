@@ -51,11 +51,31 @@
     _dev = getDev();
   }
 
+  Bus_Parallel16::~Bus_Parallel16()
+  {
+    release();
+    if (dma_chan) {
+      gdma_disconnect(dma_chan);
+      gdma_del_channel(dma_chan);
+    }
+    if (_flip_done) vSemaphoreDelete(_flip_done);
+    if (_dma_mutex) vSemaphoreDelete(_dma_mutex);
+  }
+
   /**
    * @brief Initializes the LCD_CAM peripheral, GDMA engine, GPIO mappings, and clock routing.
    */
   bool Bus_Parallel16::init(void)
   {
+    // FreeRTOS allocates these objects in internal RAM, including when DMA
+    // payloads live in PSRAM. Both are retained across descriptor reallocations.
+    if (!_dma_mutex) _dma_mutex = xSemaphoreCreateMutex();
+    if (!_flip_done) _flip_done = xSemaphoreCreateBinary();
+    if (!_dma_mutex || !_flip_done) {
+      ESP_LOGE(TAG, "Failed to allocate DMA synchronization objects");
+      return false;
+    }
+
     // The LCD_CAM peripheral is disabled by default upon boot and must be explicitly enabled.
     periph_module_enable(PERIPH_LCD_CAM_MODULE);
     periph_module_reset(PERIPH_LCD_CAM_MODULE);
@@ -203,7 +223,11 @@
       .direction = GDMA_CHANNEL_DIRECTION_TX,
       .flags = { .reserve_sibling = 0 }
     };
-    gdma_new_channel(&dma_chan_config, &dma_chan);
+    esp_err_t err = gdma_new_channel(&dma_chan_config, &dma_chan);
+    if (err != ESP_OK) {
+      ESP_LOGE(TAG, "Failed to allocate GDMA channel: %s", esp_err_to_name(err));
+      return false;
+    }
 #endif
 
     gdma_connect(dma_chan, GDMA_MAKE_TRIGGER(GDMA_TRIG_PERIPH_LCD, 0));
@@ -217,8 +241,8 @@
     };
     gdma_apply_strategy(dma_chan, &strategy_config);
 
-#if defined(SPIRAM_DMA_BUFFER)
-    // Register TX event callbacks used by the PSRAM starvation watchdog.
+    // SRAM double buffering needs EOF confirmation too. Register before start,
+    // regardless of where the framebuffer payloads were allocated.
     static gdma_tx_event_callbacks_t tx_cbs = {
       .on_trans_eof = on_tx_eof,
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 4, 0)
@@ -227,9 +251,12 @@
     };
     esp_err_t cb_err = gdma_register_tx_event_callbacks(dma_chan, &tx_cbs, this);
     if (cb_err != ESP_OK) {
-      ESP_LOGW(TAG, "Failed to register GDMA TX event callbacks: %s", esp_err_to_name(cb_err));
+      ESP_LOGE(TAG, "Failed to register GDMA TX event callbacks: %s", esp_err_to_name(cb_err));
+      gdma_disconnect(dma_chan);
+      gdma_del_channel(dma_chan);
+      dma_chan = nullptr;
+      return false; // Never run a flip waiter without its completion interrupt.
     }
-#endif
 
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 3, 0)
     gdma_transfer_config_t transfer_config = {
@@ -270,7 +297,9 @@
   void Bus_Parallel16::release(void)
   {
     dma_watchdog_stop();
-    _running = false;
+    // Also used after init() by allocate_dma_desc_memory(): keep the channel
+    // and synchronization objects, but stop hardware before freeing descriptors.
+    dma_transfer_stop();
     _active_head = nullptr;
 
     if (_i80_bus) {
@@ -380,19 +409,29 @@
    */
   void Bus_Parallel16::dma_transfer_start()
   {
+    if (!dma_chan || !_dmadesc_a) return;
+    xSemaphoreTake(_dma_mutex, portMAX_DELAY);
+    portENTER_CRITICAL(&_state_lock);
+    if (_running) {
+      portEXIT_CRITICAL(&_state_lock);
+      xSemaphoreGive(_dma_mutex);
+      return;
+    }
     if (_active_head == nullptr) {
       _active_head = &_dmadesc_a[0]; // Default to the primary buffer
     }
     _eof_count   = 0;
     _dma_fault   = false;
     _running     = true;
+    portEXIT_CRITICAL(&_state_lock);
 
     // Only PSRAM-backed DMA payloads are susceptible to bandwidth starvation.
     dma_watchdog_start();
 
-    gdma_start(dma_chan, (intptr_t)_active_head);   // Point GDMA controller to head descriptor
+    ESP_ERROR_CHECK(gdma_start(dma_chan, (intptr_t)_active_head));
     esp_rom_delay_us(100);                          // Allow pipeline to settle before triggering transmission
     LCD_CAM.lcd_user.lcd_start = 1;                 // Trigger LCD peripheral data transmission
+    xSemaphoreGive(_dma_mutex);
   }
 
   /**
@@ -400,11 +439,25 @@
    */
   void Bus_Parallel16::dma_transfer_stop()
   {
-    _running = false;
+    if (!_dma_mutex) return;
+    xSemaphoreTake(_dma_mutex, portMAX_DELAY);
 
-    LCD_CAM.lcd_user.lcd_reset = 1;
-    LCD_CAM.lcd_user.lcd_update = 1;
-    gdma_stop(dma_chan);
+    if (dma_chan) {
+      LCD_CAM.lcd_user.lcd_reset = 1;
+      LCD_CAM.lcd_user.lcd_update = 1;
+      ESP_ERROR_CHECK(gdma_stop(dma_chan));
+      ESP_ERROR_CHECK(gdma_reset(dma_chan));
+    }
+    // Only a completed hardware stop may substitute for target-chain EOF.
+    // Restart, if requested later, uses _active_head (the requested buffer).
+    portENTER_CRITICAL(&_state_lock);
+    _running = false;
+    if (_pending_tail) {
+      _pending_tail = nullptr;
+      xSemaphoreGive(_flip_done);
+    }
+    portEXIT_CRITICAL(&_state_lock);
+    xSemaphoreGive(_dma_mutex);
   }
 
   /**
@@ -412,49 +465,70 @@
    */
   void Bus_Parallel16::set_dma_output_buffer(int back_buffer_id)
   {
-    if (back_buffer_id == 1) {
-       _active_head = &_dmadesc_b[0]; // Buffer B becomes the scanned-out buffer
-       _dmadesc_b[_dmadesc_count - 1].next = (dma_descriptor_t*)&_dmadesc_b[0]; // Maintain Buffer B loop
-       _dmadesc_a[_dmadesc_count - 1].next = (dma_descriptor_t*)&_dmadesc_b[0]; // Cross-link Buffer A -> Buffer B
-    } else {
-       _active_head = &_dmadesc_a[0]; // Buffer A becomes the scanned-out buffer
-       _dmadesc_a[_dmadesc_count - 1].next = (dma_descriptor_t*)&_dmadesc_a[0]; // Maintain Buffer A loop
-       _dmadesc_b[_dmadesc_count - 1].next = (dma_descriptor_t*)&_dmadesc_a[0]; // Cross-link Buffer B -> Buffer A
+    if (!_double_dma_buffer || !_dmadesc_a || !_dmadesc_b || !_dmadesc_count) return;
+    xSemaphoreTake(_dma_mutex, portMAX_DELAY);
+    auto *target = back_buffer_id ? _dmadesc_b : _dmadesc_a;
+    auto *previous = back_buffer_id ? _dmadesc_a : _dmadesc_b;
+    auto *target_tail = &target[_dmadesc_count - 1];
+
+    // Single drawing/flip producer, including at the MatrixPanel layer. Drain
+    // a prior stop/EOF token before arming this request, never after publication.
+    while (xSemaphoreTake(_flip_done, 0) == pdTRUE) {}
+    portENTER_CRITICAL(&_state_lock);
+    configASSERT(_pending_tail == nullptr);
+    const bool wait = _running && _active_head != target;
+    _active_head = target; // Recovery must restart at the requested chain.
+    // Descriptors are uncached internal DMA RAM. Restore the target self-loop
+    // BEFORE publishing the old chain's cross-link, with hardware write barriers.
+    __atomic_store_n(&target_tail->next, target, __ATOMIC_RELEASE);
+    __atomic_store_n(&previous[_dmadesc_count - 1].next, target, __ATOMIC_RELEASE);
+    __sync_synchronize();
+    if (wait) _pending_tail = target_tail;
+    portEXIT_CRITICAL(&_state_lock);
+    xSemaphoreGive(_dma_mutex);
+
+    if (wait) {
+      // Not the first arbitrary EOF: an old-chain EOF can be late, or its next
+      // link may have been prefetched. Only EOF at the TARGET tail proves that
+      // GDMA traversed the new self-loop and no longer reads the old framebuffer.
+      // No unsafe timeout: stop or PSRAM recovery can unblock a stalled flip.
+      while (xSemaphoreTake(_flip_done, portMAX_DELAY) != pdTRUE) {}
     }
   }
 
-#if defined(SPIRAM_DMA_BUFFER)
   /**
    * @brief GDMA TX EOF ISR callback. Acts as a per-frame heartbeat.
    *
-   * Returning false keeps the channel running. Returning true would make the
-   * IDF GDMA driver disable the EOF interrupt and stop the channel.
+   * The return value requests a task yield; it does NOT stop the DMA channel.
    */
-  bool IRAM_ATTR Bus_Parallel16::on_tx_eof(gdma_channel_handle_t, gdma_event_data_t *, void *user)
+  bool IRAM_ATTR Bus_Parallel16::on_tx_eof(gdma_channel_handle_t, gdma_event_data_t *evt, void *user)
   {
     auto *self = static_cast<Bus_Parallel16 *>(user);
-    if (self) {
-      self->_eof_count++;
+    BaseType_t woken = pdFALSE;
+    portENTER_CRITICAL_ISR(&self->_state_lock);
+    self->_eof_count++;
+    if (self->_pending_tail && evt->tx_eof_desc_addr == (intptr_t)self->_pending_tail) {
+      self->_pending_tail = nullptr;
+      xSemaphoreGiveFromISR(self->_flip_done, &woken);
     }
-    return false;
+    portEXIT_CRITICAL_ISR(&self->_state_lock);
+    return woken == pdTRUE;
   }
 
   /**
    * @brief GDMA TX descriptor-error ISR callback.
    *
-   * Returning false keeps the descriptor-error interrupt enabled so that a
-   * later fault is still reported. The watchdog task performs the actual
-   * stop/reset/restart sequence.
+   * The watchdog task performs stop/reset/restart; returning false only means
+   * this callback did not wake a higher priority task.
    */
   bool IRAM_ATTR Bus_Parallel16::on_tx_descr_err(gdma_channel_handle_t, gdma_event_data_t *, void *user)
   {
     auto *self = static_cast<Bus_Parallel16 *>(user);
-    if (self) {
-      self->_dma_fault = true;
-    }
+    portENTER_CRITICAL_ISR(&self->_state_lock);
+    self->_dma_fault = true;
+    portEXIT_CRITICAL_ISR(&self->_state_lock);
     return false;
   }
-#endif
 
   /**
    * @brief Restarts the GDMA/LCD_CAM pipeline after a detected stall.
@@ -464,16 +538,24 @@
    */
   void Bus_Parallel16::dma_recover()
   {
+    if (!_dma_mutex) return;
+    xSemaphoreTake(_dma_mutex, portMAX_DELAY);
+    // _running writes also hold this mutex; stop cannot race the restart.
     if (!_running) {
+      xSemaphoreGive(_dma_mutex);
       return;
     }
 
+    portENTER_CRITICAL(&_state_lock);
+    const uint32_t eof_count = _eof_count;
+    const bool dma_fault = _dma_fault;
+    portEXIT_CRITICAL(&_state_lock);
     ESP_LOGW(TAG, "GDMA stall/fault detected (eof=%u, fault=%d) - restarting transfer",
-             (unsigned int)_eof_count, (int)_dma_fault);
+             (unsigned int)eof_count, (int)dma_fault);
 
     // Quiesce the DMA engine and reset its FSM/FIFO pointers.
-    gdma_stop(dma_chan);
-    gdma_reset(dma_chan);
+    ESP_ERROR_CHECK(gdma_stop(dma_chan));
+    ESP_ERROR_CHECK(gdma_reset(dma_chan));
 
     // Reset the LCD_CAM state machine and its asynchronous TX FIFO. Restarting
     // GDMA alone will not recover a stalled LCD_CAM state machine.
@@ -485,18 +567,17 @@
       _active_head = &_dmadesc_a[0];
     }
 
+    portENTER_CRITICAL(&_state_lock);
     _dma_fault = false;
     _eof_count = 0;
+    // Do not acknowledge a flip just because recovery reset the engine. Keep
+    // its target armed until a real target EOF (or an explicit stop).
+    portEXIT_CRITICAL(&_state_lock);
 
-    // A concurrent dma_transfer_stop() may have disabled output while we were
-    // resetting; do not restart in that case.
-    if (!_running) {
-      return;
-    }
-
-    gdma_start(dma_chan, (intptr_t)_active_head);
+    ESP_ERROR_CHECK(gdma_start(dma_chan, (intptr_t)_active_head));
     esp_rom_delay_us(100);
     LCD_CAM.lcd_user.lcd_start = 1;
+    xSemaphoreGive(_dma_mutex);
   }
 
   /**
@@ -505,26 +586,31 @@
   void Bus_Parallel16::dma_watchdog_task(void *arg)
   {
     auto *self = static_cast<Bus_Parallel16 *>(arg);
-    uint32_t last_eof   = self->_eof_count;
+    uint32_t last_eof   = 0;
     uint32_t stalled_ms = 0;
 
     for (;;) {
       vTaskDelay(pdMS_TO_TICKS(10));
 
-      if (!self->_running) {
-        last_eof   = self->_eof_count;
+      portENTER_CRITICAL(&self->_state_lock);
+      const bool running = self->_running;
+      const bool fault = self->_dma_fault;
+      const uint32_t now = self->_eof_count;
+      portEXIT_CRITICAL(&self->_state_lock);
+
+      if (!running) {
+        last_eof   = now;
         stalled_ms = 0;
         continue;
       }
 
-      if (self->_dma_fault) {
+      if (fault) {
         self->dma_recover();
-        last_eof   = self->_eof_count;
+        last_eof   = now;
         stalled_ms = 0;
         continue;
       }
 
-      uint32_t now = self->_eof_count;
       if (now == last_eof) {
         stalled_ms += 10;
         if (stalled_ms >= 50) { // ~4x a typical frame period; tune if needed
@@ -563,8 +649,12 @@
   void Bus_Parallel16::dma_watchdog_stop()
   {
     if (_watchdog_task) {
+      // Never delete the watchdog while it owns the hardware mutex: that would
+      // strand stop/release forever. Destruction itself is exclusively owned.
+      xSemaphoreTake(_dma_mutex, portMAX_DELAY);
       vTaskDelete(_watchdog_task);
       _watchdog_task = nullptr;
+      xSemaphoreGive(_dma_mutex);
     }
   }
 
