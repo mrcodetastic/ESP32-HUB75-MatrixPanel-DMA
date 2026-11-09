@@ -56,6 +56,7 @@ enum PANEL_SCAN_RATE
     FOUR_SCAN_32PX_HIGH,
     FOUR_SCAN_16PX_HIGH,
     FOUR_SCAN_64PX_HIGH,
+    FOUR_SCAN_64PX_HIGH_16S, // 64px high, 1/16 scan ("16S") panels with four 16-row blocks
     FOUR_SCAN_40PX_HIGH
 };
 
@@ -401,6 +402,17 @@ inline VirtualCoords VirtualMatrixPanel::getCoords(int16_t virt_x, int16_t virt_
                 // 2nd, 4th 'block' of 8 rows of pixels, offset by panel width in DMA buffer
                 coords.x += (coords.x / panel_pixel_base) * panel_pixel_base;
 				coords.y = (coords.y  >> 4) * 8 + (coords.y & 0b00000111);
+            break;
+        case FOUR_SCAN_64PX_HIGH_16S:
+            /* 64x64 1/16-scan ("16S") panels. Same 2*W x H/2 DMA trick as
+               above, but the rows are folded in four 16-row blocks instead
+               of 8-row blocks. See doc/FourScan_64x64_16S.md.
+            */
+            if ((coords.y & 16) == 0)
+                coords.x += ((coords.x / panel_pixel_base) + 1) * panel_pixel_base;
+            else
+                coords.x += (coords.x / panel_pixel_base) * panel_pixel_base;
+            coords.y = (coords.y >> 5) * 16 + (coords.y & 0b00001111);
             break;
         case FOUR_SCAN_16PX_HIGH:
             if ((coords.y & 4) == 0)

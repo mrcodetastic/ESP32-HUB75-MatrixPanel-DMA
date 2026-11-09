@@ -50,8 +50,9 @@ VirtualMatrixPanel_T<CHAIN_NONE, MyScanTypeMapping>* virtualDisp = nullptr;
 The library has these user-contributed additions, but given the variety of panels on the market, your success with any of these may vary.
 
 ```cpp
-    FOUR_SCAN_32PX_HIGH,   ///< Four-scan mode, 32-pixel high panels.
-    FOUR_SCAN_16PX_HIGH,   ///< Four-scan mode, 16-pixel high panels.
-    FOUR_SCAN_64PX_HIGH,   ///< Four-scan mode, 64-pixel high panels.
-    FOUR_SCAN_40PX_HIGH    ///< Four-scan mode, 40-pixel high panels.
+    FOUR_SCAN_32PX_HIGH,       ///< Four-scan mode, 32-pixel high panels.
+    FOUR_SCAN_16PX_HIGH,       ///< Four-scan mode, 16-pixel high panels.
+    FOUR_SCAN_64PX_HIGH,       ///< Four-scan mode, 64-pixel high panels.
+    FOUR_SCAN_64PX_HIGH_16S,   ///< 64-pixel high 1/16-scan ("16S") panels, four 16-row blocks.
+    FOUR_SCAN_40PX_HIGH        ///< Four-scan mode, 40-pixel high panels.
 ```

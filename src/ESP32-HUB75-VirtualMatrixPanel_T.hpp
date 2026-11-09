@@ -69,6 +69,7 @@ enum PANEL_SCAN_TYPE {
 	FOUR_SCAN_40PX_HIGH,			///< Four-scan mode, 40-pixel high panels.	
 	FOUR_SCAN_40_80PX_HFARCAN,		///< Four-scan mode, 40-pixel high, 80px wide panel. Weird mapping: https://github.com/mrcodetastic/ESP32-HUB75-MatrixPanel-DMA/issues/759
 	FOUR_SCAN_64PX_HIGH,			///< Four-scan mode, 64-pixel high panels.
+	FOUR_SCAN_64PX_HIGH_16S,		///< 64-pixel high 1/16-scan ("16S") panels, folded in four 16-row blocks. See doc/FourScan_64x64_16S.md
 	FOUR_SCAN_P8_40_x_20PX_HIGH,	///< P8 outdoor 40x20 module, 1/5 scan.A/B/C address only
 	FOUR_SCAN_5PX_64X32HIGH,		///< P5 outdoor 64x32 1/8-scan, A/B/C address only (HRLOP-P5-1921/V2.0).
 };
@@ -230,6 +231,39 @@ struct ScanTypeMapping {
 			}
 			
 			coords.y = (coords.y >> 4) * 8 + (coords.y & 0b00000111);
+		}
+
+		// FOUR_SCAN_64PX_HIGH_16S
+		//
+		// 64x64 1/16-scan ("16S") panels, typically P3 indoor modules with
+		// MBI5124-class drivers. The panel is wired as four 16-row blocks and
+		// each address step drives two of those rows in parallel, so the DMA
+		// surface is 2*W x H/2:
+		//
+		//   block 0 (rows  0..15) -> right half of DMA rows 0..15
+		//   block 1 (rows 16..31) -> left  half of DMA rows 0..15
+		//   block 2 (rows 32..47) -> right half of DMA rows 16..31
+		//   block 3 (rows 48..63) -> left  half of DMA rows 16..31
+		//
+		// This is the same math the Pixel_Mapping_Test example applies in its
+		// generic "any other height" branch, promoted to a scan type:
+		//     block = y / 16
+		//     x    += (block even) ? ((x / W) + 1) * W : (x / W) * W
+		//     y     = (block / 2) * 16 + (y % 16)
+		//
+		// NOTE: this is NOT the same family as FOUR_SCAN_64PX_HIGH, which
+		// folds 64px-high panels in 8-row blocks (ICN2037BP, issue #345).
+		// If a 64x64 panel shows four scrambled strips with that mode, try
+		// this one instead.
+		else if constexpr (ScanType == FOUR_SCAN_64PX_HIGH_16S)
+		{
+			const int block = coords.y >> 4; // 0..3
+			if ((block & 1) == 0) {
+				coords.x += (((coords.x / panel_pixel_base) + 1) * panel_pixel_base);
+			} else {
+				coords.x += ((coords.x / panel_pixel_base) * panel_pixel_base);
+			}
+			coords.y = ((block >> 1) << 4) + (coords.y & 0x0F);
 		}
 
 		// For STANDARD_TWO_SCAN / NORMAL_ONE_SIXTEEN no remapping is done.
