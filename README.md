@@ -76,6 +76,7 @@ New panel driver chips are released frequently. Always check with the seller bef
   * 32x16 indoor panels (1/4 scan rate) using the method shown in the `Four_Scan_Panel` example.
   * 128x64 panels with the [SM5266P](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/issues/164) chip.
   * 80x40 panels (1/10 scan rate) with 8-pixel column reversal. See [80x40 4-scan (ZIGZAG8)](/doc/Panel_80x40_4Scan_ZigZag8.md).
+  * 64x64 1/16-scan ("16S") panels folded in four 16-row blocks, using `FOUR_SCAN_64PX_HIGH_16S`. See [64x64 16S](/doc/FourScan_64x64_16S.md).
 
 For technical background on matrix panel hardware, read [this SparkFun article](https://www.sparkfun.com/news/2650).
 
