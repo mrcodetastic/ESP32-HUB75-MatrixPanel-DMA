@@ -7,7 +7,8 @@ Based on:
 - https://gist.github.com/mathiasvr/19ce1d7b6caeab230934080ae1f1380e
 
 Generates native LUTs for common bit depths to eliminate runtime conversion overhead
-and improve visual quality by avoiding double-quantization artifacts.
+and improve visual quality by avoiding double-quantization artifacts. The 12-bit LUT
+is also retained as a fallback for runtime depths that differ from the build-time depth.
 """
 
 import os
@@ -35,7 +36,7 @@ def generate_lut(bit_depth):
     Generate CIE 1931 lookup table for specific bit depth
 
     Args:
-        bit_depth: Target bit depth (6-12)
+        bit_depth: Target bit depth (4-12)
 
     Returns:
         List of 256 values scaled to bit_depth range
@@ -142,10 +143,14 @@ def generate_header():
 
 #include <stdint.h>
 
+#if !defined(PIXEL_COLOR_DEPTH_BITS)
+  #define PIXEL_COLOR_DEPTH_BITS 8
+#endif
+
 """
 
     # Generate LUTs for common bit depths
-    bit_depths = [6, 7, 8, 10, 12]
+    bit_depths = [4, 6, 7, 8, 10, 12]
 
     print("\n=== Generating CIE 1931 Lookup Tables ===\n")
 
@@ -157,14 +162,15 @@ def generate_header():
         validate_lut(lut, depth)
 
         max_val = (1 << depth) - 1
+        table_guard = "" if depth == 12 else f"#if PIXEL_COLOR_DEPTH_BITS == {depth}\n"
+        table_end = "" if depth == 12 else "#endif\n"
         header += f"""
-#if !defined(PIXEL_COLOR_DEPTH_BITS) || PIXEL_COLOR_DEPTH_BITS == {depth}
-// {depth}-bit CIE 1931 lookup table
+{table_guard}// {depth}-bit CIE 1931 lookup table
 // Maps 8-bit input (0-255) to {depth}-bit output (0-{max_val})
 static const {dtype} lumConvTab_{depth}bit[256] = {{
 {formatted_lut}
 }};
-#endif
+{table_end}
 """
 
     # Add compile-time selection logic
@@ -173,11 +179,10 @@ static const {dtype} lumConvTab_{depth}bit[256] = {{
 // Compile-time selection of appropriate LUT based on PIXEL_COLOR_DEPTH_BITS
 // ============================================================================
 
-#if !defined(PIXEL_COLOR_DEPTH_BITS)
-  #define PIXEL_COLOR_DEPTH_BITS 8
-#endif
-
-#if PIXEL_COLOR_DEPTH_BITS == 6
+#if PIXEL_COLOR_DEPTH_BITS == 4
+  #define lumConvTab lumConvTab_4bit
+  #define LUT_NATIVE_BIT_DEPTH 1
+#elif PIXEL_COLOR_DEPTH_BITS == 6
   #define lumConvTab lumConvTab_6bit
   #define LUT_NATIVE_BIT_DEPTH 1
 #elif PIXEL_COLOR_DEPTH_BITS == 7
@@ -223,7 +228,7 @@ def main():
         f.write(header_content)
 
     print(f"[OK] Generated: {output_path}")
-    print(f"\nNative LUTs available for: 6, 7, 8, 10, 12-bit depths")
+    print(f"\nNative LUTs available for: 4, 6, 7, 8, 10, 12-bit depths")
     print(f"Other depths will use 12-bit LUT with runtime conversion\n")
 
 

@@ -22,8 +22,12 @@
 
 #include <stdint.h>
 
+#if !defined(PIXEL_COLOR_DEPTH_BITS)
+  #define PIXEL_COLOR_DEPTH_BITS 8
+#endif
 
-#if !defined(PIXEL_COLOR_DEPTH_BITS) || PIXEL_COLOR_DEPTH_BITS == 4
+
+#if PIXEL_COLOR_DEPTH_BITS == 4
 // 4-bit CIE 1931 lookup table
 // Maps 8-bit input (0-255) to 4-bit output (0-15)
 static const uint8_t lumConvTab_4bit[256] = {
@@ -46,7 +50,8 @@ static const uint8_t lumConvTab_4bit[256] = {
 };
 #endif
 
-#if !defined(PIXEL_COLOR_DEPTH_BITS) || PIXEL_COLOR_DEPTH_BITS == 6
+
+#if PIXEL_COLOR_DEPTH_BITS == 6
 // 6-bit CIE 1931 lookup table
 // Maps 8-bit input (0-255) to 6-bit output (0-63)
 static const uint8_t lumConvTab_6bit[256] = {
@@ -69,7 +74,8 @@ static const uint8_t lumConvTab_6bit[256] = {
 };
 #endif
 
-#if !defined(PIXEL_COLOR_DEPTH_BITS) || PIXEL_COLOR_DEPTH_BITS == 7
+
+#if PIXEL_COLOR_DEPTH_BITS == 7
 // 7-bit CIE 1931 lookup table
 // Maps 8-bit input (0-255) to 7-bit output (0-127)
 static const uint8_t lumConvTab_7bit[256] = {
@@ -92,7 +98,8 @@ static const uint8_t lumConvTab_7bit[256] = {
 };
 #endif
 
-#if !defined(PIXEL_COLOR_DEPTH_BITS) || PIXEL_COLOR_DEPTH_BITS == 8
+
+#if PIXEL_COLOR_DEPTH_BITS == 8
 // 8-bit CIE 1931 lookup table
 // Maps 8-bit input (0-255) to 8-bit output (0-255)
 static const uint8_t lumConvTab_8bit[256] = {
@@ -115,7 +122,8 @@ static const uint8_t lumConvTab_8bit[256] = {
 };
 #endif
 
-#if !defined(PIXEL_COLOR_DEPTH_BITS) || PIXEL_COLOR_DEPTH_BITS == 10
+
+#if PIXEL_COLOR_DEPTH_BITS == 10
 // 10-bit CIE 1931 lookup table
 // Maps 8-bit input (0-255) to 10-bit output (0-1023)
 static const uint16_t lumConvTab_10bit[256] = {
@@ -138,7 +146,7 @@ static const uint16_t lumConvTab_10bit[256] = {
 };
 #endif
 
-#if !defined(PIXEL_COLOR_DEPTH_BITS) || PIXEL_COLOR_DEPTH_BITS == 12
+
 // 12-bit CIE 1931 lookup table
 // Maps 8-bit input (0-255) to 12-bit output (0-4095)
 static const uint16_t lumConvTab_12bit[256] = {
@@ -159,15 +167,11 @@ static const uint16_t lumConvTab_12bit[256] = {
    2938,  2971,  3005,  3039,  3073,  3107,  3142,  3177,  3212,  3248,  3283,  3319,  3356,  3392,  3429,  3466,
    3503,  3541,  3578,  3617,  3655,  3694,  3732,  3772,  3811,  3851,  3891,  3931,  3972,  4012,  4054,  4095,
 };
-#endif
+
 
 // ============================================================================
 // Compile-time selection of appropriate LUT based on PIXEL_COLOR_DEPTH_BITS
 // ============================================================================
-
-#if !defined(PIXEL_COLOR_DEPTH_BITS)
-  #define PIXEL_COLOR_DEPTH_BITS 8
-#endif
 
 #if PIXEL_COLOR_DEPTH_BITS == 4
   #define lumConvTab lumConvTab_4bit
@@ -188,7 +192,7 @@ static const uint16_t lumConvTab_12bit[256] = {
   #define lumConvTab lumConvTab_12bit
   #define LUT_NATIVE_BIT_DEPTH 1
 #else
-  // Fallback for non-standard bit depths (9, 11, etc.)
+  // Fallback for non-standard bit depths (5, 9, 11, etc.)
   // Uses 12-bit LUT with runtime shift+round conversion
   #define lumConvTab lumConvTab_12bit
   #define LUT_NATIVE_BIT_DEPTH 0

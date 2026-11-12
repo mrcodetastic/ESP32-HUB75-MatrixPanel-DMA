@@ -151,8 +151,8 @@ constexpr uint8_t MAX_LAT_BLANKING = 8;
 
 /***************************************************************************************/
 // Check compile-time only options
-#if PIXEL_COLOR_DEPTH_BITS > 8
-    #error "Pixel color depth bits cannot be greater than 8."
+#if PIXEL_COLOR_DEPTH_BITS > PIXEL_COLOR_DEPTH_BITS_MAX
+    #error "Pixel color depth bits cannot be greater than 12."
 #elif PIXEL_COLOR_DEPTH_BITS < 2 
     #error "Pixel color depth bits cannot be less than 2."
 #endif
@@ -162,7 +162,7 @@ constexpr uint8_t MAX_LAT_BLANKING = 8;
  * However, if the library is to be used with lower colour depth (i.e. 6 bit colour), then we need to ensure the 8-bit value passed to the colour masking
  * is adjusted accordingly to ensure the LSB's are shifted left to MSB, by the difference. Otherwise the colours will be all screwed up.
  */
-#if PIXEL_COLOR_DEPTH_BITS != 8
+#if PIXEL_COLOR_DEPTH_BITS < 8
 static constexpr uint8_t const MASK_OFFSET = 8-PIXEL_COLOR_DEPTH_BITS;
 #endif
 
