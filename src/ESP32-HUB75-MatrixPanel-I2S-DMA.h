@@ -514,6 +514,9 @@ public:
         dma_bus.dma_transfer_start();
     }
 
+    #define ESP32_I2S_DMA_HAS_GET_LSBMSB
+    int get_lsbMsbTransitionBit() { return lsbMsbTransitionBit; };
+
 protected:
     void clearFrameBuffer(bool _buff_id);
     void updateMatrixDMABuffer(uint16_t x, uint16_t y, uint8_t red, uint8_t green, uint8_t blue);
