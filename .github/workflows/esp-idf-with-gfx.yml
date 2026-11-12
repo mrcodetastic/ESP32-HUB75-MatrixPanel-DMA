@@ -40,9 +40,7 @@ jobs:
       with:
         repository: 'espressif/arduino-esp32'
         ref: '3.3.10'
-        path: 'examples/esp-idf/with-gfx/components/arduino'
-    - name: Edit Adafruit_BusIO CMakeLists.txt
-      run: sed -i 's/arduino-esp32)/arduino)/g' examples/esp-idf/with-gfx/components/Adafruit_BusIO/CMakeLists.txt
+        path: 'examples/esp-idf/with-gfx/components/arduino-esp32'
     - name: esp-idf build
       uses: espressif/esp-idf-ci-action@v1
       with:
