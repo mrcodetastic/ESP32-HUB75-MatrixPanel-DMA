@@ -63,11 +63,27 @@ static inline void p4_cache_writeback_aligned(void* addr, size_t size) {
   #ifdef LUT_NATIVE_BIT_DEPTH
 
 
-    // Optimized path: LUT maps 8-bit input (0-255) directly to target bit depth output
+    // Use the native LUT only when its depth matches the runtime configuration.
     #define DO_BRIGHTNESS_COMPENSATION()                                                              \
-      auto red_val   = lumConvTab[red];                                                               \
-      auto green_val = lumConvTab[green];                                                             \
-      auto blue_val  = lumConvTab[blue];                                                              
+      uint16_t red_val, green_val, blue_val;                                                           \
+      if (m_cfg.getPixelColorDepthBits() == PIXEL_COLOR_DEPTH_BITS) {                                  \
+        red_val   = lumConvTab[red];                                                                   \
+        green_val = lumConvTab[green];                                                                 \
+        blue_val  = lumConvTab[blue];                                                                  \
+      } else {                                                                                         \
+        uint16_t red16   = lumConvTab_12bit[red];                                                       \
+        uint16_t green16 = lumConvTab_12bit[green];                                                     \
+        uint16_t blue16  = lumConvTab_12bit[blue];                                                     \
+        uint8_t shift_amount = 12 - m_cfg.getPixelColorDepthBits();                                     \
+        uint16_t rounding = shift_amount == 0 ? 0 : 1 << (shift_amount - 1);                            \
+        uint16_t max_val = (1 << m_cfg.getPixelColorDepthBits()) - 1;                                  \
+        red_val   = (red16 + rounding) >> shift_amount;                                                \
+        green_val = (green16 + rounding) >> shift_amount;                                              \
+        blue_val  = (blue16 + rounding) >> shift_amount;                                               \
+        red_val   = red_val > max_val ? max_val : red_val;                                              \
+        green_val = green_val > max_val ? max_val : green_val;                                          \
+        blue_val  = blue_val > max_val ? max_val : blue_val;                                           \
+      }
 
 
   #else
@@ -79,7 +95,7 @@ static inline void p4_cache_writeback_aligned(void* addr, size_t size) {
       uint16_t blue16  = lumConvTab[blue];                                                            \
                                                                                                       \
       uint8_t shift_amount = 12 - m_cfg.getPixelColorDepthBits();                                     \
-      uint16_t rounding = 1 << (shift_amount - 1);                                                    \
+      uint16_t rounding = shift_amount == 0 ? 0 : 1 << (shift_amount - 1);                            \
       uint16_t max_val = (1 << m_cfg.getPixelColorDepthBits()) -1;                                    \
       auto red_val   = (red16 + rounding) >> shift_amount;                                            \
       auto green_val = (green16 + rounding) >> shift_amount;                                          \
