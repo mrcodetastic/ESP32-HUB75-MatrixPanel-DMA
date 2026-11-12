@@ -30,8 +30,11 @@
 #include <sdkconfig.h>
 #include <esp_lcd_panel_io.h>
 
-//#include <freertos/portmacro.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <freertos/semphr.h>
 #include <esp_intr_alloc.h>
+#include <esp_attr.h>
 
 #include <esp_err.h>
 #include <esp_log.h>
@@ -97,6 +100,8 @@
 
     }
 
+    ~Bus_Parallel16();
+
     struct config_t
     {
       // LCD_CAM peripheral number. No need to change (only 0 for ESP32-S3.)
@@ -148,14 +153,23 @@
     void dma_transfer_start();
     void dma_transfer_stop();
 
-      void set_dma_output_buffer(int back_buffer_id);
+    void set_dma_output_buffer(int back_buffer_id);
+
+    // PSRAM starvation recovery (only active when SPIRAM_DMA_BUFFER is defined)
+    void dma_recover(void);
+    void dma_watchdog_start(void);
+    void dma_watchdog_stop(void);
 
   private:
 
+    static bool IRAM_ATTR on_tx_eof(gdma_channel_handle_t chan, gdma_event_data_t *evt, void *user);
+    static bool IRAM_ATTR on_tx_descr_err(gdma_channel_handle_t chan, gdma_event_data_t *evt, void *user);
+    static void dma_watchdog_task(void *arg);
+
     config_t _cfg;
 
-    volatile lcd_cam_dev_t* _dev;   
-    gdma_channel_handle_t dma_chan; 
+    volatile lcd_cam_dev_t* _dev = nullptr;
+    gdma_channel_handle_t dma_chan = nullptr;
 
     uint32_t _dmadesc_count  = 0;   // number of dma decriptors
 	
@@ -169,6 +183,20 @@
 
     esp_lcd_i80_bus_handle_t _i80_bus = nullptr;
 
+    // Task-side hardware operations are serialized, but the flip waiter MUST
+    // release this mutex so stop/recovery can make progress. Drawing/flipping
+    // is single-producer; release/destruction requires exclusive ownership.
+    SemaphoreHandle_t _dma_mutex = nullptr;
+    SemaphoreHandle_t _flip_done = nullptr;
+    portMUX_TYPE _state_lock = portMUX_INITIALIZER_UNLOCKED;
+    // ISR/task shared state: all accesses protected by _state_lock.
+    HUB75_DMA_DESCRIPTOR_T* _pending_tail = nullptr;
+    uint32_t _eof_count = 0;
+    bool _dma_fault = false;
+    bool _running = false;
+    // Requested restart/initial chain, NOT a claim about the live DMA pointer.
+    HUB75_DMA_DESCRIPTOR_T* _active_head = nullptr;
+    TaskHandle_t      _watchdog_task = nullptr;
 
   };
 

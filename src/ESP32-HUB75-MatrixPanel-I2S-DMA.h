@@ -465,6 +465,10 @@ public:
     static uint16_t color565(uint8_t r, uint8_t g, uint8_t b); 
     static void color565to888(const uint16_t color, uint8_t &r, uint8_t &g, uint8_t &b);
 
+    // Drawing and flipping must have a single task owner. On ESP32-S3 a running
+    // flip blocks until the old framebuffer is no longer referenced by GDMA;
+    // only then may it become the draw buffer. Other backends retain their own
+    // handover semantics. Do not call from an ISR.
     inline void flipDMABuffer() {
         if (!m_cfg.double_buff) {
 			ESP_LOGW("MatrixPanel_I2S_DMA", "Requested buffer change, but double buffering not enabled.");     
