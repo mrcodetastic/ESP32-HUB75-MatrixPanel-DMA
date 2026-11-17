@@ -285,7 +285,7 @@ struct HUB75_I2S_CFG {
 
     enum clk_speed {
         HZ_8M = 8000000,
-        HZ_10M = 8000000,
+        HZ_10M = 10000000,
         HZ_15M = 16000000, 
         HZ_16M = 16000000,
         HZ_20M = 20000000 
@@ -321,7 +321,7 @@ struct HUB75_I2S_CFG {
         shift_driver _drv = SHIFTREG, 
         line_driver _line_drv = TYPE138,
         bool _dbuff = false, 
-        clk_speed _i2sspeed = HZ_8M,
+        clk_speed _i2sspeed = HZ_10M,
         uint8_t _latblk = 0, // 0 = Auto-calculate based on clock speed
         bool _clockphase = true, 
         uint16_t _min_refresh_rate = 60, 
