@@ -64,6 +64,16 @@ void _gpio_pin_init(int pin)
 }
 
 /**
+ * @brief 20 MHz, 10 MHz, or 8 MHz output
+ */
+static unsigned int i2s_clkm_div_num_for_freq(unsigned int freq)
+{
+    if (freq <= 8000000)  return 5;
+    if (freq <= 10000000) return 4;
+    return 2;
+}
+
+/**
  * @brief Computes required memory word alignment width based on parallel bus bit width.
  */
 inline int i2s_parallel_get_memory_width(int port, int width) {
@@ -199,7 +209,7 @@ bool Bus_Parallel16::init(void)
     dev->clkm_conf.clkm_div_a = 1;      // Denominator
     dev->clkm_conf.clkm_div_b = 0;      // Numerator
 
-    unsigned int _div_num = (freq > 8000000) ? 2 : 4; 
+    unsigned int _div_num = i2s_clkm_div_num_for_freq(freq);
     dev->clkm_conf.clkm_div_num = _div_num;	 
     dev->clkm_conf.clk_en = 1;
 
@@ -218,7 +228,7 @@ bool Bus_Parallel16::init(void)
     dev->clkm_conf.clkm_div_a = 1;      
     dev->clkm_conf.clkm_div_b = 0;      
 
-    unsigned int _div_num = (freq > 8000000) ? 2 : 4; // 20 MHz or 10 MHz output
+    unsigned int _div_num = i2s_clkm_div_num_for_freq(freq);
     ESP_LOGD(TAG, "I2S pll_d2_clock clkm_div_num set to: %" PRIu32, (uint32_t)_div_num);    		
     dev->clkm_conf.clkm_div_num = _div_num;  
 #endif
