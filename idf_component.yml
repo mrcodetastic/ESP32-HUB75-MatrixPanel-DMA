@@ -10,5 +10,5 @@ files:
 
 dependencies:
   idf:
-    version: ">=5.4,<6.0"
+    version: ">=5.0,<7.0"
     require: public
