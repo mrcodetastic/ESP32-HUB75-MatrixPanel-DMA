@@ -57,38 +57,39 @@ static inline void p4_cache_writeback_aligned(void* addr, size_t size) {
 #endif
 
 
-  /* LED Brightness Compensation */                                                               
-#ifndef NO_CIE1931                                                                                
-  /* CIE 1931 correction with bit-depth-optimized LUTs*/                                            
-  #ifdef LUT_NATIVE_BIT_DEPTH
+/* LED Brightness Compensation */
+#ifndef NO_CIE1931
+  // CIE 1931 correction using runtime-generated LUT matched to m_cfg.getPixelColorDepthBits()
+  #define DO_BRIGHTNESS_COMPENSATION()                                                              \
+    const uint16_t red_val   = lumConvTab[red];                                                     \
+    const uint16_t green_val = lumConvTab[green];                                                   \
+    const uint16_t blue_val  = lumConvTab[blue];
 
+/**
+ * @brief Builds the 256-entry CIE 1931 brightness LUT for the active runtime color depth.
+ *
+ * Based on the CIE 1931 lightness curve:
+ *   For L <= 8: Y = L / 902.3
+ *   For L >  8: Y = ((L + 16) / 116)^3
+ * where L = (input / 255) * 100 and Y is scaled to [0, (1 << depth) - 1].
+ */
+void MatrixPanel_I2S_DMA::buildBrightnessLUT() {
+    const uint8_t depth = m_cfg.getPixelColorDepthBits();
+    const uint16_t max_val = (1u << depth) - 1u;
 
-    // Optimized path: LUT maps 8-bit input (0-255) directly to target bit depth output
-    #define DO_BRIGHTNESS_COMPENSATION()                                                              \
-      auto red_val   = lumConvTab[red];                                                               \
-      auto green_val = lumConvTab[green];                                                             \
-      auto blue_val  = lumConvTab[blue];                                                              
-
-
-  #else
-    // Fallback for non-standard bit depths: 12-bit LUT with shift+round to target depth
-
-    #define DO_BRIGHTNESS_COMPENSATION()                                                              \
-      uint16_t red16   = lumConvTab[red];                                                             \
-      uint16_t green16 = lumConvTab[green];                                                           \
-      uint16_t blue16  = lumConvTab[blue];                                                            \
-                                                                                                      \
-      uint8_t shift_amount = 12 - m_cfg.getPixelColorDepthBits();                                     \
-      uint16_t rounding = 1 << (shift_amount - 1);                                                    \
-      uint16_t max_val = (1 << m_cfg.getPixelColorDepthBits()) -1;                                    \
-      auto red_val   = (red16 + rounding) >> shift_amount;                                            \
-      auto green_val = (green16 + rounding) >> shift_amount;                                          \
-      auto blue_val  = (blue16 + rounding) >> shift_amount;                                           \
-                                                                                                      \
-      red_val = red_val > max_val ? max_val : red_val;                                                \
-      green_val = green_val > max_val ? max_val : green_val;                                          \
-      blue_val = blue_val > max_val ? max_val : blue_val;  
-  #endif
+    for (uint16_t i = 0; i < 256; ++i) {
+        const float L = (static_cast<float>(i) / 255.0f) * 100.0f;
+        float Y;
+        if (L <= 8.0f) {
+            Y = L / 902.3f;
+        } else {
+            const float t = (L + 16.0f) / 116.0f;
+            Y = t * t * t;
+        }
+        uint32_t val = static_cast<uint32_t>(Y * static_cast<float>(max_val) + 0.5f);
+        lumConvTab[i] = static_cast<uint16_t>(val > max_val ? max_val : val);
+    }
+}
 #else
   // NO_CIE1931: linear scaling with rounding
   #define DO_BRIGHTNESS_COMPENSATION()                                                               \
@@ -712,6 +713,10 @@ bool MatrixPanel_I2S_DMA::begin() {
         ESP_LOGE("begin()", "Error: Invalid configuration! Please check your HUB75_I2S_CFG settings.");
         return false;
     } 
+
+#ifndef NO_CIE1931
+    buildBrightnessLUT();
+#endif
 
     if (m_cfg.driver != HUB75_I2S_CFG::shift_driver::SHIFTREG) {
         shiftDriver(m_cfg);
