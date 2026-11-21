@@ -3,6 +3,7 @@
 */
 
 #include <driver/gpio.h>
+#include <esp_rom_sys.h>
 
 #ifdef ARDUINO_ARCH_ESP32
   #include <Arduino.h>
@@ -18,11 +19,14 @@
 #include "ESP32-HUB75-MatrixPanel-I2S-DMA.h"
 
 /**
- * @brief Pulse clock pin high then low.
+ * @brief Pulse clock pin high then low with a small delay to account for
+ *        propagation delays across double-buffered (74HC245/DP245) panels.
  */
 static inline void pulseClock(gpio_num_t clkPin) noexcept {
     gpio_set_level(clkPin, 1);
+    esp_rom_delay_us(2);
     gpio_set_level(clkPin, 0);
+    esp_rom_delay_us(2);
 }
 
 /**
