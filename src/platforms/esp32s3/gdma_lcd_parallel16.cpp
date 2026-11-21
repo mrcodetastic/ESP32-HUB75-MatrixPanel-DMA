@@ -235,9 +235,11 @@
     static gdma_strategy_config_t strategy_config = {
       .owner_check = false,
       .auto_update_desc = false,
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 4, 0)
       // Generate the EOF event only once the data has actually been popped from
       // the DMA FIFO, so the watchdog heartbeat reflects real output flow.
       .eof_till_data_popped = true
+#endif
     };
     gdma_apply_strategy(dma_chan, &strategy_config);
 

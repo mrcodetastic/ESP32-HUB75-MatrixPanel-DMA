@@ -36,8 +36,13 @@ Contributors:
 #include <freertos/FreeRTOS.h>
 #include <rom/lldesc.h>
 #include <rom/gpio.h>
+#include <esp_idf_version.h>
 
-#include <driver/i2s_types.h>   // Declares I2S_NUM_0, I2S_NUM_1
+#if (ESP_IDF_VERSION_MAJOR >= 5) || __has_include(<driver/i2s_types.h>)
+#include <driver/i2s_types.h>   // Declares I2S_NUM_0, I2S_NUM_1 (ESP-IDF 5.x / 6.x+)
+#else
+#include <driver/i2s.h>         // Declares I2S_NUM_0, I2S_NUM_1 (ESP-IDF 4.x)
+#endif
 #include <soc/i2s_struct.h>     // Declares i2s_dev_t, I2S0, I2S1
 #include <soc/i2s_reg.h>        // Declares I2S_OUT_DATA_BURST_EN,
 

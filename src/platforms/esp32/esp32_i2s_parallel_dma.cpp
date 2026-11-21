@@ -23,7 +23,11 @@
 #include <driver/gpio.h>
 #include <esp_err.h>
 #include <esp_log.h>
+#if __has_include(<esp_private/periph_ctrl.h>)
 #include <esp_private/periph_ctrl.h>
+#else
+#include <driver/periph_ctrl.h>
+#endif
 #include <esp_rom_gpio.h>
 #include <soc/dport_reg.h>
 #include <soc/gpio_sig_map.h>
