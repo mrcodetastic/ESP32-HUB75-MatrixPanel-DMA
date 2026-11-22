@@ -417,7 +417,6 @@ void IRAM_ATTR MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint16_t x_coord, uint
     auto& rowStruct = fb->rowBits[y_coord];
     ESP32_I2S_DMA_STORAGE_TYPE* base_ptr = rowStruct->data.get();
     const uint16_t stride = rowStruct->width;
-    const bool flush_immediately = !m_cfg.double_buff;
 
     uint8_t colour_depth_idx = m_cfg.getPixelColorDepthBits();
     do {
@@ -434,12 +433,11 @@ void IRAM_ATTR MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint16_t x_coord, uint
         ESP32_I2S_DMA_STORAGE_TYPE *p = base_ptr + (colour_depth_idx * stride);
 
         p[x_coord] = (p[x_coord] & _colourbitclear) | RGB_output_bits;
-
-        // When double buffering is enabled, cache writeback is batched once per row in flipDMABuffer().
-        if (flush_immediately) {
-            DMA_CACHE_WRITEBACK(&p[x_coord], sizeof(ESP32_I2S_DMA_STORAGE_TYPE));
-        }
     } while (colour_depth_idx);
+
+    if (!m_cfg.double_buff) {
+        DMA_CACHE_WRITEBACK(base_ptr, rowStruct->getColorDepthSize(false));
+    }
 }
 
 void MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint8_t red, uint8_t green, uint8_t blue) {
@@ -741,9 +739,7 @@ void MatrixPanel_I2S_DMA::hlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, 
         y_coord -= ROWS_PER_FRAME;
     }
 
-    const bool flush_immediately = !m_cfg.double_buff;
-    const int16_t flush_start_x = ESP32_TX_FIFO_POSITION_ADJUST(x_coord) & ~1;
-    const size_t flush_bytes = static_cast<size_t>(l + 2) * sizeof(ESP32_I2S_DMA_STORAGE_TYPE);
+    auto& rowStruct = fb->rowBits[y_coord];
 
     uint8_t colour_depth_idx = m_cfg.getPixelColorDepthBits();
     do {
@@ -759,7 +755,7 @@ void MatrixPanel_I2S_DMA::hlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, 
         RGB_output_bits |= (bool)(red_val & mask);
         RGB_output_bits <<= _colourbitoffset;
 
-        ESP32_I2S_DMA_STORAGE_TYPE *p = fb->rowBits[y_coord]->getDataPtr(colour_depth_idx);
+        ESP32_I2S_DMA_STORAGE_TYPE *p = rowStruct->getDataPtr(colour_depth_idx);
 
         int16_t _l = l;
         do {
@@ -768,11 +764,11 @@ void MatrixPanel_I2S_DMA::hlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, 
             v &= _colourbitclear;
             v |= RGB_output_bits;
         } while (_l);
-
-        if (flush_immediately) {
-            DMA_CACHE_WRITEBACK(&p[flush_start_x], flush_bytes);
-        }
     } while (colour_depth_idx);
+
+    if (!m_cfg.double_buff) {
+        DMA_CACHE_WRITEBACK(rowStruct->getDataPtr(0), rowStruct->getColorDepthSize(false));
+    }
 }
 
 void MatrixPanel_I2S_DMA::vlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, uint8_t red, uint8_t green, uint8_t blue) {
