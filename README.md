@@ -8,7 +8,7 @@ __[BUILD OPTIONS](/doc/BuildOptions.md) | [VIRTUAL PANEL & SCAN GUIDE](/doc/Virt
   * [Features](#features)
 - [Hardware Compatibility](#hardware-compatibility)
   * [Supported ESP32 Variants](#supported-esp32-variants)
-  * [Quick introduction to LED Matrix Panel 'Scan' types](#supported-panels)
+  * [Quick introduction to LED Matrix Panel 'Scan' types](#a-quick-introduction-to-led-matrix-panel-scan-types)
   * [Tested Driver Chips](#tested-driver-chips)
   * [Unsupported Panels & Driver Chips](#unsupported-panels--driver-chips)
   * [Memory Requirements](#memory-requirements)
@@ -18,7 +18,7 @@ __[BUILD OPTIONS](/doc/BuildOptions.md) | [VIRTUAL PANEL & SCAN GUIDE](/doc/Virt
   * [2. Wiring the ESP32 to an LED Matrix Panel](#2-wiring-the-esp32-to-an-led-matrix-panel)
   * [3. Running a Test Sketch](#3-running-a-test-sketch)
 - [Usage & Configuration](#usage--configuration)
-  * [Chaining Multiple Panels](#chaining-multiple-panels)
+  * [Chaining Multiple Panels & Non-Standard Scan Panels](#chaining-multiple-panels--non-standard-scan-panels)
   * [Adjusting Panel Brightness](#adjusting-panel-brightness)
   * [Build-Time Options](#build-time-options)
   * [Latch Blanking](#latch-blanking)
@@ -237,12 +237,48 @@ After verifying basic operation, test with the [PIO Test Patterns](/examples/PIO
 
 # Usage & Configuration
 
-## Chaining Multiple Panels
+## Chaining Multiple Panels & Non-Standard Scan Panels
 
-Yes, panels can be connected together in sequence using HUB75 ribbon cables.
+Yes, panels can be connected together in sequence using HUB75 ribbon cables, or driven in folded non-two-scan modes (`1/4`, `1/5`, `1/6`, `1/8`, `1/10`, `1/16` 4-scan and `1/2` / `1/4` 8-scan):
 
 * **Horizontal Chaining:** Connect panels end-to-end (e.g., two 64x32 panels for a 128x32 display). Update the chain length setting in `mxconfig`. See [Pattern Plasma](/examples/2_PatternPlasma/).
-* **Grid Layouts:** To chain four 64x32 panels into a 2x2 grid (128x64 display), see the [VirtualMatrixPanel](/examples/VirtualMatrixPanel/) example, the [`VirtualMatrixPanel_T` Guide](/doc/VirtualMatrixPanel_T.md), and [AuroraDemo](/examples/AuroraDemo/).
+* **Grid Layouts & Non-Standard Scans:** Use [`VirtualMatrixPanel_T`](/doc/VirtualMatrixPanel_T.md). `makeDMAConfig()` computes the folded DMA dimensions automatically, and passing `mxconfig` into `VirtualMatrixPanel_T` avoids repeating module/grid dimensions:
+
+**Example 1: 2x2 Serpentine Grid of Standard Two-Scan 64x32 Panels (`128x64`)**
+```cpp
+#include <ESP32-HUB75-VirtualMatrixPanel_T.hpp>
+
+using VirtualDisplay = VirtualMatrixPanel_T<CHAIN_TOP_RIGHT_DOWN>;
+
+auto mxconfig = VirtualDisplay::makeDMAConfig(64, 32, 2, 2);
+auto *dma_display = new MatrixPanel_I2S_DMA(mxconfig);
+dma_display->begin();
+
+// mxconfig already carries (64, 32, 2, 2) — no need to repeat dimensions:
+auto *virtualDisp = new VirtualDisplay(*dma_display, mxconfig);
+virtualDisp->drawDisplayTest();
+```
+
+**Example 2: Non-Standard Four-Scan or Eight-Scan Panel (e.g. `64x32 1/8`-Scan Outdoor, `pxbase = 16`)**
+```cpp
+#include <ESP32-HUB75-VirtualMatrixPanel_T.hpp>
+
+using PanelScan      = FourScanMapping<16>; // or FourScan80x40_ZigZag8, EightScan32x16_SM16208, ...
+using VirtualDisplay = VirtualMatrixPanel_T<CHAIN_NONE, PanelScan>;
+
+// Automatically configures DMA as 128x16 (2*W x H/2)
+auto mxconfig = VirtualDisplay::makeDMAConfig(64, 32);
+mxconfig.clkphase = false;
+// mxconfig.line_decoder = HUB75_I2S_CFG::TYPE595; // if using SM5368 / DP32020A / RUL5158
+
+auto *dma_display = new MatrixPanel_I2S_DMA(mxconfig);
+dma_display->begin();
+
+auto *virtualDisp = new VirtualDisplay(*dma_display, mxconfig);
+virtualDisp->drawDisplayTest();
+```
+
+See the [VirtualMatrixPanel example](/examples/VirtualMatrixPanel/), [Pixel_Mapping_Test](/examples/Pixel_Mapping_Test/) (interactive Serial tuner for discovering panel `pxbase` and flags), the [`VirtualMatrixPanel_T` Guide](/doc/VirtualMatrixPanel_T.md), the [Non-Standard Panel List](/doc/NonStandardPanels.md), and legacy [AuroraDemo](/examples/AuroraDemo/).
 
 Resolutions above 128x64 may cause memory errors due to ESP32 internal SRAM limits.
 
