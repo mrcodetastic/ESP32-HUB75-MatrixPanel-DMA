@@ -660,17 +660,26 @@
             <div class="input-row control-group">
               <div>
                 <label class="control-label" for="gridColsInput">
-                  <span>Horizontal Chain / Cols</span>
+                  <span>Columns</span>
                   <span class="control-hint">panels</span>
                 </label>
                 <input type="number" id="gridColsInput" min="1" max="64" step="1" value="1" />
               </div>
               <div>
                 <label class="control-label" for="gridRowsInput">
-                  <span>Vertical Grid Rows</span>
-                  <span class="control-hint">VirtualMatrix</span>
+                  <span>Rows</span>
+                  <span class="control-hint">panels</span>
                 </label>
                 <input type="number" id="gridRowsInput" min="1" max="32" step="1" value="1" />
+              </div>
+            </div>
+
+            <div class="flag-item" style="cursor: default; margin-top: 12px;">
+              <div class="flag-info">
+                <div class="control-label" style="margin-bottom: 2px;">
+                  <span style="font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.03em; color: var(--text-muted); font-weight: 600;">Effective Display Resolution</span>
+                </div>
+                <div class="flag-title" id="totalMatrixResBadge" style="font-size: 13px;">64×32 px (2,048 pixels across 1 panel)</div>
               </div>
             </div>
           </div>
@@ -778,7 +787,6 @@
         <div class="panel">
           <div class="panel-header">
             <h2>Memory Allocation Breakdown</h2>
-            <span class="control-hint" id="totalMatrixResBadge">64×32 px (2,048 pixels)</span>
           </div>
           <div class="panel-body">
             <!-- Internal SRAM Bar -->
