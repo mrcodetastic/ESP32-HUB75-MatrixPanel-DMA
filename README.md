@@ -1,6 +1,6 @@
 # HUB75 RGB LED Matrix Panel Library Using ESP32 DMA
 
-__[BUILD OPTIONS](/doc/BuildOptions.md) | [VIRTUAL PANEL & SCAN GUIDE](/doc/VirtualMatrixPanel_T.md) | [NON-STANDARD PANELS](/doc/NonStandardPanels.md) | [EXAMPLES](/examples/README.md)__ | [![PlatformIO CI](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-DMA/actions/workflows/esp-idf-with-gfx.yml/badge.svg)](https://github.com/mrcodetastic/ESP32-HUB75-MatrixPanel-DMA/actions)
+__[BUILD OPTIONS](/doc/BuildOptions.md) | [VIRTUAL PANEL & SCAN GUIDE](/doc/VirtualMatrixPanel_T.md) | [NON-STANDARD PANELS](/doc/NonStandardPanels.md) | [EXAMPLES](/examples/README.md)__ | [![ESP-IDF CI](https://github.com/mrcodetastic/ESP32-HUB75-MatrixPanel-DMA/actions/workflows/esp-idf-with-gfx.yml/badge.svg)](https://github.com/mrcodetastic/ESP32-HUB75-MatrixPanel-DMA/actions/workflows/esp-idf-with-gfx.yml) [![PlatformIO CI](https://github.com/mrcodetastic/ESP32-HUB75-MatrixPanel-DMA/actions/workflows/pio_arduino_ci.yml/badge.svg)](https://github.com/mrcodetastic/ESP32-HUB75-MatrixPanel-DMA/actions/workflows/pio_arduino_ci.yml)
 
 ## Table of Contents
 
@@ -8,7 +8,7 @@ __[BUILD OPTIONS](/doc/BuildOptions.md) | [VIRTUAL PANEL & SCAN GUIDE](/doc/Virt
   * [Features](#features)
 - [Hardware Compatibility](#hardware-compatibility)
   * [Supported ESP32 Variants](#supported-esp32-variants)
-  * [Quick introduction to LED Matrix Panel 'Scan' types](#supported-panels)
+  * [A quick introduction to LED Matrix Panel 'Scan' types](#a-quick-introduction-to-led-matrix-panel-scan-types)
   * [Tested Driver Chips](#tested-driver-chips)
   * [Unsupported Panels & Driver Chips](#unsupported-panels--driver-chips)
   * [Memory Requirements](#memory-requirements)
@@ -18,7 +18,8 @@ __[BUILD OPTIONS](/doc/BuildOptions.md) | [VIRTUAL PANEL & SCAN GUIDE](/doc/Virt
   * [2. Wiring the ESP32 to an LED Matrix Panel](#2-wiring-the-esp32-to-an-led-matrix-panel)
   * [3. Running a Test Sketch](#3-running-a-test-sketch)
 - [Usage & Configuration](#usage--configuration)
-  * [Chaining Multiple Panels](#chaining-multiple-panels)
+  * [Chaining Multiple Panels & Non-Standard Scan Panels (`VirtualMatrixPanel_T`)](#chaining-multiple-panels--non-standard-scan-panels-virtualmatrixpanel_t)
+  * [Line Decoder Selection](#line-decoder-selection)
   * [Adjusting Panel Brightness](#adjusting-panel-brightness)
   * [Build-Time Options](#build-time-options)
   * [Latch Blanking](#latch-blanking)
@@ -35,10 +36,10 @@ __[BUILD OPTIONS](/doc/BuildOptions.md) | [VIRTUAL PANEL & SCAN GUIDE](/doc/Virt
 
 # Introduction
 
-* An Arduino and ESP-IDF library for HUB75 and HUB75E RGB LED panels using the ESP32.
+* An Arduino and ESP-IDF (4.x / 5.x / 6.x) library for HUB75 and HUB75E RGB LED panels using ESP32 hardware DMA.
 * Works out of the box with standard HUB75 panels where two rows are updated at the same time (referred to as "two scan" panels in this document).
 * Supports non-two-scan panels (`1/4`, `1/5`, `1/6`, `1/8`, `1/10`, `1/16` 4-scan and `1/2` / `1/4` 8-scan modules) via [`VirtualMatrixPanel_T`](/doc/VirtualMatrixPanel_T.md). See the [VirtualMatrixPanel example](/examples/VirtualMatrixPanel/), [Pixel_Mapping_Test](/examples/Pixel_Mapping_Test/), and the [Non-Standard Panel Compatibility List](/doc/NonStandardPanels.md).
-* Uses the ESP32's hardware DMA ("LCD Mode") for high-speed output with low CPU usage.
+* Uses hardware DMA engines (**I2S LCD Mode** on ESP32/ESP32-S2, **LCD_CAM + GDMA** on ESP32-S3, and **PARLIO + GDMA** on ESP32-P4/ESP32-S31) for high-speed output with low CPU usage.
 
 ## Features
 
@@ -47,24 +48,28 @@ __[BUILD OPTIONS](/doc/BuildOptions.md) | [VIRTUAL PANEL & SCAN GUIDE](/doc/Virt
 - **Full-screen BCM** — Uses [binary-code modulation](http://www.batsocks.co.uk/readme/art_bcm_5.htm) across the entire matrix for smooth color depth and brightness.
 - **Variable color depth** — Supports up to 24-bit TrueColor depending on panel size and refresh rate.
 - **Natural dimming** — Includes [CIE 1931 luminance correction](https://ledshield.wordpress.com/2012/11/13/led-brightness-to-your-eye-gamma-correction-no/) for human eye brightness perception.
-- **Adafruit GFX compatible** — Works with Adafruit GFX, a simplified GFX implementation, or standalone without any GFX library.
+- **Adafruit GFX compatible** — Works with Adafruit GFX, a simplified GFX implementation (`GFX_Lite`), or standalone without any GFX library (`NO_GFX`).
 
 ---
 
 # Hardware Compatibility
 
 > **Important Buying Advice:**
-> Before buying an LED matrix panel, ask the seller to confirm that the panel is **NOT** an "S-PWM" chip and uses standard shift-register driver chips such as the FM6124.
+> Before buying an LED matrix panel, ask the seller to confirm that the panel is **NOT** an "S-PWM" chip and uses standard shift-register driver chips such as the FM6124, ICN2037, SM16208, or DP5125D.
 
 New panel driver chips are released frequently. Always check with the seller before purchasing.
 
 ## Supported ESP32 Variants
 
-* **ESP32** (Original module, such as ESP-WROOM-32 with ESP32-D0WDQ6 chip)
-* **ESP32-S2**
-* **ESP32-S3**
+| Variant | Architecture | Hardware DMA Engine | Status |
+| :--- | :--- | :--- | :--- |
+| **ESP32** (Original, e.g. ESP-WROOM-32) | Xtensa LX6 | I2S Parallel LCD Mode | Supported |
+| **ESP32-S2** | Xtensa LX7 | I2S Parallel LCD Mode | Supported |
+| **ESP32-S3** | Xtensa LX7 | LCD_CAM + GDMA | Supported (supports Octal PSRAM via `SPIRAM_DMA_BUFFER`) |
+| **ESP32-P4** | RISC-V | PARLIO TX + GDMA | Supported |
+| **ESP32-S31** | RISC-V | PARLIO TX + GDMA | Experimental (pending hardware bring-up) |
 
-*Note: RISC-V ESP32 variants (such as the ESP32-C3) are not supported because they lack the required hardware LCD mode.*
+*Note: **ESP32-C2, ESP32-C3, ESP32-C5, ESP32-C6, and ESP32-H2** are **not supported** — they either lack a parallel LCD/PARLIO DMA engine or, in the case of C6/H2, PARLIO cannot control continuous transaction lengths in a hardware loop.*
 
 ## A quick introduction to LED Matrix Panel 'Scan' types
 
@@ -87,19 +92,19 @@ For technical background on matrix panel hardware, read [this SparkFun article](
 ## Tested Driver Chips
 
 The following driver chips work well with this library:
-* ICND2012
-* [RUC7258](http://www.ruichips.com/en/products.html?cateid=17496)
-* FM6126A, ICN2038S, [FM6124](https://datasheet4u.com/datasheet-pdf/FINEMADELECTRONICS/FM6124/pdf.php?id=1309677) (See the [PatternPlasma](/examples/2_PatternPlasma) example)
-* SM5266P
-* DP3246 with SM5368 row registers
+* Standard shift-register drivers (`SHIFTREG`): `ICN2037`/`ICN2037BP`, `SM16208`, `DP5125D`/`DP5125F`, `TC5020AP`, `ICND2012`, [`RUC7258`](http://www.ruichips.com/en/products.html?cateid=17496)
+* `FM6126A`, `ICN2038S`, [`FM6124`](https://datasheet4u.com/datasheet-pdf/FINEMADELECTRONICS/FM6124/pdf.php?id=1309677) (See the [PatternPlasma](/examples/2_PatternPlasma) example)
+* `MBI5124`
+* `SM5266P` (`mxconfig.line_decoder = HUB75_I2S_CFG::SM5266P`)
+* `DP3246` with `SM5368` / `DP32020A` shift-register row decoders (`mxconfig.driver = HUB75_I2S_CFG::DP3246; mxconfig.line_decoder = HUB75_I2S_CFG::TYPE595;`)
 
 ## Unsupported Panels & Driver Chips
 
-The following panels and driver chips are known to be **NOT supported** (there are likely many more):
-* **S-PWM or PWM panels** chipset based panels (e.g., RUL6024, MBI6024, HX6158SP, MBI5051, MBI5052, MBI5053, ICND2055CP). These panels work completely different are essentially their own framebuffers + PWM on chip, which is incompatible with this library.
+The following panels and driver chips are known to be **NOT supported** (see the full list in [Non-Standard Panels](/doc/NonStandardPanels.md#4-known-incompatible--non-mapping-hardware)):
+* **S-PWM or PWM chipset-based panels** (e.g., `ICND1065`, `ICND2153`, `DP3364`, `DP3356`, `DP3264S`, `SM16169SH`, `SM16380`, `LS9930`/`LS9931`/`LS9936`, `MBI5051`/`5052`/`5053`/`6024`, `HX6158SP`, `ICND2055CP`). These panels contain their own internal framebuffers and PWM counters, which are incompatible with this library.
 * [SM1620B](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-DMA/issues/416)
-* Panels using RUL5358 or SHIFTREG_ABC_BIN_DE.
-* Panels using ICN2053 or FM6353. Use [this library fork](https://github.com/LAutour/ESP32-HUB75-MatrixPanel-DMA-ICN2053) instead (see [discussion](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-DMA/discussions/324)).
+* Panels using `RUL5358` or `SHIFTREG_ABC_BIN_DE`.
+* Panels using `ICN2053` or `FM6353`. Use [this library fork](https://github.com/LAutour/ESP32-HUB75-MatrixPanel-DMA-ICN2053) instead (see [discussion](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-DMA/discussions/324)).
 
 If your panel is not supported, consider using the [PxMatrix library](https://github.com/2dom/PxMatrix).
 
@@ -109,7 +114,8 @@ DMA buffers use the microcontroller's internal SRAM memory. Check the [Memory Ca
 
 ![Memory Calculator](doc/memcalc.jpg)
 
-* **ESP32-S3:** You can store the DMA buffer in external PSRAM **only if using Octal SPI PSRAM** (e.g., ESP32-S3-N8R8). Max output frequency is limited to ~13 MHz to avoid image flickering. Do not use Quad-SPI (Q-SPI) PSRAM because it is too slow. See [Build Options](/doc/BuildOptions.md) to enable PSRAM.
+* **ESP32-S3:** You can store the DMA buffer in external PSRAM **only if using Octal SPI PSRAM** (e.g., ESP32-S3-N8R8 / N16R8) by defining `-DSPIRAM_DMA_BUFFER`. Do not use Quad-SPI (Q-SPI) PSRAM because it is too slow. See [Build Options](/doc/BuildOptions.md) to enable PSRAM.
+* **ESP32-P4:** Features 768 KB internal SRAM and PARLIO + GDMA cache synchronization.
 * **Standard ESP32 & ESP32-S2:** You must use **internal SRAM**. You are limited to available internal RAM (~200 KB free memory), regardless of attached external PSRAM.
 
 ## Important Hardware Notes
@@ -123,10 +129,9 @@ DMA buffers use the microcontroller's internal SRAM memory. Check the [Memory Ca
 
 ## 1. Library Installation
 
-1. Open Arduino IDE, go to **Library Manager**, and install **Adafruit_GFX**.
-2. Search for and install this library from the Library Manager.
-
-**PlatformIO:** Add the library to the `lib/` folder or add it to `lib_deps` inside `platformio.ini`. See [Build Options](/doc/BuildOptions.md) and [PlatformIO lib_deps](https://docs.platformio.org/en/latest/projectconf/section_env_library.html#lib-deps).
+* **Arduino IDE:** Open **Library Manager**, install **Adafruit_GFX**, then search for and install **ESP32 HUB75 LED MATRIX PANEL DMA Display**.
+* **PlatformIO:** Add the library to the `lib/` folder or add it to `lib_deps` inside `platformio.ini`. See [Build Options](/doc/BuildOptions.md) and [PlatformIO lib_deps](https://docs.platformio.org/en/latest/projectconf/section_env_library.html#lib-deps).
+* **ESP-IDF (4.x / 5.x / 6.x):** Add via [`idf_component.yml`](/idf_component.yml) (`idf.py add-dependency`) or clone into your project's `components/` directory. See the [ESP-IDF examples](/examples/esp-idf/).
 
 ## 2. Wiring the ESP32 to an LED Matrix Panel
 
@@ -237,16 +242,58 @@ After verifying basic operation, test with the [PIO Test Patterns](/examples/PIO
 
 # Usage & Configuration
 
-## Chaining Multiple Panels
+## Chaining Multiple Panels & Non-Standard Scan Panels (`VirtualMatrixPanel_T`)
 
 Yes, panels can be connected together in sequence using HUB75 ribbon cables.
 
 * **Horizontal Chaining:** Connect panels end-to-end (e.g., two 64x32 panels for a 128x32 display). Update the chain length setting in `mxconfig`. See [Pattern Plasma](/examples/2_PatternPlasma/).
-* **Grid Layouts:** To chain four 64x32 panels into a 2x2 grid (128x64 display), see the [VirtualMatrixPanel](/examples/VirtualMatrixPanel/) example, the [`VirtualMatrixPanel_T` Guide](/doc/VirtualMatrixPanel_T.md), and [AuroraDemo](/examples/AuroraDemo/).
+* **Grid Layouts & Non-Standard Scan Panels:** Use [`VirtualMatrixPanel_T`](/doc/VirtualMatrixPanel_T.md) to map multi-row serpentine/zig-zag grids (e.g., four 64x32 panels in a 2x2 grid for a 128x64 display) or non-two-scan outdoor panels (`1/4`, `1/5`, `1/6`, `1/8`, `1/10`, `1/16`, `1/2`). `VirtualDisplay::makeDMAConfig()` automatically computes the required DMA buffer dimensions.
 
-Resolutions above 128x64 may cause memory errors due to ESP32 internal SRAM limits.
+**Example 1 — 2×2 Grid of Standard Two-Scan 64×32 Panels (128×64 display):**
+```cpp
+#include <ESP32-HUB75-VirtualMatrixPanel_T.hpp>
+
+using VirtualDisplay = VirtualMatrixPanel_T<CHAIN_TOP_RIGHT_DOWN>;
+
+HUB75_I2S_CFG mxconfig = VirtualDisplay::makeDMAConfig(64, 32, 2, 2);
+auto *dma_display = new MatrixPanel_I2S_DMA(mxconfig);
+dma_display->begin();
+
+auto *virtualDisp = new VirtualDisplay(*dma_display, 2, 2, 64, 32);
+virtualDisp->drawDisplayTest();
+```
+
+**Example 2 — Non-Standard 4-Scan Panel (e.g., 64×32 1/8-scan outdoor panel with `pxbase = 16`):**
+```cpp
+#include <ESP32-HUB75-VirtualMatrixPanel_T.hpp>
+
+using PanelScan      = FourScanMapping<16>; // 0 (default) uses panel_res_x
+using VirtualDisplay = VirtualMatrixPanel_T<CHAIN_NONE, PanelScan>;
+
+HUB75_I2S_CFG mxconfig = VirtualDisplay::makeDMAConfig(64, 32); // Auto-folds to 128x16 DMA
+mxconfig.clkphase = false;
+
+auto *dma_display = new MatrixPanel_I2S_DMA(mxconfig);
+dma_display->begin();
+
+auto *virtualDisp = new VirtualDisplay(*dma_display, 1, 1, 64, 32);
+```
+
+See the [`VirtualMatrixPanel_T` Guide](/doc/VirtualMatrixPanel_T.md), [Non-Standard Panel List](/doc/NonStandardPanels.md), [`VirtualMatrixPanel` example](/examples/VirtualMatrixPanel/), [`Pixel_Mapping_Test`](/examples/Pixel_Mapping_Test/), and [AuroraDemo](/examples/AuroraDemo/).
+
+Resolutions above 128x64 may cause memory errors due to ESP32 internal SRAM limits unless using Octal PSRAM on an ESP32-S3 or an ESP32-P4.
 
 ![ezgif com-video-to-gif](https://user-images.githubusercontent.com/12006953/89837358-b64c0480-db60-11ea-870d-4b6482068a3b.gif)
+
+## Line Decoder Selection
+
+If multiple duplicate rows light up simultaneously, your panel may use a non-standard row multiplexer instead of the default `74HC138` binary decoder (`TYPE138`):
+```cpp
+mxconfig.line_decoder = HUB75_I2S_CFG::TYPE138;     // Default: 74HC138, RUC7258, ICN2012, SM5166
+mxconfig.line_decoder = HUB75_I2S_CFG::TYPE595;     // Shift-register row mux (SM5368, DP32020A, RUL5158, ICND2018)
+mxconfig.line_decoder = HUB75_I2S_CFG::TYPE_DIRECT; // Direct A/B/C/D MOSFET switching (no 138/595 IC)
+mxconfig.line_decoder = HUB75_I2S_CFG::SM5266P;     // SM5266P row decoder
+```
 
 ## Adjusting Panel Brightness
 
@@ -272,26 +319,27 @@ For IDEs supporting compile-time flags (such as [PlatformIO](https://platformio.
 
 ## Latch Blanking
 
-If pixels repeat horizontally (ghosting), adjust Latch Blanking using `setLatBlanking(uint8_t v)`.
+If pixels repeat horizontally (ghosting), adjust Latch Blanking using `mxconfig.latch_blanking` or `setLatBlanking(uint8_t v)`.
 
 Latch blanking disables display output via OE during LAT pin transitions to hide row switching artifacts.
 
-* Range: `1` to `4` (default is `1`). Higher values reduce overall display brightness.
+* Range: `1` to `8` (default `0` auto-calculates `4` for `<= 10 MHz` or `8` for `> 10 MHz`). Higher values reduce overall display brightness.
 
 Example:
 ```cpp
-dma_display->setLatBlanking(2);
+dma_display->setLatBlanking(4);
 ```
 
 ## Clock Phase
 
-If pixels appear shifted by 1 pixel or show ghosting, change the clock edge mode. Some panels update on the rising clock edge; others update on the falling clock edge.
+If pixels appear shifted by 1 pixel or show ghosting (especially on chained outdoor panels), change the clock edge mode. Some panels update on the rising clock edge; others update on the falling clock edge.
 
-Default behavior is positive clock edge. To switch to negative clock edge, set:
+Default behavior for `SHIFTREG` is positive clock edge (`true`). To switch to negative clock edge, set:
 ```cpp
 mxconfig.clkphase = false;
 ```
-See the [Simple Test Shapes Example](https://github.com/mrcodetastic/ESP32-HUB75-MatrixPanel-DMA/blob/a5d6611b65c365a252e6787e0afc267cf63c1996/examples/1_SimpleTestShapes/1_SimpleTestShapes.ino#L98).
+*(Note: `MBI5124` and `DP3246` automatically force `clkphase = true`, while `FM6124`, `FM6126A`, and `ICN2038S` automatically set `clkphase = false`.)*
+See the [Simple Test Shapes Example](/examples/1_SimpleTestShapes/1_SimpleTestShapes.ino).
 
 ## Power Requirements
 
@@ -329,6 +377,7 @@ This project was inspired by:
 
 * [Brian Lough](https://www.tindie.com/stores/brianlough/) ([YouTube](https://www.youtube.com/c/brianlough)) for code contributions, testing hardware, and suggestions.
 * [Vortigont](https://github.com/vortigont) for performance optimizations and major code contributions.
+* [board707](https://github.com/board707) for extensive `VirtualMatrixPanel` non-standard scan mappings, `TYPE_DIRECT` support, and community troubleshooting.
 * [Galaxy Man](https://github.com/Galaxy-Man) for donating 1/16 scan panels to help implement virtual display chaining.
 * [Pipimaxi](https://github.com/Pipimaxi) for donating an ESP32-S2 module, and [Radu](https://github.com/juniorradu) for donating an ESP32-S3 module.
 * [Mark Donners](https://github.com/donnersm) ([YouTube](https://www.youtube.com/watch?v=bQ7c9Vlhyp0&t=118s)) for donating a 1/8 scan panel.
