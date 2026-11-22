@@ -10,6 +10,7 @@
 | [`BitmapIcons`](./BitmapIcons/) | Displaying bitmap icons on the matrix. |
 | [`VirtualMatrixPanel`](./VirtualMatrixPanel/) | Using `VirtualMatrixPanel_T` for multi-panel serpentine/zig-zag grids and non-two-scan panels (including `FourScan64_16S` and `FourScan80x40_ZigZag8` presets). |
 | [`Pixel_Mapping_Test`](./Pixel_Mapping_Test/) | Diagnostic & Serial-tunable mapper for discovering `pxbase` and flags on unknown 4-scan or 8-scan panels. |
+| [`Glediator`](./Glediator/) | Placeholder linking to [`mrcodetastic/Glediator`](https://github.com/mrcodetastic/Glediator) and its [ESP32 receiver firmware](https://github.com/mrcodetastic/Glediator/tree/master/esp32-firmware). |
 | [`HueValueSpectrum`](./HueValueSpectrum/) | Color spectrum test gradient. |
 | [`IOT_WebImageUploader`](./IOT_WebImageUploader/) | Web UI image uploader for ESP32 HUB75 panels. |
 | [`PIO_TestPatterns`](./PIO_TestPatterns/) | PlatformIO multi-SoC / multi-GFX CI test patterns. |
