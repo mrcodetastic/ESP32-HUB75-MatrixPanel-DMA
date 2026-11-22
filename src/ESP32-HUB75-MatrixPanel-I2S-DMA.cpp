@@ -4,43 +4,43 @@
 /*
  * Hardware Cache Synchronization Utilities
  * 
- * On targets with cached memory subsystems (such as ESP32-S3 using PSRAM or ESP32-P4
+ * On targets with cached memory subsystems (such as ESP32-S3 using PSRAM or ESP32-P4/S31
  * with L1/L2 caches covering SRAM/PSRAM), CPU writes pass through data caches before
  * reaching physical memory. Explicit cache writebacks are required so GDMA peripherals
  * read updated frame buffer data directly from RAM without stale artifacts.
  * 
- * For ESP32-P4:
- *   Uses esp_cache_msync() aligned to 64-byte hardware cache line boundaries.
- * 
- * For Legacy Targets (e.g., ESP32-S3 PSRAM):
- *   Uses ROM Cache_WriteBack_Addr() driver utilities.
+ * Uses thread-safe esp_cache_msync() aligned to 64-byte hardware cache line boundaries
+ * when <esp_cache.h> is available (ESP-IDF 5.2+), falling back to ROM Cache_WriteBack_Addr()
+ * on older IDF releases.
  */
-#if defined(CONFIG_IDF_TARGET_ESP32P4)
+#if defined(CONFIG_IDF_TARGET_ESP32P4) || defined(CONFIG_IDF_TARGET_ESP32S31) || defined(SPIRAM_DMA_BUFFER)
+#if __has_include(<esp_cache.h>)
 #include <esp_cache.h>
 
 /**
- * @brief Performs 64-byte aligned cache writeback for ESP32-P4 L1/L2 cache controller.
+ * @brief Performs 64-byte aligned, spinlock-synchronized cache writeback (C2M).
  * @param addr Starting memory address modified by the CPU.
  * @param size Size in bytes of the modified payload block.
  */
-static inline void p4_cache_writeback_aligned(void* addr, size_t size) {
-    uint32_t align = 64; // ESP32-P4 cache line size is 64 bytes
-    uint32_t start = (uint32_t)addr;
-    uint32_t end   = start + size;
+static inline void dma_cache_writeback_aligned(void* addr, size_t size) {
+    constexpr uintptr_t align = 64; // Covers both 32-byte and 64-byte cache lines (ESP32-S3 & ESP32-P4)
+    uintptr_t start = reinterpret_cast<uintptr_t>(addr);
+    uintptr_t end   = start + size;
 
-    uint32_t aligned_start = start & ~(align - 1);
-    uint32_t aligned_end   = (end + align - 1) & ~(align - 1);
-    size_t aligned_size    = aligned_end - aligned_start;
+    uintptr_t aligned_start = start & ~(align - 1);
+    uintptr_t aligned_end   = (end + align - 1) & ~(align - 1);
+    size_t aligned_size     = aligned_end - aligned_start;
 
-    esp_cache_msync((void*)aligned_start, aligned_size, 
+    esp_cache_msync(reinterpret_cast<void*>(aligned_start), aligned_size, 
                     ESP_CACHE_MSYNC_FLAG_DIR_C2M | ESP_CACHE_MSYNC_FLAG_TYPE_DATA);
 }
 
-#define DMA_CACHE_WRITEBACK(addr, size) p4_cache_writeback_aligned((void*)(addr), (size))
+#define DMA_CACHE_WRITEBACK(addr, size) dma_cache_writeback_aligned((void*)(addr), (size))
 
-#elif defined(SPIRAM_DMA_BUFFER)
+#else
 #include "rom/cache.h"
 #define DMA_CACHE_WRITEBACK(addr, size) Cache_WriteBack_Addr((uint32_t)(addr), (size))
+#endif
 #else
 #define DMA_CACHE_WRITEBACK(addr, size)
 #endif
@@ -384,6 +384,19 @@ bool MatrixPanel_I2S_DMA::setupDMA(const HUB75_I2S_CFG &_cfg) {
 // Core Pixel Updating Routines
 // -----------------------------------------------------------------------------
 
+void MatrixPanel_I2S_DMA::flushFrameBufferCache(const frameStruct* target_fb) {
+#if defined(CONFIG_IDF_TARGET_ESP32P4) || defined(CONFIG_IDF_TARGET_ESP32S31) || defined(SPIRAM_DMA_BUFFER)
+    if (!target_fb) return;
+    for (const auto& row : target_fb->rowBits) {
+        if (row && row->data) {
+            DMA_CACHE_WRITEBACK(row->getDataPtr(0), row->getColorDepthSize(false));
+        }
+    }
+#else
+    (void)target_fb;
+#endif
+}
+
 void IRAM_ATTR MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint16_t x_coord, uint16_t y_coord, uint8_t red, uint8_t green, uint8_t blue) {
     if (!initialized || x_coord >= PIXELS_PER_ROW || y_coord >= m_cfg.mx_height) return;
 
@@ -400,65 +413,33 @@ void IRAM_ATTR MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint16_t x_coord, uint
         y_coord -= ROWS_PER_FRAME;
     }
 
+    // Pre-fetch base pointer and stride width ONCE
+    auto& rowStruct = fb->rowBits[y_coord];
+    ESP32_I2S_DMA_STORAGE_TYPE* base_ptr = rowStruct->data.get();
+    const uint16_t stride = rowStruct->width;
+    const bool flush_immediately = !m_cfg.double_buff;
 
-  // Pre-fetch base pointer and stride width ONCE
-  auto& rowStruct = fb->rowBits[y_coord];
-  ESP32_I2S_DMA_STORAGE_TYPE* base_ptr = rowStruct->data.get();
-  const uint16_t stride = rowStruct->width;
-
-  uint8_t colour_depth_idx = m_cfg.getPixelColorDepthBits();
-  do {
-    --colour_depth_idx;
-
-    // Fast shift extraction
-    uint16_t RGB_output_bits = (((blue_val  >> colour_depth_idx) & 1) << 2) |
-                               (((green_val >> colour_depth_idx) & 1) << 1) |
-                                ((red_val   >> colour_depth_idx) & 1);
-    
-    RGB_output_bits <<= _colourbitoffset;
-
-    // Calculate depth plane pointer via simple pointer arithmetic
-    ESP32_I2S_DMA_STORAGE_TYPE *p = base_ptr + (colour_depth_idx * stride);
-
-    p[x_coord] = (p[x_coord] & _colourbitclear) | RGB_output_bits;
-
-//#if defined(SPIRAM_DMA_BUFFER)
-//    Cache_WriteBack_Addr((uint32_t)&p[x_coord], sizeof(ESP32_I2S_DMA_STORAGE_TYPE));
-//#endif
-
-	// Target-aware cache writeback
-    DMA_CACHE_WRITEBACK(&p[x_coord], sizeof(ESP32_I2S_DMA_STORAGE_TYPE));
-	
-  } while (colour_depth_idx);
-  
-  
-/*
     uint8_t colour_depth_idx = m_cfg.getPixelColorDepthBits();
     do {
         --colour_depth_idx;
 
-        uint16_t mask = (1 << colour_depth_idx);
-        uint16_t RGB_output_bits = 0;
-
-        RGB_output_bits |= (bool)(blue_val & mask);
-        RGB_output_bits <<= 1;
-        RGB_output_bits |= (bool)(green_val & mask);
-        RGB_output_bits <<= 1;
-        RGB_output_bits |= (bool)(red_val & mask);
+        // Fast shift extraction
+        uint16_t RGB_output_bits = (((blue_val  >> colour_depth_idx) & 1) << 2) |
+                                   (((green_val >> colour_depth_idx) & 1) << 1) |
+                                    ((red_val   >> colour_depth_idx) & 1);
+        
         RGB_output_bits <<= _colourbitoffset;
 
-        ESP32_I2S_DMA_STORAGE_TYPE *p = getRowDataPtr(y_coord, colour_depth_idx);
+        // Calculate depth plane pointer via simple pointer arithmetic
+        ESP32_I2S_DMA_STORAGE_TYPE *p = base_ptr + (colour_depth_idx * stride);
 
-        p[x_coord] &= _colourbitclear;
-        p[x_coord] |= RGB_output_bits;
+        p[x_coord] = (p[x_coord] & _colourbitclear) | RGB_output_bits;
 
-#if defined(SPIRAM_DMA_BUFFER)
-        Cache_WriteBack_Addr((uint32_t)&p[x_coord], sizeof(ESP32_I2S_DMA_STORAGE_TYPE));
-#endif
+        // When double buffering is enabled, cache writeback is batched once per row in flipDMABuffer().
+        if (flush_immediately) {
+            DMA_CACHE_WRITEBACK(&p[x_coord], sizeof(ESP32_I2S_DMA_STORAGE_TYPE));
+        }
     } while (colour_depth_idx);
-*/
-
-
 }
 
 void MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint8_t red, uint8_t green, uint8_t blue) {
@@ -489,16 +470,14 @@ void MatrixPanel_I2S_DMA::updateMatrixDMABuffer(uint8_t red, uint8_t green, uint
                 --x_coord;
                 p[x_coord] &= BITMASK_RGB12_CLEAR;
                 p[x_coord] |= RGB_output_bits;
-
-//#if defined(SPIRAM_DMA_BUFFER)
-//                Cache_WriteBack_Addr((uint32_t)&p[x_coord], sizeof(ESP32_I2S_DMA_STORAGE_TYPE));
-//#endif
-
-			// Target-aware cache writeback
-			DMA_CACHE_WRITEBACK(&p[x_coord], sizeof(ESP32_I2S_DMA_STORAGE_TYPE));	
-			
             } while (x_coord);
         } while (matrix_frame_parallel_row);
+    }
+
+    // In single-buffer mode, flush each modified row once (instead of per-pixel).
+    // In double-buffer mode, flipDMABuffer() flushes the back buffer prior to DMA handover.
+    if (!m_cfg.double_buff) {
+        flushFrameBufferCache(fb);
     }
 }
 
@@ -602,11 +581,7 @@ void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id) {
         applyShiftRegisterLineDecoderFixes(target_fb, row_idx);
         applyRowControlPulses(target_fb, row_idx);
 
-//#if defined(SPIRAM_DMA_BUFFER)
-//        Cache_WriteBack_Addr((uint32_t)row, target_fb->rowBits[row_idx]->getColorDepthSize(false));
-//#endif
-
-		DMA_CACHE_WRITEBACK(row, target_fb->rowBits[row_idx]->getColorDepthSize(false));
+        DMA_CACHE_WRITEBACK(row, target_fb->rowBits[row_idx]->getColorDepthSize(false));
 
     } while (row_idx);
 }
@@ -665,12 +640,11 @@ void MatrixPanel_I2S_DMA::setBrightnessOE(uint8_t brt, const int _buff_id)
           row[ESP32_TX_FIFO_POSITION_ADJUST(x_coord)] |= BIT_OE;
         }
       } while (x_coord);
+    } while (colouridx);
 
-	   // Cache invalidation
-	   DMA_CACHE_WRITEBACK(row, target_fb->rowBits[row_idx]->getColorDepthSize(false));
-		
-
-    } while (colouridx);	
+    // Flush entire row across all bitplanes once after updating OE bits
+    DMA_CACHE_WRITEBACK(target_fb->rowBits[row_idx]->getDataPtr(0),
+                        target_fb->rowBits[row_idx]->getColorDepthSize(false));
   } while (row_idx);
 }
 
@@ -767,6 +741,10 @@ void MatrixPanel_I2S_DMA::hlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, 
         y_coord -= ROWS_PER_FRAME;
     }
 
+    const bool flush_immediately = !m_cfg.double_buff;
+    const int16_t flush_start_x = ESP32_TX_FIFO_POSITION_ADJUST(x_coord) & ~1;
+    const size_t flush_bytes = static_cast<size_t>(l + 2) * sizeof(ESP32_I2S_DMA_STORAGE_TYPE);
+
     uint8_t colour_depth_idx = m_cfg.getPixelColorDepthBits();
     do {
         --colour_depth_idx;
@@ -789,11 +767,11 @@ void MatrixPanel_I2S_DMA::hlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, 
             uint16_t &v = p[ESP32_TX_FIFO_POSITION_ADJUST(_x)];
             v &= _colourbitclear;
             v |= RGB_output_bits;
-			
-			// Target-aware cache writeback
-            DMA_CACHE_WRITEBACK(&v, sizeof(ESP32_I2S_DMA_STORAGE_TYPE));
-			
         } while (_l);
+
+        if (flush_immediately) {
+            DMA_CACHE_WRITEBACK(&p[flush_start_x], flush_bytes);
+        }
     } while (colour_depth_idx);
 }
 
@@ -808,6 +786,7 @@ void MatrixPanel_I2S_DMA::vlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, 
     DO_BRIGHTNESS_COMPENSATION()
 
     x_coord = ESP32_TX_FIFO_POSITION_ADJUST(x_coord);
+    const bool flush_immediately = !m_cfg.double_buff;
 
     uint8_t colour_depth_idx = m_cfg.getPixelColorDepthBits();
     do {
@@ -842,10 +821,10 @@ void MatrixPanel_I2S_DMA::vlineDMA(int16_t x_coord, int16_t y_coord, int16_t l, 
 
             p[x_coord] &= _colourbitclear;
             p[x_coord] |= current_rgb_bits;
-			
-			// Target-aware cache writeback
-            DMA_CACHE_WRITEBACK(&p[x_coord], sizeof(ESP32_I2S_DMA_STORAGE_TYPE));
-			
+
+            if (flush_immediately) {
+                DMA_CACHE_WRITEBACK(&p[x_coord], sizeof(ESP32_I2S_DMA_STORAGE_TYPE));
+            }
             ++_y;
         } while (++_l != l);
     } while (colour_depth_idx);

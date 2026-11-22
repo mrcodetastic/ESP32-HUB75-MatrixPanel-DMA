@@ -455,6 +455,7 @@ public:
 			ESP_LOGW("MatrixPanel_I2S_DMA", "Requested buffer change, but double buffering not enabled.");     
 			return;
 		}
+        flushFrameBufferCache(fb);
         dma_bus.set_dma_output_buffer(back_buffer_id);
         back_buffer_id = back_buffer_id ^ 1;
         fb = &frame_buffer[back_buffer_id];  
@@ -504,6 +505,7 @@ public:
 
 protected:
     void clearFrameBuffer(bool _buff_id);
+    void flushFrameBufferCache(const frameStruct* target_fb);
     void updateMatrixDMABuffer(uint16_t x, uint16_t y, uint8_t red, uint8_t green, uint8_t blue);
     void updateMatrixDMABuffer(uint8_t red, uint8_t green, uint8_t blue);
 
