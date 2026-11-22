@@ -1,58 +1,53 @@
-# The 'VirtualMatrixPanel_T' class
-The `VirtualMatrixPanel_T` is used to perform pixel re-mapping in order to support the following use-cases that can be used together:
-1. To create a larger display based on a chain of individual physical panels connected electrically in a Serpentine or Zig-Zag manner.
-2. To provide support for physical panels with non-standard (i.e. Not a 1/2 scan panel) pixel mapping approaches. This is often seen with 1/4 scan outdoor panels.
+# The `VirtualMatrixPanel_T` Class
 
-## 1. Chaining individual LED matrix panels to make a larger virtual display ##
+`VirtualMatrixPanel_T` remaps logical virtual `(x, y)` coordinates onto physical LED panel DMA buffers for two use cases (which can be combined freely):
 
-This is the PatternPlasma Demo adopted for use with multiple LED Matrix Panel displays arranged in a non standard order (i.e. a grid) to make a bigger display.
+1. **Multi-panel grids** chained in serpentine or zig-zag layouts (e.g., 2×2 of 64×32 panels as a 128×64 display).
+2. **Non-standard scan panels** (`1/4`, `1/5`, `1/6`, `1/8`, `1/10`, `1/16` 4-scan, and `1/2` / `1/4` 8-scan panels) whose internal shift chains fold multiple physical rows into each DMA row.
 
-![334894846_975082690567510_1362796919784291270_n](https://user-images.githubusercontent.com/89576620/224304944-94fe3483-d3cc-4aba-be0a-40b33ff901dc.jpg)
+> See [`doc/VirtualMatrixPanel_T.md`](../../doc/VirtualMatrixPanel_T.md) for the full API reference, wiring/IC triage checklist, and step-by-step discovery guide, and [`doc/NonStandardPanels.md`](../../doc/NonStandardPanels.md) for community-tested panel settings.
 
-### What do we mean by 'non standard order'? ###
+---
 
-When you link / chain multiple panels together, the ESP32-HUB75-MatrixPanel-I2S-DMA library treats as one wide horizontal panel. This would be a 'standard' (default) order.
+## 1. Chaining Standard Two-Scan Panels
 
-Non-standard order is essentially the creation of a non-horizontal-only display that you can draw to in the same way you would any other display, with VirtualDisplay library looking after the pixel mapping to the physical chained panels.
-
-For example: You bought four (4) 64x32px panels, and wanted to use them to create a 128x64pixel display. You would use the VirtualMatrixPanel class.
-
-[Refer to this document](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-DMA/blob/master/doc/VirtualMatrixPanel.pdf) for an explanation and refer to this example on how to use.
-
-
-### Steps to Use ###
-
-1. [Refer to this document](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-DMA/blob/master/doc/VirtualMatrixPanel.pdf) for an explanation and refer to this example on how to use.
-
-2. Read the `VirtualMatrixPanel.ino` code
-
-## 2. Using this library with 1/4 Scan Panels (Four Scan)
-
-This library does not natively support 'Four Scan' 64x32 1/8 or 32x16 1/4 scan panels such [as this](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/issues/154) by default.
-
-### Solution
-Read the `VirtualMatrixPanel.ino` code. 
-
-The VirtualMatrixPanel_T class provides a way to additionally remap pixel for each individual panel by way of the `ScanTypeMapping` class.
-
-You can create your own custom per-panel pixel mapping class as well should you wish.
+For standard two-scan panels (`1/16` 64×32, `1/32` 64×64):
 
 ```cpp
-// --- Example 3: Single non-standard 1/4 Scan (Four-Scan 1/8) ---
+#include <ESP32-HUB75-VirtualMatrixPanel_T.hpp>
 
-// Use an existing library user-contributed Scan Type pixel mapping
-using MyScanTypeMapping = ScanTypeMapping<FOUR_SCAN_32PX_HIGH>;
+using VirtualDisplay = VirtualMatrixPanel_T<CHAIN_TOP_RIGHT_DOWN>;
 
-// Create a pointer to the specific instantiation of the VirtualMatrixPanel_T class
-VirtualMatrixPanel_T<CHAIN_NONE, MyScanTypeMapping>* virtualDisp = nullptr;
+HUB75_I2S_CFG mxconfig = VirtualDisplay::makeDMAConfig(64, 32, 2, 2);
+auto *dma_display = new MatrixPanel_I2S_DMA(mxconfig);
+dma_display->begin();
+
+auto *virtualDisp = new VirtualDisplay(*dma_display, 2, 2, 64, 32);
 ```
 
-The library has these user-contributed additions, but given the variety of panels on the market, your success with any of these may vary.
+Refer to [`doc/VirtualMatrixPanel.pdf`](../../doc/VirtualMatrixPanel.pdf) for visual diagrams of the `CHAIN_*` physical wiring layouts.
+
+---
+
+## 2. Non-Standard Four-Scan & Eight-Scan Panels
+
+Four-scan (`2*W × H/2`) and eight-scan (`4*W × H/4`) panels differ in segment width (`PxBase`) and wiring order flags (`FOUR_SCAN_FLAGS` / `EIGHT_SCAN_FLAGS`). Use `FourScanMapping<PxBase, Flags>` or `EightScanMapping<PxBase, Flags>` and let `makeDMAConfig()` derive the folded DMA size automatically:
 
 ```cpp
-    FOUR_SCAN_32PX_HIGH,       ///< Four-scan mode, 32-pixel high panels.
-    FOUR_SCAN_16PX_HIGH,       ///< Four-scan mode, 16-pixel high panels.
-    FOUR_SCAN_64PX_HIGH,       ///< Four-scan mode, 64-pixel high panels.
-    FOUR_SCAN_64PX_HIGH_16S,   ///< 64-pixel high 1/16-scan ("16S") panels, four 16-row blocks.
-    FOUR_SCAN_40PX_HIGH        ///< Four-scan mode, 40-pixel high panels.
+// Example: 64x32 1/8-scan outdoor panel with 16px segment width
+using MyScan = FourScanMapping<16>;
+using VirtualDisplay = VirtualMatrixPanel_T<CHAIN_NONE, MyScan>;
+
+HUB75_I2S_CFG mxconfig = VirtualDisplay::makeDMAConfig(64, 32); // 128x16 automatically!
+auto *dma_display = new MatrixPanel_I2S_DMA(mxconfig);
+dma_display->begin();
+
+auto *virtualDisp = new VirtualDisplay(*dma_display, 1, 1, 64, 32);
 ```
+
+Common built-in policies and flags:
+- `FourScanMapping<PxBase, Flags, PanelHeight>`: handles `16px`, `20px`, `24px`, `32px`, `40px`, `48px`, `64px` heights automatically; combine `FOUR_SCAN_SWAP_BLOCKS`, `FOUR_SCAN_XOR_SEGMENTS`, `FOUR_SCAN_REVERSE_LEFT`, `FOUR_SCAN_REVERSE_RIGHT` (or `FOUR_SCAN_ZIGZAG_SM16208`).
+- `FourScan64pxBitSwapMapping<PxBase, Flags>`: 64×64 outdoor modules with 8-row bit-swapped blocks (e.g., `ICN2037BP`, issue `#345`).
+- `EightScanMapping<PxBase, Flags>`: `4*W × H/4` modules (e.g., `32x16 1/2` scan).
+- `RuntimeFourScanMapping` / `RuntimeEightScanMapping`: runtime-configurable variants used by [`Pixel_Mapping_Test`](../Pixel_Mapping_Test/).
+- Custom policies: inherit `ScanPolicyTraits<DmaWidthMult, DmaHeightDiv>` and implement `VirtualCoords map(VirtualCoords, const PanelGeometry&) const`.

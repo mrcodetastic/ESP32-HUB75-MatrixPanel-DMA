@@ -3,12 +3,13 @@
  *
  * These panels are wired as four 16-row blocks and drive two rows in
  * parallel per address step. The library's DMA engine only does two-row
- * output, so the panel is fed as if it were a 128x32 surface (2*W x H/2)
- * and the coordinates are folded by FOUR_SCAN_64PX_HIGH_16S.
+ * output, so the panel is fed as a 128x32 (2*W x H/2) DMA surface and
+ * folded by FourScan64_16S (alias for FourScanMapping<0, FOUR_SCAN_NONE, 64>,
+ * or equivalently FourScanMapping<>).
  *
- * This is NOT the same as FOUR_SCAN_64PX_HIGH, which folds 64px-high panels
- * in 8-row blocks (ICN2037BP, issue #345). If your panel shows four
- * scrambled strips with that mode, try this one.
+ * NOTE: If your 64x64 panel shows four scrambled vertical strips with
+ * FourScan64_16S, it belongs to the 8-row bit-swapped family (e.g. ICN2037BP,
+ * issue #345) — swap FourScan64_16S below for FourScan64pxBitSwapMapping<>.
  *
  * See doc/FourScan_64x64_16S.md for the mapping table.
  *
@@ -24,20 +25,21 @@
 #define PANEL_RES_X 64
 #define PANEL_RES_Y 64
 
-MatrixPanel_I2S_DMA *dma_display = nullptr;
+using PanelScan = FourScan64_16S;
+using VirtualDisplay = VirtualMatrixPanel_T<CHAIN_NONE, PanelScan>;
 
-using Panel16SCanTypeMapping = ScanTypeMapping<FOUR_SCAN_64PX_HIGH_16S>;
-VirtualMatrixPanel_T<CHAIN_NONE, Panel16SCanTypeMapping> *panel = nullptr;
+MatrixPanel_I2S_DMA *dma_display = nullptr;
+VirtualDisplay *panel = nullptr;
 
 void drawTestPattern() {
   panel->fillScreen(0);
 
-  const uint16_t green = panel->color565(0, 255, 0);
-  const uint16_t red = panel->color565(255, 0, 0);
-  const uint16_t blue = panel->color565(0, 0, 255);
+  const uint16_t green  = panel->color565(0, 255, 0);
+  const uint16_t red    = panel->color565(255, 0, 0);
+  const uint16_t blue   = panel->color565(0, 0, 255);
   const uint16_t yellow = panel->color565(255, 255, 0);
-  const uint16_t white = panel->color565(255, 255, 255);
-  const uint16_t dim = panel->color565(40, 40, 40);
+  const uint16_t white  = panel->color565(255, 255, 255);
+  const uint16_t dim    = panel->color565(40, 40, 40);
 
   // Border.
   panel->drawRect(0, 0, panel->width(), panel->height(), green);
@@ -71,16 +73,16 @@ void drawTestPattern() {
 void setup() {
   Serial.begin(115200);
 
-  // The DMA surface is 2*W x H/2 for this panel type. Do not use 64x64 here.
+  // makeDMAConfig automatically folds 64x64 -> 128x32 for FourScan64_16S.
 #if defined(ADAFRUIT_MATRIXPORTAL_ESP32S3)
   // HUB75 pins on the Adafruit MatrixPortal ESP32-S3.
   HUB75_I2S_CFG::i2s_pins pins = {
     42, 41, 40, 38, 39, 37, 45, 36, 48, 35, 21, 47, 14, 2
   };
-  HUB75_I2S_CFG mxconfig(PANEL_RES_X * 2, PANEL_RES_Y / 2, 1, pins);
+  HUB75_I2S_CFG mxconfig = VirtualDisplay::makeDMAConfig(PANEL_RES_X, PANEL_RES_Y, 1, 1, pins);
 #else
   // Default library pins. Change for your board if needed.
-  HUB75_I2S_CFG mxconfig(PANEL_RES_X * 2, PANEL_RES_Y / 2, 1);
+  HUB75_I2S_CFG mxconfig = VirtualDisplay::makeDMAConfig(PANEL_RES_X, PANEL_RES_Y);
 #endif
 
   mxconfig.clkphase = false;
@@ -98,17 +100,14 @@ void setup() {
   dma_display->setBrightness8(64);
   dma_display->clearScreen();
 
-  panel = new VirtualMatrixPanel_T<CHAIN_NONE, Panel16SCanTypeMapping>(
-      1, 1, PANEL_RES_X, PANEL_RES_Y);
-  panel->setDisplay(*dma_display);
+  panel = new VirtualDisplay(*dma_display, 1, 1, PANEL_RES_X, PANEL_RES_Y);
 
-  Serial.printf("Panel: %dx%d, scan type FOUR_SCAN_64PX_HIGH_16S\n",
+  Serial.printf("Panel: %dx%d, scan policy FourScan64_16S\n",
                 panel->width(), panel->height());
 
   drawTestPattern();
 }
 
 void loop() {
-  // Static test pattern; nothing to do.
   delay(1000);
 }
