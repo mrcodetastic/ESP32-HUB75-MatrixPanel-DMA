@@ -290,8 +290,8 @@ auto mxconfig = VirtualDisplay::makeDMAConfig(64, 32, 2, 2);
 auto *dma_display = new MatrixPanel_I2S_DMA(mxconfig);
 dma_display->begin();
 
-// Without passing mxconfig: panel width/height (64, 32) derive from dma_display automatically
-auto *virtualDisp = new VirtualDisplay(*dma_display, 2, 2); // For 1x1 panels, (*dma_display) alone works
+// Without passing mxconfig: individual LED panel width/height (64, 32) is derived from dma_display automatically
+auto *virtualDisp = new VirtualDisplay(*dma_display, 2, 2); // For 2x2 panels grid
 virtualDisp->drawDisplayTest();
 ```
 > **Note:** If you ever need to specify all four dimensions manually (e.g., for padded DMA buffers with skipped columns), the explicit overload keeps legacy `VirtualMatrixPanel` order — `new VirtualDisplay(*dma_display, rows, cols, width, height)` (`rows, cols` before `width, height`), unlike `makeDMAConfig(width, height, rows, cols)`.
