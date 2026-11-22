@@ -59,6 +59,8 @@ void MatrixPanel_I2S_DMA::shiftDriver(const HUB75_I2S_CFG& _cfg) {
 void MatrixPanel_I2S_DMA::fm6124init(const HUB75_I2S_CFG& _cfg) {
     ESP_LOGI("LEDdrivers", "MatrixPanel_I2S_DMA - initializing FM6124 driver...");
 
+    m_cfg.clkphase = false;
+
     const bool REG1[16] = {0,0,0,0,0, 1,1,1,1,1,1, 0,0,0,0,0};    // Global matrix brightness control power setup
     const bool REG2[16] = {0,0,0,0,0, 0,0,0,0,1,0, 0,0,0,0,0};    // Matrix output enable configuration bit
 
