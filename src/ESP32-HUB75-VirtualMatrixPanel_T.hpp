@@ -423,6 +423,40 @@ using EightScan32x16_819      = EightScanMapping<8, EIGHT_SCAN_REVERSE_EVEN_SLOT
 using EightScan32x16_SM16208  = EightScanMapping<8, EIGHT_SCAN_REVERSE_BANDS | EIGHT_SCAN_REVERSE_ODD_SLOTS | EIGHT_SCAN_INVERT_ROW_IN_BAND, 16>;
 
 // ----------------------------------------------------------------------
+// Extended DMA Config Wrapper (avoids repeating panel/grid dimensions)
+// ----------------------------------------------------------------------
+/**
+ * @brief Lightweight HUB75_I2S_CFG extension storing physical panel and grid sizes.
+ *
+ * Returned by VirtualMatrixPanel_T::makeDMAConfig() so sketches can write:
+ * @code
+ * auto mxconfig = VirtualDisplay::makeDMAConfig(64, 32, 2, 2);
+ * auto *dma = new MatrixPanel_I2S_DMA(mxconfig);
+ * dma->begin();
+ * auto *vdisp = new VirtualDisplay(*dma, mxconfig);
+ * @endcode
+ * Implicitly slices cleanly to HUB75_I2S_CFG when stored explicitly as HUB75_I2S_CFG.
+ */
+struct VirtualDMAConfig : public HUB75_I2S_CFG {
+	uint16_t panel_res_x;
+	uint16_t panel_res_y;
+	uint16_t vmodule_rows;
+	uint16_t vmodule_cols;
+
+	VirtualDMAConfig(
+		const HUB75_I2S_CFG& cfg,
+		uint16_t _panel_res_x,
+		uint16_t _panel_res_y,
+		uint16_t _vmodule_rows = 1,
+		uint16_t _vmodule_cols = 1)
+	  : HUB75_I2S_CFG(cfg),
+		panel_res_x(_panel_res_x),
+		panel_res_y(_panel_res_y),
+		vmodule_rows(_vmodule_rows),
+		vmodule_cols(_vmodule_cols) {}
+};
+
+// ----------------------------------------------------------------------
 // VirtualMatrixPanel_T Declaration
 // ----------------------------------------------------------------------
 template <PANEL_CHAIN_TYPE ChainScanType = CHAIN_NONE,
@@ -437,38 +471,36 @@ public:
 	using scan_policy_type                         = ScanPolicy;
 
 	/**
-	 * @brief Derive a matching HUB75_I2S_CFG from physical module geometry and grid size.
+	 * @brief Derive a matching VirtualDMAConfig (compatible with HUB75_I2S_CFG)
+	 *        from physical module geometry and grid size.
 	 */
-	static inline HUB75_I2S_CFG makeDMAConfig(
+	static inline VirtualDMAConfig makeDMAConfig(
 		uint16_t panel_res_x,
 		uint16_t panel_res_y,
 		uint16_t vmodule_rows = 1,
 		uint16_t vmodule_cols = 1)
 	{
-		return ScanPolicy::makeDMAConfig(
-			panel_res_x, panel_res_y, static_cast<uint16_t>(vmodule_rows * vmodule_cols));
+		return VirtualDMAConfig(
+			ScanPolicy::makeDMAConfig(
+				panel_res_x, panel_res_y, static_cast<uint16_t>(vmodule_rows * vmodule_cols)),
+			panel_res_x, panel_res_y, vmodule_rows, vmodule_cols);
 	}
 
-	static inline HUB75_I2S_CFG makeDMAConfig(
+	static inline VirtualDMAConfig makeDMAConfig(
 		uint16_t panel_res_x,
 		uint16_t panel_res_y,
 		uint16_t vmodule_rows,
 		uint16_t vmodule_cols,
 		const HUB75_I2S_CFG::i2s_pins& pinmap)
 	{
-		return ScanPolicy::makeDMAConfig(
-			panel_res_x, panel_res_y, static_cast<uint16_t>(vmodule_rows * vmodule_cols), pinmap);
+		return VirtualDMAConfig(
+			ScanPolicy::makeDMAConfig(
+				panel_res_x, panel_res_y, static_cast<uint16_t>(vmodule_rows * vmodule_cols), pinmap),
+			panel_res_x, panel_res_y, vmodule_rows, vmodule_cols);
 	}
 
 	/**
-	 * @brief Construct VirtualMatrixPanel_T bound to an initialized/configured MatrixPanel_I2S_DMA.
-	 *
-	 * @param disp          Reference to the underlying DMA display object.
-	 * @param _vmodule_rows Number of vertically chained panel rows (>= 1).
-	 * @param _vmodule_cols Number of horizontally chained panel columns (>= 1).
-	 * @param _panel_res_x  Physical width of one panel module in pixels (>= 1).
-	 * @param _panel_res_y  Physical height of one panel module in pixels (>= 1).
-	 * @param scan_policy   Optional scan policy instance (required only for stateful runtime policies).
+	 * @brief Construct VirtualMatrixPanel_T with explicit grid and module dimensions.
 	 */
 	VirtualMatrixPanel_T(
 		MatrixPanel_I2S_DMA& disp,
@@ -499,6 +531,87 @@ public:
 		runtime_chain_type_(CHAIN_NONE)
 	{
 		dma_config_valid_ = validateDMAConfig();
+	}
+
+	/**
+	 * @brief Construct directly from VirtualDMAConfig returned by makeDMAConfig()
+	 *        without repeating any panel or grid dimensions.
+	 */
+	VirtualMatrixPanel_T(
+		MatrixPanel_I2S_DMA& disp,
+		const VirtualDMAConfig& vcfg,
+		const ScanPolicy& scan_policy = ScanPolicy())
+	  : VirtualMatrixPanel_T(
+			disp, vcfg.vmodule_rows, vcfg.vmodule_cols, vcfg.panel_res_x, vcfg.panel_res_y, scan_policy)
+	{
+		if (!validatePassedCfg(vcfg, false)) {
+			dma_config_valid_ = false;
+		}
+	}
+
+	/**
+	 * @brief Construct from a plain HUB75_I2S_CFG (1 row x cfg.chain_length cols;
+	 *        panel dimensions derived automatically from DMA width/height and ScanPolicy).
+	 */
+	VirtualMatrixPanel_T(
+		MatrixPanel_I2S_DMA& disp,
+		const HUB75_I2S_CFG& cfg,
+		const ScanPolicy& scan_policy = ScanPolicy())
+	  : VirtualMatrixPanel_T(
+			disp, 1, cfg.chain_length, derivePanelResX(cfg), derivePanelResY(cfg), scan_policy)
+	{
+		if (!validatePassedCfg(cfg, true)) {
+			dma_config_valid_ = false;
+		}
+	}
+
+	/**
+	 * @brief Construct from a plain HUB75_I2S_CFG plus explicit 2D grid (rows, cols),
+	 *        deriving panel width/height automatically from cfg and ScanPolicy.
+	 */
+	VirtualMatrixPanel_T(
+		MatrixPanel_I2S_DMA& disp,
+		const HUB75_I2S_CFG& cfg,
+		uint16_t _vmodule_rows,
+		uint16_t _vmodule_cols,
+		const ScanPolicy& scan_policy = ScanPolicy())
+	  : VirtualMatrixPanel_T(
+			disp, _vmodule_rows, _vmodule_cols, derivePanelResX(cfg), derivePanelResY(cfg), scan_policy)
+	{
+		if (!validatePassedCfg(cfg, true)) {
+			dma_config_valid_ = false;
+		}
+	}
+
+	/**
+	 * @brief Shorthand constructor deriving panel dimensions and 1 x chain_length
+	 *        layout directly from MatrixPanel_I2S_DMA::getCfg().
+	 */
+	explicit VirtualMatrixPanel_T(
+		MatrixPanel_I2S_DMA& disp,
+		const ScanPolicy& scan_policy = ScanPolicy())
+	  : VirtualMatrixPanel_T(
+			disp, 1, disp.getCfg().chain_length, derivePanelResX(disp.getCfg()), derivePanelResY(disp.getCfg()), scan_policy)
+	{
+		if (!validatePassedCfg(disp.getCfg(), true)) {
+			dma_config_valid_ = false;
+		}
+	}
+
+	/**
+	 * @brief Grid-only constructor deriving panel width/height directly from MatrixPanel_I2S_DMA::getCfg().
+	 */
+	VirtualMatrixPanel_T(
+		MatrixPanel_I2S_DMA& disp,
+		uint16_t _vmodule_rows,
+		uint16_t _vmodule_cols,
+		const ScanPolicy& scan_policy = ScanPolicy())
+	  : VirtualMatrixPanel_T(
+			disp, _vmodule_rows, _vmodule_cols, derivePanelResX(disp.getCfg()), derivePanelResY(disp.getCfg()), scan_policy)
+	{
+		if (!validatePassedCfg(disp.getCfg(), true)) {
+			dma_config_valid_ = false;
+		}
 	}
 
 	// ------------------------------------------------------------------
@@ -894,6 +1007,34 @@ private:
 			         "Ignore if intentionally padded (e.g. dummy/skipped driver columns).",
 			         cfg.mx_width, cfg.mx_height, cfg.chain_length,
 			         static_cast<unsigned long>(exp_dma_total_w), exp_dma_h);
+		}
+		return true;
+	}
+
+	static constexpr uint16_t derivePanelResX(const HUB75_I2S_CFG& cfg) noexcept {
+		return static_cast<uint16_t>(cfg.mx_width / ScanPolicy::dmaWidthMult);
+	}
+
+	static constexpr uint16_t derivePanelResY(const HUB75_I2S_CFG& cfg) noexcept {
+		return static_cast<uint16_t>(cfg.mx_height * ScanPolicy::dmaHeightDiv);
+	}
+
+	inline bool validatePassedCfg(const HUB75_I2S_CFG& cfg, bool require_exact_mult) const {
+		const HUB75_I2S_CFG& dcfg = display->getCfg();
+		if (dcfg.mx_width != cfg.mx_width ||
+		    dcfg.mx_height != cfg.mx_height ||
+		    dcfg.chain_length != cfg.chain_length) {
+			ESP_LOGE("VirtualMatrixPanel_T",
+			         "Passed mxconfig (%ux%u, chain=%u) does not match MatrixPanel_I2S_DMA (%ux%u, chain=%u).",
+			         cfg.mx_width, cfg.mx_height, cfg.chain_length,
+			         dcfg.mx_width, dcfg.mx_height, dcfg.chain_length);
+			return false;
+		}
+		if (require_exact_mult && (cfg.mx_width % ScanPolicy::dmaWidthMult) != 0) {
+			ESP_LOGE("VirtualMatrixPanel_T",
+			         "DMA mx_width (%u) is not divisible by ScanPolicy::dmaWidthMult (%u).",
+			         cfg.mx_width, ScanPolicy::dmaWidthMult);
+			return false;
 		}
 		return true;
 	}

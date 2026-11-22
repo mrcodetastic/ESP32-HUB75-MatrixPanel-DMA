@@ -30,7 +30,7 @@ void setup() {
   Serial.begin(115200);
 
   // Automatically configures a folded 160x20 DMA surface from 80x40 + PanelScan traits.
-  HUB75_I2S_CFG mxconfig = VirtualDisplay::makeDMAConfig(PANEL_RES_X, PANEL_RES_Y);
+  auto mxconfig = VirtualDisplay::makeDMAConfig(PANEL_RES_X, PANEL_RES_Y);
   mxconfig.clkphase = false; // SM16208 latches on the inverted shift clock
 
   dma_display = new MatrixPanel_I2S_DMA(mxconfig);
@@ -38,7 +38,7 @@ void setup() {
   dma_display->setBrightness8(90);
   dma_display->clearScreen();
 
-  panel = new VirtualDisplay(*dma_display, 1, 1, PANEL_RES_X, PANEL_RES_Y);
+  panel = new VirtualDisplay(*dma_display, mxconfig);
 }
 
 void loop() {

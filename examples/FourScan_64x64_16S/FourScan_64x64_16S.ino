@@ -79,10 +79,10 @@ void setup() {
   HUB75_I2S_CFG::i2s_pins pins = {
     42, 41, 40, 38, 39, 37, 45, 36, 48, 35, 21, 47, 14, 2
   };
-  HUB75_I2S_CFG mxconfig = VirtualDisplay::makeDMAConfig(PANEL_RES_X, PANEL_RES_Y, 1, 1, pins);
+  auto mxconfig = VirtualDisplay::makeDMAConfig(PANEL_RES_X, PANEL_RES_Y, 1, 1, pins);
 #else
   // Default library pins. Change for your board if needed.
-  HUB75_I2S_CFG mxconfig = VirtualDisplay::makeDMAConfig(PANEL_RES_X, PANEL_RES_Y);
+  auto mxconfig = VirtualDisplay::makeDMAConfig(PANEL_RES_X, PANEL_RES_Y);
 #endif
 
   mxconfig.clkphase = false;
@@ -100,7 +100,7 @@ void setup() {
   dma_display->setBrightness8(64);
   dma_display->clearScreen();
 
-  panel = new VirtualDisplay(*dma_display, 1, 1, PANEL_RES_X, PANEL_RES_Y);
+  panel = new VirtualDisplay(*dma_display, mxconfig);
 
   Serial.printf("Panel: %dx%d, scan policy FourScan64_16S\n",
                 panel->width(), panel->height());

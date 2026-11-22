@@ -505,8 +505,106 @@ static void testFlagSweeps() {
 	}
 }
 
+static void testMxConfigAndShorthandConstructors() {
+	mock_esp_state::reset_logs();
+
+	// A. auto mxconfig (VirtualDMAConfig) on 2x3 grid of 40x20 ZigZag8 (no repeated dims)
+	{
+		using Disp = VirtualMatrixPanel_T<CHAIN_TOP_RIGHT_DOWN, FourScanMapping<8, FOUR_SCAN_ZIGZAG_SM16208>>;
+		auto mxconfig = Disp::makeDMAConfig(40, 20, 2, 3);
+		mxconfig.clkphase = false;
+		MatrixPanel_I2S_DMA dma(mxconfig);
+
+		Disp p_vcfg(dma, mxconfig);
+		Disp p_explicit(dma, 2, 3, 40, 20);
+		Disp p_grid(dma, 2, 3);
+		HUB75_I2S_CFG plain_cfg = mxconfig; // intentional base slice (as in #645 style)
+		Disp p_plain_grid(dma, plain_cfg, 2, 3);
+
+		assert(p_vcfg.isDMAConfigValid());
+		assert(p_explicit.isDMAConfigValid());
+		assert(p_grid.isDMAConfigValid());
+		assert(p_plain_grid.isDMAConfigValid());
+		assert(p_vcfg.width() == 120 && p_vcfg.height() == 40);
+		assert(p_grid.panel_res_x == 40 && p_grid.panel_res_y == 20);
+		assert(p_plain_grid.panel_res_x == 40 && p_plain_grid.panel_res_y == 20);
+		assert(mock_esp_state::error_count() == 0);
+
+		for (int y = 0; y < 40; y++) {
+			for (int x = 0; x < 120; x++) {
+				VirtualCoords a = p_vcfg.getCoords(static_cast<int16_t>(x), static_cast<int16_t>(y));
+				VirtualCoords b = p_explicit.getCoords(static_cast<int16_t>(x), static_cast<int16_t>(y));
+				VirtualCoords c = p_grid.getCoords(static_cast<int16_t>(x), static_cast<int16_t>(y));
+				VirtualCoords d = p_plain_grid.getCoords(static_cast<int16_t>(x), static_cast<int16_t>(y));
+				assert(a.x == b.x && a.y == b.y);
+				assert(a.x == c.x && a.y == c.y);
+				assert(a.x == d.x && a.y == d.y);
+			}
+		}
+	}
+
+	// B. 1x1 & 1x3 shorthand constructors (auto mxconfig, plain HUB75_I2S_CFG, *dma only, + RuntimeFourScanMapping)
+	{
+		using RuntimeDisp = VirtualMatrixPanel_T<CHAIN_NONE, RuntimeFourScanMapping>;
+		auto mxconfig = RuntimeDisp::makeDMAConfig(64, 32, 1, 3);
+		MatrixPanel_I2S_DMA dma(mxconfig);
+		FourScanConfig fcfg{16, FOUR_SCAN_SWAP_BLOCKS, 0, false};
+
+		RuntimeDisp p_vcfg(dma, mxconfig, fcfg);
+		HUB75_I2S_CFG plain_cfg = mxconfig;
+		RuntimeDisp p_plain(dma, plain_cfg, fcfg);
+		RuntimeDisp p_dma_only(dma, fcfg);
+		RuntimeDisp p_grid_only(dma, 1, 3, fcfg);
+
+		assert(p_vcfg.isDMAConfigValid());
+		assert(p_plain.isDMAConfigValid());
+		assert(p_dma_only.isDMAConfigValid());
+		assert(p_grid_only.isDMAConfigValid());
+		assert(p_vcfg.width() == 192 && p_vcfg.height() == 32);
+		assert(p_dma_only.width() == 192 && p_dma_only.height() == 32);
+
+		VirtualCoords c1 = p_vcfg.getCoords(75, 19);
+		VirtualCoords c2 = p_plain.getCoords(75, 19);
+		VirtualCoords c3 = p_dma_only.getCoords(75, 19);
+		VirtualCoords c4 = p_grid_only.getCoords(75, 19);
+		assert(c1.x == c2.x && c1.y == c2.y);
+		assert(c1.x == c3.x && c1.y == c3.y);
+		assert(c1.x == c4.x && c1.y == c4.y);
+
+		// Also default policy without trailing scan_policy arg
+		using Static1x1 = VirtualMatrixPanel_T<CHAIN_NONE, FourScan64_16S>;
+		auto cfg1 = Static1x1::makeDMAConfig(64, 64);
+		MatrixPanel_I2S_DMA dma1(cfg1);
+		Static1x1 p1_auto(dma1);
+		Static1x1 p1_vcfg(dma1, cfg1);
+		assert(p1_auto.isDMAConfigValid() && p1_vcfg.isDMAConfigValid());
+		assert(p1_auto.width() == 64 && p1_auto.height() == 64);
+		assert(p1_auto.getCoords(17, 45).x == p1_vcfg.getCoords(17, 45).x);
+		assert(p1_auto.getCoords(17, 45).y == p1_vcfg.getCoords(17, 45).y);
+	}
+
+	// C. Mismatched mxconfig vs dma_display & odd DMA width on 4-scan auto-derive fail cleanly
+	{
+		mock_esp_state::reset_logs();
+		auto cfg_real   = VirtualMatrixPanel_T<CHAIN_NONE, FourScanMapping<8>>::makeDMAConfig(64, 32);
+		auto cfg_other  = VirtualMatrixPanel_T<CHAIN_NONE, FourScanMapping<8>>::makeDMAConfig(32, 16);
+		MatrixPanel_I2S_DMA dma_real(cfg_real);
+		VirtualMatrixPanel_T<CHAIN_NONE, FourScanMapping<8>> mismatched(dma_real, cfg_other);
+		assert(!mismatched.isDMAConfigValid());
+		assert(mock_esp_state::error_count() > 0);
+
+		mock_esp_state::reset_logs();
+		HUB75_I2S_CFG odd_dma_cfg(63, 16, 1);
+		MatrixPanel_I2S_DMA odd_dma(odd_dma_cfg);
+		VirtualMatrixPanel_T<CHAIN_NONE, FourScanMapping<>> odd_derived(odd_dma);
+		assert(!odd_derived.isDMAConfigValid());
+		assert(mock_esp_state::error_count() > 0);
+	}
+}
+
 int main() {
 	testDMAConfigValidation();
+	testMxConfigAndShorthandConstructors();
 	testHistoricalEquivalences();
 	testChainingAndRuntimeChain();
 	testRotationAndScaleFactorAndFinalPolicy();

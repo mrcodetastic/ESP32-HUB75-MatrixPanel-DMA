@@ -214,7 +214,7 @@ void setup() {
   delay(500);
 
   // Automatically configures DMA as 2*W x H/2 (4-scan) or 4*W x H/4 (8-scan).
-  HUB75_I2S_CFG mxconfig = TestDisplay::makeDMAConfig(
+  auto mxconfig = TestDisplay::makeDMAConfig(
       PANEL_RES_X, PANEL_RES_Y, NUM_ROWS, NUM_COLS);
 
   // Common hardware options before mapping tuning (see doc/VirtualMatrixPanel_T.md):
@@ -240,10 +240,10 @@ void setup() {
 
 #if PANEL_PARALLEL_ROWS == 8
   EightScanConfig scanCfg{PANEL_PX_BASE, PANEL_SCAN_FLAGS, 0};
-  testPanel = new TestDisplay(*dma_display, NUM_ROWS, NUM_COLS, PANEL_RES_X, PANEL_RES_Y, scanCfg);
+  testPanel = new TestDisplay(*dma_display, mxconfig, scanCfg);
 #else
   FourScanConfig scanCfg{PANEL_PX_BASE, PANEL_SCAN_FLAGS, 0, PANEL_BITSWAP_64PX};
-  testPanel = new TestDisplay(*dma_display, NUM_ROWS, NUM_COLS, PANEL_RES_X, PANEL_RES_Y, scanCfg);
+  testPanel = new TestDisplay(*dma_display, mxconfig, scanCfg);
 #endif
   testPanel->setChainType(VIRTUAL_CHAIN_TYPE);
 

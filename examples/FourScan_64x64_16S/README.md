@@ -10,7 +10,10 @@ This example drives a single 64×64 P3-class "16S" panel (1/16 scan, four 16-row
 using PanelScan = FourScan64_16S;
 using VirtualDisplay = VirtualMatrixPanel_T<CHAIN_NONE, PanelScan>;
 
-HUB75_I2S_CFG mxconfig = VirtualDisplay::makeDMAConfig(PANEL_RES_X, PANEL_RES_Y);
+auto mxconfig = VirtualDisplay::makeDMAConfig(PANEL_RES_X, PANEL_RES_Y);
+auto *dma_display = new MatrixPanel_I2S_DMA(mxconfig);
+dma_display->begin();
+auto *panel = new VirtualDisplay(*dma_display, mxconfig);
 ```
 
 Each DMA row carries two physical panel rows, one in the left half and one in the right half of the 128-pixel DMA row.
