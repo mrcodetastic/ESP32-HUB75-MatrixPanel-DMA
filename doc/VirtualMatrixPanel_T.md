@@ -53,7 +53,7 @@ auto *virtualDisp = new VirtualDisplay(*dma_display, mxconfig); // or just (*dma
 Roughly a third of reported "mapping" issues are actually **row-decoder**, **clock-phase**, or **unsupported S-PWM chip** issues. Check the ICs on the back of your PCB before tuning `FourScanMapping`:
 
 1. **Rule out unsupported S-PWM / embedded-PWM ICs:**
-   Chips such as `ICND1065`, `ICND2153`, `DP3364`, `SM16169SH`, `SM16380`, `LS9930`, `LS9936`, `RUL6024`, `SUM2033`, `HX6158SP`, `MBI5051/5052/5053`, `ICN2053`, and `FM6353` do **not** work with standard DMA shift-register timing. Check [`doc/NonStandardPanels.md`](./NonStandardPanels.md#known-incompatible--non-mapping-hardware).
+   Chips such as `ICND1065`, `ICND2153`, `DP3364`, `SM16169SH`, `SM16380`, `LS9930`, `LS9936`, `RUL6024`, `SUM2033`, `HX6158SP`, `MBI5051/5052/5053`, `ICN2053`, and `FM6353` do **not** work with standard DMA shift-register timing. Check [`doc/NonStandardPanels.md`](./NonStandardPanels.md#4-known-incompatible--non-mapping-hardware).
 
 2. **Configure row address multiplexer (`mxconfig.line_decoder`):**
    - `74HC138` / `RUC7258` / `SM5166` (standard binary 3-to-8 decoder): leave default `HUB75_I2S_CFG::TYPE138`.
@@ -155,8 +155,8 @@ class VirtualMatrixPanel_T;
 ### Constructors & Key Methods on `VirtualMatrixPanel_T`
 - `makeDMAConfig(panel_res_x, panel_res_y, rows = 1, cols = 1[, pinmap])` — returns a `VirtualDMAConfig` (derived from `HUB75_I2S_CFG`, pre-folded to DMA geometry and retaining logical module/grid sizes).
 - `VirtualMatrixPanel_T(*dma, mxconfig[, scan_policy])` — **recommended:** uses `VirtualDMAConfig` from `auto mxconfig = VirtualDisplay::makeDMAConfig(...)` without repeating any numbers. (If `mxconfig` was explicitly typed as plain `HUB75_I2S_CFG`, derives `panel_res_x`/`panel_res_y` automatically and assumes `1 × cfg.chain_length`; pass `(*dma, mxconfig, rows, cols)` for 2D grids.)
-- `VirtualMatrixPanel_T(*dma[, scan_policy])` / `VirtualMatrixPanel_T(*dma, rows, cols[, scan_policy])` — shorthand deriving `panel_res_x`/`panel_res_y` directly from `dma.getCfg()`.
-- `VirtualMatrixPanel_T(*dma, rows, cols, panel_res_x, panel_res_y[, scan_policy])` — explicit constructor overriding all four dimensions (useful when DMA width is padded for skipped columns).
+- `VirtualMatrixPanel_T(*dma[, scan_policy])` / `VirtualMatrixPanel_T(*dma, rows, cols[, scan_policy])` — shorthand when `mxconfig` is not passed; derives `panel_res_x`/`panel_res_y` directly from `dma.getCfg()`.
+- `VirtualMatrixPanel_T(*dma, rows, cols, panel_res_x, panel_res_y[, scan_policy])` — explicit overload overriding all four dimensions (useful when DMA width is padded for skipped columns). **Note parameter order:** `rows, cols` come **before** `panel_res_x, panel_res_y` (matching legacy `VirtualMatrixPanel`, opposite to `makeDMAConfig(panel_res_x, panel_res_y, rows, cols)`).
 - `isDMAConfigValid()` — `true` if the attached `MatrixPanel_I2S_DMA` framebuffer matches the policy's DMA multipliers (mismatches also log `ESP_LOGE` on construction).
 - `getCoords(int16_t x, int16_t y) const` — pure stateless coordinate transform returning `VirtualCoords{x, y}` (`{-1, -1}` if out of bounds).
 - `setRotation(uint8_t)` / `getRotation()` — runtime 0°/90°/180°/270° rotation, supported under `Adafruit_GFX`, `USE_GFX_LITE`, and `NO_GFX`.
@@ -172,7 +172,7 @@ Panels with skipped dummy outputs (`104x52`, issues `#608` / `#719`), single-RGB
 ```cpp
 // Example: 104x52 linear panel whose shift register has dummy columns every 16th clock (#719)
 struct ColumnSkip16Mapping : ScanPolicyTraits<1, 1> {
-  static HUB75_I2S_CFG makeDMAConfig(uint16_t w, uint16_t h, uint16_t chain = 1) {
+  static HUB75_I2S_CFG makeDMAConfig(uint16_t /*w*/, uint16_t h, uint16_t chain = 1) {
     // Panel expects 110 DMA clocks per row for 104 physical columns
     return HUB75_I2S_CFG(110, h, chain);
   }
@@ -185,6 +185,8 @@ struct ColumnSkip16Mapping : ScanPolicyTraits<1, 1> {
     return coords;
   }
 };
+// Construct with explicit logical panel size since DMA width (110) differs from logical width (104):
+// auto *virtualDisp = new VirtualMatrixPanel_T<CHAIN_NONE, ColumnSkip16Mapping>(*dma_display, 1, 1, 104, 52);
 ```
 
 > [!TIP]

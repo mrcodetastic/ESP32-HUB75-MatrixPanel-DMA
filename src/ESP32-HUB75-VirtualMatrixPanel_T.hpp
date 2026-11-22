@@ -501,6 +501,11 @@ public:
 
 	/**
 	 * @brief Construct VirtualMatrixPanel_T with explicit grid and module dimensions.
+	 *
+	 * Grid dimensions (_vmodule_rows, _vmodule_cols) precede panel dimensions
+	 * (_panel_res_x, _panel_res_y) to stay compatible with legacy VirtualMatrixPanel
+	 * (opposite to makeDMAConfig()). Prefer (*dma, mxconfig) or (*dma, rows, cols)
+	 * unless explicitly overriding padded DMA dimensions.
 	 */
 	VirtualMatrixPanel_T(
 		MatrixPanel_I2S_DMA& disp,
