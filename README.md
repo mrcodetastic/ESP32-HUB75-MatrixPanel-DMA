@@ -280,6 +280,34 @@ auto *virtualDisp = new VirtualDisplay(*dma_display, mxconfig); // or (*dma_disp
 virtualDisp->drawDisplayTest();
 ```
 
+**Example 3 — Explicit Grid & Panel Dimensions (without passing `mxconfig`):**
+```cpp
+#include <ESP32-HUB75-VirtualMatrixPanel_T.hpp>
+
+using VirtualDisplay = VirtualMatrixPanel_T<CHAIN_TOP_RIGHT_DOWN>;
+
+// Note: makeDMAConfig() takes (panel_res_x, panel_res_y, vmodule_rows, vmodule_cols)
+auto mxconfig = VirtualDisplay::makeDMAConfig(
+    64, // panel_res_x: width of a single physical panel (pixels)
+    32, // panel_res_y: height of a single physical panel (pixels)
+    2,  // vmodule_rows: number of panel rows in the grid
+    2   // vmodule_cols: number of panel columns in the grid
+);
+auto *dma_display = new MatrixPanel_I2S_DMA(mxconfig);
+dma_display->begin();
+
+// Note: VirtualDisplay() takes (disp, vmodule_rows, vmodule_cols, panel_res_x, panel_res_y)
+// — rows/cols come BEFORE panel width/height (opposite order to makeDMAConfig)
+auto *virtualDisp = new VirtualDisplay(
+    *dma_display, // MatrixPanel_I2S_DMA instance
+    2,            // vmodule_rows: number of panel rows in the grid
+    2,            // vmodule_cols: number of panel columns in the grid
+    64,           // panel_res_x: width of a single physical panel (pixels)
+    32            // panel_res_y: height of a single physical panel (pixels)
+);
+virtualDisp->drawDisplayTest();
+```
+
 See the [`VirtualMatrixPanel_T` Guide](/doc/VirtualMatrixPanel_T.md), [Non-Standard Panel List](/doc/NonStandardPanels.md), [`VirtualMatrixPanel` example](/examples/VirtualMatrixPanel/), [`Pixel_Mapping_Test`](/examples/Pixel_Mapping_Test/), and [AuroraDemo](/examples/AuroraDemo/).
 
 Resolutions above 128x64 may cause memory errors due to ESP32 internal SRAM limits unless using Octal PSRAM on an ESP32-S3 or an ESP32-P4.
