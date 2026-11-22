@@ -62,7 +62,7 @@ instead (and vice versa).
 The mapping above is verified in [`testing/test_virtual_matrix_t.cpp`](../testing/test_virtual_matrix_t.cpp)
 across single and multi-panel chains against the reference formula in
 [`testing/four_scan_64x64_16s.cpp`](../testing/four_scan_64x64_16s.cpp) with zero
-mismatches, and confirmed on hardware in [`examples/FourScan_64x64_16S`](../examples/FourScan_64x64_16S).
+mismatches, and confirmed on hardware in [`examples/VirtualMatrixPanel`](../examples/VirtualMatrixPanel) (`EXAMPLE_NUMBER 5`).
 
 The legacy `VirtualMatrixPanel` class also accepts
 `setPhysicalPanelScanRate(FOUR_SCAN_64PX_HIGH_16S)`.

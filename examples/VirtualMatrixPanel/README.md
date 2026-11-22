@@ -47,6 +47,8 @@ auto *virtualDisp = new VirtualDisplay(*dma_display, mxconfig);
 
 Common built-in policies and flags:
 - `FourScanMapping<PxBase, Flags, PanelHeight>`: handles `16px`, `20px`, `24px`, `32px`, `40px`, `48px`, `64px` heights automatically; combine `FOUR_SCAN_SWAP_BLOCKS`, `FOUR_SCAN_XOR_SEGMENTS`, `FOUR_SCAN_REVERSE_LEFT`, `FOUR_SCAN_REVERSE_RIGHT` (or `FOUR_SCAN_ZIGZAG_SM16208`).
+- `FourScan64_16S`: 64×64 1/16-scan ("16S") modules (`EXAMPLE_NUMBER 5` in `VirtualMatrixPanel.ino`, see [`doc/FourScan_64x64_16S.md`](../../doc/FourScan_64x64_16S.md)).
+- `FourScan80x40_ZigZag8`: 80×40 1/10-scan SM16208 "ZIGZAG8" modules (`EXAMPLE_NUMBER 6` in `VirtualMatrixPanel.ino`, see [`doc/Panel_80x40_4Scan_ZigZag8.md`](../../doc/Panel_80x40_4Scan_ZigZag8.md)).
 - `FourScan64pxBitSwapMapping<PxBase, Flags>`: 64×64 outdoor modules with 8-row bit-swapped blocks (e.g., `ICN2037BP`, issue `#345`).
 - `EightScanMapping<PxBase, Flags>`: `4*W × H/4` modules (e.g., `32x16 1/2` scan).
 - `RuntimeFourScanMapping` / `RuntimeEightScanMapping`: runtime-configurable variants used by [`Pixel_Mapping_Test`](../Pixel_Mapping_Test/).

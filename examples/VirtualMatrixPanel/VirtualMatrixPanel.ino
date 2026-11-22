@@ -24,6 +24,12 @@
  *   Example 3:  Single non-standard Four-Scan 64x32 1/8 outdoor panel (pxbase = 16).
  *
  *   Example 4:  Custom sketch-local ScanPolicy mapping (horizontal mirror).
+ *
+ *   Example 5:  Single 64x64 1/16-scan ("16S") 4-scan panel (FourScan64_16S).
+ *               See doc/FourScan_64x64_16S.md.
+ *
+ *   Example 6:  Single 80x40 1/10-scan SM16208 "ZIGZAG8" 4-scan panel
+ *               (FourScan80x40_ZigZag8). See doc/Panel_80x40_4Scan_ZigZag8.md.
  */
 
 #include <Arduino.h>
@@ -34,15 +40,25 @@
 //#define EXAMPLE_NUMBER 2
 //#define EXAMPLE_NUMBER 3
 //#define EXAMPLE_NUMBER 4 // Custom ScanPolicy example
+//#define EXAMPLE_NUMBER 5 // 64x64 1/16-scan ("16S")
+//#define EXAMPLE_NUMBER 6 // 80x40 1/10-scan SM16208 ("ZIGZAG8")
 
 /**
  * Physical dimensions of each individual LED panel module.
  */
-#define PANEL_RES_X 64 // Width of one panel module in pixels
-#define PANEL_RES_Y 32 // Height of one panel module in pixels
+#if EXAMPLE_NUMBER == 5
+  #define PANEL_RES_X 64 // Logical width of 64x64 16S panel
+  #define PANEL_RES_Y 64 // Logical height of 64x64 16S panel
+#elif EXAMPLE_NUMBER == 6
+  #define PANEL_RES_X 80 // Logical width of 80x40 ZIGZAG8 panel
+  #define PANEL_RES_Y 40 // Logical height of 80x40 ZIGZAG8 panel
+#else
+  #define PANEL_RES_X 64 // Width of one panel module in pixels
+  #define PANEL_RES_Y 32 // Height of one panel module in pixels
+#endif
 
-#define VDISP_NUM_ROWS 2 // Number of panel rows in the grid
-#define VDISP_NUM_COLS 2 // Number of panel columns in the grid
+#define VDISP_NUM_ROWS 2 // Number of panel rows in the grid (Examples 1 & 2)
+#define VDISP_NUM_COLS 2 // Number of panel columns in the grid (Examples 1 & 2)
 
 /**
  * Physical chaining order of the panel grid.
@@ -97,6 +113,28 @@ MatrixPanel_I2S_DMA *dma_display = nullptr;
   using VirtualDisplay = VirtualMatrixPanel_T<CHAIN_NONE, CustomMirrorScanTypeMapping>;
   VirtualDisplay *virtualDisp = nullptr;
 
+#elif EXAMPLE_NUMBER == 5
+
+  // --- Example 5: Single 64x64 1/16-scan ("16S") panel ---
+  // makeDMAConfig automatically folds 64x64 -> 128x32 (2*W x H/2).
+  // Note: If your 64x64 panel shows four scrambled vertical strips with FourScan64_16S,
+  // it belongs to the 8-row bit-swapped family (e.g. ICN2037BP, issue #345) — swap
+  // FourScan64_16S below for FourScan64pxBitSwapMapping<>.
+  using PanelScan = FourScan64_16S;
+  using VirtualDisplay = VirtualMatrixPanel_T<CHAIN_NONE, PanelScan>;
+  VirtualDisplay *virtualDisp = nullptr;
+
+#elif EXAMPLE_NUMBER == 6
+
+  // --- Example 6: Single 80x40 1/10-scan SM16208 ("ZIGZAG8") panel ---
+  // makeDMAConfig automatically folds 80x40 -> 160x20 (2*W x H/2).
+  // Equivalent to FourScanMapping<8, FOUR_SCAN_ZIGZAG_SM16208, 40>.
+  static_assert(PANEL_RES_Y % 20 == 0,
+                "FourScan80x40_ZigZag8 folds rows in pairs of 20 - height must be a multiple of 20");
+  using PanelScan = FourScan80x40_ZigZag8;
+  using VirtualDisplay = VirtualMatrixPanel_T<CHAIN_NONE, PanelScan>;
+  VirtualDisplay *virtualDisp = nullptr;
+
 #endif
 
 // ------------------------------------------------------------------------------------------------------------
@@ -117,18 +155,32 @@ void setup() {
   // and stores (PANEL_RES_X, PANEL_RES_Y, VDISP_NUM_ROWS, VDISP_NUM_COLS) inside mxconfig.
   auto mxconfig = VirtualDisplay::makeDMAConfig(
       PANEL_RES_X, PANEL_RES_Y, VDISP_NUM_ROWS, VDISP_NUM_COLS);
+#elif EXAMPLE_NUMBER == 5 && defined(ADAFRUIT_MATRIXPORTAL_ESP32S3)
+  // HUB75 pins on the Adafruit MatrixPortal ESP32-S3.
+  HUB75_I2S_CFG::i2s_pins _pins = {
+    42, 41, 40, 38, 39, 37, 45, 36, 48, 35, 21, 47, 14, 2
+  };
+  auto mxconfig = VirtualDisplay::makeDMAConfig(PANEL_RES_X, PANEL_RES_Y, 1, 1, _pins);
 #else
   auto mxconfig = VirtualDisplay::makeDMAConfig(PANEL_RES_X, PANEL_RES_Y);
 #endif
 
   mxconfig.i2sspeed = HUB75_I2S_CFG::HZ_10M;
   mxconfig.clkphase = false;
+#if EXAMPLE_NUMBER == 5
+  mxconfig.driver = HUB75_I2S_CFG::MBI5124;
+#endif
   // mxconfig.driver = HUB75_I2S_CFG::FM6126A;
   // mxconfig.line_decoder = HUB75_I2S_CFG::TYPE595; // e.g., SM5368 / RUL5158 / TC7558
 
   dma_display = new MatrixPanel_I2S_DMA(mxconfig);
-  dma_display->begin();
-  dma_display->setBrightness8(128);
+  if (!dma_display->begin()) {
+    Serial.println("DMA allocation failed");
+    while (true) {
+      delay(1000);
+    }
+  }
+  dma_display->setBrightness8(96);
   dma_display->clearScreen();
 
   // No need to repeat rows, cols, width, or height — mxconfig carries them all.
@@ -145,9 +197,18 @@ void setup() {
     }
   }
 
-  virtualDisp->drawLine(virtualDisp->width() - 1, virtualDisp->height() - 1,
-                        0, 0, virtualDisp->color565(255, 255, 255));
+  // Corner markers (TL red, TR green, BL blue, BR yellow) and diagonals verify orientation.
+  virtualDisp->fillRect(0, 0, 4, 4, virtualDisp->color565(255, 0, 0));
+  virtualDisp->fillRect(virtualDisp->width() - 4, 0, 4, 4, virtualDisp->color565(0, 255, 0));
+  virtualDisp->fillRect(0, virtualDisp->height() - 4, 4, 4, virtualDisp->color565(0, 0, 255));
+  virtualDisp->fillRect(virtualDisp->width() - 4, virtualDisp->height() - 4, 4, 4, virtualDisp->color565(255, 255, 0));
 
+  virtualDisp->drawLine(0, 0, virtualDisp->width() - 1, virtualDisp->height() - 1,
+                        virtualDisp->color565(255, 255, 255));
+  virtualDisp->drawLine(0, virtualDisp->height() - 1, virtualDisp->width() - 1, 0,
+                        virtualDisp->color565(255, 255, 255));
+
+  virtualDisp->setCursor(6, 12);
   virtualDisp->print("Virtual Matrix Panel");
 
   delay(3000);
