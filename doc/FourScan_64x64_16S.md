@@ -5,10 +5,22 @@ typically P3 indoor modules with MBI5124-compatible driver ICs.
 
 They are *four-scan* panels: each address step drives four physical rows,
 but the HUB75 connector only has two RGB lanes. The library therefore feeds
-them as a **2·W × H/2** DMA surface and folds the logical coordinates:
+them as a **2·W × H/2** DMA surface and folds the logical coordinates. With the
+refactored `VirtualMatrixPanel_T`, [`FourScan64_16S`](../src/ESP32-HUB75-VirtualMatrixPanel_T.hpp)
+(alias for `FourScanMapping<0, FOUR_SCAN_NONE, 64>` / `FourScanMapping<>`) computes
+that folded **128×32** `HUB75_I2S_CFG` automatically via `makeDMAConfig()`:
 
 ```cpp
-HUB75_I2S_CFG mxconfig(128, 32, 1);   // for one 64x64 panel
+using PanelScan      = FourScan64_16S;
+using VirtualDisplay = VirtualMatrixPanel_T<CHAIN_NONE, PanelScan>;
+
+HUB75_I2S_CFG mxconfig = VirtualDisplay::makeDMAConfig(64, 64); // 128x32 automatically
+mxconfig.clkphase = false;
+mxconfig.driver   = HUB75_I2S_CFG::MBI5124;
+
+auto *dma = new MatrixPanel_I2S_DMA(mxconfig);
+dma->begin();
+auto *panel = new VirtualDisplay(*dma, 1, 1, 64, 64);
 ```
 
 ## Mapping
@@ -23,42 +35,34 @@ driven in parallel, one in each half of the 128-pixel DMA row:
 | 32 – 47      | 2     | right      | 16 – 31  |
 | 48 – 63      | 3     | left       | 16 – 31  |
 
-In code (`ScanTypeMapping<FOUR_SCAN_64PX_HIGH_16S>`):
+For arbitrary `W` and `H = 64` (`half_h = 32`, `q_h = 16`):
 
 ```cpp
-const int block = y >> 4;                          // 0..3
-if ((block & 1) == 0) {
-    x += ((x / W) + 1) * W;                        // right half
-} else {
-    x += (x / W) * W;                              // left half
-}
-y = ((block >> 1) << 4) + (y & 0x0F);              // fold 64 rows into 32
+const int block = y / 16;                          // 0..3
+x += ((block & 1) == 0 ? ((x / W) + 1) : (x / W)) * W;
+y  = (y / 32) * 16 + (y % 16);                     // fold 64 rows into 32
 ```
 
-For a single panel `x < W`, so the offsets are `+W` and `+0`. The
-`(x / W)` terms make the same mapping work for chained panels: each panel
-owns a 2·W-wide DMA chunk.
+For a single panel `x < W`, so the offsets are `+W` and `+0`. The `(x / W)` terms
+make the same mapping work for chained panels: each panel owns a `2·W`-wide
+DMA chunk.
 
-## Why not `FOUR_SCAN_64PX_HIGH`?
+## Why not `FourScan64pxBitSwapMapping`?
 
-`FOUR_SCAN_64PX_HIGH` is for a *different* 64-pixel-high family (for example
-ICN2037BP outdoor panels, see issue
+[`FourScan64pxBitSwapMapping`](../src/ESP32-HUB75-VirtualMatrixPanel_T.hpp)
+(legacy `FOUR_SCAN_64PX_HIGH`) is for a *different* 64-pixel-high family (for
+example `ICN2037BP` outdoor panels, see issue
 [#345](https://github.com/mrcodetastic/ESP32-HUB75-MatrixPanel-DMA/issues/345)).
-It folds the rows in **8-row** blocks. Using it on a 16S panel produces four
-scrambled vertical strips. If that is what you see, switch to
-`FOUR_SCAN_64PX_HIGH_16S`.
+It folds rows in **8-row** bit-swapped blocks. Using it on a `16S` panel produces
+four scrambled vertical strips. If that is what you see, use `FourScan64_16S`
+instead (and vice versa).
 
 ## Verification
 
-The mapping above is the same arithmetic as the generic ("any other height")
-branch in the `Pixel_Mapping_Test` example for a 64-pixel-high panel. That
-branch is known to work on a 64×64 P3 16S module with MBI5124 drivers on an
-Adafruit MatrixPortal ESP32-S3, and a host-side comparison of the two
-formulas over all 4096 logical pixels (plus a two-panel 128×64 chain) gives
-zero mismatches. The test pattern in
-[`examples/FourScan_64x64_16S`](../examples/FourScan_64x64_16S) makes it easy
-to confirm on a new panel: straight diagonals, correct corner colours, and
-text at all four edges.
+The mapping above is verified in [`testing/test_virtual_matrix_t.cpp`](../testing/test_virtual_matrix_t.cpp)
+across single and multi-panel chains against the reference formula in
+[`testing/four_scan_64x64_16s.cpp`](../testing/four_scan_64x64_16s.cpp) with zero
+mismatches, and confirmed on hardware in [`examples/FourScan_64x64_16S`](../examples/FourScan_64x64_16S).
 
 The legacy `VirtualMatrixPanel` class also accepts
 `setPhysicalPanelScanRate(FOUR_SCAN_64PX_HIGH_16S)`.

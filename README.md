@@ -1,6 +1,6 @@
 # HUB75 RGB LED Matrix Panel Library Using ESP32 DMA
 
-__[BUILD OPTIONS](/doc/BuildOptions.md) | [EXAMPLES](/examples/README.md)__ | [![PlatformIO CI](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-DMA/actions/workflows/esp-idf-with-gfx.yml/badge.svg)]([https://github.com/mrcodetastic/ESP32-HUB75-MatrixPanel-DMA/actions](https://github.com/mrcodetastic/ESP32-HUB75-MatrixPanel-DMA/actions))
+__[BUILD OPTIONS](/doc/BuildOptions.md) | [VIRTUAL PANEL & SCAN GUIDE](/doc/VirtualMatrixPanel_T.md) | [NON-STANDARD PANELS](/doc/NonStandardPanels.md) | [EXAMPLES](/examples/README.md)__ | [![PlatformIO CI](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-DMA/actions/workflows/esp-idf-with-gfx.yml/badge.svg)](https://github.com/mrcodetastic/ESP32-HUB75-MatrixPanel-DMA/actions)
 
 ## Table of Contents
 
@@ -37,7 +37,7 @@ __[BUILD OPTIONS](/doc/BuildOptions.md) | [EXAMPLES](/examples/README.md)__ | [!
 
 * An Arduino and ESP-IDF library for HUB75 and HUB75E RGB LED panels using the ESP32.
 * Works out of the box with standard HUB75 panels where two rows are updated at the same time (referred to as "two scan" panels in this document).
-* Also supports 1/4, 1/8 scan panels. For usage, please see the `VirtualMatrixPanel` example, or refer to instructions found in the various issues within this repository. 
+* Supports non-two-scan panels (`1/4`, `1/5`, `1/6`, `1/8`, `1/10`, `1/16` 4-scan and `1/2` / `1/4` 8-scan modules) via [`VirtualMatrixPanel_T`](/doc/VirtualMatrixPanel_T.md). See the [VirtualMatrixPanel example](/examples/VirtualMatrixPanel/), [Pixel_Mapping_Test](/examples/Pixel_Mapping_Test/), and the [Non-Standard Panel Compatibility List](/doc/NonStandardPanels.md).
 * Uses the ESP32's hardware DMA ("LCD Mode") for high-speed output with low CPU usage.
 
 ## Features
@@ -72,11 +72,13 @@ New panel driver chips are released frequently. Always check with the seller bef
   * 64x32 indoor panels (1/16 scan rate).
   * 64x64 indoor panels (1/32 scan rate).
 
-* **"Four scan" panels** (four rows updated in parallel):
-  * 32x16 indoor panels (1/4 scan rate) using the method shown in the `Four_Scan_Panel` example.
-  * 128x64 panels with the [SM5266P](https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA/issues/164) chip.
-  * 80x40 panels (1/10 scan rate) with 8-pixel column reversal. See [80x40 4-scan (ZIGZAG8)](/doc/Panel_80x40_4Scan_ZigZag8.md).
-  * 64x64 1/16-scan ("16S") panels folded in four 16-row blocks, using `FOUR_SCAN_64PX_HIGH_16S`. See [64x64 16S](/doc/FourScan_64x64_16S.md).
+* **"Four scan" panels** (four rows updated in parallel — `2*W x H/2` DMA via `FourScanMapping` in [`VirtualMatrixPanel_T`](/doc/VirtualMatrixPanel_T.md)):
+  * 32x16 (`1/4`), 40x20 (`1/5`), 48x24 (`1/6`), 32x32 / 64x32 (`1/8`), and 80x40 (`1/10`) panels, including swapped-band, checkerboard-XOR, and ZIGZAG8 variants via `FourScanMapping<PxBase, Flags>` (see [`Pixel_Mapping_Test`](/examples/Pixel_Mapping_Test/) and [Non-Standard Panel List](/doc/NonStandardPanels.md)).
+  * 80x40 `1/10`-scan SM16208 ZIGZAG8 panels using `FourScan80x40_ZigZag8`. See [80x40 4-scan (ZIGZAG8)](/doc/Panel_80x40_4Scan_ZigZag8.md).
+  * 64x64 `1/16`-scan ("16S") panels folded in four 16-row blocks using `FourScan64_16S` (or `FourScan64pxBitSwapMapping` for 8-row bit-swapped outdoor panels). See [64x64 16S](/doc/FourScan_64x64_16S.md).
+
+* **"Eight scan" panels** (eight rows updated in parallel — `4*W x H/4` DMA via `EightScanMapping` in [`VirtualMatrixPanel_T`](/doc/VirtualMatrixPanel_T.md)):
+  * Ultra-low-scan modules such as `32x16 1/2`-scan (`EightScan32x16_819`, `EightScan32x16_SM16208`).
 
 For technical background on matrix panel hardware, read [this SparkFun article](https://www.sparkfun.com/news/2650).
 
@@ -240,7 +242,7 @@ After verifying basic operation, test with the [PIO Test Patterns](/examples/PIO
 Yes, panels can be connected together in sequence using HUB75 ribbon cables.
 
 * **Horizontal Chaining:** Connect panels end-to-end (e.g., two 64x32 panels for a 128x32 display). Update the chain length setting in `mxconfig`. See [Pattern Plasma](/examples/2_PatternPlasma/).
-* **Grid Layouts:** To chain four 64x32 panels into a 2x2 grid (128x64 display), see the [VirtualMatrixPanel](/examples/VirtualMatrixPanel/) and [AuroraDemo](/examples/AuroraDemo/) examples.
+* **Grid Layouts:** To chain four 64x32 panels into a 2x2 grid (128x64 display), see the [VirtualMatrixPanel](/examples/VirtualMatrixPanel/) example, the [`VirtualMatrixPanel_T` Guide](/doc/VirtualMatrixPanel_T.md), and [AuroraDemo](/examples/AuroraDemo/).
 
 Resolutions above 128x64 may cause memory errors due to ESP32 internal SRAM limits.
 

@@ -1,40 +1,28 @@
 /**
- * @file VirtualMatrixPanel_T.hpp
- * @brief TEMPLATED Virtual Matrix Panel class for HUB75 displays. Hence the '_T'.
+ * @file ESP32-HUB75-VirtualMatrixPanel_T.hpp
+ * @brief Templated Virtual Matrix Panel class for HUB75 displays.
  *
- * This header defines the VirtualMatrixPanel_T template class which maps virtual pixel
- * coordinates to physical LED coordinates. It supports compile‐time configuration for:
- *	 - Panel chain type (PANEL_CHAIN_TYPE)
- *	 - Scan type mapping (via a class, default is STANDARD_TWO_SCAN)
- *	 - A compile‐time scale factor (each virtual pixel is drawn as a block)
+ * Maps logical virtual (x, y) coordinates onto:
+ *   1) Multi-panel chains tiled in serpentine or zigzag grids (PANEL_CHAIN_TYPE),
+ *   2) Non-standard physical panel scan geometries such as 4-scan (2*W x H/2)
+ *      and 8-scan (4*W x H/4) modules, and
+ *   3) Optional compile-time integer scaling (ScaleFactor) and runtime rotation.
  *
- * Runtime rotation is supported via setRotation(). Depending on the build options,
- * the class conditionally inherits from Adafruit_GFX, GFX_Lite, or stands alone.
- * 
- * This class is used to accomplish two objectives:
- *	 1) Create a much larger display out of a number of physical LED panels
- *		chained in a various pattern.
- * 
- *	 2) Provide a way to deal with weird individual physical panels that 
- *		do not have a simple linear X, Y pixel mapping.
- *		i.e. Their DMA pixel mapping differs to the real world.
- *		i.e. Weird four-scan outdoor panels etc.
- *
- * @tparam ChainType	   Compile‐time panel chain configuration.
- * @tparam ScanType		   Policy type implementing a static apply() function for mapping.
- *						   Default is ScanTypeMapping<STANDARD_TWO_SCAN>.
- * @tparam ScaleFactor	   Compile‐time zoom factor (each virtual pixel becomes a
- *						   ScaleFactor x ScaleFactor block).
- *
- * @note The enum PANEL_SCAN_TYPE replaces the former PANEL_SCAN_RATE.
+ * @tparam ChainScanType  Compile-time chaining layout (default: CHAIN_NONE).
+ *                        Use CHAIN_RUNTIME to configure chaining dynamically.
+ * @tparam ScanPolicy     Mapping policy type inheriting/matching ScanPolicyTraits
+ *                        and providing map(VirtualCoords, const PanelGeometry&) const.
+ *                        Default: TwoScanMapping.
+ * @tparam ScaleFactor    Compile-time pixel zoom factor (>= 1, default: 1).
  */
- 
-
 
 #ifndef VIRTUAL_MATRIX_PANEL_TEMPLATE_H
 #define VIRTUAL_MATRIX_PANEL_TEMPLATE_H
 
-//#include <cstdint>
+#include <algorithm>
+#include <cstdint>
+#include <type_traits>
+
 #include "ESP32-HUB75-MatrixPanel-I2S-DMA.h"
 
 #ifdef USE_GFX_LITE
@@ -45,313 +33,512 @@
 
 // ----------------------------------------------------------------------
 // Data structures and enums
+// ----------------------------------------------------------------------
 
 /**
- * @brief Structure holding virtual/physical coordinate mapping.
+ * @brief Lightweight physical/virtual coordinate pair.
  */
 struct VirtualCoords {
-	int16_t x;
-	int16_t y;
-	int16_t virt_row; // chain of panels row (optional)
-	int16_t virt_col; // chain of panels col (optional)
-	VirtualCoords() : x(0), y(0), virt_row(0), virt_col(0) {}
+	int16_t x = 0;
+	int16_t y = 0;
 };
 
 /**
- * @brief Panel scan types.
- *
- * Defines the different scanning modes.
+ * @brief Physical module and virtual grid dimensions passed to ScanPolicy::map().
  */
-enum PANEL_SCAN_TYPE {
-	STANDARD_TWO_SCAN,
-	FOUR_SCAN_16PX_HIGH,			///< Four-scan mode, 16-pixel high panels.
-	FOUR_SCAN_32PX_HIGH,			///< Four-scan mode, 32-pixel high panels.
-	FOUR_SCAN_40PX_HIGH,			///< Four-scan mode, 40-pixel high panels.	
-	FOUR_SCAN_40_80PX_HFARCAN,		///< Four-scan mode, 40-pixel high, 80px wide panel. Weird mapping: https://github.com/mrcodetastic/ESP32-HUB75-MatrixPanel-DMA/issues/759
-	FOUR_SCAN_64PX_HIGH,			///< Four-scan mode, 64-pixel high panels.
-	FOUR_SCAN_64PX_HIGH_16S,		///< 64-pixel high 1/16-scan ("16S") panels, folded in four 16-row blocks. See doc/FourScan_64x64_16S.md
-	FOUR_SCAN_P8_40_x_20PX_HIGH,	///< P8 outdoor 40x20 module, 1/5 scan.A/B/C address only
-	FOUR_SCAN_5PX_64X32HIGH,		///< P5 outdoor 64x32 1/8-scan, A/B/C address only (HRLOP-P5-1921/V2.0).
+struct PanelGeometry {
+	uint16_t panel_res_x;   ///< Physical width of a single panel module (pixels).
+	uint16_t panel_res_y;   ///< Physical height of a single panel module (pixels).
+	uint16_t virtual_res_x; ///< Total unrotated virtual width (vmodule_cols * panel_res_x).
+	uint16_t virtual_res_y; ///< Total unrotated virtual height (vmodule_rows * panel_res_y).
+	uint8_t  vmodule_rows;  ///< Number of vertically stacked panel rows.
+	uint8_t  vmodule_cols;  ///< Number of horizontally tiled panel columns.
 };
 
 /**
- * @brief Panel chain types.
- *
- * Defines the physical chain configuration for multiple panels.
+ * @brief Panel chaining layout across a rectangular grid of modules.
  */
 enum PANEL_CHAIN_TYPE {
-	CHAIN_NONE,					///< No chaining.
-	CHAIN_TOP_LEFT_DOWN,		///< Chain starting top-left, going down.
-	CHAIN_TOP_RIGHT_DOWN,		///< Chain starting top-right, going down.
-	CHAIN_BOTTOM_LEFT_UP,		///< Chain starting bottom-left, going up.
-	CHAIN_BOTTOM_RIGHT_UP,		///< Chain starting bottom-right, going up.
-	CHAIN_TOP_LEFT_DOWN_ZZ,		///< Zigzag chain starting top-left.
-	CHAIN_TOP_RIGHT_DOWN_ZZ,	///< Zigzag chain starting top-right.
-	CHAIN_BOTTOM_RIGHT_UP_ZZ,	///< Zigzag chain starting bottom-right.
-	CHAIN_BOTTOM_LEFT_UP_ZZ		///< Zigzag chain starting bottom-left.
+	CHAIN_NONE,              ///< Single panel or simple linear horizontal chain.
+	CHAIN_TOP_LEFT_DOWN,     ///< Serpentine starting top-left, going down.
+	CHAIN_TOP_RIGHT_DOWN,    ///< Serpentine starting top-right, going down.
+	CHAIN_BOTTOM_LEFT_UP,    ///< Serpentine starting bottom-left, going up.
+	CHAIN_BOTTOM_RIGHT_UP,   ///< Serpentine starting bottom-right, going up.
+	CHAIN_TOP_LEFT_DOWN_ZZ,  ///< Zigzag (non-inverted rows) starting top-left, going down.
+	CHAIN_TOP_RIGHT_DOWN_ZZ, ///< Zigzag (non-inverted rows) starting top-right, going down.
+	CHAIN_BOTTOM_RIGHT_UP_ZZ,///< Zigzag (non-inverted rows) starting bottom-right, going up.
+	CHAIN_BOTTOM_LEFT_UP_ZZ, ///< Zigzag (non-inverted rows) starting bottom-left, going up.
+	CHAIN_RUNTIME            ///< Runtime-selectable chain type via setChainType().
+};
+
+/**
+ * @brief Bitflags controlling FourScanMapping and RuntimeFourScanMapping.
+ */
+enum FOUR_SCAN_FLAGS : uint8_t {
+	FOUR_SCAN_NONE          = 0,
+	FOUR_SCAN_SWAP_BLOCKS   = 1 << 0, ///< Swap half order: even bands go to left slot (+0), odd bands to right (+pxbase).
+	FOUR_SCAN_XOR_SEGMENTS  = 1 << 1, ///< Flip half slot on every odd pxbase segment across the panel width.
+	FOUR_SCAN_REVERSE_LEFT  = 1 << 2, ///< Reverse column order inside each pxbase segment landing in the left slot.
+	FOUR_SCAN_REVERSE_RIGHT = 1 << 3, ///< Reverse column order inside each pxbase segment landing in the right slot.
+
+	// Semantic aliases for common zigzag panels
+	FOUR_SCAN_ZIGZAG_LEFT    = FOUR_SCAN_REVERSE_LEFT,
+	FOUR_SCAN_ZIGZAG_RIGHT   = FOUR_SCAN_REVERSE_RIGHT,
+	FOUR_SCAN_ZIGZAG_SM16208 = FOUR_SCAN_SWAP_BLOCKS | FOUR_SCAN_REVERSE_LEFT
+};
+
+/**
+ * @brief Bitflags controlling EightScanMapping and RuntimeEightScanMapping (4*W x H/4 DMA folding).
+ */
+enum EIGHT_SCAN_FLAGS : uint8_t {
+	EIGHT_SCAN_NONE               = 0,
+	EIGHT_SCAN_REVERSE_BANDS      = 1 << 0, ///< Reverse the 4-band slot order within each half (slot = 3 - band).
+	EIGHT_SCAN_REVERSE_EVEN_SLOTS = 1 << 1, ///< Reverse X within pxbase slots 0 and 2.
+	EIGHT_SCAN_REVERSE_ODD_SLOTS  = 1 << 2, ///< Reverse X within pxbase slots 1 and 3.
+	EIGHT_SCAN_INVERT_ROW_IN_BAND = 1 << 3  ///< Reverse row order within each H/8 band (e.g. 1 - (y & 1) for H=16).
 };
 
 // ----------------------------------------------------------------------
-// Default Scan Rate Policy
+// Internal helpers
+// ----------------------------------------------------------------------
+namespace hub75_detail {
+
+template <typename Policy, bool Empty = (std::is_empty<Policy>::value && !std::is_final<Policy>::value)>
+struct PolicyHolder : private Policy {
+	constexpr PolicyHolder() = default;
+	constexpr explicit PolicyHolder(const Policy& p) : Policy(p) {}
+	constexpr Policy& get() noexcept { return *this; }
+	constexpr const Policy& get() const noexcept { return *this; }
+};
+
+template <typename Policy>
+struct PolicyHolder<Policy, false> {
+	Policy policy;
+	constexpr PolicyHolder() = default;
+	constexpr explicit PolicyHolder(const Policy& p) : policy(p) {}
+	constexpr Policy& get() noexcept { return policy; }
+	constexpr const Policy& get() const noexcept { return policy; }
+};
+
+static constexpr VirtualCoords applyFourScanMath(
+	VirtualCoords c,
+	uint16_t panel_res_x,
+	uint16_t panel_res_y,
+	uint16_t pxbase,
+	uint8_t flags,
+	uint16_t height_override) noexcept
+{
+	const int eff_w = (panel_res_x > 0) ? static_cast<int>(panel_res_x) : 1;
+	const int raw_h = (height_override > 0) ? static_cast<int>(height_override)
+	                                        : static_cast<int>(panel_res_y);
+	const int eff_h = (raw_h >= 4) ? raw_h : 4;
+	const int base  = (pxbase > 0) ? static_cast<int>(pxbase) : eff_w;
+
+	const int half_h = (eff_h >> 1) >= 2 ? (eff_h >> 1) : 2;
+	const int q_h    = (half_h >> 1) >= 1 ? (half_h >> 1) : 1;
+
+	const int panel_idx = c.x / eff_w;
+	const int local_x   = c.x % eff_w;
+	const int seg       = local_x / base;
+	int seg_off         = local_x % base;
+
+	const int block = (c.y / q_h) & 1;
+	bool right_half = (block == 0);
+
+	if ((flags & FOUR_SCAN_XOR_SEGMENTS) && ((seg & 1) != 0)) {
+		right_half = !right_half;
+	}
+	if (flags & FOUR_SCAN_SWAP_BLOCKS) {
+		right_half = !right_half;
+	}
+
+	if ((right_half && (flags & FOUR_SCAN_REVERSE_RIGHT)) ||
+	    (!right_half && (flags & FOUR_SCAN_REVERSE_LEFT))) {
+		seg_off = (base - 1) - seg_off;
+	}
+
+	c.x = static_cast<int16_t>(
+		panel_idx * (eff_w << 1) +
+		seg * (base << 1) +
+		(right_half ? base : 0) +
+		seg_off);
+	c.y = static_cast<int16_t>((c.y / half_h) * q_h + (c.y % q_h));
+	return c;
+}
+
+static constexpr VirtualCoords applyEightScanMath(
+	VirtualCoords c,
+	uint16_t panel_res_x,
+	uint16_t panel_res_y,
+	uint16_t pxbase,
+	uint8_t flags,
+	uint16_t height_override) noexcept
+{
+	const int eff_w = (panel_res_x > 0) ? static_cast<int>(panel_res_x) : 1;
+	const int raw_h = (height_override > 0) ? static_cast<int>(height_override)
+	                                        : static_cast<int>(panel_res_y);
+	const int eff_h = (raw_h >= 8) ? raw_h : 8;
+	const int base  = (pxbase > 0) ? static_cast<int>(pxbase) : eff_w;
+
+	const int half_h = (eff_h >> 1) >= 4 ? (eff_h >> 1) : 4;
+	const int band_h = (half_h >> 2) >= 1 ? (half_h >> 2) : 1;
+
+	const int panel_idx = c.x / eff_w;
+	const int local_x   = c.x % eff_w;
+	const int seg       = local_x / base;
+	int seg_off         = local_x % base;
+
+	int slot = (c.y / band_h) & 3;
+	if (flags & EIGHT_SCAN_REVERSE_BANDS) {
+		slot = 3 - slot;
+	}
+
+	const bool rev = ((slot & 1) == 0)
+	               ? ((flags & EIGHT_SCAN_REVERSE_EVEN_SLOTS) != 0)
+	               : ((flags & EIGHT_SCAN_REVERSE_ODD_SLOTS) != 0);
+	if (rev) {
+		seg_off = (base - 1) - seg_off;
+	}
+
+	int row_in_band = c.y % band_h;
+	if (flags & EIGHT_SCAN_INVERT_ROW_IN_BAND) {
+		row_in_band = (band_h - 1) - row_in_band;
+	}
+
+	c.x = static_cast<int16_t>(
+		panel_idx * (eff_w << 2) +
+		seg * (base << 2) +
+		slot * base +
+		seg_off);
+	c.y = static_cast<int16_t>((c.y / half_h) * band_h + row_in_band);
+	return c;
+}
+
+#ifdef USE_GFX_LITE
+using GfxBase = GFX;
+#elif !defined(NO_GFX)
+using GfxBase = Adafruit_GFX;
+#else
+struct StandaloneBase {
+	constexpr StandaloneBase() = default;
+	constexpr StandaloneBase(int16_t, int16_t) noexcept {}
+};
+using GfxBase = StandaloneBase;
+#endif
+
+} // namespace hub75_detail
+
+// ----------------------------------------------------------------------
+// Built-in Scan Mapping Policies
+// ----------------------------------------------------------------------
+
 /**
- * @brief Default policy for scan type mapping.
+ * @brief Base traits providing DMA buffer geometry multipliers and makeDMAConfig() helpers.
  *
- * This templated policy implements the static function apply() to remap
- * coordinates according to the panel scan type. It uses the panel's pixel base
- * to calculate offsets.
- *
- * @tparam Type The compile-time scan type (of type PANEL_SCAN_TYPE).
+ * Custom user mapping policies should inherit from ScanPolicyTraits<WMult, HDiv>
+ * (typically <1, 1> for linear, <2, 2> for 4-scan, or <4, 4> for 8-scan) and
+ * implement `VirtualCoords map(VirtualCoords coords, const PanelGeometry& geom) const`.
  */
-template <PANEL_SCAN_TYPE ScanType>
-struct ScanTypeMapping {
-	static constexpr VirtualCoords apply(VirtualCoords coords, int panel_pixel_base) 
+template <uint8_t DmaWidthMult, uint8_t DmaHeightDiv>
+struct ScanPolicyTraits {
+	static_assert(DmaWidthMult >= 1, "DmaWidthMult must be >= 1");
+	static_assert(DmaHeightDiv >= 1, "DmaHeightDiv must be >= 1");
+
+	static constexpr uint8_t dmaWidthMult = DmaWidthMult;
+	static constexpr uint8_t dmaHeightDiv = DmaHeightDiv;
+
+	static inline HUB75_I2S_CFG makeDMAConfig(
+		uint16_t panel_res_x,
+		uint16_t panel_res_y,
+		uint16_t chain_length = 1)
 	{
-		//log_v("ScanTypeMapping: coords.x: %d, coords.y: %d, virt_y: %d, pixel_base: %d", coords.x, coords.y, virt_y, panel_pixel_base);
+		return HUB75_I2S_CFG(
+			static_cast<uint16_t>(panel_res_x * DmaWidthMult),
+			static_cast<uint16_t>(panel_res_y / DmaHeightDiv),
+			chain_length);
+	}
 
-		// FOUR_SCAN_16PX_HIGH
-		if constexpr (ScanType == FOUR_SCAN_16PX_HIGH) 
-		{
-			if ((coords.y & 4) == 0) {
-				coords.x += (((coords.x / panel_pixel_base) + 1) * panel_pixel_base);
-			} else {
-				coords.x += ((coords.x / panel_pixel_base) * panel_pixel_base);
-			}
-			
-			coords.y = (coords.y >> 3) * 4 + (coords.y & 0b00000011);
-		}
-		// FOUR_SCAN_P8_40_x_20PX_HIGH
-		//
-		// 40x20 outdoor P8 module, 1/5 scan. This mapping was derived by
-		// probing the DMA buffer pixel by pixel on real hardware, because the
-		// panel does not follow the usual four-scan fold.
-		//
-		// One DMA row drives two physical rows five apart (at one scan address
-		// dma_y and dma_y+5 each light two rows - four rows lit at once). Along
-		// a DMA row the pixels are handed to those two rows in segments of 4
-		// and 8 columns, in a palindromic order: DMA column x and column 79-x
-		// always feed the same physical row.
-		//
-		// Inverted, that collapses to the two expressions below: each physical
-		// row takes its columns in groups of 8 that advance 16 DMA columns at a
-		// time, the two rows of the pair being offset four columns in opposite
-		// directions.
-		else if constexpr (ScanType == FOUR_SCAN_P8_40_x_20PX_HIGH)
-		{
-			const int panel = coords.x / panel_pixel_base;	// module in the chain
-			const int col	= coords.x % panel_pixel_base;	// column within it
-			const int row	= coords.y;						// row within it (0..19)
+	static inline HUB75_I2S_CFG makeDMAConfig(
+		uint16_t panel_res_x,
+		uint16_t panel_res_y,
+		uint16_t chain_length,
+		const HUB75_I2S_CFG::i2s_pins& pinmap)
+	{
+		return HUB75_I2S_CFG(
+			static_cast<uint16_t>(panel_res_x * DmaWidthMult),
+			static_cast<uint16_t>(panel_res_y / DmaHeightDiv),
+			chain_length,
+			pinmap);
+	}
+};
 
-			// Which row of the scan pair: 0..4 and 10..14 are the upper row,
-			// 5..9 and 15..19 the lower one.
-			const int is_lower = (row / 5) % 2;
-
-			const int u		= is_lower ? col : col + 4;
-			const int dma_x	= 16 * (u / 8) + (u % 8) + (is_lower ? 4 : -4);
-
-			coords.x = panel * (panel_pixel_base * 2) + dma_x;
-			coords.y = (row % 5) + 5 * (row / 10);
-		}
-		// FOUR_SCAN_5PX_64X32HIGH
-		//
-		// P5 outdoor 64x32 module, 1/8 scan (HRLOP-P5-1921/V2.0, silkscreen
-		// P5out-728T-2311-1A-240 / P5-smd1921-8S-2). Derived by probing the
-		// DMA buffer pixel by pixel on real hardware.
-		//
-		// This panel exposes A, B and C only - no D line - so the scan gives
-		// 8 addresses x R1/R2 = 16 rows, and the other 16 rows are reached
-		// through the doubled DMA width. It does NOT use the big left/right
-		// halves fold that FOUR_SCAN_32PX_HIGH assumes: the wiring has a
-		// period of 8 in x, each group of 8 DMA columns feeding 4 physical
-		// columns across two row bands.
-		//
-		// Measured forward mapping (dma -> physical):
-		//	   physX = 4*(dma_x/8) + (dma_x%4)
-		//	   band  = (dma_x/4)%2   // 0 -> rows 8..15 / 24..31
-		//							 // 1 -> rows 0..7  / 16..23
-		//	   physY = dma_y + 8*(dma_y/8) + 8*(1-band)
-		//
-		// 16 groups x 4 columns = 64 columns and 16 DMA rows x 2 bands = 32
-		// rows, so 128*16 == 64*32 - an exact bijection. Below is the inverse.
-		else if constexpr (ScanType == FOUR_SCAN_5PX_64X32HIGH)
-		{
-			const int panel = coords.x / panel_pixel_base;	// module in the chain
-			const int col	= coords.x % panel_pixel_base;	// physical column 0..63
-			const int q		= coords.y / 8;					// row block 0..3
-			const int r		= coords.y % 8;					// row within the block
-
-			// Row blocks 0 and 2 (phys rows 0..7 / 16..23) live in band 1,
-			// blocks 1 and 3 (phys rows 8..15 / 24..31) in band 0.
-			const int band = 1 - (q % 2);
-
-			coords.x = panel * (panel_pixel_base * 2) + 8 * (col / 4) + 4 * band + (col % 4);
-			coords.y = r + 8 * (q / 2);
-		}
-		// FOUR_SCAN_40PX_HIGH
-		else if constexpr (ScanType == FOUR_SCAN_40PX_HIGH) 
-		{
-			
-			if (((coords.y) / 10) % 2 == 0) {				
-				coords.x += (((coords.x / panel_pixel_base) + 1) * panel_pixel_base);
-			} else {
-				coords.x += ((coords.x / panel_pixel_base) * panel_pixel_base);
-			}
-			coords.y = (coords.y / 20) * 10 + (coords.y % 10);
-		}
-		else if constexpr (ScanType == FOUR_SCAN_40_80PX_HFARCAN) 
-		{
-			//  Weird mapping: https://github.com/mrcodetastic/ESP32-HUB75-MatrixPanel-DMA/issues/759
-			panel_pixel_base = 16;
-
-            // Mapping logic
-            int panel_local_x = coords.x % 80; // Compensate for chain of panels
-
-            if ((((coords.y) / 10) % 2) ^ ((panel_local_x / panel_pixel_base) % 2)) {
-                coords.x += ((coords.x / panel_pixel_base) * panel_pixel_base);
-            } else {
-                coords.x += (((coords.x / panel_pixel_base) + 1) * panel_pixel_base);
-            }
-
-            coords.y = (coords.y % 10) + 10 * ((coords.y / 20) % 2);
-			
-		}		
-		//	FOUR_SCAN_64PX_HIGH || FOUR_SCAN_32PX_HIGH
-		else if constexpr (ScanType == FOUR_SCAN_64PX_HIGH || ScanType == FOUR_SCAN_32PX_HIGH) 
-		{
-			if constexpr (ScanType == FOUR_SCAN_64PX_HIGH) {
-				// As in the original code (with extra remapping for 64px high panels)
-				if ((coords.y & 8) != ((coords.y & 16) >> 1)) {
-					coords.y = (((coords.y & 0b11000) ^ 0b11000) + (coords.y & 0b11100111));
-				}
-			}
-
-			if ((coords.y & 8) == 0) {
-				coords.x += (((coords.x / panel_pixel_base) + 1) * panel_pixel_base);
-			} else {
-				coords.x += ((coords.x / panel_pixel_base) * panel_pixel_base);
-			}
-			
-			coords.y = (coords.y >> 4) * 8 + (coords.y & 0b00000111);
-		}
-
-		// FOUR_SCAN_64PX_HIGH_16S
-		//
-		// 64x64 1/16-scan ("16S") panels, typically P3 indoor modules with
-		// MBI5124-class drivers. The panel is wired as four 16-row blocks and
-		// each address step drives two of those rows in parallel, so the DMA
-		// surface is 2*W x H/2:
-		//
-		//   block 0 (rows  0..15) -> right half of DMA rows 0..15
-		//   block 1 (rows 16..31) -> left  half of DMA rows 0..15
-		//   block 2 (rows 32..47) -> right half of DMA rows 16..31
-		//   block 3 (rows 48..63) -> left  half of DMA rows 16..31
-		//
-		// This is the same math the Pixel_Mapping_Test example applies in its
-		// generic "any other height" branch, promoted to a scan type:
-		//     block = y / 16
-		//     x    += (block even) ? ((x / W) + 1) * W : (x / W) * W
-		//     y     = (block / 2) * 16 + (y % 16)
-		//
-		// NOTE: this is NOT the same family as FOUR_SCAN_64PX_HIGH, which
-		// folds 64px-high panels in 8-row blocks (ICN2037BP, issue #345).
-		// If a 64x64 panel shows four scrambled strips with that mode, try
-		// this one instead.
-		else if constexpr (ScanType == FOUR_SCAN_64PX_HIGH_16S)
-		{
-			const int block = coords.y >> 4; // 0..3
-			if ((block & 1) == 0) {
-				coords.x += (((coords.x / panel_pixel_base) + 1) * panel_pixel_base);
-			} else {
-				coords.x += ((coords.x / panel_pixel_base) * panel_pixel_base);
-			}
-			coords.y = ((block >> 1) << 4) + (coords.y & 0x0F);
-		}
-
-		// For STANDARD_TWO_SCAN / NORMAL_ONE_SIXTEEN no remapping is done.
+/**
+ * @brief Default two-scan linear identity mapping (1/8, 1/16 on 32px, 1/32 on 64px).
+ */
+struct TwoScanMapping : ScanPolicyTraits<1, 1> {
+	constexpr VirtualCoords map(VirtualCoords coords, const PanelGeometry&) const noexcept {
 		return coords;
 	}
 };
 
+/**
+ * @brief Parameterized compile-time 4-scan mapping (DMA folded 2*W x H/2).
+ *
+ * Covers ~95% of 1/4, 1/5, 1/6, 1/8, 1/10, and 1/16 ("16S") outdoor/indoor
+ * non-two-scan panels at zero runtime overhead.
+ *
+ * @tparam PxBase      Segment width in pixels (e.g., 1, 4, 8, 16, 32). 0 uses panel_res_x.
+ * @tparam Flags       Bitwise OR of FOUR_SCAN_FLAGS (default: FOUR_SCAN_NONE).
+ * @tparam PanelHeight Override module height in rows (0 auto-reads geom.panel_res_y).
+ */
+template <uint16_t PxBase = 0, uint8_t Flags = FOUR_SCAN_NONE, uint16_t PanelHeight = 0>
+struct FourScanMapping : ScanPolicyTraits<2, 2> {
+	static constexpr uint16_t pxbase       = PxBase;
+	static constexpr uint8_t  flags        = Flags;
+	static constexpr uint16_t panel_height = PanelHeight;
+
+	constexpr VirtualCoords map(VirtualCoords coords, const PanelGeometry& geom) const noexcept {
+		return hub75_detail::applyFourScanMath(
+			coords, geom.panel_res_x, geom.panel_res_y, PxBase, Flags, PanelHeight);
+	}
+};
+
+/**
+ * @brief Special 64x64 4-scan bit-swapped mapping (e.g., ICN2037BP outdoor 64x64 1/16S, issue #345).
+ *
+ * Folds 64 rows in 8-row blocks after swapping address bits 3 and 4, unlike standard
+ * 16S panels (such as MBI5124) which fold in 16-row blocks via FourScanMapping<>.
+ */
+template <uint16_t PxBase = 0, uint8_t Flags = FOUR_SCAN_NONE>
+struct FourScan64pxBitSwapMapping : ScanPolicyTraits<2, 2> {
+	static constexpr uint16_t pxbase = PxBase;
+	static constexpr uint8_t  flags  = Flags;
+
+	constexpr VirtualCoords map(VirtualCoords coords, const PanelGeometry& geom) const noexcept {
+		if ((coords.y & 8) != ((coords.y & 16) >> 1)) {
+			coords.y = static_cast<int16_t>(
+				((coords.y & 0b11000) ^ 0b11000) + (coords.y & 0b11100111));
+		}
+		return hub75_detail::applyFourScanMath(
+			coords, geom.panel_res_x, geom.panel_res_y, PxBase, Flags, 32);
+	}
+};
+
+/**
+ * @brief Parameterized compile-time 8-scan mapping (DMA folded 4*W x H/4).
+ *
+ * Supports panels lighting 8 rows in parallel per refresh step (e.g., 32x16 1/2 scan
+ * and 32x32 1/4 scan modules, see Discussions #819, #909, Issues #850, #967).
+ *
+ * @tparam PxBase      Segment width in pixels (e.g., 8, 16, 32). 0 uses panel_res_x.
+ * @tparam Flags       Bitwise OR of EIGHT_SCAN_FLAGS (default: EIGHT_SCAN_NONE).
+ * @tparam PanelHeight Override module height in rows (0 auto-reads geom.panel_res_y).
+ */
+template <uint16_t PxBase = 0, uint8_t Flags = EIGHT_SCAN_NONE, uint16_t PanelHeight = 0>
+struct EightScanMapping : ScanPolicyTraits<4, 4> {
+	static constexpr uint16_t pxbase       = PxBase;
+	static constexpr uint8_t  flags        = Flags;
+	static constexpr uint16_t panel_height = PanelHeight;
+
+	constexpr VirtualCoords map(VirtualCoords coords, const PanelGeometry& geom) const noexcept {
+		return hub75_detail::applyEightScanMath(
+			coords, geom.panel_res_x, geom.panel_res_y, PxBase, Flags, PanelHeight);
+	}
+};
+
+/**
+ * @brief Configuration struct for RuntimeFourScanMapping.
+ */
+struct FourScanConfig {
+	uint16_t pxbase       = 0;              ///< Segment width in pixels (0 = use panel_res_x).
+	uint8_t  flags        = FOUR_SCAN_NONE; ///< Bitwise OR of FOUR_SCAN_FLAGS.
+	uint16_t panel_height = 0;              ///< Override logical height (0 = use panel_res_y).
+	bool     bitswap_64px = false;          ///< Enable #345 ICN2037BP 8-row bit-swap for 64px panels.
+};
+
+/**
+ * @brief Runtime-configurable 4-scan policy (useful for diagnostic sketches like Pixel_Mapping_Test).
+ */
+struct RuntimeFourScanMapping : ScanPolicyTraits<2, 2> {
+	FourScanConfig config;
+
+	constexpr RuntimeFourScanMapping() = default;
+	constexpr RuntimeFourScanMapping(const FourScanConfig& cfg) noexcept : config(cfg) {}
+
+	constexpr VirtualCoords map(VirtualCoords coords, const PanelGeometry& geom) const noexcept {
+		if (config.bitswap_64px) {
+			if ((coords.y & 8) != ((coords.y & 16) >> 1)) {
+				coords.y = static_cast<int16_t>(
+					((coords.y & 0b11000) ^ 0b11000) + (coords.y & 0b11100111));
+			}
+			return hub75_detail::applyFourScanMath(
+				coords, geom.panel_res_x, geom.panel_res_y, config.pxbase, config.flags, 32);
+		}
+		return hub75_detail::applyFourScanMath(
+			coords, geom.panel_res_x, geom.panel_res_y, config.pxbase, config.flags, config.panel_height);
+	}
+};
+
+/**
+ * @brief Configuration struct for RuntimeEightScanMapping.
+ */
+struct EightScanConfig {
+	uint16_t pxbase       = 0;               ///< Segment width in pixels (0 = use panel_res_x).
+	uint8_t  flags        = EIGHT_SCAN_NONE; ///< Bitwise OR of EIGHT_SCAN_FLAGS.
+	uint16_t panel_height = 0;               ///< Override logical height (0 = use panel_res_y).
+};
+
+/**
+ * @brief Runtime-configurable 8-scan policy (4*W x H/4 DMA folding).
+ */
+struct RuntimeEightScanMapping : ScanPolicyTraits<4, 4> {
+	EightScanConfig config;
+
+	constexpr RuntimeEightScanMapping() = default;
+	constexpr RuntimeEightScanMapping(const EightScanConfig& cfg) noexcept : config(cfg) {}
+
+	constexpr VirtualCoords map(VirtualCoords coords, const PanelGeometry& geom) const noexcept {
+		return hub75_detail::applyEightScanMath(
+			coords, geom.panel_res_x, geom.panel_res_y, config.pxbase, config.flags, config.panel_height);
+	}
+};
+
+// ----------------------------------------------------------------------
+// Convenience aliases for common panel heights & confirmed issue presets
+// ----------------------------------------------------------------------
+template <uint16_t PxBase = 0, uint8_t Flags = FOUR_SCAN_NONE>
+using FourScan16px = FourScanMapping<PxBase, Flags, 16>;
+
+template <uint16_t PxBase = 0, uint8_t Flags = FOUR_SCAN_NONE>
+using FourScan32px = FourScanMapping<PxBase, Flags, 32>;
+
+template <uint16_t PxBase = 0, uint8_t Flags = FOUR_SCAN_NONE>
+using FourScan40px = FourScanMapping<PxBase, Flags, 40>;
+
+using FourScan64_16S          = FourScanMapping<0, FOUR_SCAN_NONE, 64>;
+using FourScanP8_40x20        = FourScanMapping<4, FOUR_SCAN_SWAP_BLOCKS | FOUR_SCAN_XOR_SEGMENTS, 20>;
+using FourScan80x40_ZigZag8   = FourScanMapping<8, FOUR_SCAN_ZIGZAG_SM16208, 40>;
+using FourScan80x40_HFarcan   = FourScanMapping<16, FOUR_SCAN_XOR_SEGMENTS, 40>;
+using EightScan32x16_819      = EightScanMapping<8, EIGHT_SCAN_REVERSE_EVEN_SLOTS | EIGHT_SCAN_INVERT_ROW_IN_BAND, 16>;
+using EightScan32x16_SM16208  = EightScanMapping<8, EIGHT_SCAN_REVERSE_BANDS | EIGHT_SCAN_REVERSE_ODD_SLOTS | EIGHT_SCAN_INVERT_ROW_IN_BAND, 16>;
+
 // ----------------------------------------------------------------------
 // VirtualMatrixPanel_T Declaration
-//
-// Template parameters:
-//	 - ChainScanType: compile–time panel chain configuration.
-//	 - ScanTypeMapping: a policy type implementing a static "apply" function 
-//					   (default is ScanTypeMapping<STANDARD_TWO_SCAN>).
-//	 - ScaleFactor: a compile–time zoom factor (must be >= 1).
-#ifdef USE_GFX_LITE
-template <PANEL_CHAIN_TYPE ChainScanType,
-		  class ScanTypeMapping = ScanTypeMapping<STANDARD_TWO_SCAN>,
-		  int ScaleFactor = 1>
-class VirtualMatrixPanel_T : public GFX {
-public:
-#elif !defined(NO_GFX)
-template <PANEL_CHAIN_TYPE ChainScanType,
-		  class ScanTypeMapping = ScanTypeMapping<STANDARD_TWO_SCAN>,
-		  int ScaleFactor = 1>
-class VirtualMatrixPanel_T : public Adafruit_GFX {
-public:
-#else
-template <PANEL_CHAIN_TYPE ChainScanType,
-		  class ScanTypeMapping = ScanTypeMapping<STANDARD_TWO_SCAN>,
-		  int ScaleFactor = 1>
-class VirtualMatrixPanel_T {
-public:
-#endif
+// ----------------------------------------------------------------------
+template <PANEL_CHAIN_TYPE ChainScanType = CHAIN_NONE,
+          class ScanPolicy = TwoScanMapping,
+          int ScaleFactor = 1>
+class VirtualMatrixPanel_T : public hub75_detail::GfxBase {
+	static_assert(ScaleFactor >= 1, "ScaleFactor must be >= 1");
 
-	// Constructor: pass the underlying MatrixPanel_I2S_DMA display,
-	// virtual module dimensions, and physical panel resolution.
-	// (Chain type is chosen at compile time.)
-	VirtualMatrixPanel_T(uint8_t _vmodule_rows,
-						uint8_t _vmodule_cols,
-						uint8_t _panel_res_x,
-						uint8_t _panel_res_y)
-#ifdef USE_GFX_LITE
-	  : GFX(_vmodule_cols * _panel_res_x, _vmodule_rows * _panel_res_y),
-#elif !defined(NO_GFX)
-	  : Adafruit_GFX(_vmodule_cols * _panel_res_x, _vmodule_rows * _panel_res_y),
-#else
-	  :
-#endif
+public:
+	static constexpr PANEL_CHAIN_TYPE chain_type   = ChainScanType;
+	static constexpr int              scale_factor = ScaleFactor;
+	using scan_policy_type                         = ScanPolicy;
+
+	/**
+	 * @brief Derive a matching HUB75_I2S_CFG from physical module geometry and grid size.
+	 */
+	static inline HUB75_I2S_CFG makeDMAConfig(
+		uint16_t panel_res_x,
+		uint16_t panel_res_y,
+		uint16_t vmodule_rows = 1,
+		uint16_t vmodule_cols = 1)
+	{
+		return ScanPolicy::makeDMAConfig(
+			panel_res_x, panel_res_y, static_cast<uint16_t>(vmodule_rows * vmodule_cols));
+	}
+
+	static inline HUB75_I2S_CFG makeDMAConfig(
+		uint16_t panel_res_x,
+		uint16_t panel_res_y,
+		uint16_t vmodule_rows,
+		uint16_t vmodule_cols,
+		const HUB75_I2S_CFG::i2s_pins& pinmap)
+	{
+		return ScanPolicy::makeDMAConfig(
+			panel_res_x, panel_res_y, static_cast<uint16_t>(vmodule_rows * vmodule_cols), pinmap);
+	}
+
+	/**
+	 * @brief Construct VirtualMatrixPanel_T bound to an initialized/configured MatrixPanel_I2S_DMA.
+	 *
+	 * @param disp          Reference to the underlying DMA display object.
+	 * @param _vmodule_rows Number of vertically chained panel rows (>= 1).
+	 * @param _vmodule_cols Number of horizontally chained panel columns (>= 1).
+	 * @param _panel_res_x  Physical width of one panel module in pixels (>= 1).
+	 * @param _panel_res_y  Physical height of one panel module in pixels (>= 1).
+	 * @param scan_policy   Optional scan policy instance (required only for stateful runtime policies).
+	 */
+	VirtualMatrixPanel_T(
+		MatrixPanel_I2S_DMA& disp,
+		uint16_t _vmodule_rows,
+		uint16_t _vmodule_cols,
+		uint16_t _panel_res_x,
+		uint16_t _panel_res_y,
+		const ScanPolicy& scan_policy = ScanPolicy())
+	  : hub75_detail::GfxBase(
+			static_cast<int16_t>((_vmodule_cols * _panel_res_x) / ScaleFactor),
+			static_cast<int16_t>((_vmodule_rows * _panel_res_y) / ScaleFactor)),
 		panel_res_x(_panel_res_x),
 		panel_res_y(_panel_res_y),
-		panel_pixel_base(_panel_res_x), // default pixel base is panel_res_x
-		vmodule_rows(_vmodule_rows),
-		vmodule_cols(_vmodule_cols),
-		virtual_res_x(_vmodule_cols * _panel_res_x),
-		virtual_res_y(_vmodule_rows * _panel_res_y),
-		dma_res_x(_panel_res_x * _vmodule_rows * _vmodule_cols - 1),
-		_virtual_res_x(virtual_res_x),
-		_virtual_res_y(virtual_res_y),
-		_rotate(0)
+		display(&disp),
+		policy_holder_(scan_policy),
+		vmodule_rows(static_cast<uint8_t>(_vmodule_rows)),
+		vmodule_cols(static_cast<uint8_t>(_vmodule_cols)),
+		virtual_res_x(static_cast<uint16_t>(_vmodule_cols * _panel_res_x)),
+		virtual_res_y(static_cast<uint16_t>(_vmodule_rows * _panel_res_y)),
+		dma_max_x(static_cast<uint16_t>((_panel_res_x * _vmodule_rows * _vmodule_cols) > 0
+		                                ? (_panel_res_x * _vmodule_rows * _vmodule_cols - 1)
+		                                : 0)),
+		_raw_res_x(virtual_res_x),
+		_raw_res_y(virtual_res_y),
+		_scaled_res_x(static_cast<uint16_t>(virtual_res_x / ScaleFactor)),
+		_scaled_res_y(static_cast<uint16_t>(virtual_res_y / ScaleFactor)),
+		_rotate(0),
+		runtime_chain_type_(CHAIN_NONE)
 	{
-		// Initialize with an invalid coordinate.
-		coords.x = coords.y = -1;
+		dma_config_valid_ = validateDMAConfig();
+	}
+
+	// ------------------------------------------------------------------
+	// Validation & Policy Accessors
+	// ------------------------------------------------------------------
+	[[nodiscard]] inline bool isDMAConfigValid() const noexcept {
+		return dma_config_valid_;
+	}
+
+	inline ScanPolicy& scanPolicy() noexcept {
+		return policy_holder_.get();
+	}
+
+	inline const ScanPolicy& scanPolicy() const noexcept {
+		return policy_holder_.get();
+	}
+
+	inline void setChainType(PANEL_CHAIN_TYPE chain) noexcept {
+		runtime_chain_type_ = chain;
+	}
+
+	[[nodiscard]] inline PANEL_CHAIN_TYPE getChainType() const noexcept {
+		if constexpr (ChainScanType == CHAIN_RUNTIME) {
+			return runtime_chain_type_;
+		} else {
+			return ChainScanType;
+		}
+	}
+
+	[[nodiscard]] inline MatrixPanel_I2S_DMA* getDisplay() const noexcept {
+		return display;
 	}
 
 	// ------------------------------------------------------------------
 	// Drawing methods
+	// ------------------------------------------------------------------
 	inline void drawPixel(int16_t x, int16_t y, uint16_t color) {
-		if constexpr (ScaleFactor > 1) 
-		{
-			for (int dx = 0; dx < ScaleFactor; dx++) {
-				for (int dy = 0; dy < ScaleFactor; dy++) {
-					//irtualCoords v = getCoords(x * ScaleFactor + dx, y * ScaleFactor + dy);
-					// display->drawPixel(v.x, v.y, color);
-					calcPhysicalToElectricalCoords(x * ScaleFactor + dx, y * ScaleFactor + dy);
-					display->drawPixel(coords.x, coords.y, color);
-					
-				}
-			}
-		} else {
-			//VirtualCoords v = getCoords(x, y);
-			//display->drawPixel(v.x, v.y, color);
-			
-			calcPhysicalToElectricalCoords(x , y);
-			display->drawPixel(coords.x, coords.y, color);			
-		}
-
-		//log_v("x: %d, y: %d -> coords.x: %d, coords.y: %d", x, y, coords.x, coords.y);
+		drawScaledPixel(x, y, [this, color](int16_t px, int16_t py) {
+			display->drawPixel(px, py, color);
+		});
 	}
 
 	inline void fillScreen(uint16_t color) {
@@ -363,21 +550,16 @@ public:
 	}
 
 	inline void drawPixelRGB888(int16_t x, int16_t y, uint8_t r, uint8_t g, uint8_t b) {
-		//VirtualCoords v = getCoords(x, y);
-		//display->drawPixelRGB888(v.x, v.y, r, g, b);
-		
-		calcPhysicalToElectricalCoords(x , y);
-		display->drawPixelRGB888(coords.x, coords.y, r, g, b);	
+		drawScaledPixel(x, y, [this, r, g, b](int16_t px, int16_t py) {
+			display->drawPixelRGB888(px, py, r, g, b);
+		});
 	}
 
 #ifdef USE_GFX_LITE
 	inline void drawPixel(int16_t x, int16_t y, CRGB color) {
-		//VirtualCoords v = getCoords(x, y);
-		//display->drawPixel(v.x, v.y, color);
-		
-		calcPhysicalToElectricalCoords(x , y);
-		display->drawPixel(coords.x, coords.y, color);
-		
+		drawScaledPixel(x, y, [this, color](int16_t px, int16_t py) {
+			display->drawPixel(px, py, color);
+		});
 	}
 
 	inline void fillScreen(CRGB color) {
@@ -387,228 +569,334 @@ public:
 
 #ifndef NO_GFX
 	inline void drawDisplayTest() {
-
-		// Call ourself as we need to re-map pixels if we're using our own ScanTypeMapping
-		// Note: Will mean this display test will be impacted by chaining approach etc.
-		// this->setFont(&FreeSansBold12pt7b);	
 		this->setTextColor(display->color565(255, 255, 0));
-		// this->setTextSize(1);
+		const int cell_w = static_cast<int>(panel_res_x) / ScaleFactor;
+		const int cell_h = static_cast<int>(panel_res_y) / ScaleFactor;
+		if (cell_w <= 0 || cell_h <= 0) {
+			return;
+		}
 		for (int col = 0; col < vmodule_cols; col++) {
 			for (int row = 0; row < vmodule_rows; row++) {
-
-				int start_x = col * panel_res_x;
-				int start_y = row * panel_res_y;
-
-				int panel_id = col + (row * vmodule_cols) + 1;
-				//int top_left_x = panel * panel_res_x;
-				this->drawRect(start_x, start_y, panel_res_x, panel_res_y, this->color565(0, 255, 0));
-				this->setCursor(start_x + panel_res_x/2 - 2, start_y + panel_res_y/2 - 4);
+				const int start_x  = col * cell_w;
+				const int start_y  = row * cell_h;
+				const int panel_id = col + (row * vmodule_cols) + 1;
+				this->drawRect(start_x, start_y, cell_w, cell_h, this->color565(0, 255, 0));
+				this->setCursor(start_x + cell_w / 2 - 2, start_y + cell_h / 2 - 4);
 				this->print(panel_id);
-
-				//log_d("drawDisplayTest() Panel: %d, start_x: %d, start_y: %d", panel_id, start_x, start_y);
 			}
-		}  
-		
-	}
-
-	inline void drawDisplayTestDMA()
-	{
-		// Write to the underlying panels only via the dma_display instance.
-		// This only works on standard panels with a linear mapping (i.e. two-scan).
-		this->display->setTextColor(this->display->color565(255, 255, 0));
-		this->display->setTextSize(1);
-	
-		for (int panel = 0; panel < vmodule_cols * vmodule_rows; panel++)
-		{
-			int top_left_x = panel * panel_res_x;
-			this->display->drawRect(top_left_x, 0, panel_res_x, panel_res_y, this->display->color565(0, 255, 0));
-			this->display->setCursor((panel * panel_res_x) + 6, panel_res_y - 12);
-			this->display->print((vmodule_cols * vmodule_rows) - panel);
 		}
 	}
 
+	inline void drawDisplayTestDMA() {
+		// Writes directly to the underlying DMA buffer (two-scan linear layouts only).
+		this->display->setTextColor(this->display->color565(255, 255, 0));
+		this->display->setTextSize(1);
+		const int total_panels = static_cast<int>(vmodule_cols) * vmodule_rows;
+		for (int panel = 0; panel < total_panels; panel++) {
+			const int top_left_x = panel * panel_res_x;
+			this->display->drawRect(top_left_x, 0, panel_res_x, panel_res_y, this->display->color565(0, 255, 0));
+			this->display->setCursor((panel * panel_res_x) + 6, panel_res_y - 12);
+			this->display->print(total_panels - panel);
+		}
+	}
 #endif
 
 	inline void clearScreen() { display->clearScreen(); }
-
 	inline uint16_t color444(uint8_t r, uint8_t g, uint8_t b) { return display->color444(r, g, b); }
 	inline uint16_t color565(uint8_t r, uint8_t g, uint8_t b) { return display->color565(r, g, b); }
-
 	inline void flipDMABuffer() { display->flipDMABuffer(); }
 
 	// ------------------------------------------------------------------
 	// Rotation (runtime)
+	// ------------------------------------------------------------------
 	inline void setRotation(uint8_t rotate) {
-		if (rotate < 4)
-			_rotate = rotate;
-#ifdef NO_GFX
-		// When NO_GFX is defined, update _virtual_res_x/_virtual_res_y as needed.
-#else
-		uint8_t rotation = (rotate & 3);
-		switch (rotation) {
+		_rotate = static_cast<uint8_t>(rotate & 3);
+		switch (_rotate) {
 			case 0:
 			case 2:
-				_virtual_res_x = virtual_res_x;
-				_virtual_res_y = virtual_res_y;
-				_width = virtual_res_x;
-				_height = virtual_res_y;
+				_raw_res_x = virtual_res_x;
+				_raw_res_y = virtual_res_y;
 				break;
 			case 1:
 			case 3:
-				_virtual_res_x = virtual_res_y;
-				_virtual_res_y = virtual_res_x;
-				_width = virtual_res_y;
-				_height = virtual_res_x;
+				_raw_res_x = virtual_res_y;
+				_raw_res_y = virtual_res_x;
 				break;
 		}
+		_scaled_res_x = static_cast<uint16_t>(_raw_res_x / ScaleFactor);
+		_scaled_res_y = static_cast<uint16_t>(_raw_res_y / ScaleFactor);
+
+#ifndef NO_GFX
+		this->rotation = _rotate;
+		this->_width   = static_cast<int16_t>(_scaled_res_x);
+		this->_height  = static_cast<int16_t>(_scaled_res_y);
 #endif
 	}
 
-	// ------------------------------------------------------------------
-	// Panel scan–type configuration (runtime adjustment of pixel base)
-	inline void setPixelBase(uint8_t pixel_base) {
-		panel_pixel_base = pixel_base;
-	}
-
-	// ------------------------------------------------------------------
-	// calcPhysicalToElectricalCoords() maps a virtual (x,y) coordinate to a physical coordinate.
-	// VirtualCoords getCoords(int16_t virt_x, int16_t virt_y) {
-	void calcPhysicalToElectricalCoords(int16_t virt_x, int16_t virt_y) {
-		
-#ifdef NO_GFX
-		if (virt_x < 0 || virt_x >= _virtual_res_x || virt_y < 0 || virt_y >= _virtual_res_y) {
-#else
-		if (virt_x < 0 || virt_x >= _width || virt_y < 0 || virt_y >= _height) {
-#endif
-			coords.x = coords.y = -1;
-			return;
-			//return coords;
-		}
-
-		//log_d("calcCoords pre-chain: virt_x: %d, virt_y: %d", virt_x, virt_y);
-
-		// --- Runtime rotation ---
-		switch (_rotate) {
-			case 1: {
-				int16_t temp = virt_x;
-				virt_x = virt_y;
-				virt_y = virtual_res_y - 1 - temp;
-				break;
-			}
-			case 2: {
-				virt_x = virtual_res_x - 1 - virt_x;
-				virt_y = virtual_res_y - 1 - virt_y;
-				break;
-			}
-			case 3: {
-				int16_t temp = virt_x;
-				virt_x = virtual_res_x - 1 - virt_y;
-				virt_y = temp;
-				break;
-			}
-			default:
-				break;
-		}
-
-		// --- Chain mapping ---
-		int row = virt_y / panel_res_y; // 0-indexed row in the virtual module
-		if constexpr (ChainScanType == CHAIN_TOP_RIGHT_DOWN) {
-			if ((row & 1) == 1) {
-				coords.x = dma_res_x - virt_x - (row * virtual_res_x);
-				coords.y = panel_res_y - 1 - (virt_y % panel_res_y);
-			} else {
-				coords.x = ((vmodule_rows - (row + 1)) * virtual_res_x) + virt_x;
-				coords.y = (virt_y % panel_res_y);
-			}
-		}
-		else if constexpr (ChainScanType == CHAIN_TOP_RIGHT_DOWN_ZZ) {
-			coords.x = ((vmodule_rows - (row + 1)) * virtual_res_x) + virt_x;
-			coords.y = (virt_y % panel_res_y);
-		}
-		else if constexpr (ChainScanType == CHAIN_TOP_LEFT_DOWN) {
-			if ((row & 1) == 0) {
-				coords.x = dma_res_x - virt_x - (row * virtual_res_x);
-				coords.y = panel_res_y - 1 - (virt_y % panel_res_y);
-			} else {
-				coords.x = ((vmodule_rows - (row + 1)) * virtual_res_x) + virt_x;
-				coords.y = (virt_y % panel_res_y);
-			}
-		}
-		else if constexpr (ChainScanType == CHAIN_TOP_LEFT_DOWN_ZZ) {
-			coords.x = ((vmodule_rows - (row + 1)) * virtual_res_x) + virt_x;
-			coords.y = (virt_y % panel_res_y);
-		}
-		else if constexpr (ChainScanType == CHAIN_BOTTOM_LEFT_UP) {
-			row = vmodule_rows - row - 1;
-			if ((row & 1) == 1) {
-				coords.x = ((vmodule_rows - (row + 1)) * virtual_res_x) + virt_x;
-				coords.y = (virt_y % panel_res_y);
-			} else {
-				coords.x = dma_res_x - (row * virtual_res_x) - virt_x;
-				coords.y = panel_res_y - 1 - (virt_y % panel_res_y);
-			}
-		}
-		else if constexpr (ChainScanType == CHAIN_BOTTOM_LEFT_UP_ZZ) {
-			row = vmodule_rows - row - 1;
-			coords.x = ((vmodule_rows - (row + 1)) * virtual_res_x) + virt_x;
-			coords.y = (virt_y % panel_res_y);
-		}
-		else if constexpr (ChainScanType == CHAIN_BOTTOM_RIGHT_UP) {
-			row = vmodule_rows - row - 1;
-			if ((row & 1) == 0) {
-				coords.x = ((vmodule_rows - (row + 1)) * virtual_res_x) + virt_x;
-				coords.y = (virt_y % panel_res_y);
-			} else {
-				coords.x = dma_res_x - (row * virtual_res_x) - virt_x;
-				coords.y = panel_res_y - 1 - (virt_y % panel_res_y);
-			}
-		}
-		else if constexpr (ChainScanType == CHAIN_BOTTOM_RIGHT_UP_ZZ) {
-			row = vmodule_rows - row - 1;
-			coords.x = ((vmodule_rows - (row + 1)) * virtual_res_x) + virt_x;
-			coords.y = (virt_y % panel_res_y);
-		}
-		else { // CHAIN_NONE (default)
-			coords.x = virt_x;
-			coords.y = virt_y;
-		}
-
-		//log_d("calcCoords post-chain: virt_x: %d, virt_y: %d", virt_x, virt_y);  
-
-		// --- Apply physical LED panel scan–type mapping / fix ---
-		coords = ScanTypeMapping::apply(coords, panel_pixel_base);
-
+	[[nodiscard]] inline uint8_t getRotation() const noexcept {
+		return _rotate;
 	}
 
 #ifdef NO_GFX
-	inline uint16_t width()	 const { return _virtual_res_x; }
-	inline uint16_t height() const { return _virtual_res_y; }
+	[[nodiscard]] inline uint16_t width()  const noexcept { return _scaled_res_x; }
+	[[nodiscard]] inline uint16_t height() const noexcept { return _scaled_res_y; }
 #endif
 
 	// ------------------------------------------------------------------
-	// Data members (public for compatibility)
-	VirtualCoords coords;
-	
-	uint8_t panel_res_x;	   // physical panel resolution X
-	uint8_t panel_res_y;	   // physical panel resolution Y
-	uint8_t panel_pixel_base; // used for scan–type mapping
+	// Coordinate Transformation Pipeline (pure & stateless)
+	// ------------------------------------------------------------------
+	/**
+	 * @brief Map an unscaled rotated virtual coordinate to a physical/DMA coordinate.
+	 * @return {-1, -1} if out of bounds.
+	 */
+	[[nodiscard]] inline VirtualCoords getCoords(int16_t virt_x, int16_t virt_y) const noexcept {
+		if (virt_x < 0 || virt_x >= static_cast<int32_t>(_raw_res_x) ||
+		    virt_y < 0 || virt_y >= static_cast<int32_t>(_raw_res_y)) {
+			return VirtualCoords{-1, -1};
+		}
 
-	inline void setDisplay(MatrixPanel_I2S_DMA &disp) {
-		display = &disp;
+		// 1) Runtime rotation -> unrotated virtual grid [0..virtual_res_x) x [0..virtual_res_y)
+		VirtualCoords rotated = applyRotation(virt_x, virt_y);
+
+		// 2) Physical chaining grid -> flattened linear chain [0..panels*panel_res_x) x [0..panel_res_y)
+		VirtualCoords chained = applyChain(rotated.x, rotated.y);
+
+		// 3) Per-panel electrical scan policy -> DMA buffer coordinates
+		const PanelGeometry geom{
+			panel_res_x, panel_res_y, virtual_res_x, virtual_res_y, vmodule_rows, vmodule_cols};
+		return policy_holder_.get().map(chained, geom);
 	}
+
+	const uint16_t panel_res_x;
+	const uint16_t panel_res_y;
 
 private:
-	MatrixPanel_I2S_DMA *display;
-	// Note: panel_chain_type is now fixed via the compile–time template parameter 'ChainScanType'.
-	uint16_t virtual_res_x;	   // virtual display width (combination of panels)
-	uint16_t virtual_res_y;	   // virtual display height (combination of panels)
-	uint16_t _virtual_res_x;   // width adjusted by current rotation
-	uint16_t _virtual_res_y;   // height adjusted by current rotation
-	uint8_t	 vmodule_rows;	  // virtual module rows
-	uint8_t	 vmodule_cols;	  // virtual module columns
-	uint16_t dma_res_x;		   // width as seen by the DMA engine
+	MatrixPanel_I2S_DMA*              display;
+	hub75_detail::PolicyHolder<ScanPolicy> policy_holder_;
 
-	int _rotate;			 // runtime rotation (0 to 3)
+	uint8_t  vmodule_rows;
+	uint8_t  vmodule_cols;
+	uint16_t virtual_res_x;
+	uint16_t virtual_res_y;
+	uint16_t dma_max_x;
+
+	uint16_t _raw_res_x;
+	uint16_t _raw_res_y;
+	uint16_t _scaled_res_x;
+	uint16_t _scaled_res_y;
+	uint8_t  _rotate;
+	PANEL_CHAIN_TYPE runtime_chain_type_;
+	bool     dma_config_valid_ = true;
+
+	template <typename DrawFn>
+	inline void drawScaledPixel(int16_t x, int16_t y, DrawFn&& drawFn) const {
+		if (x < 0 || x >= static_cast<int32_t>(_scaled_res_x) ||
+		    y < 0 || y >= static_cast<int32_t>(_scaled_res_y)) {
+			return;
+		}
+		if constexpr (ScaleFactor > 1) {
+			const int16_t base_x = static_cast<int16_t>(x * ScaleFactor);
+			const int16_t base_y = static_cast<int16_t>(y * ScaleFactor);
+			for (int dx = 0; dx < ScaleFactor; dx++) {
+				for (int dy = 0; dy < ScaleFactor; dy++) {
+					const VirtualCoords p = getCoords(
+						static_cast<int16_t>(base_x + dx),
+						static_cast<int16_t>(base_y + dy));
+					if (p.x >= 0 && p.y >= 0) {
+						drawFn(p.x, p.y);
+					}
+				}
+			}
+		} else {
+			const VirtualCoords p = getCoords(x, y);
+			if (p.x >= 0 && p.y >= 0) {
+				drawFn(p.x, p.y);
+			}
+		}
+	}
+
+	[[nodiscard]] inline VirtualCoords applyRotation(int16_t x, int16_t y) const noexcept {
+		switch (_rotate) {
+			case 1:
+				return VirtualCoords{y, static_cast<int16_t>(virtual_res_y - 1 - x)};
+			case 2:
+				return VirtualCoords{
+					static_cast<int16_t>(virtual_res_x - 1 - x),
+					static_cast<int16_t>(virtual_res_y - 1 - y)};
+			case 3:
+				return VirtualCoords{static_cast<int16_t>(virtual_res_x - 1 - y), x};
+			default:
+				return VirtualCoords{x, y};
+		}
+	}
+
+	[[nodiscard]] inline VirtualCoords applyChainWithMode(int16_t virt_x, int16_t virt_y, PANEL_CHAIN_TYPE mode) const noexcept {
+		int row = virt_y / panel_res_y;
+		switch (mode) {
+			case CHAIN_TOP_RIGHT_DOWN:
+				if ((row & 1) == 1) {
+					return VirtualCoords{
+						static_cast<int16_t>(dma_max_x - virt_x - (row * virtual_res_x)),
+						static_cast<int16_t>(panel_res_y - 1 - (virt_y % panel_res_y))};
+				}
+				return VirtualCoords{
+					static_cast<int16_t>(((vmodule_rows - (row + 1)) * virtual_res_x) + virt_x),
+					static_cast<int16_t>(virt_y % panel_res_y)};
+
+			case CHAIN_TOP_RIGHT_DOWN_ZZ:
+			case CHAIN_TOP_LEFT_DOWN_ZZ:
+				return VirtualCoords{
+					static_cast<int16_t>(((vmodule_rows - (row + 1)) * virtual_res_x) + virt_x),
+					static_cast<int16_t>(virt_y % panel_res_y)};
+
+			case CHAIN_TOP_LEFT_DOWN:
+				if ((row & 1) == 0) {
+					return VirtualCoords{
+						static_cast<int16_t>(dma_max_x - virt_x - (row * virtual_res_x)),
+						static_cast<int16_t>(panel_res_y - 1 - (virt_y % panel_res_y))};
+				}
+				return VirtualCoords{
+					static_cast<int16_t>(((vmodule_rows - (row + 1)) * virtual_res_x) + virt_x),
+					static_cast<int16_t>(virt_y % panel_res_y)};
+
+			case CHAIN_BOTTOM_LEFT_UP:
+				row = vmodule_rows - row - 1;
+				if ((row & 1) == 1) {
+					return VirtualCoords{
+						static_cast<int16_t>(((vmodule_rows - (row + 1)) * virtual_res_x) + virt_x),
+						static_cast<int16_t>(virt_y % panel_res_y)};
+				}
+				return VirtualCoords{
+					static_cast<int16_t>(dma_max_x - (row * virtual_res_x) - virt_x),
+					static_cast<int16_t>(panel_res_y - 1 - (virt_y % panel_res_y))};
+
+			case CHAIN_BOTTOM_LEFT_UP_ZZ:
+			case CHAIN_BOTTOM_RIGHT_UP_ZZ:
+				row = vmodule_rows - row - 1;
+				return VirtualCoords{
+					static_cast<int16_t>(((vmodule_rows - (row + 1)) * virtual_res_x) + virt_x),
+					static_cast<int16_t>(virt_y % panel_res_y)};
+
+			case CHAIN_BOTTOM_RIGHT_UP:
+				row = vmodule_rows - row - 1;
+				if ((row & 1) == 0) {
+					return VirtualCoords{
+						static_cast<int16_t>(((vmodule_rows - (row + 1)) * virtual_res_x) + virt_x),
+						static_cast<int16_t>(virt_y % panel_res_y)};
+				}
+				return VirtualCoords{
+					static_cast<int16_t>(dma_max_x - (row * virtual_res_x) - virt_x),
+					static_cast<int16_t>(panel_res_y - 1 - (virt_y % panel_res_y))};
+
+			case CHAIN_NONE:
+			default:
+				return VirtualCoords{virt_x, virt_y};
+		}
+	}
+
+	[[nodiscard]] inline VirtualCoords applyChain(int16_t virt_x, int16_t virt_y) const noexcept {
+		if constexpr (ChainScanType == CHAIN_RUNTIME) {
+			return applyChainWithMode(virt_x, virt_y, runtime_chain_type_);
+		} else if constexpr (ChainScanType == CHAIN_TOP_RIGHT_DOWN) {
+			const int row = virt_y / panel_res_y;
+			if ((row & 1) == 1) {
+				return VirtualCoords{
+					static_cast<int16_t>(dma_max_x - virt_x - (row * virtual_res_x)),
+					static_cast<int16_t>(panel_res_y - 1 - (virt_y % panel_res_y))};
+			}
+			return VirtualCoords{
+				static_cast<int16_t>(((vmodule_rows - (row + 1)) * virtual_res_x) + virt_x),
+				static_cast<int16_t>(virt_y % panel_res_y)};
+		} else if constexpr (ChainScanType == CHAIN_TOP_RIGHT_DOWN_ZZ || ChainScanType == CHAIN_TOP_LEFT_DOWN_ZZ) {
+			const int row = virt_y / panel_res_y;
+			return VirtualCoords{
+				static_cast<int16_t>(((vmodule_rows - (row + 1)) * virtual_res_x) + virt_x),
+				static_cast<int16_t>(virt_y % panel_res_y)};
+		} else if constexpr (ChainScanType == CHAIN_TOP_LEFT_DOWN) {
+			const int row = virt_y / panel_res_y;
+			if ((row & 1) == 0) {
+				return VirtualCoords{
+					static_cast<int16_t>(dma_max_x - virt_x - (row * virtual_res_x)),
+					static_cast<int16_t>(panel_res_y - 1 - (virt_y % panel_res_y))};
+			}
+			return VirtualCoords{
+				static_cast<int16_t>(((vmodule_rows - (row + 1)) * virtual_res_x) + virt_x),
+				static_cast<int16_t>(virt_y % panel_res_y)};
+		} else if constexpr (ChainScanType == CHAIN_BOTTOM_LEFT_UP) {
+			const int row = vmodule_rows - (virt_y / panel_res_y) - 1;
+			if ((row & 1) == 1) {
+				return VirtualCoords{
+					static_cast<int16_t>(((vmodule_rows - (row + 1)) * virtual_res_x) + virt_x),
+					static_cast<int16_t>(virt_y % panel_res_y)};
+			}
+			return VirtualCoords{
+				static_cast<int16_t>(dma_max_x - (row * virtual_res_x) - virt_x),
+				static_cast<int16_t>(panel_res_y - 1 - (virt_y % panel_res_y))};
+		} else if constexpr (ChainScanType == CHAIN_BOTTOM_LEFT_UP_ZZ || ChainScanType == CHAIN_BOTTOM_RIGHT_UP_ZZ) {
+			const int row = vmodule_rows - (virt_y / panel_res_y) - 1;
+			return VirtualCoords{
+				static_cast<int16_t>(((vmodule_rows - (row + 1)) * virtual_res_x) + virt_x),
+				static_cast<int16_t>(virt_y % panel_res_y)};
+		} else if constexpr (ChainScanType == CHAIN_BOTTOM_RIGHT_UP) {
+			const int row = vmodule_rows - (virt_y / panel_res_y) - 1;
+			if ((row & 1) == 0) {
+				return VirtualCoords{
+					static_cast<int16_t>(((vmodule_rows - (row + 1)) * virtual_res_x) + virt_x),
+					static_cast<int16_t>(virt_y % panel_res_y)};
+			}
+			return VirtualCoords{
+				static_cast<int16_t>(dma_max_x - (row * virtual_res_x) - virt_x),
+				static_cast<int16_t>(panel_res_y - 1 - (virt_y % panel_res_y))};
+		} else { // CHAIN_NONE
+			return VirtualCoords{virt_x, virt_y};
+		}
+	}
+
+	inline bool validateDMAConfig() const {
+		if (vmodule_rows == 0 || vmodule_cols == 0 || panel_res_x == 0 || panel_res_y == 0) {
+			ESP_LOGE("VirtualMatrixPanel_T",
+			         "Invalid grid/panel dimensions: rows=%u cols=%u panel=%ux%u",
+			         vmodule_rows, vmodule_cols, panel_res_x, panel_res_y);
+			return false;
+		}
+		if ((panel_res_y % ScanPolicy::dmaHeightDiv) != 0) {
+			ESP_LOGE("VirtualMatrixPanel_T",
+			         "panel_res_y (%u) is not divisible by ScanPolicy::dmaHeightDiv (%u)",
+			         panel_res_y, ScanPolicy::dmaHeightDiv);
+			return false;
+		}
+
+		const HUB75_I2S_CFG& cfg = display->getCfg();
+		const uint32_t exp_dma_total_w =
+			static_cast<uint32_t>(panel_res_x) * ScanPolicy::dmaWidthMult * vmodule_rows * vmodule_cols;
+		const uint16_t exp_dma_h = static_cast<uint16_t>(panel_res_y / ScanPolicy::dmaHeightDiv);
+		const uint32_t actual_dma_total_w =
+			static_cast<uint32_t>(cfg.mx_width) * cfg.chain_length;
+
+		if (actual_dma_total_w < exp_dma_total_w ||
+		    (ScanPolicy::dmaHeightDiv > 1 && cfg.mx_height != exp_dma_h) ||
+		    (ScanPolicy::dmaHeightDiv == 1 && cfg.mx_height < exp_dma_h)) {
+			ESP_LOGE("VirtualMatrixPanel_T",
+			         "DMA surface mismatch: MatrixPanel_I2S_DMA is %ux%u (chain=%u, total_w=%lu) "
+			         "but %ux%u grid of %ux%u panels with DMA fold %ux/%ux needs total_w>=%lu and mx_height=%u. "
+			         "Use ScanPolicy::makeDMAConfig(...) when creating HUB75_I2S_CFG.",
+			         cfg.mx_width, cfg.mx_height, cfg.chain_length,
+			         static_cast<unsigned long>(actual_dma_total_w),
+			         vmodule_cols, vmodule_rows, panel_res_x, panel_res_y,
+			         ScanPolicy::dmaWidthMult, ScanPolicy::dmaHeightDiv,
+			         static_cast<unsigned long>(exp_dma_total_w), exp_dma_h);
+			return false;
+		}
+
+		if (actual_dma_total_w != exp_dma_total_w || cfg.mx_height != exp_dma_h) {
+			ESP_LOGW("VirtualMatrixPanel_T",
+			         "DMA surface (%ux%u, chain=%u) differs from nominal folded size (%lu total_w x %u). "
+			         "Ignore if intentionally padded (e.g. dummy/skipped driver columns).",
+			         cfg.mx_width, cfg.mx_height, cfg.chain_length,
+			         static_cast<unsigned long>(exp_dma_total_w), exp_dma_h);
+		}
+		return true;
+	}
 };
 
-#endif	// VIRTUAL_MATRIX_PANEL_TEMPLATE_H
+#endif // VIRTUAL_MATRIX_PANEL_TEMPLATE_H
