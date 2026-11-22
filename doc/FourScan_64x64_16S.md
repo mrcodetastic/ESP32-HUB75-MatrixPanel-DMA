@@ -14,13 +14,13 @@ that folded **128×32** `HUB75_I2S_CFG` automatically via `makeDMAConfig()`:
 using PanelScan      = FourScan64_16S;
 using VirtualDisplay = VirtualMatrixPanel_T<CHAIN_NONE, PanelScan>;
 
-HUB75_I2S_CFG mxconfig = VirtualDisplay::makeDMAConfig(64, 64); // 128x32 automatically
+auto mxconfig = VirtualDisplay::makeDMAConfig(64, 64); // 128x32 automatically
 mxconfig.clkphase = false;
 mxconfig.driver   = HUB75_I2S_CFG::MBI5124;
 
 auto *dma = new MatrixPanel_I2S_DMA(mxconfig);
 dma->begin();
-auto *panel = new VirtualDisplay(*dma, 1, 1, 64, 64);
+auto *panel = new VirtualDisplay(*dma, mxconfig);
 ```
 
 ## Mapping

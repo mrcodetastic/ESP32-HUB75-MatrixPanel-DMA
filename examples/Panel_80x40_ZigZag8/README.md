@@ -22,8 +22,11 @@ The refactored [`VirtualMatrixPanel_T`](../../src/ESP32-HUB75-VirtualMatrixPanel
 using PanelScan      = FourScan80x40_ZigZag8;
 using VirtualDisplay = VirtualMatrixPanel_T<CHAIN_NONE, PanelScan>;
 
-HUB75_I2S_CFG mxconfig = VirtualDisplay::makeDMAConfig(80, 40); // auto-sizes to 160x20!
+auto mxconfig = VirtualDisplay::makeDMAConfig(80, 40); // auto-sizes to 160x20!
 mxconfig.clkphase = false;
+auto *dma_display = new MatrixPanel_I2S_DMA(mxconfig);
+dma_display->begin();
+auto *panel = new VirtualDisplay(*dma_display, mxconfig);
 ```
 
 To inspect or adapt the equivalent custom `ScanPolicyTraits<2, 2>` policy implementation (multi-panel aware via `PanelGeometry`), set `#define USE_CUSTOM_POLICY 1` in `src/main.cpp`.

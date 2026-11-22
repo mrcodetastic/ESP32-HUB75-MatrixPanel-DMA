@@ -113,11 +113,12 @@ void setup() {
   */
 
 #if EXAMPLE_NUMBER == 1 || EXAMPLE_NUMBER == 2
-  // Automatically sizes the DMA framebuffer (1x for 2-scan, 2*W x H/2 for 4-scan).
-  HUB75_I2S_CFG mxconfig = VirtualDisplay::makeDMAConfig(
+  // Automatically sizes the DMA framebuffer (1x for 2-scan, 2*W x H/2 for 4-scan)
+  // and stores (PANEL_RES_X, PANEL_RES_Y, VDISP_NUM_ROWS, VDISP_NUM_COLS) inside mxconfig.
+  auto mxconfig = VirtualDisplay::makeDMAConfig(
       PANEL_RES_X, PANEL_RES_Y, VDISP_NUM_ROWS, VDISP_NUM_COLS);
 #else
-  HUB75_I2S_CFG mxconfig = VirtualDisplay::makeDMAConfig(PANEL_RES_X, PANEL_RES_Y);
+  auto mxconfig = VirtualDisplay::makeDMAConfig(PANEL_RES_X, PANEL_RES_Y);
 #endif
 
   mxconfig.i2sspeed = HUB75_I2S_CFG::HZ_10M;
@@ -130,12 +131,8 @@ void setup() {
   dma_display->setBrightness8(128);
   dma_display->clearScreen();
 
-#if EXAMPLE_NUMBER == 1 || EXAMPLE_NUMBER == 2
-  virtualDisp = new VirtualDisplay(
-      *dma_display, VDISP_NUM_ROWS, VDISP_NUM_COLS, PANEL_RES_X, PANEL_RES_Y);
-#else
-  virtualDisp = new VirtualDisplay(*dma_display, 1, 1, PANEL_RES_X, PANEL_RES_Y);
-#endif
+  // No need to repeat rows, cols, width, or height — mxconfig carries them all.
+  virtualDisp = new VirtualDisplay(*dma_display, mxconfig);
 
   for (int y = 0; y < virtualDisp->height(); y++) {
     for (int x = 0; x < virtualDisp->width(); x++) {

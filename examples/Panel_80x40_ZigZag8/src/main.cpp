@@ -77,7 +77,7 @@ void setup() {
   delay(2000);
 
   // Derives the folded 160x20 DMA buffer automatically from 80x40 + PanelScan traits.
-  HUB75_I2S_CFG mxconfig = VirtualDisplay::makeDMAConfig(PANEL_RES_X, PANEL_RES_Y);
+  auto mxconfig = VirtualDisplay::makeDMAConfig(PANEL_RES_X, PANEL_RES_Y);
   mxconfig.clkphase = false; // SM16208 latches on the inverted shift clock
 
   dma_display = new MatrixPanel_I2S_DMA(mxconfig);
@@ -85,8 +85,8 @@ void setup() {
   dma_display->setBrightness8(90);
   dma_display->clearScreen();
 
-  // Virtual panel addressed in logical 80x40 coordinates (1-step construction + DMA validation).
-  panel = new VirtualDisplay(*dma_display, 1, 1, PANEL_RES_X, PANEL_RES_Y);
+  // Virtual panel addressed in logical 80x40 coordinates without repeating dimensions.
+  panel = new VirtualDisplay(*dma_display, mxconfig);
 }
 
 void drawBorder(uint16_t color) {

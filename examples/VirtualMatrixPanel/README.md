@@ -18,11 +18,11 @@ For standard two-scan panels (`1/16` 64×32, `1/32` 64×64):
 
 using VirtualDisplay = VirtualMatrixPanel_T<CHAIN_TOP_RIGHT_DOWN>;
 
-HUB75_I2S_CFG mxconfig = VirtualDisplay::makeDMAConfig(64, 32, 2, 2);
+auto mxconfig = VirtualDisplay::makeDMAConfig(64, 32, 2, 2);
 auto *dma_display = new MatrixPanel_I2S_DMA(mxconfig);
 dma_display->begin();
 
-auto *virtualDisp = new VirtualDisplay(*dma_display, 2, 2, 64, 32);
+auto *virtualDisp = new VirtualDisplay(*dma_display, mxconfig);
 ```
 
 Refer to [`doc/VirtualMatrixPanel.pdf`](../../doc/VirtualMatrixPanel.pdf) for visual diagrams of the `CHAIN_*` physical wiring layouts.
@@ -38,11 +38,11 @@ Four-scan (`2*W × H/2`) and eight-scan (`4*W × H/4`) panels differ in segment 
 using MyScan = FourScanMapping<16>;
 using VirtualDisplay = VirtualMatrixPanel_T<CHAIN_NONE, MyScan>;
 
-HUB75_I2S_CFG mxconfig = VirtualDisplay::makeDMAConfig(64, 32); // 128x16 automatically!
+auto mxconfig = VirtualDisplay::makeDMAConfig(64, 32); // 128x16 automatically!
 auto *dma_display = new MatrixPanel_I2S_DMA(mxconfig);
 dma_display->begin();
 
-auto *virtualDisp = new VirtualDisplay(*dma_display, 1, 1, 64, 32);
+auto *virtualDisp = new VirtualDisplay(*dma_display, mxconfig);
 ```
 
 Common built-in policies and flags:

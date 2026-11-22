@@ -20,11 +20,12 @@
 
 using VirtualDisplay = VirtualMatrixPanel_T<CHAIN_TOP_RIGHT_DOWN>;
 
-HUB75_I2S_CFG mxconfig = VirtualDisplay::makeDMAConfig(64, 32, 2, 2); // 2x2 grid of 64x32
+auto mxconfig = VirtualDisplay::makeDMAConfig(64, 32, 2, 2); // 2x2 grid of 64x32
 auto *dma_display = new MatrixPanel_I2S_DMA(mxconfig);
 dma_display->begin();
 
-auto *virtualDisp = new VirtualDisplay(*dma_display, 2, 2, 64, 32);
+// mxconfig already carries (64, 32, 2, 2) — no need to repeat any dimensions!
+auto *virtualDisp = new VirtualDisplay(*dma_display, mxconfig);
 virtualDisp->drawDisplayTest();
 ```
 
@@ -35,14 +36,14 @@ virtualDisp->drawDisplayTest();
 using PanelScan      = FourScanMapping<16>;
 using VirtualDisplay = VirtualMatrixPanel_T<CHAIN_NONE, PanelScan>;
 
-// Automatically configures DMA as 128x16 (2*W x H/2) and validates it in constructor!
-HUB75_I2S_CFG mxconfig = VirtualDisplay::makeDMAConfig(64, 32);
+// Automatically configures DMA as 128x16 (2*W x H/2) and carries 1x1 64x32 metadata
+auto mxconfig = VirtualDisplay::makeDMAConfig(64, 32);
 mxconfig.clkphase = false;
 
 auto *dma_display = new MatrixPanel_I2S_DMA(mxconfig);
 dma_display->begin();
 
-auto *virtualDisp = new VirtualDisplay(*dma_display, 1, 1, 64, 32);
+auto *virtualDisp = new VirtualDisplay(*dma_display, mxconfig); // or just (*dma_display)
 ```
 
 ---
@@ -106,7 +107,7 @@ When solid horizontal lines form, check whether the lower band inside a half fil
 If one pass fills left-to-right and the other fills right-to-left within each `pxbase`-wide block:
 - Enable **`FOUR_SCAN_REVERSE_LEFT`** (`l`) or **`FOUR_SCAN_REVERSE_RIGHT`** (`r`) depending on which half moves backwards.
 - Press **`p`** in the Serial Monitor to print the exact `FourScanMapping<PxBase, Flags>` type for your real sketch.
-- To chain multiple panels into a grid, replace `CHAIN_NONE` with your wiring layout from [`VirtualMatrixPanel.pdf`](./VirtualMatrixPanel.pdf) (`CHAIN_TOP_RIGHT_DOWN`, `CHAIN_BOTTOM_LEFT_UP_ZZ`, etc.) and pass `(NUM_ROWS, NUM_COLS, PANEL_RES_X, PANEL_RES_Y)`. Remember: **draw through `virtualDisp->`, never `dma_display->`** once configured.
+- To chain multiple panels into a grid, replace `CHAIN_NONE` with your wiring layout from [`VirtualMatrixPanel.pdf`](./VirtualMatrixPanel.pdf) (`CHAIN_TOP_RIGHT_DOWN`, `CHAIN_BOTTOM_LEFT_UP_ZZ`, etc.) and pass `(PANEL_RES_X, PANEL_RES_Y, NUM_ROWS, NUM_COLS)` to `makeDMAConfig(...)` alongside `new VirtualDisplay(*dma_display, mxconfig)`. Remember: **draw through `virtualDisp->`, never `dma_display->`** once configured.
 
 ---
 
@@ -151,8 +152,11 @@ class VirtualMatrixPanel_T;
 - **`EIGHT_SCAN_REVERSE_EVEN_SLOTS`** / **`EIGHT_SCAN_REVERSE_ODD_SLOTS`**: Reverses intra-segment X on slots `(0, 2)` or `(1, 3)`.
 - **`EIGHT_SCAN_INVERT_ROW_IN_BAND`**: Reverses row order inside each `H/8` band (e.g., swaps row 0/1 inside `1/2`-scan `32x16` modules).
 
-### Key Methods on `VirtualMatrixPanel_T`
-- `makeDMAConfig(panel_res_x, panel_res_y, rows = 1, cols = 1[, pinmap])` — returns a pre-folded `HUB75_I2S_CFG` ready for `MatrixPanel_I2S_DMA`.
+### Constructors & Key Methods on `VirtualMatrixPanel_T`
+- `makeDMAConfig(panel_res_x, panel_res_y, rows = 1, cols = 1[, pinmap])` — returns a `VirtualDMAConfig` (derived from `HUB75_I2S_CFG`, pre-folded to DMA geometry and retaining logical module/grid sizes).
+- `VirtualMatrixPanel_T(*dma, mxconfig[, scan_policy])` — **recommended:** uses `VirtualDMAConfig` from `auto mxconfig = VirtualDisplay::makeDMAConfig(...)` without repeating any numbers. (If `mxconfig` was explicitly typed as plain `HUB75_I2S_CFG`, derives `panel_res_x`/`panel_res_y` automatically and assumes `1 × cfg.chain_length`; pass `(*dma, mxconfig, rows, cols)` for 2D grids.)
+- `VirtualMatrixPanel_T(*dma[, scan_policy])` / `VirtualMatrixPanel_T(*dma, rows, cols[, scan_policy])` — shorthand deriving `panel_res_x`/`panel_res_y` directly from `dma.getCfg()`.
+- `VirtualMatrixPanel_T(*dma, rows, cols, panel_res_x, panel_res_y[, scan_policy])` — explicit constructor overriding all four dimensions (useful when DMA width is padded for skipped columns).
 - `isDMAConfigValid()` — `true` if the attached `MatrixPanel_I2S_DMA` framebuffer matches the policy's DMA multipliers (mismatches also log `ESP_LOGE` on construction).
 - `getCoords(int16_t x, int16_t y) const` — pure stateless coordinate transform returning `VirtualCoords{x, y}` (`{-1, -1}` if out of bounds).
 - `setRotation(uint8_t)` / `getRotation()` — runtime 0°/90°/180°/270° rotation, supported under `Adafruit_GFX`, `USE_GFX_LITE`, and `NO_GFX`.
