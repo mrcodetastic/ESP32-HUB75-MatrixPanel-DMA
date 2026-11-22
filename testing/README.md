@@ -16,11 +16,3 @@ g++ -std=c++17 -O2 -Wall -Wextra -Werror -DUSE_GFX_LITE -Imock_esp -I../src test
 # 3. NO_GFX standalone mode
 g++ -std=c++17 -O2 -Wall -Wextra -Werror -DNO_GFX -Imock_esp -I../src test_virtual_matrix_t.cpp -o /tmp/test_nogfx && /tmp/test_nogfx
 ```
-
-## Legacy / Historical Standalone Reference Checks
-
-```bash
-g++ -std=c++11 -O2 -o /tmp/four_scan_64x64_16s four_scan_64x64_16s.cpp && /tmp/four_scan_64x64_16s
-g++ -std=c++11 -O2 -o /tmp/four_scan_40_80px_hfarcan four_scan_40_80px_hfarcan.cpp && /tmp/four_scan_40_80px_hfarcan
-g++ -o /tmp/virtual virtual.cpp && /tmp/virtual
-```
