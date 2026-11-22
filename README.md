@@ -255,11 +255,11 @@ Yes, panels can be connected together in sequence using HUB75 ribbon cables.
 
 using VirtualDisplay = VirtualMatrixPanel_T<CHAIN_TOP_RIGHT_DOWN>;
 
-HUB75_I2S_CFG mxconfig = VirtualDisplay::makeDMAConfig(64, 32, 2, 2);
+auto mxconfig = VirtualDisplay::makeDMAConfig(64, 32, 2, 2); // 2 rows x 2 cols of 64x32
 auto *dma_display = new MatrixPanel_I2S_DMA(mxconfig);
 dma_display->begin();
 
-auto *virtualDisp = new VirtualDisplay(*dma_display, 2, 2, 64, 32);
+auto *virtualDisp = new VirtualDisplay(*dma_display, mxconfig); // Reads grid & panel size from mxconfig
 virtualDisp->drawDisplayTest();
 ```
 
@@ -270,13 +270,14 @@ virtualDisp->drawDisplayTest();
 using PanelScan      = FourScanMapping<16>; // 0 (default) uses panel_res_x
 using VirtualDisplay = VirtualMatrixPanel_T<CHAIN_NONE, PanelScan>;
 
-HUB75_I2S_CFG mxconfig = VirtualDisplay::makeDMAConfig(64, 32); // Auto-folds to 128x16 DMA
+auto mxconfig = VirtualDisplay::makeDMAConfig(64, 32); // Auto-folds to 128x16 DMA
 mxconfig.clkphase = false;
 
 auto *dma_display = new MatrixPanel_I2S_DMA(mxconfig);
 dma_display->begin();
 
-auto *virtualDisp = new VirtualDisplay(*dma_display, 1, 1, 64, 32);
+auto *virtualDisp = new VirtualDisplay(*dma_display, mxconfig); // or (*dma_display) for 1x1 panels
+virtualDisp->drawDisplayTest();
 ```
 
 See the [`VirtualMatrixPanel_T` Guide](/doc/VirtualMatrixPanel_T.md), [Non-Standard Panel List](/doc/NonStandardPanels.md), [`VirtualMatrixPanel` example](/examples/VirtualMatrixPanel/), [`Pixel_Mapping_Test`](/examples/Pixel_Mapping_Test/), and [AuroraDemo](/examples/AuroraDemo/).
