@@ -1,0 +1,1273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ESP32-HUB75-MatrixPanel-DMA — Interactive Memory Usage Calculator</title>
+  <meta name="description" content="Interactive DMA memory, descriptor count, and refresh rate calculator for the ESP32-HUB75-MatrixPanel-DMA library across ESP32, ESP32-S2, ESP32-S3, and ESP32-P4." />
+  <style>
+    :root {
+      --bg: #0d1117;
+      --bg-elevated: #161b22;
+      --bg-panel: #1c2128;
+      --bg-input: #0d1117;
+      --border: #30363d;
+      --border-subtle: #21262d;
+      --text: #e6edf3;
+      --text-muted: #8b949e;
+      --text-dim: #6e7681;
+      --accent: #2f81f7;
+      --accent-hover: #388bfd;
+      --accent-soft: rgba(47, 129, 247, 0.14);
+      --success: #3fb950;
+      --success-soft: rgba(63, 185, 80, 0.14);
+      --warning: #d29922;
+      --warning-soft: rgba(210, 153, 34, 0.15);
+      --danger: #f85149;
+      --danger-soft: rgba(248, 81, 73, 0.15);
+      --cyan: #39c5cf;
+      --cyan-soft: rgba(57, 197, 207, 0.14);
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+      --radius: 8px;
+      --radius-sm: 5px;
+    }
+
+    html.light, [data-theme="light"] {
+      --bg: #f6f8fa;
+      --bg-elevated: #ffffff;
+      --bg-panel: #f0f3f6;
+      --bg-input: #ffffff;
+      --border: #d0d7de;
+      --border-subtle: #e5e9ef;
+      --text: #1f2328;
+      --text-muted: #59636e;
+      --text-dim: #6e7781;
+      --accent: #0969da;
+      --accent-hover: #0550ae;
+      --accent-soft: rgba(9, 105, 218, 0.1);
+      --success: #1a7f37;
+      --success-soft: rgba(26, 127, 55, 0.1);
+      --warning: #9a6700;
+      --warning-soft: rgba(154, 103, 0, 0.12);
+      --danger: #cf222e;
+      --danger-soft: rgba(207, 34, 46, 0.1);
+      --cyan: #0e7490;
+      --cyan-soft: rgba(14, 116, 144, 0.1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 1320px;
+      margin: 0 auto;
+      padding: 20px 24px 48px;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding-bottom: 16px;
+      margin-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .header-title h1 {
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+
+    .header-title p {
+      color: var(--text-muted);
+      font-size: 13px;
+      margin-top: 2px;
+    }
+
+    .btn {
+      background: var(--bg-elevated);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 6px 12px;
+      font-size: 12.5px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn:hover {
+      background: var(--bg-panel);
+      border-color: var(--text-muted);
+    }
+
+    /* Preset Bar */
+    .preset-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+      padding: 10px 14px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+
+    .preset-label {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      margin-right: 4px;
+    }
+
+    .preset-chip {
+      background: var(--bg-panel);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 4px 10px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .preset-chip:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .preset-chip.active {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    /* Main Grid Layout */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 370px 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+
+    @media (max-width: 1020px) {
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Panel Cards */
+    .panel {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .panel + .panel {
+      margin-top: 16px;
+    }
+
+    .panel-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-panel);
+    }
+
+    .panel-header h2 {
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text);
+    }
+
+    .panel-body {
+      padding: 16px;
+    }
+
+    /* Form Controls */
+    .control-group {
+      margin-bottom: 14px;
+    }
+
+    .control-group:last-child {
+      margin-bottom: 0;
+    }
+
+    .control-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-size: 12.5px;
+      font-weight: 500;
+      margin-bottom: 5px;
+      color: var(--text);
+    }
+
+    .control-hint {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+
+    .input-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    select,
+    input[type="number"] {
+      width: 100%;
+      background: var(--bg-input);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 7px 10px;
+      font-size: 13px;
+      font-family: var(--font-sans);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    input[type="number"] {
+      font-family: var(--font-mono);
+    }
+
+    select:focus,
+    input[type="number"]:focus {
+      border-color: var(--accent);
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .section-divider {
+      height: 1px;
+      background: var(--border-subtle);
+      margin: 16px 0;
+    }
+
+    /* Toggle Switches */
+    .flag-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .flag-item {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 9px 11px;
+      border-radius: var(--radius-sm);
+      background: var(--bg-input);
+      border: 1px solid var(--border-subtle);
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+
+    .flag-item:hover {
+      border-color: var(--border);
+    }
+
+    .flag-item.disabled {
+      opacity: 0.48;
+      cursor: not-allowed;
+    }
+
+    .flag-info {
+      flex: 1;
+    }
+
+    .flag-title {
+      font-size: 12.5px;
+      font-weight: 600;
+      font-family: var(--font-mono);
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .flag-desc {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      margin-top: 2px;
+      line-height: 1.35;
+    }
+
+    .flag-checkbox {
+      margin-top: 3px;
+      width: 16px;
+      height: 16px;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    /* Status Banner */
+    .status-banner {
+      padding: 14px 16px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .status-banner.status-ok {
+      background: var(--success-soft);
+      border-color: var(--success);
+    }
+
+    .status-banner.status-warn {
+      background: var(--warning-soft);
+      border-color: var(--warning);
+    }
+
+    .status-banner.status-err {
+      background: var(--danger-soft);
+      border-color: var(--danger);
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-top: 5px;
+      flex-shrink: 0;
+    }
+
+    .status-ok .status-dot { background: var(--success); }
+    .status-warn .status-dot { background: var(--warning); }
+    .status-err .status-dot { background: var(--danger); }
+
+    .status-content h3 {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 3px;
+    }
+
+    .status-content p {
+      font-size: 12.5px;
+      color: var(--text);
+      opacity: 0.9;
+    }
+
+    /* KPI Metrics Grid */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    @media (max-width: 780px) {
+      .kpi-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    .kpi-card {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 13px 15px;
+    }
+
+    .kpi-label {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      font-weight: 600;
+    }
+
+    .kpi-value {
+      font-size: 22px;
+      font-weight: 700;
+      font-family: var(--font-mono);
+      margin-top: 4px;
+      letter-spacing: -0.02em;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .kpi-sub {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      margin-top: 3px;
+      font-family: var(--font-mono);
+    }
+
+    /* Memory Bar Visualization */
+    .mem-bar-section {
+      margin-bottom: 18px;
+    }
+
+    .mem-bar-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .mem-bar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 6px;
+      font-size: 12.5px;
+    }
+
+    .mem-bar-title {
+      font-weight: 600;
+    }
+
+    .mem-bar-stats {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .mem-track {
+      height: 22px;
+      width: 100%;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      display: flex;
+    }
+
+    .mem-seg {
+      height: 100%;
+      transition: width 0.2s ease;
+    }
+
+    .seg-fb { background: #2f81f7; }
+    .seg-desc { background: #d29922; }
+    .seg-app { background: #3fb950; }
+    .seg-psram { background: #39c5cf; }
+
+    .mem-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 18px;
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-mono);
+    }
+
+    .legend-swatch {
+      width: 11px;
+      height: 11px;
+      border-radius: 2px;
+      display: inline-block;
+    }
+
+    /* Breakdown Table */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12.5px;
+    }
+
+    .data-table th,
+    .data-table td {
+      padding: 8px 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .data-table th {
+      font-size: 11.5px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      color: var(--text-muted);
+      background: var(--bg-panel);
+    }
+
+    .data-table td.num,
+    .data-table th.num {
+      text-align: right;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .data-table tr.clickable-row {
+      cursor: pointer;
+      transition: background 0.12s;
+    }
+
+    .data-table tr.clickable-row:hover {
+      background: var(--bg-panel);
+    }
+
+    .data-table tr.selected-row {
+      background: var(--accent-soft);
+      font-weight: 600;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      font-family: var(--font-mono);
+    }
+
+    .badge-ok { background: var(--success-soft); color: var(--success); }
+    .badge-warn { background: var(--warning-soft); color: var(--warning); }
+    .badge-err { background: var(--danger-soft); color: var(--danger); }
+    .badge-info { background: var(--cyan-soft); color: var(--cyan); }
+
+    .formula-note {
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.55;
+    }
+
+    .formula-note code {
+      font-family: var(--font-mono);
+      background: var(--bg-input);
+      padding: 1px 5px;
+      border-radius: 3px;
+      border: 1px solid var(--border-subtle);
+      font-size: 11.5px;
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Top Header -->
+    <header class="header">
+      <div class="header-title">
+        <h1>ESP32-HUB75-MatrixPanel-DMA Memory Usage Calculator</h1>
+        <p>Interactive DMA BCM framebuffer, linked-list descriptor, and refresh rate estimator</p>
+      </div>
+      <div class="header-actions">
+        <button type="button" class="btn" id="themeToggleBtn" title="Switch Light/Dark Theme">
+          <span id="themeIcon">Light Theme</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Quick Presets -->
+    <div class="preset-bar" id="presetBar">
+      <span class="preset-label">Presets:</span>
+      <button type="button" class="preset-chip active" data-preset="64x32_1">64×32 Single (Default)</button>
+      <button type="button" class="preset-chip" data-preset="64x64_1">64×64 Single (1/32 Scan)</button>
+      <button type="button" class="preset-chip" data-preset="128x64_grid">128×64 (2×2 Grid of 64×32)</button>
+      <button type="button" class="preset-chip" data-preset="256x64_chain">256×64 (4× 64×64 Chain)</button>
+    </div>
+
+    <div class="main-grid">
+      <!-- LEFT COLUMN: Configuration Controls -->
+      <aside>
+        <div class="panel">
+          <div class="panel-header">
+            <h2>1. Target SoC &amp; Heap Budget</h2>
+          </div>
+          <div class="panel-body">
+            <div class="control-group">
+              <label class="control-label" for="socSelect">
+                <span>ESP32 SoC Variant</span>
+                <span class="control-hint" id="socEngineHint">I2S Parallel</span>
+              </label>
+              <select id="socSelect">
+                <option value="esp32">ESP32 (Original Xtensa LX6 — I2S LCD DMA)</option>
+                <option value="esp32s2">ESP32-S2 (Xtensa LX7 — I2S0 LCD DMA)</option>
+                <option value="esp32s3" selected>ESP32-S3 (Xtensa LX7 — LCD_CAM + GDMA)</option>
+                <option value="esp32p4">ESP32-P4 / S31 (RISC-V — PARLIO + AXI GDMA)</option>
+              </select>
+            </div>
+
+            <div class="control-group">
+              <label class="control-label" for="heapBudgetRange">
+                <span>Available Internal DMA SRAM Budget</span>
+                <span class="control-hint" id="heapBudgetReadout">260 KB (266,240 B)</span>
+              </label>
+              <input type="range" id="heapBudgetRange" min="40" max="640" step="5" value="260" />
+              <div class="formula-note" style="margin-top:4px; font-size:11.5px;" id="socNoteText">
+                ESP32-S3 has 512 KB total SRAM (~240–280 KB typically free for DMA after Wi-Fi/RTOS).
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <h2>2. Matrix Geometry</h2>
+          </div>
+          <div class="panel-body">
+            <div class="input-row control-group">
+              <div>
+                <label class="control-label" for="panelWidthInput">
+                  <span>Module Width</span>
+                  <span class="control-hint">px</span>
+                </label>
+                <input type="number" id="panelWidthInput" min="8" max="512" step="1" value="64" />
+              </div>
+              <div>
+                <label class="control-label" for="panelHeightInput">
+                  <span>Module Height</span>
+                  <span class="control-hint">px (even)</span>
+                </label>
+                <input type="number" id="panelHeightInput" min="4" max="256" step="2" value="32" />
+              </div>
+            </div>
+
+            <div class="input-row control-group">
+              <div>
+                <label class="control-label" for="gridColsInput">
+                  <span>Horizontal Chain / Cols</span>
+                  <span class="control-hint">panels</span>
+                </label>
+                <input type="number" id="gridColsInput" min="1" max="64" step="1" value="1" />
+              </div>
+              <div>
+                <label class="control-label" for="gridRowsInput">
+                  <span>Vertical Grid Rows</span>
+                  <span class="control-hint">VirtualMatrix</span>
+                </label>
+                <input type="number" id="gridRowsInput" min="1" max="32" step="1" value="1" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <h2>3. Color Depth, Clock &amp; Buffering</h2>
+          </div>
+          <div class="panel-body">
+            <div class="control-group">
+              <label class="control-label" for="colorDepthRange">
+                <span>Color Depth (PIXEL_COLOR_DEPTH_BITS)</span>
+                <span class="control-hint" id="colorDepthReadout">8 bits/ch (24-bit RGB)</span>
+              </label>
+              <input type="range" id="colorDepthRange" min="2" max="12" step="1" value="8" />
+            </div>
+
+            <div class="control-group">
+              <label class="control-label" for="clockSpeedSelect">
+                <span>DMA Clock Speed</span>
+                <span class="control-hint">i2sspeed</span>
+              </label>
+              <select id="clockSpeedSelect">
+                <option value="8000000">HZ_8M (8 MHz)</option>
+                <option value="10000000" selected>HZ_10M (10 MHz)</option>
+                <option value="16000000">HZ_16M (16 MHz)</option>
+                <option value="20000000">HZ_20M (20 MHz)</option>
+              </select>
+            </div>
+
+            <div class="section-divider"></div>
+
+            <div class="flag-list">
+              <label class="flag-item" for="doubleBuffCheck">
+                <div class="flag-info">
+                  <div class="flag-title">mxconfig.double_buff = true</div>
+                  <div class="flag-desc">Allocates 2 full BCM framebuffers and 2 DMA descriptor chains for tear-free flipDMABuffer() updates.</div>
+                </div>
+                <input type="checkbox" class="flag-checkbox" id="doubleBuffCheck" />
+              </label>
+
+              <label class="flag-item" id="spiramFlagLabel" for="spiramCheck">
+                <div class="flag-info">
+                  <div class="flag-title">-DSPIRAM_DMA_BUFFER <span class="badge badge-info">ESP32-S3 OPI</span></div>
+                  <div class="flag-desc">Places pixel buffers in 64B-aligned Octal PSRAM. DMA descriptors remain in internal SRAM.</div>
+                </div>
+                <input type="checkbox" class="flag-checkbox" id="spiramCheck" />
+              </label>
+            </div>
+
+            <div class="section-divider"></div>
+
+            <div class="control-group">
+              <label class="control-label" for="appBufferSelect">
+                <span>External Sketch Buffer (Optional Reference)</span>
+                <span class="control-hint">Not allocated by lib</span>
+              </label>
+              <select id="appBufferSelect">
+                <option value="0" selected>None — Draw directly to DMA buffer</option>
+                <option value="2">RGB565 Canvas (2 bytes/pixel, e.g. GFXcanvas16)</option>
+                <option value="3">RGB888 / CRGB Array (3 bytes/pixel, e.g. FastLED)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- RIGHT COLUMN: Outputs & Memory Visualizations -->
+      <main>
+        <!-- Status Banner -->
+        <div class="status-banner status-ok" id="statusBanner">
+          <div class="status-dot"></div>
+          <div class="status-content">
+            <h3 id="statusHeadline">Configuration Fits in Internal DMA SRAM</h3>
+            <p id="statusDetails">Sufficient internal DMA heap headroom available.</p>
+          </div>
+        </div>
+
+        <!-- Top 4 KPI Readouts -->
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-label">Internal DMA SRAM</div>
+            <div class="kpi-value" id="kpiInternalSram">41.4 KB</div>
+            <div class="kpi-sub" id="kpiInternalSramSub">42,368 B (15.9% of budget)</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">DMA Framebuffer(s)</div>
+            <div class="kpi-value" id="kpiFbSize">16.0 KB</div>
+            <div class="kpi-sub" id="kpiFbSub">16,384 B (1 buffer)</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">DMA Linked Descriptors</div>
+            <div class="kpi-value" id="kpiDescSize">24.0 KB</div>
+            <div class="kpi-sub" id="kpiDescSub">2,048 descs × 12 B</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Est. Refresh Rate</div>
+            <div class="kpi-value" id="kpiRefreshRate">38 Hz</div>
+            <div class="kpi-sub" id="kpiTransitionSub">Full 8-bit BCM output</div>
+          </div>
+        </div>
+
+        <!-- Memory Allocation Bar Panel -->
+        <div class="panel">
+          <div class="panel-header">
+            <h2>Memory Allocation Breakdown</h2>
+            <span class="control-hint" id="totalMatrixResBadge">64×32 px (2,048 pixels)</span>
+          </div>
+          <div class="panel-body">
+            <!-- Internal SRAM Bar -->
+            <div class="mem-bar-section">
+              <div class="mem-bar-header">
+                <span class="mem-bar-title">Internal DMA-Capable SRAM Usage</span>
+                <span class="mem-bar-stats" id="internalBarStats">42,368 B / 266,240 B (15.9%)</span>
+              </div>
+              <div class="mem-track" id="internalMemTrack">
+                <div class="mem-seg seg-fb" id="segFb" style="width: 10%" title="DMA Framebuffers (output)"></div>
+                <div class="mem-seg seg-desc" id="segDesc" style="width: 2%" title="DMA Descriptors"></div>
+                <div class="mem-seg seg-app" id="segApp" style="width: 0%" title="App Buffer + LUT"></div>
+              </div>
+              <div class="mem-legend">
+                <span class="legend-item"><span class="legend-swatch seg-fb"></span>DMA Framebuffers (output): <strong id="legFb">16,384 B</strong></span>
+                <span class="legend-item"><span class="legend-swatch seg-desc"></span>DMA Descriptors: <strong id="legDesc">24,576 B</strong></span>
+                <span class="legend-item"><span class="legend-swatch seg-app"></span>App Buffer + LUT: <strong id="legApp">896 B</strong></span>
+              </div>
+            </div>
+
+            <!-- PSRAM Bar (shown when SPIRAM_DMA_BUFFER is active) -->
+            <div class="mem-bar-section" id="psramBarSection" style="display: none;">
+              <div class="section-divider"></div>
+              <div class="mem-bar-header">
+                <span class="mem-bar-title">External Octal PSRAM Usage (<code>-DSPIRAM_DMA_BUFFER</code>)</span>
+                <span class="mem-bar-stats" id="psramBarStats">0 B / 8,388,608 B</span>
+              </div>
+              <div class="mem-track">
+                <div class="mem-seg seg-psram" id="segPsram" style="width: 5%"></div>
+              </div>
+              <div class="formula-note" style="margin-top: 6px;">
+                Pixel row buffers (<code>rowBitStruct::data</code>) are allocated in 64-byte aligned Octal PSRAM via <code>heap_caps_aligned_alloc(64, bytes, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT)</code>. GDMA descriptors still reside in internal SRAM above.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Color Depth Trade-off Matrix (2 to 12 bits) -->
+        <div class="panel" style="margin-top: 16px;">
+          <div class="panel-header">
+            <h2>Memory Usage by Color Depth (Click Any Row to Select)</h2>
+            <span class="control-hint">Compares all bit depths (2–12 bits/channel) for current matrix resolution</span>
+          </div>
+          <div class="panel-body" style="padding: 0; overflow-x: auto;">
+            <table class="data-table" id="depthComparisonTable">
+              <thead>
+                <tr>
+                  <th>Color Depth</th>
+                  <th class="num">DMA Framebuffers (output)</th>
+                  <th class="num">DMA Descriptors</th>
+                  <th class="num">Descriptor RAM</th>
+                  <th class="num">Total Internal RAM</th>
+                  <th class="num">Est. Refresh Rate</th>
+                  <th>Memory Status</th>
+                </tr>
+              </thead>
+              <tbody id="depthComparisonBody">
+                <!-- Populated dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const DMA_MAX = 4096 - 4; // 4092 bytes per hardware DMA descriptor
+
+      const SOC_PROFILES = {
+        esp32: {
+          name: "ESP32 (Original)",
+          engine: "I2S1 Parallel LCD (12B lldesc_t)",
+          descSize: 12,
+          defaultHeapKB: 200,
+          supportsSpiramDma: false,
+          note: "Original ESP32 has ~520 KB SRAM (~180–220 KB free internal DMA RAM). External PSRAM cannot be used for I2S LCD DMA."
+        },
+        esp32s2: {
+          name: "ESP32-S2",
+          engine: "I2S0 Parallel LCD (12B lldesc_t)",
+          descSize: 12,
+          defaultHeapKB: 160,
+          supportsSpiramDma: false,
+          note: "ESP32-S2 has 320 KB internal SRAM (~140–175 KB typically available for DMA)."
+        },
+        esp32s3: {
+          name: "ESP32-S3",
+          engine: "LCD_CAM + AHB GDMA (12B dma_descriptor_t)",
+          descSize: 12,
+          defaultHeapKB: 260,
+          supportsSpiramDma: true,
+          note: "ESP32-S3 has 512 KB internal SRAM (~240–280 KB free for DMA). Supports Octal PSRAM framebuffers via -DSPIRAM_DMA_BUFFER."
+        },
+        esp32p4: {
+          name: "ESP32-P4 / S31",
+          engine: "PARLIO TX + AXI GDMA (16B link item)",
+          descSize: 16,
+          defaultHeapKB: 500,
+          supportsSpiramDma: false,
+          note: "ESP32-P4 features 768 KB internal HP SRAM (~450–550 KB available for DMA) with hardware L1/L2 cache writeback sync."
+        }
+      };
+
+      const PRESETS = {
+        "64x32_1":      { soc: "esp32s3", heapKB: 260, w: 64, h: 32, cols: 1, rows: 1, depth: 8, clk: 10000000, dbuf: false, spiram: false, appBpp: 0 },
+        "64x64_1":      { soc: "esp32s3", heapKB: 260, w: 64, h: 64, cols: 1, rows: 1, depth: 8, clk: 10000000, dbuf: true,  spiram: false, appBpp: 0 },
+        "128x64_grid":  { soc: "esp32s3", heapKB: 260, w: 64, h: 32, cols: 2, rows: 2, depth: 8, clk: 10000000, dbuf: true,  spiram: false, appBpp: 0 },
+        "256x64_chain": { soc: "esp32s3", heapKB: 260, w: 64, h: 64, cols: 4, rows: 1, depth: 6, clk: 16000000, dbuf: false, spiram: false, appBpp: 0 }
+      };
+
+      // DOM Elements
+      const els = {
+        socSelect: document.getElementById("socSelect"),
+        socEngineHint: document.getElementById("socEngineHint"),
+        socNoteText: document.getElementById("socNoteText"),
+        heapBudgetRange: document.getElementById("heapBudgetRange"),
+        heapBudgetReadout: document.getElementById("heapBudgetReadout"),
+        panelWidthInput: document.getElementById("panelWidthInput"),
+        panelHeightInput: document.getElementById("panelHeightInput"),
+        gridColsInput: document.getElementById("gridColsInput"),
+        gridRowsInput: document.getElementById("gridRowsInput"),
+        colorDepthRange: document.getElementById("colorDepthRange"),
+        colorDepthReadout: document.getElementById("colorDepthReadout"),
+        clockSpeedSelect: document.getElementById("clockSpeedSelect"),
+        doubleBuffCheck: document.getElementById("doubleBuffCheck"),
+        spiramCheck: document.getElementById("spiramCheck"),
+        spiramFlagLabel: document.getElementById("spiramFlagLabel"),
+        appBufferSelect: document.getElementById("appBufferSelect"),
+        statusBanner: document.getElementById("statusBanner"),
+        statusHeadline: document.getElementById("statusHeadline"),
+        statusDetails: document.getElementById("statusDetails"),
+        kpiInternalSram: document.getElementById("kpiInternalSram"),
+        kpiInternalSramSub: document.getElementById("kpiInternalSramSub"),
+        kpiFbSize: document.getElementById("kpiFbSize"),
+        kpiFbSub: document.getElementById("kpiFbSub"),
+        kpiDescSize: document.getElementById("kpiDescSize"),
+        kpiDescSub: document.getElementById("kpiDescSub"),
+        kpiRefreshRate: document.getElementById("kpiRefreshRate"),
+        kpiTransitionSub: document.getElementById("kpiTransitionSub"),
+        totalMatrixResBadge: document.getElementById("totalMatrixResBadge"),
+        internalBarStats: document.getElementById("internalBarStats"),
+        segFb: document.getElementById("segFb"),
+        segDesc: document.getElementById("segDesc"),
+        segApp: document.getElementById("segApp"),
+        legFb: document.getElementById("legFb"),
+        legDesc: document.getElementById("legDesc"),
+        legApp: document.getElementById("legApp"),
+        psramBarSection: document.getElementById("psramBarSection"),
+        psramBarStats: document.getElementById("psramBarStats"),
+        segPsram: document.getElementById("segPsram"),
+        depthComparisonBody: document.getElementById("depthComparisonBody"),
+        themeToggleBtn: document.getElementById("themeToggleBtn"),
+        themeIcon: document.getElementById("themeIcon"),
+        presetBar: document.getElementById("presetBar")
+      };
+
+      function fmtInt(n) {
+        return Math.round(n).toLocaleString("en-US");
+      }
+
+      function fmtKB(bytes) {
+        if (bytes >= 1048576) {
+          return (bytes / 1048576).toFixed(2) + " MB";
+        }
+        return (bytes / 1024).toFixed(1) + " KB";
+      }
+
+      /**
+       * Exact memory & refresh calculation assuming standard 2-scan and full selected Color Depth
+       * (lsbMsbTransitionBit = 0).
+       */
+      function simulateForDepth(params, colorDepth) {
+        const profile = SOC_PROFILES[params.soc];
+        const fbsRequired = params.doubleBuff ? 2 : 1;
+        const spiramActive = profile.supportsSpiramDma && params.spiram;
+
+        const totalPanels = params.cols * params.rows;
+        const totalPixels = params.panelW * params.panelH * totalPanels;
+
+        const PIXELS_PER_ROW = params.panelW * totalPanels;
+        const ROWS_PER_FRAME = Math.max(1, Math.floor(params.panelH / 2)); // MATRIX_ROWS_IN_PARALLEL = 2
+
+        // rowBitStruct::getColorDepthSize
+        const rawRowAllDepthBytes = PIXELS_PER_ROW * colorDepth * 2;
+        const alignedRowAllDepthBytes = spiramActive
+          ? Math.ceil(rawRowAllDepthBytes / 64) * 64
+          : rawRowAllDepthBytes;
+
+        const fbBytesPerBuffer = ROWS_PER_FRAME * alignedRowAllDepthBytes;
+        const totalFbBytes = fbBytesPerBuffer * fbsRequired;
+
+        // Full color depth output (lsbMsbTransitionBit = 0)
+        const lsbMsbTransitionBit = 0;
+        const cfgSpeedForRefresh = spiramActive ? 8000000 : params.clockHz;
+        const psPerClock = Math.floor(1000000000000 / cfgSpeedForRefresh);
+        const nsPerLatch = Math.floor((PIXELS_PER_ROW * psPerClock) / 1000);
+
+        let nsPerRow = colorDepth * nsPerLatch;
+        for (let i = lsbMsbTransitionBit + 1; i < colorDepth; i++) {
+          const reps = (colorDepth - i) * (1 << (i - lsbMsbTransitionBit - 1));
+          nsPerRow += reps * nsPerLatch;
+        }
+
+        const nsPerFrame = nsPerRow * ROWS_PER_FRAME;
+        const calculatedRefreshRate = nsPerFrame > 0 ? Math.floor(1000000000 / nsPerFrame) : 0;
+
+        // calculateDmaDescriptorCount() with lsbMsbTransitionBit = 0
+        const dmaDescsPerRowAll = Math.ceil(rawRowAllDepthBytes / DMA_MAX);
+        let dmaDescriptorsPerRow = dmaDescsPerRowAll;
+
+        for (let i = lsbMsbTransitionBit + 1; i < colorDepth; i++) {
+          const remainingBitplanes = colorDepth - i;
+          const sweepBytes = PIXELS_PER_ROW * remainingBitplanes * 2;
+          const dmaDescsForRemaining = Math.ceil(sweepBytes / DMA_MAX);
+          const passes = 1 << (i - lsbMsbTransitionBit - 1);
+          dmaDescriptorsPerRow += passes * dmaDescsForRemaining;
+        }
+
+        const dmaDescriptorsPerFb = dmaDescriptorsPerRow * ROWS_PER_FRAME;
+        const totalDmaDescriptors = dmaDescriptorsPerFb * fbsRequired;
+        const descBytesPerFb = dmaDescriptorsPerFb * profile.descSize;
+        const totalDescBytes = totalDmaDescriptors * profile.descSize;
+
+        // Default library CIE1931 LUT (512B) + rowBitStruct vector overhead
+        const cieLutBytes = 512;
+        const rowStructOverhead = ROWS_PER_FRAME * fbsRequired * 24;
+        const appBufferBytes = totalPixels * params.appBpp;
+
+        const internalFbBytes = spiramActive ? 0 : totalFbBytes;
+        const psramFbBytes = spiramActive ? totalFbBytes : 0;
+        const totalInternalBytes = internalFbBytes + totalDescBytes + cieLutBytes + rowStructOverhead + appBufferBytes;
+
+        return {
+          colorDepth,
+          fbsRequired,
+          spiramActive,
+          totalPanels,
+          totalPixels,
+          PIXELS_PER_ROW,
+          ROWS_PER_FRAME,
+          fbBytesPerBuffer,
+          totalFbBytes,
+          internalFbBytes,
+          psramFbBytes,
+          calculatedRefreshRate,
+          dmaDescriptorsPerFb,
+          totalDmaDescriptors,
+          descBytesPerFb,
+          totalDescBytes,
+          cieLutBytes,
+          rowStructOverhead,
+          appBufferBytes,
+          totalInternalBytes
+        };
+      }
+
+      function readParams() {
+        const panelW = Math.max(8, parseInt(els.panelWidthInput.value, 10) || 64);
+        let panelH = Math.max(4, parseInt(els.panelHeightInput.value, 10) || 32);
+        if (panelH % 2 !== 0) panelH += 1;
+        const cols = Math.max(1, parseInt(els.gridColsInput.value, 10) || 1);
+        const rows = Math.max(1, parseInt(els.gridRowsInput.value, 10) || 1);
+        const colorDepth = parseInt(els.colorDepthRange.value, 10) || 8;
+        const clockHz = parseInt(els.clockSpeedSelect.value, 10) || 10000000;
+        const heapBudgetBytes = (parseInt(els.heapBudgetRange.value, 10) || 260) * 1024;
+
+        return {
+          soc: els.socSelect.value,
+          heapBudgetBytes,
+          panelW,
+          panelH,
+          cols,
+          rows,
+          colorDepth,
+          clockHz,
+          doubleBuff: els.doubleBuffCheck.checked,
+          spiram: els.spiramCheck.checked,
+          appBpp: parseInt(els.appBufferSelect.value, 10) || 0
+        };
+      }
+
+      function updateUI() {
+        const params = readParams();
+        const profile = SOC_PROFILES[params.soc];
+
+        // Update SoC capability states
+        els.socEngineHint.textContent = profile.engine;
+        els.socNoteText.textContent = profile.note;
+        if (!profile.supportsSpiramDma) {
+          els.spiramFlagLabel.classList.add("disabled");
+          els.spiramCheck.disabled = true;
+        } else {
+          els.spiramFlagLabel.classList.remove("disabled");
+          els.spiramCheck.disabled = false;
+        }
+
+        els.heapBudgetReadout.textContent = `${Math.round(params.heapBudgetBytes / 1024)} KB (${fmtInt(params.heapBudgetBytes)} B)`;
+        els.colorDepthReadout.textContent = `${params.colorDepth} bits/ch (${params.colorDepth * 3}-bit RGB)`;
+
+        const res = simulateForDepth(params, params.colorDepth);
+
+        // Find highest color depth that fits in internal SRAM budget
+        let maxFittingDepth = 0;
+        for (let d = 2; d <= 12; d++) {
+          const sim = simulateForDepth(params, d);
+          if (sim.totalInternalBytes <= params.heapBudgetBytes) {
+            maxFittingDepth = d;
+          }
+        }
+
+        // Update KPI cards
+        const budgetPct = (res.totalInternalBytes / params.heapBudgetBytes) * 100;
+        els.kpiInternalSram.textContent = fmtKB(res.totalInternalBytes);
+        els.kpiInternalSramSub.textContent = `${fmtInt(res.totalInternalBytes)} B (${budgetPct.toFixed(1)}% of budget)`;
+
+        els.kpiFbSize.textContent = fmtKB(res.totalFbBytes);
+        els.kpiFbSub.textContent = `${fmtInt(res.totalFbBytes)} B (${res.fbsRequired} ${res.fbsRequired > 1 ? "buffers" : "buffer"}${res.spiramActive ? " in PSRAM" : ""})`;
+
+        els.kpiDescSize.textContent = fmtKB(res.totalDescBytes);
+        els.kpiDescSub.textContent = `${fmtInt(res.totalDmaDescriptors)} descs × ${profile.descSize} B`;
+
+        els.kpiRefreshRate.textContent = `${res.calculatedRefreshRate} Hz`;
+        els.kpiTransitionSub.textContent = `Full ${params.colorDepth}-bit BCM output`;
+
+        // Status Banner Logic
+        els.statusBanner.className = "status-banner";
+        if (res.totalInternalBytes > params.heapBudgetBytes) {
+          els.statusBanner.classList.add("status-err");
+          const deficit = res.totalInternalBytes - params.heapBudgetBytes;
+          els.statusHeadline.textContent = `Out of Internal DMA SRAM — Exceeds budget by ${fmtKB(deficit)} (${fmtInt(deficit)} B)`;
+          let advice = maxFittingDepth >= 2 ? `Reduce color depth to ≤${maxFittingDepth} bits/channel` : `Reduce panel chain length`;
+          if (params.doubleBuff) advice += `, disable double buffering`;
+          if (params.soc === "esp32s3" && !res.spiramActive) advice += `, or enable -DSPIRAM_DMA_BUFFER (Octal PSRAM)`;
+          els.statusDetails.textContent = `DMA allocation will fail at begin(). Recommendation: ${advice}.`;
+        } else if (budgetPct > 85) {
+          els.statusBanner.classList.add("status-warn");
+          els.statusHeadline.textContent = `Tight Internal Heap Margin (${budgetPct.toFixed(1)}% of budget used)`;
+          els.statusDetails.textContent = `Fits within budget, leaving ${fmtKB(params.heapBudgetBytes - res.totalInternalBytes)} free for application stack and heap fragmentation.`;
+        } else {
+          els.statusBanner.classList.add("status-ok");
+          els.statusHeadline.textContent = `Fits in Internal DMA SRAM (${budgetPct.toFixed(1)}% of budget used)`;
+          els.statusDetails.textContent = `Leaves ${fmtKB(params.heapBudgetBytes - res.totalInternalBytes)} (${fmtInt(params.heapBudgetBytes - res.totalInternalBytes)} B) internal DMA heap headroom at ~${res.calculatedRefreshRate} Hz refresh rate.`;
+        }
+
+        // Memory Bars (Merged DMA Framebuffers & Merged DMA Descriptors)
+        const logicalW = params.panelW * params.cols;
+        const logicalH = params.panelH * params.rows;
+        els.totalMatrixResBadge.textContent = `${logicalW}×${logicalH} px (${fmtInt(res.totalPixels)} pixels across ${res.totalPanels} ${res.totalPanels > 1 ? "panels" : "panel"})`;
+        els.internalBarStats.textContent = `${fmtInt(res.totalInternalBytes)} B / ${fmtInt(params.heapBudgetBytes)} B (${budgetPct.toFixed(1)}%)`;
+
+        const denom = Math.max(params.heapBudgetBytes, res.totalInternalBytes);
+        const fbInternal = res.spiramActive ? 0 : res.totalFbBytes;
+        const descBytes = res.totalDescBytes;
+        const miscAndApp = res.cieLutBytes + res.rowStructOverhead + res.appBufferBytes;
+
+        els.segFb.style.width = `${(fbInternal / denom) * 100}%`;
+        els.segDesc.style.width = `${(descBytes / denom) * 100}%`;
+        els.segApp.style.width = `${(miscAndApp / denom) * 100}%`;
+
+        els.legFb.textContent = res.spiramActive ? `0 B (${fmtInt(res.totalFbBytes)} B in PSRAM)` : `${fmtInt(fbInternal)} B`;
+        els.legDesc.textContent = `${fmtInt(descBytes)} B`;
+        els.legApp.textContent = `${fmtInt(miscAndApp)} B`;
+
+        if (res.spiramActive) {
+          els.psramBarSection.style.display = "block";
+          const psramCap = 8 * 1024 * 1024;
+          els.psramBarStats.textContent = `${fmtInt(res.psramFbBytes)} B / ${fmtInt(psramCap)} B (${((res.psramFbBytes / psramCap) * 100).toFixed(2)}%)`;
+          els.segPsram.style.width = `${Math.max(1.5, Math.min(100, (res.psramFbBytes / psramCap) * 100))}%`;
+        } else {
+          els.psramBarSection.style.display = "none";
+        }
+
+        // Render Color Depth Memory Table (2..12 bits)
+        els.depthComparisonBody.innerHTML = "";
+        for (let d = 2; d <= 12; d++) {
+          const sim = simulateForDepth(params, d);
+          const tr = document.createElement("tr");
+          tr.className = "clickable-row" + (d === params.colorDepth ? " selected-row" : "");
+          tr.addEventListener("click", () => {
+            els.colorDepthRange.value = String(d);
+            clearActivePreset();
+            updateUI();
+          });
+
+          const pct = (sim.totalInternalBytes / params.heapBudgetBytes) * 100;
+          let statusBadge = "";
+          if (sim.totalInternalBytes > params.heapBudgetBytes) {
+            statusBadge = `<span class="badge badge-err">Out of SRAM (${pct.toFixed(0)}%)</span>`;
+          } else if (pct > 85) {
+            statusBadge = `<span class="badge badge-warn">Tight Margin (${pct.toFixed(0)}%)</span>`;
+          } else {
+            statusBadge = `<span class="badge badge-ok">Fits in SRAM (${pct.toFixed(0)}%)</span>`;
+          }
+
+          tr.innerHTML = `
+            <td><strong>${d} bits</strong> (${d * 3}-bit RGB)</td>
+            <td class="num">${fmtInt(sim.totalFbBytes)} B${sim.spiramActive ? " <small>(PSRAM)</small>" : ""}</td>
+            <td class="num">${fmtInt(sim.totalDmaDescriptors)}</td>
+            <td class="num">${fmtInt(sim.totalDescBytes)} B</td>
+            <td class="num"><strong>${fmtInt(sim.totalInternalBytes)} B</strong> (${fmtKB(sim.totalInternalBytes)})</td>
+            <td class="num">${sim.calculatedRefreshRate} Hz</td>
+            <td>${statusBadge}</td>
+          `;
+          els.depthComparisonBody.appendChild(tr);
+        }
+      }
+
+      function clearActivePreset() {
+        document.querySelectorAll(".preset-chip").forEach((b) => b.classList.remove("active"));
+      }
+
+      function applyPreset(key) {
+        const p = PRESETS[key];
+        if (!p) return;
+        els.socSelect.value = p.soc;
+        els.heapBudgetRange.value = p.heapKB;
+        els.panelWidthInput.value = p.w;
+        els.panelHeightInput.value = p.h;
+        els.gridColsInput.value = p.cols;
+        els.gridRowsInput.value = p.rows;
+        els.colorDepthRange.value = p.depth;
+        els.clockSpeedSelect.value = String(p.clk);
+        els.doubleBuffCheck.checked = p.dbuf;
+        els.spiramCheck.checked = p.spiram;
+        els.appBufferSelect.value = String(p.appBpp);
+        updateUI();
+      }
+
+      // Event Listeners
+      els.socSelect.addEventListener("change", () => {
+        const profile = SOC_PROFILES[els.socSelect.value];
+        els.heapBudgetRange.value = profile.defaultHeapKB;
+        if (!profile.supportsSpiramDma) {
+          els.spiramCheck.checked = false;
+        }
+        clearActivePreset();
+        updateUI();
+      });
+
+      [
+        els.heapBudgetRange,
+        els.panelWidthInput,
+        els.panelHeightInput,
+        els.gridColsInput,
+        els.gridRowsInput,
+        els.colorDepthRange,
+        els.clockSpeedSelect,
+        els.doubleBuffCheck,
+        els.spiramCheck,
+        els.appBufferSelect
+      ].forEach((input) => {
+        input.addEventListener("input", () => {
+          clearActivePreset();
+          updateUI();
+        });
+      });
+
+      els.presetBar.addEventListener("click", (e) => {
+        const btn = e.target.closest(".preset-chip");
+        if (!btn) return;
+        clearActivePreset();
+        btn.classList.add("active");
+        applyPreset(btn.dataset.preset);
+      });
+
+      els.themeToggleBtn.addEventListener("click", () => {
+        const root = document.documentElement;
+        const isLight = root.getAttribute("data-theme") === "light" || root.classList.contains("light");
+        if (isLight) {
+          root.removeAttribute("data-theme");
+          root.classList.remove("light");
+          els.themeIcon.textContent = "Light Theme";
+        } else {
+          root.setAttribute("data-theme", "light");
+          els.themeIcon.textContent = "Dark Theme";
+        }
+      });
+
+      window.addEventListener("themechange", () => {
+        const root = document.documentElement;
+        const isLight = root.classList.contains("light");
+        els.themeIcon.textContent = isLight ? "Dark Theme" : "Light Theme";
+      });
+
+      // Initial render
+      updateUI();
+    })();
+  </script>
+</body>
+</html>

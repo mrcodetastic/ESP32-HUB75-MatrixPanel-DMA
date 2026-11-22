@@ -110,9 +110,7 @@ If your panel is not supported, consider using the [PxMatrix library](https://gi
 
 ## Memory Requirements
 
-DMA buffers use the microcontroller's internal SRAM memory. Check the [Memory Calculator](/doc/memcalc.md) to calculate expected SRAM usage.
-
-![Memory Calculator](doc/memcalc.jpg)
+DMA buffers use the microcontroller's internal SRAM memory. Check the **[Interactive HTML Memory Calculator](/doc/memcalc.html)** ([Open Live in Browser](https://htmlpreview.github.io/?https://github.com/mrcodetastic/ESP32-HUB75-MatrixPanel-DMA/blob/master/doc/memcalc.html)) to calculate expected SRAM, DMA descriptor, and refresh rate requirements for your matrix setup.
 
 * **ESP32-S3:** You can store the DMA buffer in external PSRAM **only if using Octal SPI PSRAM** (e.g., ESP32-S3-N8R8 / N16R8) by defining `-DSPIRAM_DMA_BUFFER`. Do not use Quad-SPI (Q-SPI) PSRAM because it is too slow. See [Build Options](/doc/BuildOptions.md) to enable PSRAM.
 * **ESP32-P4:** Features 768 KB internal SRAM and PARLIO + GDMA cache synchronization.
