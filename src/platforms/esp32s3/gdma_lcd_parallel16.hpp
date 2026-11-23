@@ -155,16 +155,28 @@
 
     void set_dma_output_buffer(int back_buffer_id);
 
-    // PSRAM starvation recovery (only active when SPIRAM_DMA_BUFFER is defined)
+    // Enable ESP32-S3 PSRAM starvation recovery watchdog by default when
+    // SPIRAM_DMA_BUFFER is active, unless opted out via -DNO_S3_PSRAM_WATCHDOG.
+#if (defined(SPIRAM_DMA_BUFFER) && !defined(NO_S3_PSRAM_WATCHDOG)) || defined(S3_PSRAM_WATCHDOG)
+    #define HUB75_S3_PSRAM_WATCHDOG 1
+#endif
+
+#if defined(HUB75_S3_PSRAM_WATCHDOG)
     void dma_recover(void);
     void dma_watchdog_start(void);
     void dma_watchdog_stop(void);
+#else
+    inline void dma_watchdog_start(void) {}
+    inline void dma_watchdog_stop(void) {}
+#endif
 
   private:
 
     static bool IRAM_ATTR on_tx_eof(gdma_channel_handle_t chan, gdma_event_data_t *evt, void *user);
+#if defined(HUB75_S3_PSRAM_WATCHDOG)
     static bool IRAM_ATTR on_tx_descr_err(gdma_channel_handle_t chan, gdma_event_data_t *evt, void *user);
     static void dma_watchdog_task(void *arg);
+#endif
 
     config_t _cfg;
 
@@ -196,7 +208,7 @@
     bool _running = false;
     // Requested restart/initial chain, NOT a claim about the live DMA pointer.
     HUB75_DMA_DESCRIPTOR_T* _active_head = nullptr;
-    TaskHandle_t      _watchdog_task = nullptr;
+    TaskHandle_t _watchdog_task = nullptr;
 
   };
 

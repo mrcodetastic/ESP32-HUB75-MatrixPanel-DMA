@@ -247,7 +247,7 @@
     // regardless of where the framebuffer payloads were allocated.
     static gdma_tx_event_callbacks_t tx_cbs = {
       .on_trans_eof = on_tx_eof,
-#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 4, 0)
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 4, 0) && defined(HUB75_S3_PSRAM_WATCHDOG)
       .on_descr_err = on_tx_descr_err,
 #endif
     };
@@ -422,8 +422,10 @@
     if (_active_head == nullptr) {
       _active_head = &_dmadesc_a[0]; // Default to the primary buffer
     }
+#if defined(HUB75_S3_PSRAM_WATCHDOG)
     _eof_count   = 0;
     _dma_fault   = false;
+#endif
     _running     = true;
     portEXIT_CRITICAL(&_state_lock);
 
@@ -508,7 +510,9 @@
     auto *self = static_cast<Bus_Parallel16 *>(user);
     BaseType_t woken = pdFALSE;
     portENTER_CRITICAL_ISR(&self->_state_lock);
+#if defined(HUB75_S3_PSRAM_WATCHDOG)
     self->_eof_count++;
+#endif
     if (self->_pending_tail && evt->tx_eof_desc_addr == (intptr_t)self->_pending_tail) {
       self->_pending_tail = nullptr;
       xSemaphoreGiveFromISR(self->_flip_done, &woken);
@@ -517,6 +521,7 @@
     return woken == pdTRUE;
   }
 
+#if defined(HUB75_S3_PSRAM_WATCHDOG)
   /**
    * @brief GDMA TX descriptor-error ISR callback.
    *
@@ -592,7 +597,7 @@
     uint32_t stalled_ms = 0;
 
     for (;;) {
-      vTaskDelay(pdMS_TO_TICKS(10));
+      vTaskDelay(pdMS_TO_TICKS(20));
 
       portENTER_CRITICAL(&self->_state_lock);
       const bool running = self->_running;
@@ -608,16 +613,18 @@
 
       if (fault) {
         self->dma_recover();
-        last_eof   = now;
+        last_eof   = 0;
         stalled_ms = 0;
         continue;
       }
 
       if (now == last_eof) {
-        stalled_ms += 10;
-        if (stalled_ms >= 50) { // ~4x a typical frame period; tune if needed
+        stalled_ms += 20;
+        if (stalled_ms >= 160) { // Tolerate large low-FPS PSRAM chains without false restarts
           self->dma_recover();
+          last_eof   = 0;
           stalled_ms = 0;
+          continue;
         }
       } else {
         stalled_ms = 0;
@@ -631,7 +638,6 @@
    */
   void Bus_Parallel16::dma_watchdog_start()
   {
-#if defined(SPIRAM_DMA_BUFFER)
     if (_watchdog_task) {
       return;
     }
@@ -642,7 +648,6 @@
       ESP_LOGE(TAG, "Failed to create GDMA watchdog task");
       _watchdog_task = nullptr;
     }
-#endif
   }
 
   /**
@@ -659,6 +664,7 @@
       xSemaphoreGive(_dma_mutex);
     }
   }
+#endif // HUB75_S3_PSRAM_WATCHDOG
 
 #endif
 #endif
