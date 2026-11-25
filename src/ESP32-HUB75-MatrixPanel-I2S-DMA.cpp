@@ -588,8 +588,9 @@ void MatrixPanel_I2S_DMA::clearFrameBuffer(bool _buff_id) {
  * @brief Adjusts global brightness by setting Output Enable (OE) pulse widths.
  * 
  * Sets OE active (LOW) centered within each row's clock window.
- * The active pulse width scales linearly with brightness (0-255) across all 
- * bitplane buffers, preserving correct BCM color ratios without color shift.
+ * The active pulse width scales linearly with brightness (0-255). Buffers that
+ * gate bitplanes below lsbMsbTransitionBit get a proportionally shorter window,
+ * so BCM bit weights (and thus color ratios) stay binary.
  */
 void MatrixPanel_I2S_DMA::setBrightnessOE(uint8_t brt, const int _buff_id)
 {
@@ -613,10 +614,6 @@ void MatrixPanel_I2S_DMA::setBrightnessOE(uint8_t brt, const int _buff_id)
     active_pixels = 1;
   }
 
-  // Center the active (OE = LOW) window within the row duration
-  const int x_coord_min = (_width - active_pixels) / 2;
-  const int x_coord_max = x_coord_min + active_pixels;
-
   int row_idx = target_fb->rowBits.size();
   do {
     --row_idx;
@@ -624,6 +621,23 @@ void MatrixPanel_I2S_DMA::setBrightnessOE(uint8_t brt, const int _buff_id)
     uint8_t colouridx = _depth;
     do {
       --colouridx;
+
+      // Keep binary bitplane weights when lsbMsbTransitionBit (tb) > 0: bitplanes above tb are
+      // shown 2^(p - tb) times, bitplanes 0..tb only once, so bitplanes 0..tb-1 need a
+      // proportionally shorter OE window.
+      // The LEDs show the previously latched bitplane while the next one is shifted in, so the
+      // OE window of buffer c gates bitplane c-1 (buffer 0 gates the MSB of the previous sweep).
+      // Bitplanes 0..tb-1 are therefore gated by buffers 1..tb and get
+      // window / 2^(tb - bitplane); all other buffers keep the full window.
+      int plane_pixels = active_pixels;
+      if (colouridx >= 1 && colouridx <= lsbMsbTransitionBit) {
+        const int shift = lsbMsbTransitionBit - (colouridx - 1);
+        plane_pixels = (active_pixels + (1 << (shift - 1))) >> shift;  // rounded
+      }
+
+      // Center the active (OE = LOW) window within the row duration
+      const int x_coord_min = (_width - plane_pixels) / 2;
+      const int x_coord_max = x_coord_min + plane_pixels;
 
       ESP32_I2S_DMA_STORAGE_TYPE *row = target_fb->rowBits[row_idx]->getDataPtr(colouridx);
 
