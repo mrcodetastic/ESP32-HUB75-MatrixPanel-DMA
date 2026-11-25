@@ -15,6 +15,12 @@
 // #include <Arduino.h>
 #include "platforms/platform_detect.hpp"
 
+#if defined(CONFIG_IDF_TARGET_ESP32C6)
+#include <freertos/FreeRTOS.h>
+#include <freertos/semphr.h>
+#include <esp_timer.h>
+#endif
+
 /***************************************************************************************/
 // MATRIX_WIDTH and MATRIX_HEIGHT are legacy defines that were originally intended
 // to specify individual panel dimensions. However, in many external projects, 
@@ -369,6 +375,9 @@ public:
 
     bool begin();
     virtual ~MatrixPanel_I2S_DMA() {
+#if defined(CONFIG_IDF_TARGET_ESP32C6)
+        c6DeleteRefreshTimer();
+#endif
         dma_bus.release();
     }
 
@@ -451,6 +460,9 @@ public:
     // only then may it become the draw buffer. Other backends retain their own
     // handover semantics. Do not call from an ISR.
     inline void flipDMABuffer() {
+#if defined(CONFIG_IDF_TARGET_ESP32C6)
+        return; // Single-buffer only on ESP32-C6
+#else
         if (!m_cfg.double_buff) {
 			ESP_LOGW("MatrixPanel_I2S_DMA", "Requested buffer change, but double buffering not enabled.");     
 			return;
@@ -459,6 +471,7 @@ public:
         dma_bus.set_dma_output_buffer(back_buffer_id);
         back_buffer_id = back_buffer_id ^ 1;
         fb = &frame_buffer[back_buffer_id];  
+#endif
     }
 
     void setBrightness(const uint8_t b) {
@@ -483,6 +496,12 @@ public:
         if (initialized) return false;
 
         m_cfg = cfg;
+#if defined(CONFIG_IDF_TARGET_ESP32C6)
+        if (m_cfg.double_buff) {
+            ESP_LOGW("MatrixPanel_I2S_DMA", "Double buffering is not supported on ESP32-C6; forcing single buffer mode.");
+            m_cfg.double_buff = false;
+        }
+#endif
         PIXELS_PER_ROW = m_cfg.mx_width * m_cfg.chain_length;
         ROWS_PER_FRAME = m_cfg.mx_height / MATRIX_ROWS_IN_PARALLEL;
         MASK_OFFSET = 16 - m_cfg.getPixelColorDepthBits();
@@ -492,12 +511,18 @@ public:
     }
 
     void stopDMAoutput() {
+#if defined(CONFIG_IDF_TARGET_ESP32C6)
+        c6StopRefreshTimer();
+#endif
         resetbuffers();
         dma_bus.dma_transfer_stop();
     }
 
     void resumeDMAoutput() {
         dma_bus.dma_transfer_start();
+#if defined(CONFIG_IDF_TARGET_ESP32C6)
+        c6StartRefreshTimer();
+#endif
     }
 
     #define ESP32_I2S_DMA_HAS_GET_LSBMSB
@@ -613,6 +638,17 @@ private:
 
 #ifndef NO_CIE1931
     uint16_t lumConvTab[256] = {};
+#endif
+
+#if defined(CONFIG_IDF_TARGET_ESP32C6)
+    static void c6RefreshTimerCallback(void* arg);
+    bool c6StartRefreshTimer();
+    void c6StopRefreshTimer();
+    void c6DeleteRefreshTimer();
+
+    esp_timer_handle_t c6_refresh_timer = nullptr;
+    SemaphoreHandle_t c6_timer_mutex = nullptr;
+    volatile bool c6_refresh_active = false;
 #endif
 };
 

@@ -18,6 +18,12 @@ if(${target} STREQUAL "esp32s3")
   if (NOT esp_lcd IN_LIST build_dependencies)
     list(APPEND build_dependencies esp_lcd)
   endif()
+elseif(${target} STREQUAL "esp32c6")
+  list(APPEND extra_srcs src/platforms/esp32c6/dma_parallel_io.cpp)
+
+  if (NOT esp_timer IN_LIST build_dependencies)
+    list(APPEND build_dependencies esp_timer)
+  endif()
 endif()
 
 idf_component_register(SRCS "src/platforms/esp32/esp32_i2s_parallel_dma.cpp" "src/ESP32-HUB75-MatrixPanel-I2S-DMA.cpp" "src/ESP32-HUB75-MatrixPanel-leddrivers.cpp" ${extra_srcs}

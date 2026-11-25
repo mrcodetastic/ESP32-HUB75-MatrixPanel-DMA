@@ -68,8 +68,9 @@ New panel driver chips are released frequently. Always check with the seller bef
 | **ESP32-S3** | Xtensa LX7 | LCD_CAM + GDMA | Supported (supports Octal PSRAM via `SPIRAM_DMA_BUFFER`) |
 | **ESP32-P4** | RISC-V | PARLIO TX + GDMA | Supported |
 | **ESP32-S31** | RISC-V | PARLIO TX + GDMA | Experimental (pending hardware bring-up) |
+| **ESP32-C6** | RISC-V | PARLIO TX + GDMA (Triggered) | Experimental (single-buffer only; `esp_timer` frame pacing) |
 
-*Note: **ESP32-C2, ESP32-C3, ESP32-C5, ESP32-C6, and ESP32-H2** are **not supported** — they either lack a parallel LCD/PARLIO DMA engine or, in the case of C6/H2, PARLIO cannot control continuous transaction lengths in a hardware loop.*
+*Note: **ESP32-C2, ESP32-C3, ESP32-C5, and ESP32-H2** are **not supported** — they either lack a parallel LCD/PARLIO DMA engine or cannot support 16-bit continuous HUB75 transfers.*
 
 ## A quick introduction to LED Matrix Panel 'Scan' types
 

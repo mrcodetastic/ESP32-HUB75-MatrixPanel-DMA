@@ -156,7 +156,19 @@ void MatrixPanel_I2S_DMA::calculateRefreshRateAndTransitionBit() {
         }
 
         const uint64_t nsPerFrame = nsPerRow * ROWS_PER_FRAME;
+#if defined(CONFIG_IDF_TARGET_ESP32C6)
+        // Account for per-segment (<= 65,532 B) PARLIO EOF ISR re-arming + esp_timer jitter
+        uint64_t passesPerRow = m_cfg.getPixelColorDepthBits();
+        for (int i = lsbMsbTransitionBit + 1; i < m_cfg.getPixelColorDepthBits(); i++) {
+            passesPerRow += (m_cfg.getPixelColorDepthBits() - i) * (1ULL << (i - lsbMsbTransitionBit - 1));
+        }
+        const uint64_t frameBytes = passesPerRow * PIXELS_PER_ROW * ROWS_PER_FRAME * sizeof(ESP32_I2S_DMA_STORAGE_TYPE);
+        const uint64_t estSegments = (frameBytes + 65531ULL) / 65532ULL;
+        const uint64_t effectiveNsPerFrame = nsPerFrame + (estSegments * 15000ULL) + 200000ULL;
+        const uint32_t actualRefreshRate = 1000000000ULL / effectiveNsPerFrame;
+#else
         const uint32_t actualRefreshRate = 1000000000ULL / nsPerFrame;
+#endif
         calculated_refresh_rate = actualRefreshRate;
 
 #if defined(FORCE_COLOR_DEPTH)
@@ -176,6 +188,15 @@ void MatrixPanel_I2S_DMA::calculateRefreshRateAndTransitionBit() {
 #if !defined(FORCE_COLOR_DEPTH)
     if (lsbMsbTransitionBit > 0) {
         ESP_LOGW("I2S-DMA", "lsbMsbTransitionBit of %d used to achieve refresh rate of %d Hz.", lsbMsbTransitionBit, m_cfg.min_refresh_rate);
+    }
+#endif
+
+#if defined(CONFIG_IDF_TARGET_ESP32C6)
+    const uint32_t target_hz = (m_cfg.min_refresh_rate > 0) ? m_cfg.min_refresh_rate : 60;
+    if (calculated_refresh_rate > static_cast<int>(target_hz)) {
+        ESP_LOGI("I2S-DMA", "ESP32-C6 hardware scan rate %d Hz; pacing refresh via esp_timer to %u Hz.",
+                 calculated_refresh_rate, (unsigned int)target_hz);
+        calculated_refresh_rate = static_cast<int>(target_hz);
     }
 #endif
 }
@@ -686,6 +707,13 @@ bool MatrixPanel_I2S_DMA::begin() {
         return false;
     } 
 
+#if defined(CONFIG_IDF_TARGET_ESP32C6)
+    if (m_cfg.double_buff) {
+        ESP_LOGW("begin()", "Double buffering is not supported on ESP32-C6; forcing single buffer mode.");
+        m_cfg.double_buff = false;
+    }
+#endif
+
 #ifndef NO_CIE1931
     buildBrightnessLUT();
 #endif
@@ -711,8 +739,104 @@ bool MatrixPanel_I2S_DMA::begin() {
     // Start hardware transmission
     dma_bus.dma_transfer_start();
 
+#if defined(CONFIG_IDF_TARGET_ESP32C6)
+    if (!c6StartRefreshTimer()) {
+        ESP_LOGE("begin()", "Error: Failed to start ESP32-C6 esp_timer refresh pacing!");
+        dma_bus.dma_transfer_stop();
+        c6DeleteRefreshTimer();
+        dma_bus.release();
+        initialized = false;
+        return false;
+    }
+#endif
+
     return initialized;
 }
+
+#if defined(CONFIG_IDF_TARGET_ESP32C6)
+void MatrixPanel_I2S_DMA::c6RefreshTimerCallback(void* arg) {
+    auto* self = static_cast<MatrixPanel_I2S_DMA*>(arg);
+    if (!self || !self->c6_timer_mutex) return;
+    if (xSemaphoreTake(self->c6_timer_mutex, 0) == pdTRUE) {
+        if (self->c6_refresh_active) {
+            self->dma_bus.dma_transfer_start();
+        }
+        xSemaphoreGive(self->c6_timer_mutex);
+    }
+}
+
+bool MatrixPanel_I2S_DMA::c6StartRefreshTimer() {
+    if (!initialized) return false;
+
+    if (!c6_timer_mutex) {
+        c6_timer_mutex = xSemaphoreCreateMutex();
+        if (!c6_timer_mutex) {
+            return false;
+        }
+    }
+
+    if (!c6_refresh_timer) {
+        esp_timer_create_args_t timer_args = {};
+        timer_args.callback = &MatrixPanel_I2S_DMA::c6RefreshTimerCallback;
+        timer_args.arg = this;
+        timer_args.dispatch_method = ESP_TIMER_TASK;
+        timer_args.name = "hub75_c6_refresh";
+        if (esp_timer_create(&timer_args, &c6_refresh_timer) != ESP_OK) {
+            return false;
+        }
+    }
+
+    xSemaphoreTake(c6_timer_mutex, portMAX_DELAY);
+    if (c6_refresh_active) {
+        xSemaphoreGive(c6_timer_mutex);
+        return true;
+    }
+
+    const uint32_t target_hz = (m_cfg.min_refresh_rate > 0) ? m_cfg.min_refresh_rate : 60;
+    uint64_t period_us = 1000000ULL / target_hz;
+    if (period_us < 1000ULL) {
+        period_us = 1000ULL;
+    }
+
+    c6_refresh_active = true;
+    esp_err_t err = esp_timer_start_periodic(c6_refresh_timer, period_us);
+    if (err != ESP_OK) {
+        c6_refresh_active = false;
+        xSemaphoreGive(c6_timer_mutex);
+        return false;
+    }
+    xSemaphoreGive(c6_timer_mutex);
+
+    ESP_LOGI("I2S-DMA", "ESP32-C6 esp_timer refresh pacing started at %u Hz (%llu us period).",
+             (unsigned int)target_hz, (unsigned long long)period_us);
+    return true;
+}
+
+void MatrixPanel_I2S_DMA::c6StopRefreshTimer() {
+    if (!c6_timer_mutex) {
+        c6_refresh_active = false;
+        return;
+    }
+    xSemaphoreTake(c6_timer_mutex, portMAX_DELAY);
+    c6_refresh_active = false;
+    if (c6_refresh_timer) {
+        (void)esp_timer_stop(c6_refresh_timer);
+    }
+    xSemaphoreGive(c6_timer_mutex);
+}
+
+void MatrixPanel_I2S_DMA::c6DeleteRefreshTimer() {
+    c6StopRefreshTimer();
+    if (c6_refresh_timer) {
+        (void)esp_timer_delete(c6_refresh_timer);
+        c6_refresh_timer = nullptr;
+    }
+    if (c6_timer_mutex) {
+        vSemaphoreDelete(c6_timer_mutex);
+        c6_timer_mutex = nullptr;
+    }
+}
+#endif
 
 uint8_t MatrixPanel_I2S_DMA::setLatBlanking(uint8_t pulses) {
     m_cfg.latch_blanking = std::min(std::max(pulses, static_cast<uint8_t>(1)), MAX_LAT_BLANKING);

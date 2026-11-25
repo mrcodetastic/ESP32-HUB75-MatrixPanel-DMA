@@ -49,17 +49,20 @@ Modified heavily for the ESP32 HUB75 DMA library by:
 
  #elif defined(CONFIG_IDF_TARGET_ESP32C6)
 
-  #error "ESP32-C6 is not supported: this silicon cannot control its transaction length via DMA, so the LED screen cannot be flushed continuously in a hardware loop."
-  
-  /* 
-   * Refer to: https://github.com/espressif/esp-idf/tree/master/examples/peripherals/parlio/parlio_tx/simple_rgb_led_matrix
-   * 	"Because of the hardware limitation in ESP32-C6 and ESP32-H2, the transaction length can't be controlled by DMA, thus 
-   * 	we can't flush the LED screen continuously within a hardware loop."
-   *
+  /*
+   * Experimental ESP32-C6 support using triggered PARLIO TX + AHB GDMA.
+   * ESP32-C6 PARLIO cannot loop infinitely via DMA EOF and caps each
+   * transaction at 65,535 bytes; Bus_Parallel16 auto-splits frames into
+   * <= 65,532-byte segments while MatrixPanel_I2S_DMA paces refreshes via
+   * esp_timer (single-buffer only).
    */
-  
-  //#include "esp32c6/dma_parallel_io.hpp"
-  //#include "esp32c6/esp32c6-default-pins.hpp"
+  #pragma message "EXPERIMENTAL: Compiling for ESP32-C6 with triggered PARLIO support (single-buffer only)."
+  #include "esp32c6/dma_parallel_io.hpp"
+  #include "esp32c6/esp32c6-default-pins.hpp"
+
+  #if defined(SPIRAM_DMA_BUFFER)
+   #error "SPIRAM_DMA_BUFFER is not supported on ESP32-C6 (no external PSRAM)."
+  #endif
 
  #elif defined(CONFIG_IDF_TARGET_ESP32P4) || defined(CONFIG_IDF_TARGET_ESP32S31)
 
