@@ -191,3 +191,87 @@ struct ColumnSkip16Mapping : ScanPolicyTraits<1, 1> {
 
 > [!TIP]
 > Always use `geom.panel_res_x` and `geom.panel_res_y` (rather than hardcoded constants) in custom `map()` implementations so your policy automatically works across multi-panel serpentine/zig-zag chains.
+
+---
+
+## 6. Community-Verified Panel Configurations
+
+This is a **non-exhaustive starting point** of community-verified HUB75 panels and their `VirtualMatrixPanel_T` / `HUB75_I2S_CFG` settings.
+
+> [!WARNING]
+> **Batch & Factory Variance Notice:** Identical PCB dimensions (`64x32 8S`, `80x40 10S`, `32x16 4S`), silkscreen markings, and driver ICs from different factories or production batches frequently use different `pxbase`, swapped blocks, or zigzag wiring. Treat entries below as **starting points**—if pixels still scramble, run [`examples/Pixel_Mapping_Test`](../examples/Pixel_Mapping_Test/Pixel_Mapping_Test.ino) using the [4-step guide](#3-finding-a-panels-mapping-in-4-steps-updated-discussion-622-guide).
+>
+> For panels and driver ICs known to be **electrically incompatible** (e.g., S-PWM chips, HUB12, 3/4-RGB panels), see [`doc/NonStandardPanels.md`](./NonStandardPanels.md#4-known-incompatible--non-mapping-hardware).
+
+### Standard Two-Scan Panels (`TwoScanMapping`, `1*W × 1*H` DMA)
+
+Standard two-scan modules do not need 4-scan folding, but often require specific `line_decoder`, `driver`, `clkphase`, `gpio.e`, or wiring notes:
+
+| Panel Size | Scan | Example PCB Models / Drivers & Mux ICs | `VirtualMatrixPanel_T` Policy | Extra `mxconfig` & Notes |
+| --- | --- | --- | --- | --- |
+| **32×16** | `1/8S` | Standard indoor; `P10-2727-8S-32X16-A` (`DP5125D` + `RUC7258D`) | `TwoScanMapping` | Standard two-scan; for `P10-2727-8S-32X16-A`: `i2sspeed = HZ_8M`, `latch_blanking = 4`, `clkphase = false` |
+| **32×32** | `1/16S` | `MBI5124` + `ICND2018` mux | `TwoScanMapping` | `driver = MBI5124`, `line_decoder = TYPE595` |
+| **64×32** | `1/16S` | `P5(2121)-3264-16S-M5` (`RUL6024` + `RUC7258D`) | `TwoScanMapping` | `driver = SHIFTREG`, `clkphase = false`, `latch_blanking = 1` |
+| **64×32** (`2×2` grid) | `1/16S` | Chained `2×2` grid of standard `64×32` panels | `VirtualMatrixPanel_T<CHAIN_TOP_RIGHT_DOWN, TwoScanMapping>` | `makeDMAConfig(64, 32, 2, 2)`, `clkphase = false` |
+| **64×64** | `1/32S` | `P3-6464-32S-V2.0` (`ICN2037BP` + `RUC7258D`), `DP5125D` + `VB5628` | `TwoScanMapping` | HUB75E pin 12 mislabeled `GND` on PCB is `D`; connect `D` & `E`, `clkphase = false` |
+| **64×64** | `1/32S` | `SM16208SJ` + `SM5166PS` | `TwoScanMapping` | `i2sspeed = HZ_8M`, `latch_blanking = 4`, `clkphase = false`, `gpio.e` |
+| **64×64** | `1/32S` | `FM6126A` | `TwoScanMapping` | `driver = FM6126A`, `clkphase = false`, `gpio.e` |
+| **64×64** | `1/32S` | Q3 / P3 (`DP5125D` + `DP32020A` / `SM5368PF`) | `TwoScanMapping` | `line_decoder = TYPE595`, `clkphase = false`, `gpio.e` |
+| **80×40** | `1/20S` | `P4-320X160-2121-20S-PV1` (`DP5125F` + `DP32019B`) | `TwoScanMapping` | Connect `gpio.e` (`>16` row addresses), `clkphase = false` |
+| **80×40** | `1/20S` | P4 indoor (`FM6124D` + `CNCC29`/`TC7262`, or `ICN2038S` + `SM5166P`/`ICN2012`) | `TwoScanMapping` | `driver = FM6124` or `ICN2038S`, connect `gpio.e`, `clkphase = false` |
+| **80×40** | `1/20S` | `DP5125D` + `3018SDP` | `TwoScanMapping` | `line_decoder = TYPE595`, `clkphase = false`, `gpio.e` |
+| **128×64** | `1/32S` | `K716-128x64-32S-V3.3` (`SM16208SF` + `SM5166PS`) | `TwoScanMapping` | `driver = SHIFTREG`, `gpio.e`, `clkphase = false` |
+| **128×64** | `1/32S` | `PH2-128*64-32S-V1.0` (`FM6126A` + `D5958SS`) | `TwoScanMapping` | `driver = FM6126A`, `line_decoder = TYPE595`, `latch_blanking = 3`, `clkphase = false`, `gpio.e` |
+| **128×64** | `1/32S` | `ICN2037BP` + `RUL5158C` (`A/B/C` mux) | `TwoScanMapping` | `line_decoder = TYPE595`, `clkphase = false`, `gpio.e` |
+
+### Four-Scan Panels (`FourScanMapping` / `FourScan64pxBitSwapMapping`, `2*W × H/2` DMA)
+
+With `VirtualDisplay::makeDMAConfig(PANEL_RES_X, PANEL_RES_Y, NUM_ROWS, NUM_COLS)`, the `2*W × H/2` DMA geometry is computed automatically.
+
+| Panel Size | Scan | Example PCB Models / Drivers & Mux ICs | `VirtualMatrixPanel_T` Policy | Extra `mxconfig` & Notes |
+| --- | --- | --- | --- | --- |
+| **32×16** | `1/4S` | `ICN2037` / `FM6124` / `DP5125` + `74HC138` | `FourScanMapping<>` (`pxbase = 32`) | Check `clkphase = false` |
+| **32×16** | `1/4S` | `P10(3535)32x16-4S`, SzLightall `P10 320x160 1/4 scan V1.1`, `ICN2037BP` / `SM16208` / `FM6124D` / `DP5125D` + `74HC138` | `FourScanMapping<8>` or `FourScanMapping<8, FOUR_SCAN_SWAP_BLOCKS>` | `clkphase = false` (also works in `2×2` grids via `CHAIN_TOP_RIGHT_DOWN` + `makeDMAConfig(32, 16, 2, 2)`) |
+| **32×16** | `1/4S` | P8 `SM16206S` / `TC5020AP` + `MP7128GF` / `DP4953` (no `138`/`595`) | `FourScanMapping<8>` | `line_decoder = TYPE_DIRECT`, `clkphase = false` |
+| **32×16** | `1/4S` | `SM16208SJ` + `74HC138` (ZigZag8) | `FourScanMapping<8, FOUR_SCAN_REVERSE_RIGHT>` or `FourScanMapping<8, FOUR_SCAN_ZIGZAG_SM16208>` | Check `clkphase = false` |
+| **32×16** | `1/4S` | P8 `SMD3535` | `FourScanMapping<4, FOUR_SCAN_XOR_SEGMENTS>` | — |
+| **32×16** | `1/4S` | `RHLP10-3535-16x32-4S`, `SM16208SJ` + `DP74HC138B` + `MW245B` + `MW4953F` | `FourScanMapping<1>` | `clkphase = false` (supports `1×2` chains via `makeDMAConfig(32, 16, 1, 2)`) |
+| **32×32** | `1/8S` | `TC5020AP`, `ICN2037BP` + `SM5166PC` / `MP5020GP` | `FourScanMapping<>` or `FourScanMapping<16>` | `driver = ICN2038S` or `SHIFTREG`, `clkphase = false` |
+| **32×32** | `1/8S` | `P6(3535) 32x32-8S-V1.6` (`ICN5020B`) | `FourScanMapping<16, FOUR_SCAN_SWAP_BLOCKS>` | `clkphase = false` |
+| **32×32** | `1/8S` | `P5-3232-3528-8S-A2` (`DP5020B` + `DP74HC138D`) | `FourScanMapping<0, FOUR_SCAN_SWAP_BLOCKS>` (`pxbase = 32`) | `clkphase = false` |
+| **40×20** | `1/5S` | P8 `DP5125D` / `FM6047` + `RUC7258D` (4-px checkerboard) | `FourScanP8_40x20` (`FourScanMapping<4, FOUR_SCAN_SWAP_BLOCKS \| FOUR_SCAN_XOR_SEGMENTS>`) | `clkphase = false` |
+| **40×20** | `1/5S` | `P8(3535)-20X40-5S-V1.2` (`FM6047` + `RUC7258D`, ZigZag8) | `FourScanMapping<8, FOUR_SCAN_ZIGZAG_SM16208>` | `clkphase = false` |
+| **48×24** | `1/6S` | QiangLi P6.67 (`DP5135` + `DP32020`) | `FourScanMapping<>` (`pxbase = 48`) | `line_decoder = TYPE595`, `clkphase = false` |
+| **64×32** | `1/8S` | `P4-6432-8S-V2.0`, `P4-1921-64x32-8s-s1`, `ICN2037BP` / `SM16208` + `RUC7258D` / `SM5166PC` | `FourScanMapping<>` (`pxbase = 64`) | `clkphase = false` (fixes `74HC245` skew on `1×2`, `2×1`, and `2×2` chains) |
+| **64×32** | `1/8S` | P5 Outdoor (`ICN2038S` + `ICN2012`), `SM16208SJ` + `RUL5158C`, Q5 `DP5125D` + `DP32020A` | `FourScanMapping<32>` | `clkphase = false`; set `driver = ICN2038S` or `line_decoder = TYPE595` per PCB |
+| **64×32** | `1/8S` | `P5-08S-1921` (`MBI5124` + `SM5166`), generic `pxbase = 16` | `FourScanMapping<16>` | `driver = MBI5124` (if MBI5124), `clkphase = false` |
+| **64×32** | `1/8S` | `P5-1921-64*32-8S-S2` / `HRLOP-P5-1921/V2.0` (`SM16208S`/`ICN2038S` + `ICN2012`, `A/B/C` only) | `FourScanMapping<4>` | `clkphase = false` |
+| **64×32** | `1/8S` | P5 `SM16208SJ` + `SM5368PS` | `FourScanMapping<4, FOUR_SCAN_SWAP_BLOCKS \| FOUR_SCAN_XOR_SEGMENTS>` | `line_decoder = TYPE595`, `clkphase = false` (`driver = DP3246` if needed) |
+| **64×32** | `1/8S` | `YS-P5-320X160(PRO)-8S-1921-GYGY-V1` (`FM6124HJ` + 595), `ICN2037BP` + `RUC7258E` | `FourScanMapping<1>` | `driver = FM6124` & `line_decoder = TYPE595` on `YS-P5`, `clkphase = false` |
+| **80×40** | `1/10S` | P4 `SM16208` + `TC7559` / `SM5368`, `ICN2037` / `GKGD` / `SM5166` / `RUC7258` | `FourScanMapping<>`, `FourScanMapping<16>`, or `FourScanMapping<1>` | `line_decoder = TYPE595` if 595 mux, `clkphase = false` |
+| **80×40** | `1/10S` | `GKGD P4-8040-10S-V2.3` (`ICN2037` + `ICN2012`), `ICN2038S`, `ICN2037BP` + `RUC7258D` | `FourScanMapping<16>` | `driver = FM6124` / `ICN2038S` / `SHIFTREG`, `latch_blanking = 4`, `clkphase = false` |
+| **80×40** | `1/10S` | `P4-80*40-10S-V2.0` (`SM16208` / `ICN2037`, ZigZag8) | `FourScan80x40_ZigZag8` (`FourScanMapping<8, FOUR_SCAN_ZIGZAG_SM16208>`) | `clkphase = false` |
+| **80×40** | `1/10S` | `ICN2038` / `ICN2037BP` + `ICND2018` | `FourScan80x40_HFarcan` (`FourScanMapping<16, FOUR_SCAN_XOR_SEGMENTS>`) | `i2sspeed = HZ_20M` if blinking |
+| **80×40** | `1/10S` | P4 `DP5125D` / `DP5135` / `SM16208` + `DP32020A` / `DP2020` / `RUL5158C` / `SM5368` | `FourScanMapping<4, FOUR_SCAN_SWAP_BLOCKS>`, `FourScanMapping<4, FOUR_SCAN_XOR_SEGMENTS>`, or both flags | `line_decoder = TYPE595`, `clkphase = false` |
+| **64×64** | `1/16S` | Outdoor `ICN2037BP` / `SM16208SJ` + `RUC7258D` (8-row bit-swapped, single or `2×3` grid) | `FourScan64pxBitSwapMapping<>` | `clkphase = false` (chains with `CHAIN_TOP_RIGHT_DOWN`) |
+| **64×64** | `1/16S` | P3 indoor `16S` (`MBI5124`, four 16-row blocks) | `FourScan64_16S` (`FourScanMapping<0, FOUR_SCAN_NONE, 64>`) | `driver = MBI5124`, `clkphase = false` (see [`doc/FourScan_64x64_16S.md`](./FourScan_64x64_16S.md)) |
+| **128×64** | `1/16S` | `DP5125DP` + `D32019B` | `FourScanMapping<1, FOUR_SCAN_SWAP_BLOCKS>` | — |
+
+### Eight-Scan Panels (`EightScanMapping`, `4*W × H/4` DMA)
+
+| Panel Size | Scan | Example PCB Models / Drivers & Mux ICs | `VirtualMatrixPanel_T` Policy | Extra `mxconfig` & Notes |
+| --- | --- | --- | --- | --- |
+| **32×16** | `1/2S` *(sometimes labeled `1/4` or `1/8`)* | `SM16208SJ` / `SM16208S` + `4953` direct MOSFET mux | `EightScan32x16_819` or `EightScan32x16_SM16208` | `line_decoder = TYPE_DIRECT`, `clkphase = false`, `latch_blanking = 4` |
+| **32×32** | `1/4S` | `P6(3535)-32X32-4S-72SB-22F` (`MBI5124GP`) | Custom `ScanPolicyTraits<4, 4>` (`4*W × H/4` DMA) | `clkphase = false`, sketch-local band/slot policy |
+
+### Single-Scan (`scan == panel_res_y`) & Custom-Stride Panels
+
+| Panel Size | Type / Quirk | Example PCB Models / Drivers | `VirtualMatrixPanel_T` Policy | Extra `mxconfig` & Notes |
+| --- | --- | --- | --- | --- |
+| **48×16** | Single-scan (`1/16S`) | P3 `MBI5124` | `TwoScanMapping` with `makeDMAConfig(48, 32)` | Double DMA height (`32`), `driver = MBI5124`; draw within `y = 0..15` |
+| **64×32** | Single-scan (`1/32S`) | P4 / `EICEG-P2.5-64X32-32s-v1.3` (`FM6124`) | `TwoScanMapping` with `makeDMAConfig(64, 64)` | Double DMA height (`64`) + connect `gpio.e` (+ `driver = FM6124` if needed); draw within `y = 0..31` |
+| **32×8** | Single RGB lane (`R0/G0/B0` only) | `SM16106SC` badge | Custom `ScanPolicy` (DMA `32×16`) | Reverse X per 8px slice and fold `y &= 7` |
+| **78×78** | `1/26S` 3-row folding | `SM5368PS` / `RU5958DSP` mux | Custom 3-row folding `ScanPolicy` (`makeDMAConfig(78, 78)`) | `line_decoder = TYPE595`, `latch_blanking = 4`, `clkphase = false` |
+| **104×52** | `1/26S` dummy column skip | `P2.5-10452-26S-V2.0` (`ICN2037BP`, `110`/`112` clocks) | Custom `ScanPolicyTraits<1, 1>` (see [Section 5](#5-writing-a-custom-scanpolicy-for-one-off-quirky-panels)) | Custom `makeDMAConfig` width `110` or `112`; construct `(*dma_display, 1, 1, 104, 52)` + `gpio.e` |
+| **64×32** | Horizontal mirroring | Any standard `64×32` | Custom `ScanPolicyTraits<1, 1>` | Sketch-local policy returning `geom.virtual_res_x - 1 - coords.x` |
+

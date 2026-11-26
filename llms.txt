@@ -1,0 +1,167 @@
+# ESP32-HUB75-MatrixPanel-DMA
+
+> DMA-driven HUB75 RGB LED matrix display library for ESP32, ESP32-S2, ESP32-S3, and ESP32-P4 (Arduino, PlatformIO, and ESP-IDF). Refreshes panels continuously in hardware using Binary Code Modulation (BCM) with minimal CPU overhead, and optionally inherits from `Adafruit_GFX` or `GFX_Lite`.
+
+## Supported Hardware
+
+- **Supported SoCs:** `ESP32`, `ESP32-S2`, `ESP32-S3`, `ESP32-P4` (and `ESP32-S31`).
+- **Unsupported SoCs (compile-time `#error`):** `ESP32-C2`, `ESP32-C3`, `ESP32-C5`, `ESP32-C6`, `ESP32-H2`. Do not generate code targeting these chips.
+- **Panel types:** Standard 2-scan HUB75/HUB75E panels (`1/8`, `1/16`, `1/32` scan, e.g. `64x32`, `64x64`, `128x64`) work directly with `MatrixPanel_I2S_DMA`. Chained 2D grids and non-standard 4-scan / 8-scan panels require `VirtualMatrixPanel_T`.
+
+## Installation
+
+### PlatformIO (`platformio.ini`)
+```ini
+[env:esp32s3]
+platform = espressif32
+board = esp32-s3-devkitc-1
+framework = arduino
+lib_deps =
+    mrcodetastic/ESP32 HUB75 LED MATRIX PANEL DMA Display
+    adafruit/Adafruit GFX Library
+```
+- Omit `adafruit/Adafruit GFX Library` and add `build_flags = -DNO_GFX` if you only need pixel-level drawing (e.g. FastLED/custom framebuffers or pure ESP-IDF).
+- For ESP-IDF component manager: add this repository as a component (`ESP-IDF >= 5.0, < 7.0`); pure ESP-IDF builds define `-DNO_GFX` automatically unless `CONFIG_ESP32_HUB75_USE_GFX` is enabled.
+
+## Minimal Working Example (Single Panel or Horizontal Chain)
+
+```cpp
+#include <ESP32-HUB75-MatrixPanel-I2S-DMA.h>
+
+MatrixPanel_I2S_DMA *dma_display = nullptr;
+
+void setup() {
+  // HUB75_I2S_CFG(panel_width, panel_height, chain_length)
+  HUB75_I2S_CFG mxconfig(64, 32, 1);
+
+  // Required for 64px-tall (1/32 scan) panels — default E pin is -1!
+  // mxconfig.gpio.e = 18;
+
+  // Optional tuning:
+  // mxconfig.double_buff = true;               // Tear-free animation (call flipDMABuffer())
+  // mxconfig.setPixelColorDepthBits(6);        // 2..12 (default 8); lower saves RAM & raises FPS
+  // mxconfig.clkphase = false;                 // Try toggling if pixels are shifted/ghosting
+  // mxconfig.driver = HUB75_I2S_CFG::FM6126A;  // Only for FM6124/FM6126A/ICN2038S/MBI5124/DP3246
+
+  dma_display = new MatrixPanel_I2S_DMA(mxconfig);
+  if (!dma_display->begin()) {
+    // Allocation or DMA init failed (usually insufficient DMA RAM)
+    return;
+  }
+
+  dma_display->setBrightness8(90); // 0..255 (must be called AFTER begin())
+  dma_display->clearScreen();
+  dma_display->fillScreenRGB888(0, 0, 64);
+  dma_display->drawPixelRGB888(10, 10, 255, 0, 0);
+}
+
+void loop() {}
+```
+
+## Configuration (`HUB75_I2S_CFG`)
+
+| Field / Method | Default | Notes |
+| --- | --- | --- |
+| `mx_width`, `mx_height`, `chain_length` | `64`, `32`, `1` | Single-panel dimensions and total panels in chain. |
+| `gpio` (`r1,g1,b1,r2,g2,b2,a,b,c,d,e,lat,oe,clk`) | SoC defaults | Override individual pins via `mxconfig.gpio.<pin> = <gpio>` or pass `HUB75_I2S_CFG::i2s_pins`. Set `gpio.e` for 64px-tall (`1/32` scan) panels. |
+| `driver` | `SHIFTREG` | Shift-register IC: `SHIFTREG`, `FM6124`, `FM6126A`, `ICN2038S`, `MBI5124`, `DP3246`. |
+| `line_decoder` | `TYPE138` | Row decoder IC: `TYPE138`, `TYPE595` (alias `SM5368`), `TYPE_DIRECT`, `SM5266P`. |
+| `double_buff` | `false` | Allocates 2 DMA framebuffers. Draw to back buffer, then call `flipDMABuffer()`. |
+| `i2sspeed` | `HZ_10M` | `HZ_8M`, `HZ_10M`, `HZ_15M` (16M), `HZ_16M`, `HZ_20M`. |
+| `latch_blanking` | `0` (auto: 4 or 8) | OE blanking clocks around `LAT` (`1..8`). Increase to reduce row ghosting. |
+| `clkphase` | `true` | Clock polarity; toggle `false` if image has column shift/artifacts. |
+| `min_refresh_rate` | `60` | Minimum target Hz; library adjusts BCM `lsbMsbTransitionBit` to meet it. |
+| `setPixelColorDepthBits(n)` | `8` (range `2..12`) | Runtime color depth per channel. Lowering to `5` or `6` saves significant DMA RAM and increases refresh rate on large chains. |
+
+## Core `MatrixPanel_I2S_DMA` API
+
+- **Lifecycle:** `begin()` (returns `bool`), `stopDMAoutput()`, `resumeDMAoutput()`.
+- **Brightness:** `setBrightness8(uint8_t)` (aliases: `setBrightness`, `setPanelBrightness`) — call **after** `begin()`.
+- **Drawing (always available, including `-DNO_GFX`):**
+  - `drawPixelRGB888(x, y, r, g, b)` / `fillScreenRGB888(r, g, b)`
+  - `drawPixel(x, y, color565)` / `fillScreen(color565)` / `clearScreen()`
+  - `color565(r, g, b)` / `color444(r, g, b)` / `color565to888(color565, r, g, b)`
+  - `width()` / `height()`
+  - Fast primitives (unless `-DNO_FAST_FUNCTIONS`): `drawFastHLine`, `drawFastVLine`, `fillRect` (RGB565 and `(r,g,b)` overloads).
+- **GFX methods (when `NO_GFX` is not defined):** Full `Adafruit_GFX` API (`print`, `setCursor`, `setFont`, `drawRect`, `fillCircle`, `setRotation`, etc.), or `GFX_Lite` (`CRGB` overloads) when `-DUSE_GFX_LITE` is defined.
+- **Double buffering:** `flipDMABuffer()` — only when `mxconfig.double_buff = true`. Never call from an ISR; drawing and flipping must happen from the same task.
+
+## Chained Grids & Non-Standard Panels (`VirtualMatrixPanel_T`)
+
+Always prefer `ESP32-HUB75-VirtualMatrixPanel_T.hpp` over the legacy `ESP32-VirtualMatrixPanel-I2S-DMA.h`.
+
+Use `VirtualDisplay::makeDMAConfig(...)` to compute the DMA geometry automatically, then pass the resulting `VirtualDMAConfig` directly to both `MatrixPanel_I2S_DMA` and `VirtualDisplay` (avoids argument-order mistakes):
+
+```cpp
+#include <ESP32-HUB75-VirtualMatrixPanel_T.hpp>
+
+// Example: 2x2 grid of 64x32 panels wired serpentine from top-left going down
+using VirtualDisplay = VirtualMatrixPanel_T<CHAIN_TOP_LEFT_DOWN>;
+
+MatrixPanel_I2S_DMA *dma_display = nullptr;
+VirtualDisplay *virtualDisp = nullptr;
+
+void setup() {
+  // makeDMAConfig(panel_res_x, panel_res_y, vmodule_rows, vmodule_cols)
+  auto mxconfig = VirtualDisplay::makeDMAConfig(64, 32, 2, 2);
+  // mxconfig.gpio.e = 18; // Customize pins/options on mxconfig as usual
+
+  dma_display = new MatrixPanel_I2S_DMA(mxconfig);
+  if (!dma_display->begin()) return;
+  dma_display->setBrightness8(90);
+
+  virtualDisp = new VirtualDisplay(*dma_display, mxconfig);
+  virtualDisp->drawPixelRGB888(0, 0, 255, 255, 255);
+}
+```
+
+- **Chain types (`PANEL_CHAIN_TYPE`):** `CHAIN_NONE`, `CHAIN_TOP_LEFT_DOWN`, `CHAIN_TOP_RIGHT_DOWN`, `CHAIN_BOTTOM_LEFT_UP`, `CHAIN_BOTTOM_RIGHT_UP`, plus non-inverted zigzag variants `*_ZZ`, and `CHAIN_RUNTIME` (configurable via `setChainType()`).
+- **Non-standard scan policies (2nd template arg, default `TwoScanMapping`):**
+  - 4-scan: `FourScan16px<PxBase, Flags>`, `FourScan32px<PxBase, Flags>`, `FourScan40px<PxBase, Flags>`, `FourScan64_16S`, `FourScanP8_40x20`, `FourScan80x40_ZigZag8`, `FourScan80x40_HFarcan`.
+  - 8-scan: `EightScan32x16_819`, `EightScan32x16_SM16208`.
+- **Optional 3rd template arg:** `ScaleFactor` (compile-time integer pixel zoom `>= 1`, default `1`).
+
+## Default GPIO Pinouts & Pin Pitfalls
+
+Default `E_PIN` is `-1` on all targets; you **must** assign a valid output GPIO for 64px-tall (`1/32` scan) panels.
+
+| SoC | R1, G1, B1 | R2, G2, B2 | A, B, C, D, E | LAT, OE, CLK | Avoid These Pins |
+| --- | --- | --- | --- | --- | --- |
+| **ESP32** | 25, 26, 27 | 14, 12, 13 | 23, 19, 5, 17, -1 | 4, 15, 16 | GPIO 34–39 (input-only), GPIO 6–11 (SPI flash), strapping pins if pulled wrong (0, 2, 12). |
+| **ESP32-S2** | 45, 42, 41 | 40, 39, 38 | 37, 36, 35, 34, -1 | 26, 21, 33 | SPI flash/PSRAM pins (26–32 depending on module), GPIO 46 (input-only). |
+| **ESP32-S3** | 4, 5, 6 | 7, 15, 16 | 18, 8, 3, 42, -1 | 40, 2, 41 | GPIO 26–32 (SPI flash), GPIO 33–37 on Octal PSRAM/Flash modules, GPIO 19–20 (USB D-/D+). |
+| **ESP32-P4** | 2, 8, 23 | 3, 4, 5 | 20, 21, 22, 32, -1 | 33, 36, 7 | Flash/PSRAM and board-reserved peripheral pins. |
+
+## Build Flags (`build_flags` / `build_opt.h`)
+
+- `-DNO_GFX` — Disable `Adafruit_GFX` base class; keeps native RGB888/RGB565 methods.
+- `-DUSE_GFX_LITE` — Use `mrcodetastic/GFX_Lite` (Adafruit_GFX + FastLED `CRGB` overloads).
+- `-DNO_FAST_FUNCTIONS` — Omit `drawFastHLine`/`drawFastVLine`/`fillRect` DMA optimizations to save flash/RAM.
+- `-DNO_CIE1931` — Disable CIE 1931 perceptual gamma LUT (useful if FastLED or another layer handles gamma/dimming).
+- `-DFORCE_COLOR_DEPTH` — Prevent automatic color-depth reduction on large chains (may flicker).
+- `-DSPIRAM_DMA_BUFFER` — **ESP32-S3 with Octal PSRAM only** (not Quad PSRAM). Stores DMA framebuffers in PSRAM; automatically enables `NO_FAST_FUNCTIONS` and a GDMA stall-recovery watchdog (`hub75_dma_wd`).
+- `-DNO_S3_PSRAM_WATCHDOG` — Disables `hub75_dma_wd` (saves 3 KB stack/polling, but removes flash-write/OTA stall recovery).
+- `-DPIXEL_COLOR_DEPTH_BITS=6` — Compile-time default color depth (`2..12`); can also be set at runtime via `mxconfig.setPixelColorDepthBits()`.
+- `-DCORE_DEBUG_LEVEL=3` — Enables `ESP_LOG*` diagnostics for DMA RAM allocation, refresh rate, and BCM setup.
+
+## Common Mistakes to Avoid
+
+1. **Forgetting `gpio.e` on 64x64 panels:** Half the panel mirrors or stays blank because `E_PIN_DEFAULT` is `-1`.
+2. **Calling `setBrightness8()` before `begin()`:** It is ignored until `begin()` succeeds.
+3. **Calling `flipDMABuffer()` without `mxconfig.double_buff = true`:** Logs a warning and does nothing.
+4. **Running out of internal DMA RAM on large chains:** Lower `mxconfig.setPixelColorDepthBits(5)` or `6`, disable `double_buff`, or on ESP32-S3 (Octal PSRAM) use `-DSPIRAM_DMA_BUFFER`.
+5. **Passing `panel_res_x, panel_res_y, rows, cols` directly to `VirtualMatrixPanel_T` constructor:** The raw constructor takes `(disp, rows, cols, panel_res_x, panel_res_y)` (opposite order of `makeDMAConfig()`). Always use `VirtualDisplay::makeDMAConfig(...)` + `VirtualDisplay(*dma_display, mxconfig)` instead.
+6. **Using `SPIRAM_FRAMEBUFFER`:** Deprecated name — use `-DSPIRAM_DMA_BUFFER`.
+7. **Drawing directly to `dma_display` when using `VirtualMatrixPanel_T`:** Draw to `virtualDisp` (which maps coordinates into `dma_display`); still call `begin()`, `setBrightness8()`, and `flipDMABuffer()` on `dma_display`.
+
+## Key Documentation & Examples
+
+- [README.md](README.md): Full setup, wiring, troubleshooting, and power notes.
+- [doc/BuildOptions.md](doc/BuildOptions.md): Detailed compile-time flags reference.
+- [doc/VirtualMatrixPanel_T.md](doc/VirtualMatrixPanel_T.md): Chaining topologies, 4-scan/8-scan policies, scaling, and community-verified panel configuration tables.
+- [doc/NonStandardPanels.md](doc/NonStandardPanels.md): Known electrically incompatible driver ICs and non-HUB75 hardware.
+- [doc/memcalc.html](doc/memcalc.html): Interactive DMA RAM and refresh-rate calculator.
+- [examples/1_SimpleTestShapes/1_SimpleTestShapes.ino](examples/1_SimpleTestShapes/1_SimpleTestShapes.ino): Basic single-panel sketch.
+- [examples/3_DoubleBuffer/3_DoubleBuffer.ino](examples/3_DoubleBuffer/3_DoubleBuffer.ino): Tear-free double-buffered animation.
+- [examples/VirtualMatrixPanel/VirtualMatrixPanel.ino](examples/VirtualMatrixPanel/VirtualMatrixPanel.ino): Chained and multi-scan panels using `VirtualMatrixPanel_T`.
+- [examples/esp-idf/without-gfx/](examples/esp-idf/without-gfx/): Pure ESP-IDF usage without Arduino/GFX.
